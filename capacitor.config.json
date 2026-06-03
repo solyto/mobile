@@ -1,0 +1,9 @@
+{
+  "appId": "app.solyto.mobile",
+  "appName": "solyto",
+  "webDir": "build-src/build",
+  "server": {
+    "androidScheme": "https",
+    "hostname": "my.solyto.app"
+  }
+}
