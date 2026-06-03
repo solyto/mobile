@@ -1,5 +1,5 @@
 {
-  "appId": "app.solyto.mobile",
+  "appId": "app.solyto",
   "appName": "solyto",
   "webDir": "build-src/build",
   "server": {

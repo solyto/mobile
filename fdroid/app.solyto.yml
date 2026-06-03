@@ -1,0 +1,35 @@
+Categories:
+  - Productivity
+
+License: AGPL-3.0-only
+
+WebSite: https://solyto.app
+SourceCode: https://github.com/solyto/mobile
+IssueTracker: https://github.com/solyto/mobile/issues
+
+Name: solyto
+Summary: Personal organizer and digital library
+Description: |
+  solyto is a self-hostable personal organizer. Manage your links, books,
+  movies, music, games, recipes, notes, todos, contacts, finances, and more
+  in one place.
+
+  The app connects to your own solyto instance.
+
+RepoType: git
+Repo: https://github.com/solyto/mobile
+
+Builds:
+  - versionName: 1.0.7
+    versionCode: 10007
+    commit: v1.0.7
+    sudo:
+      - apt-get install -y nodejs npm rsync git
+    prebuild: bash build-fdroid.sh
+    gradle:
+      - yes
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags
+CurrentVersion: 1.0.7
+CurrentVersionCode: 10007
