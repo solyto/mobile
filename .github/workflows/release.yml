@@ -37,6 +37,10 @@ jobs:
           VERSION="${GITHUB_REF_NAME#v}"
           npm pkg set version="$VERSION"
 
+      - name: Install mobile dependencies
+        working-directory: mobile
+        run: npm install
+
       - name: Build web assets
         working-directory: mobile
         run: bash build.sh
