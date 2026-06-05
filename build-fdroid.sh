@@ -31,6 +31,7 @@ rsync -a --delete \
 echo "→ Applying mobile patches..."
 cp "$SCRIPT_DIR/patch/svelte.config.js" "$BUILD_DIR/svelte.config.js"
 cp "$SCRIPT_DIR/patch/package.json" "$BUILD_DIR/package.json"
+cp "$SCRIPT_DIR/patch/layout.svelte" "$BUILD_DIR/src/routes/+layout.svelte"
 
 echo "→ Installing dependencies..."
 cd "$BUILD_DIR"
@@ -38,7 +39,7 @@ rm -f package-lock.json
 npm install
 
 echo "→ Building..."
-npm run build
+PUBLIC_MOBILE=true PUBLIC_REDIRECT_AFTER_LOGOUT=/ npm run build
 
 echo "→ Syncing to Capacitor..."
 cd "$SCRIPT_DIR"
