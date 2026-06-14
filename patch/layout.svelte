@@ -23,9 +23,6 @@
 	import { getQuickAdd, setQuickAdd } from '$lib/state/QuickAdd.svelte';
 	import QuickAddFab from '$lib/components/quick-add/QuickAddFab.svelte';
 	import QuickAddModal from '$lib/components/quick-add/QuickAddModal.svelte';
-	import { getCommandPalette, setCommandPalette } from '$lib/state/CommandPalette.svelte';
-	import CommandPaletteModal from '$lib/components/command-palette/CommandPalette.svelte';
-	import { registerCommands } from '$lib/components/command-palette/Commands.svelte';
 	import { getNavigation, setNavigation } from '$lib/state/Navigation.svelte';
 	import { getPageFeature, isAuthRoute, isDashboard, isSetupRoute, showNavbar } from '$lib/helpers/NavHelper';
 	import { featureConfig } from '$lib/config/features';
@@ -43,7 +40,6 @@
 	setPwaInstall();
 	setWelcomeTour();
 	setQuickAdd();
-	setCommandPalette();
 
 	const theme = setThemeState();
 	const viewPoint = getViewPoint();
@@ -51,7 +47,6 @@
 	const keyManager = getKeyManager();
 	const ts = getTranslation();
 	const quickAdd = getQuickAdd();
-	const commandPalette = getCommandPalette();
 	const nav = getNavigation();
 
 	let innerHeight = $state<number>(0);
@@ -72,12 +67,6 @@
 		window.addEventListener('resize', updateHeight);
 
 		ts.loadLanguage();
-
-		if (viewPoint.isDesktop && !isAuthRoute()) {
-			keyManager.registerKeyDown('Space', () => commandPalette.openPalette(), { priority: 0, withHelperKey: 'Control', preventOthers: true });
-		}
-
-		await registerCommands();
 	});
 
 	afterNavigate(() => {
@@ -87,7 +76,7 @@
 </script>
 
 <svelte:head>
-	<title>s o l y t o</title>
+	<title>solyto</title>
 	<link rel="icon" href={favicon} />
 	<link rel="manifest" href="/site.webmanifest" />
 </svelte:head>
@@ -114,9 +103,6 @@
 		{#if quickAdd.open}
 			<QuickAddModal />
 		{/if}
-	{/if}
-	{#if commandPalette.open}
-		<CommandPaletteModal />
 	{/if}
 </div>
 

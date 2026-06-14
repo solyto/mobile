@@ -31,7 +31,7 @@ rm -f package-lock.json
 npm install
 
 echo "→ Building..."
-PUBLIC_MOBILE=true PUBLIC_REDIRECT_AFTER_LOGOUT=/ npm run build
+PUBLIC_MOBILE=true PUBLIC_VERSION="$VERSION_NAME" PUBLIC_REDIRECT_AFTER_LOGOUT=/ npm run build
 
 echo "→ Syncing to Capacitor..."
 cd "$SCRIPT_DIR"
