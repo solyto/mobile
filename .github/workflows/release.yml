@@ -57,7 +57,13 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: ./gradlew assembleRelease
 
+      - name: Rename APK
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          mv mobile/android/app/build/outputs/apk/release/app-release.apk \
+             mobile/android/app/build/outputs/apk/release/solyto-${VERSION}.apk
+
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: mobile/android/app/build/outputs/apk/release/app-release.apk
+          files: mobile/android/app/build/outputs/apk/release/solyto-*.apk
