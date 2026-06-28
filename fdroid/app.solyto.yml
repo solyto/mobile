@@ -20,9 +20,9 @@ RepoType: git
 Repo: https://github.com/solyto/mobile
 
 Builds:
-  - versionName: 1.0.7
-    versionCode: 10007
-    commit: v1.0.7
+  - versionName: 1.0.10
+    versionCode: 10010
+    commit: v1.0.10
     sudo:
       - apt-get install -y nodejs npm rsync git
     prebuild: bash build-fdroid.sh
@@ -31,5 +31,5 @@ Builds:
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
-CurrentVersion: 1.0.7
-CurrentVersionCode: 10007
+CurrentVersion: 1.0.10
+CurrentVersionCode: 10010
