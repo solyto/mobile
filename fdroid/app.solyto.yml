@@ -19,7 +19,7 @@ Repo: https://github.com/solyto/mobile
 Builds:
   - versionName: 1.0.11
     versionCode: 10011
-    commit: f00e9b5ca2f44f5e68f7c45d2d943bfb8bb87e28
+    commit: 5bb42f3e848db8b75564464a679daa646fb34a9d
     sudo:
       - apt-get install -y nodejs npm rsync git
     prebuild: bash build-fdroid.sh
