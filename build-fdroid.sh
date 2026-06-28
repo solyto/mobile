@@ -43,6 +43,7 @@ PUBLIC_MOBILE=true PUBLIC_REDIRECT_AFTER_LOGOUT=/ npm run build
 
 echo "→ Syncing to Capacitor..."
 cd "$SCRIPT_DIR"
-npx cap sync
+npm install
+./node_modules/.bin/cap sync
 
 echo "✓ Done"
