@@ -1,0 +1,3 @@
+solyto is a self-hostable personal organizer. Manage your links, books, movies, music, games, recipes, notes, todos, contacts, finances, and more in one place.
+
+The app connects to your own solyto instance or to solyto.app.
