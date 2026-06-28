@@ -8,35 +8,24 @@ SourceCode: https://github.com/solyto/mobile
 IssueTracker: https://github.com/solyto/mobile/issues
 
 Name: solyto
-Summary: Personal organizer and digital library
-Description: |
-  solyto is a self-hostable personal organizer. Manage your links, books,
-  movies, music, games, recipes, notes, todos, contacts, finances, and more
-  in one place.
+Summary: Free, private, all-in-one personal organizer. Self-hostable.
+Description: Free, private, all-in-one personal organizer. Self-hostable.
 
-  The app connects to your own solyto instance.
+AllowedAPKSigningKeys: 6d9c87cc80440be581327168​8d14c0aaee9415ae571b72cc75d37c3f385609ac
 
 RepoType: git
 Repo: https://github.com/solyto/mobile
 
 Builds:
-  - versionName: 1.0.10
-    versionCode: 10010
-    commit: v1.0.10
-    sudo:
-      - apt-get install -y nodejs npm rsync git
-    prebuild: bash build-fdroid.sh
-    gradle:
-      - yes
-
   - versionName: 1.0.11
     versionCode: 10011
-    commit: v1.0.11
+    commit: f00e9b5ca2f44f5e68f7c45d2d943bfb8bb87e28
     sudo:
       - apt-get install -y nodejs npm rsync git
     prebuild: bash build-fdroid.sh
     gradle:
       - yes
+    Binaries: https://github.com/solyto/mobile/releases/download/v%v/solyto-%v.apk
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
