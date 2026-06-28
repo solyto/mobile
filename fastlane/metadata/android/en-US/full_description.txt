@@ -1,3 +1,33 @@
-solyto is a self-hostable personal organizer. Manage your links, books, movies, music, games, recipes, notes, todos, contacts, finances, and more in one place.
+solyto is a free, private, all-in-one personal management app — covering your todos, contacts, calendar, notes, news, music and book library in one place, with one login, and one coherent interface.
 
-The app connects to your own solyto instance or to solyto.app.
+Connect to your own self-hosted solyto instance or use solyto.app.
+
+<b>Features</b>
+
+<ul>
+<li>Todos with one-line creation and short commands</li>
+<li>Calendar with DAV sync</li>
+<li>Contacts with DAV sync</li>
+<li>Notebook — folders, markdown, WYSIWYG editor</li>
+<li>News reader</li>
+<li>Music, Book, Game, Recipe, Quote and Link libraries</li>
+<li>Check In — track your mood and health</li>
+<li>Time Tracking with Pomodoro Timer</li>
+<li>Finance Tracking — income and wealth</li>
+<li>Clipboard — copy things across devices</li>
+<li>Dashboard combining all your data</li>
+<li>Multiple themes including Skyrim, paper, and Atari</li>
+</ul>
+
+<b>Highlights</b>
+
+<ul>
+<li>Import music from Deezer or Discogs, books from Hardcover or Goodreads</li>
+<li>Get notified about new releases from favorite artists or authors</li>
+<li>Automatically save links via Telegram Bot</li>
+<li>Daily digest notifications via Telegram, Email or Push</li>
+</ul>
+
+<b>Privacy</b>
+
+No tracking, no analytics, no cookies, no AI, no subscriptions. solyto only contacts external services when you explicitly request it.
