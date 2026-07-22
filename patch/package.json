@@ -67,7 +67,7 @@
 		"echarts": "^6.0.0",
 		"svelte-dnd-action": "^0.9.65",
 		"svelte-gestures": "^5.2.1",
-		"svelte-multiselect": "^11.2.3",
+		"svelte-multiselect": "11.2.3",
 		"svelte-typewriter": "^3.2.3",
 		"uuid": "^11.1.0"
 	}
