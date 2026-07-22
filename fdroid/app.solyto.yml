@@ -19,7 +19,7 @@ Repo: https://github.com/solyto/mobile
 Builds:
   - versionName: 1.0.12
     versionCode: 10012
-    commit: a84ade1ddbf00c6cccddb1784a20795f6974a341
+    commit: dea6e936a3b0f4f6f47095863e268e426af219e6
     subdir: android/app
     sudo:
       - apt-get update
