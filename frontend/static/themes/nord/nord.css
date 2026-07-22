@@ -1,0 +1,80 @@
+/* Nord theme — single mode (always dark)                                    */
+/* Arctic, north-bluish color palette by Arctic Ice Studio.                  */
+/* Polar Night backgrounds, Frost accents, Aurora semantic colors.           */
+/* No font or border-radius changes — colors only.                           */
+
+:root {
+	/* Fonts — overrides the base html font-family per theme */
+	--t-font-body: 'Barlow', sans-serif;
+	--t-font-heading: 'Barlow', sans-serif;
+
+	/* Shadows — deep polar night tint */
+	--shadow-xs: 0 1px 2px 0 rgb(46 52 64 / 0.8);
+	--shadow-sm: 0 1px 3px 0 rgb(46 52 64 / 0.7), 0 1px 2px -1px rgb(46 52 64 / 0.5);
+	--shadow-md: 0 4px 6px -1px rgb(46 52 64 / 0.7), 0 2px 4px -2px rgb(46 52 64 / 0.5);
+	--shadow-lg: 0 10px 15px -3px rgb(46 52 64 / 0.7), 0 4px 6px -4px rgb(46 52 64 / 0.5);
+	--drop-shadow-sm: 0 1px 2px rgb(46 52 64 / 0.8);
+	--drop-shadow-md: 0 3px 3px rgb(46 52 64 / 0.6);
+
+	/* Semantic color tokens — Frost for UI, Aurora for states */
+	--color-c-primary: #88c0d0;
+	--color-c-heading: #81a1c1;
+	--color-c-heading-base: #eceff4;
+	--color-c-btn: #4c566a;
+	--color-c-btn-hover: #5e81ac;
+	--color-c-action: #d08770;
+	--color-c-action-hover: #ebcb8b;
+	--color-c-danger: #bf616a;
+	--color-c-danger-hover: #b48ead;
+	--color-c-success: #a3be8c;
+	--color-c-warning: #ebcb8b;
+
+	/* Background tokens — Polar Night */
+	--color-c-bg: #2e3440;
+	--color-c-bg-surface: #3b4252;
+	--color-c-bg-elevated: #434c5e;
+	--color-c-bg-modal: #3b4252;
+	--color-c-nav-hover: #4c566a;
+	--color-c-nav-active: #5e81ac;
+	--color-c-nav-active-text: #eceff4;
+
+	/* Override s-dark palette for dark: prefixed classes */
+	--color-s-dark: #2e3440;
+	--color-s-dark-2: #3b4252;
+	--color-s-dark-3: #434c5e;
+	--color-s-dark-shadow: rgb(46, 52, 64);
+
+	/* White — Snow Storm (near-white, keeps text-white legible on buttons) */
+	--color-white: #eceff4;
+
+	/* Gray scale — cool blue-gray to match Polar Night / Snow Storm */
+	--color-c-neutral: #323a49;
+	--color-c-neutral-1: #4c566a;
+	--color-c-neutral-2: #434c5e;
+	--color-c-neutral-3: #4c566a;
+	--color-c-neutral-4: #616e88;
+	--color-c-neutral-5: #7b88a1;
+	--color-c-neutral-6: #9aa5b8;
+	--color-c-neutral-7: #b8c5d6;
+	--color-c-neutral-8: #d8dee9;
+	--color-c-neutral-9: #eceff4;
+
+	/* Override light-blue utility colors used in borders and subtle backgrounds */
+	--color-d-lightblue: #3b4252;
+	--color-d-lighterblue: #323a49;
+
+	/* Nav gradient — subtle Polar Night depth */
+	--t-gradient-colors: #3b4252, #434c5e;
+}
+
+/* Single mode — enforce dark backgrounds regardless of light/dark toggle */
+html.dark {
+	--color-c-bg: #2e3440;
+	--color-c-bg-surface: #3b4252;
+	--color-c-bg-elevated: #434c5e;
+	--color-c-bg-modal: #3b4252;
+	--color-c-nav-hover: #4c566a;
+	--color-c-nav-active: #5e81ac;
+	--color-c-nav-active-text: #eceff4;
+	--color-c-neutral: #4c566a;
+}

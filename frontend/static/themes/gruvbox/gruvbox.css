@@ -1,0 +1,66 @@
+/* Gruvbox Dark — always dark, warm earthy tones */
+
+:root {
+	--t-font-body: 'Barlow', sans-serif;
+	--t-font-heading: 'Barlow', sans-serif;
+
+	--color-c-primary: #8ec07c;
+	--color-c-heading: #fabd2f;
+	--color-c-heading-base: #ebdbb2;
+	--color-c-btn: #458588;
+	--color-c-btn-hover: #83a598;
+	--color-c-action: #fe8019;
+	--color-c-action-hover: #fabd2f;
+	--color-c-danger: #fb4934;
+	--color-c-danger-hover: #cc241d;
+	--color-c-success: #b8bb26;
+	--color-c-warning: #fabd2f;
+
+	--color-c-bg: #282828;
+	--color-c-bg-surface: #3c3836;
+	--color-c-bg-elevated: #504945;
+	--color-c-bg-modal: #3c3836;
+	--color-c-nav-hover: #504945;
+	--color-c-nav-active: #458588;
+	--color-c-nav-active-text: #ebdbb2;
+
+	--color-s-dark: #282828;
+	--color-s-dark-2: #3c3836;
+	--color-s-dark-3: #504945;
+	--color-s-dark-shadow: rgb(40, 40, 40);
+
+	--color-white: #fbf1c7;
+
+	--color-c-neutral: #1d2021;
+	--color-c-neutral-1: #282828;
+	--color-c-neutral-2: #3c3836;
+	--color-c-neutral-3: #504945;
+	--color-c-neutral-4: #665c54;
+	--color-c-neutral-5: #7c6f64;
+	--color-c-neutral-6: #928374;
+	--color-c-neutral-7: #d5c4a1;
+	--color-c-neutral-8: #ebdbb2;
+	--color-c-neutral-9: #fbf1c7;
+
+	--color-d-lightblue: #3c3836;
+	--color-d-lighterblue: #1d2021;
+
+	--shadow-xs: 0 1px 2px 0 rgb(40 40 40 / 0.8);
+	--shadow-sm: 0 1px 3px 0 rgb(40 40 40 / 0.7), 0 1px 2px -1px rgb(40 40 40 / 0.5);
+	--shadow-md: 0 4px 6px -1px rgb(40 40 40 / 0.7), 0 2px 4px -2px rgb(40 40 40 / 0.5);
+	--shadow-lg: 0 10px 15px -3px rgb(40 40 40 / 0.7), 0 4px 6px -4px rgb(40 40 40 / 0.5);
+
+	--t-gradient-colors: #3c3836, #504945;
+}
+
+html.dark {
+	--color-c-bg: #282828;
+	--color-c-bg-surface: #3c3836;
+	--color-c-bg-elevated: #504945;
+	--color-c-bg-modal: #3c3836;
+	--color-c-nav-hover: #504945;
+	--color-c-nav-active: #458588;
+	--color-c-nav-active-text: #ebdbb2;
+	--color-c-neutral: #504945;
+}
+.logo { filter: grayscale(0.3) sepia(0.9) hue-rotate(330deg) saturate(1.4) brightness(0.85); }

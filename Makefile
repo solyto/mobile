@@ -1,10 +1,10 @@
 .PHONY: build build-fdroid sync open run release rerelease clean
 
 build:
-	bash build.sh
+	bash scripts/build.sh
 
 build-fdroid:
-	bash build-fdroid.sh
+	bash scripts/build-fdroid.sh
 
 sync:
 	npx cap sync android
@@ -22,4 +22,4 @@ rerelease:
 	bash scripts/rerelease.sh
 
 clean:
-	rm -rf build-src/build build-src/.svelte-kit build-src/node_modules
+	rm -rf frontend/build frontend/.svelte-kit frontend/node_modules

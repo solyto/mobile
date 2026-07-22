@@ -1,0 +1,17 @@
+@import 'tailwindcss';
+@custom-variant dark (&:where(.dark, .dark *));
+@import '@fontsource/barlow';
+@import '@fontsource/cinzel';
+@import '@fontsource/cinzel-decorative';
+@import '@fontsource/share-tech-mono';
+@import '@fontsource/lora';
+@import '@fontsource/press-start-2p';
+@plugin '@tailwindcss/forms';
+
+@import './styles/default.css';
+@import './styles/tokens.css';
+@import './styles/base.css';
+@import './styles/animations.css';
+@import './styles/components/markdown.css';
+@import './styles/components/forms.css';
+@import './styles/components/colorpicker.css';

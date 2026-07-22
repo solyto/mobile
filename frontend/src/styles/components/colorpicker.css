@@ -1,0 +1,3 @@
+.color-picker label div {
+    border-radius: var(--radius-full, 50%) !important;
+}

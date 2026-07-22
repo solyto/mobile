@@ -1,0 +1,193 @@
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*  Y2K  —  Early-2000s Internet Nostalgia                                     */
+/*  Ask Jeeves · Neopets · Yahoo! circa 2002 · Windows XP + IE6                */
+/*                                                                             */
+/*  Layout logic (three zones, no competing blues):                            */
+/*    ① Steel-blue icon nav strip — the portal sidebar                         */
+/*    ② Periwinkle page chrome / feature sidebars — blends with body           */
+/*    ③ White content panels — browser-window reading area                     */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── TYPOGRAPHY ──────────────────────────────────────────────────────────
+     Georgia for content. Verdana for UI — THE screen font of 2001-2005.       */
+  --t-font-body:    Georgia, 'Times New Roman', Times, serif;
+  --t-font-heading: Verdana, Geneva, Arial, Helvetica, sans-serif;
+  --font-sans:      Verdana, Geneva, Arial, Helvetica, sans-serif;
+
+  /* ── BORDER RADIUS ───────────────────────────────────────────────────────
+     HTML tables. No border-radius. 2002 didn't know about CSS3.              */
+  --radius-xs:   0px;
+  --radius-sm:   0px;
+  --radius-md:   0px;
+  --radius-lg:   0px;
+  --radius-xl:   0px;
+  --radius-2xl:  0px;
+  --radius-3xl:  0px;
+  --radius-4xl:  0px;
+  --radius-full: 0px;
+
+  /* ── SHADOWS ─────────────────────────────────────────────────────────────
+     Windows XP outset bevel — bright top-left, dark bottom-right.
+     Flat drop shadow only, zero glow.                                         */
+  --shadow-xs:
+    inset  1px  1px 0 #ffffff,
+    inset -1px -1px 0 #808080,
+    1px 1px 0 rgba(0,0,0,0.2);
+  --shadow-sm:
+    inset  2px  2px 0 #f4f0ec,
+    inset -2px -2px 0 #686460,
+    2px 2px 3px rgba(0,0,0,0.2);
+  --shadow-md:
+    inset  1px  1px 0 #ece8e4,
+    inset -1px -1px 0 #706c68,
+    3px 3px 5px rgba(0,0,0,0.18);
+  --shadow-lg:
+    2px 2px 0 #aaaaaa,
+    4px 4px 0 #888888;
+  --drop-shadow-sm: 1px 1px 2px rgba(0,0,0,0.35);
+  --drop-shadow-md: 2px 2px 4px rgba(0,0,0,0.35);
+
+  /* ── SEMANTIC COLORS ─────────────────────────────────────────────────────  */
+  --color-c-primary:        #0033cc;   /* IE classic hyperlink blue            */
+  --color-c-heading:        #cc0000;   /* CNET / Yahoo! / CNN — red headers    */
+  --color-c-heading-base:   #003399;
+  --color-c-btn:            #d4d0c8;   /* Windows XP silver face-plate         */
+  --color-c-btn-hover:      #dedad2;
+  --color-c-btn-text:       #000000;
+  --color-c-action:         #cc5500;
+  --color-c-action-hover:   #aa3300;
+  --color-c-danger:         #cc0000;
+  --color-c-danger-hover:   #990000;
+  --color-c-success:        #006600;
+  --color-c-warning:        #cc6600;
+
+  /* ── BACKGROUNDS ─────────────────────────────────────────────────────────
+     bg-c-bg is periwinkle — both the page-container (transparent) and feature
+     sidebars (Notebooks tree, Calendar sidebar, etc.) use it.
+     Feature sidebars then naturally blend into the page chrome.
+     bg-c-bg-surface is always white — cards, panels, reading areas.           */
+  --color-c-bg:             #ffffff;   /* periwinkle — page chrome + sidebars  */
+  --color-c-bg-surface:     #ffffff;   /* white — content panels               */
+  --color-c-bg-elevated:    #f0eee8;   /* slightly warm elevated surface       */
+  --color-c-bg-modal:       #ffffff;
+
+  /* Nav hover/active — on periwinkle bg these need strong contrast */
+  --color-c-nav-hover:      rgba(0,0,0,0.15);
+  --color-c-nav-active: #0033cc;
+  --color-c-nav-active-text:#ffffff;
+
+  --color-c-neutral:        #e4e2de;
+  --color-c-border:         #9999bb;   /* periwinkle-tinted border for sidebars */
+
+  /* ── S-DARK PALETTE ──────────────────────────────────────────────────────
+     Light theme. Remap so dark: utility classes stay readable.                */
+  --color-s-dark:        #eeecea;
+  --color-s-dark-2:      #e4e2de;
+  --color-s-dark-3:      #d8d6d0;
+  --color-s-dark-shadow: rgba(0,0,0,0.15);
+
+  --color-white: #ffffff;
+
+  /* ── GRAY SCALE ──────────────────────────────────────────────────────────
+     Text on periwinkle (#6868c0) needs to be dark for contrast.
+     Gray-700 (default body text) → near-black, works on both white + periwinkle */
+  --color-gray-50:  #faf9f7;
+  --color-gray-100: #f0eee8;
+  --color-gray-200: #e0deda;
+  --color-gray-300: #c8c6c0;
+  --color-gray-400: #a8a6a0;
+  --color-gray-500: #888680;
+  --color-gray-600: #444240;
+  --color-gray-700: #1a1818;   /* default text — near-black, legible on any bg */
+  --color-gray-800: #0c0a0a;
+  --color-gray-900: #000000;
+
+  --color-d-lightblue:   #dde8f8;
+  --color-d-lighterblue: #eef4fc;
+
+  /* ── NAV GRADIENT ────────────────────────────────────────────────────────
+     Steel portal blue — the IE toolbar / Ask Jeeves sidebar.                  */
+  --t-gradient-colors: #fff, #5885d3;
+}
+
+/* ── NAV STRIP SCOPE ──────────────────────────────────────────────────────────
+   .nav-desktop-container uses bg-c-bg for its 4px padding wrapper.
+   Remap --color-c-bg locally so that wrapper matches the steel-blue gradient,
+   not the periwinkle page chrome.
+   Also light-text grays for nav items sitting on dark blue.                   */
+.nav-desktop-container {
+  --color-c-bg:        #ffffff;
+  --color-gray-700:    #ccd8f4;
+  --color-gray-600:    #a8bce8;
+  --color-gray-500:    #8098d0;
+  --color-gray-400:    #6070a8;
+  --color-c-nav-hover: rgba(255,255,255,0.1);
+}
+
+.nav-mobile-container {
+  --color-gray-700:    #ccd8f4;
+  --color-gray-600:    #a8bce8;
+  --color-gray-500:    #8098d0;
+}
+
+
+
+/* ── DESKTOP NAV BORDER ───────────────────────────────────────────────────────
+   Hard right edge between steel-blue nav and periwinkle sidebar.
+   The 1px line + shadow reads as the classic table-border separator.          */
+.nav-desktop-container {
+  box-shadow:   none;
+  padding: 0;
+}
+
+.nav-desktop {
+  padding: 0;
+}
+
+.nav-mobile-container {
+  box-shadow: none;
+}
+
+/* ── GRADIENT OVERRIDES ───────────────────────────────────────────────────────
+   html specificity beats the dark-mode flattening rule in base.css.           */
+html .gradient-down  { background: linear-gradient(to bottom, var(--t-gradient-colors)); }
+html .gradient-right { background: linear-gradient(to right, var(--t-gradient-colors)); }
+
+/* ── LOGO ─────────────────────────────────────────────────────────────────────
+   Shift S logo into the steel-blue nav.                                       */
+.logo {
+  filter: hue-rotate(168deg) saturate(1.5) brightness(1.2);
+}
+
+/* ── IE-ERA SCROLLBARS ────────────────────────────────────────────────────────
+   The iconic Windows XP silver scrollbar — beveled thumb, raised buttons.     */
+::-webkit-scrollbar        { width: 16px; height: 16px; }
+::-webkit-scrollbar-track  { background: #d4d0c8; border: 1px solid #aaaaaa; }
+::-webkit-scrollbar-thumb  {
+  background: #c0bdb5;
+  border: 2px solid;
+  border-color: #ede8e0 #908880 #908880 #ede8e0;
+}
+::-webkit-scrollbar-thumb:hover  { background: #aeaba3; }
+::-webkit-scrollbar-button {
+  background: #d4d0c8;
+  border: 2px solid;
+  border-color: #ede8e0 #908880 #908880 #ede8e0;
+  display: block;
+  height: 16px;
+}
+::-webkit-scrollbar-corner { background: #d4d0c8; }
+
+/* ── LINKS ────────────────────────────────────────────────────────────────────
+   Classic IE6 hyperlink colours. Underline always.                            */
+a:not([class]), a[class=""] {
+  color: #0033cc;
+  text-decoration: underline;
+}
+a:not([class]):visited { color: #551a8b; }
+a:not([class]):hover   { color: #cc0000; }
+a:not([class]):active  { color: #cc0000; }
+
+/* ── TEXT SELECTION ──────────────────────────────────────────────────────────  */
+::selection { background: #336699; color: #ffffff; }

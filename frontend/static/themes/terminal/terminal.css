@@ -1,0 +1,68 @@
+/* Terminal — always dark, phosphor green on black, monospace */
+
+:root {
+	--t-font-body: 'Share Tech Mono', monospace;
+	--t-font-heading: 'Share Tech Mono', monospace;
+	--font-sans: 'Share Tech Mono', monospace;
+
+	--color-c-primary: #00ff41;
+	--color-c-heading: #00cc33;
+	--color-c-heading-base: #00ff41;
+	--color-c-btn: #003300;
+	--color-c-btn-hover: #005500;
+	--color-c-action: #00aaff;
+	--color-c-action-hover: #33ccff;
+	--color-c-danger: #ff0000;
+	--color-c-danger-hover: #cc0000;
+	--color-c-success: #00ff41;
+	--color-c-warning: #ffff00;
+
+	--color-c-bg: #0d0d0d;
+	--color-c-bg-surface: #0a1a0a;
+	--color-c-bg-elevated: #0f2a0f;
+	--color-c-bg-modal: #0a1a0a;
+	--color-c-nav-hover: #0f2a0f;
+	--color-c-nav-active: #003300;
+	--color-c-nav-active-text: #00ff41;
+	--color-c-neutral: #0f2a0f;
+
+	--color-s-dark: #0d0d0d;
+	--color-s-dark-2: #0a1a0a;
+	--color-s-dark-3: #0f2a0f;
+	--color-s-dark-shadow: rgb(0, 255, 65);
+
+	--color-white: #00ff41;
+
+	--color-gray-50: #050505;
+	--color-gray-100: #0a1a0a;
+	--color-gray-200: #0f2a0f;
+	--color-gray-300: #003300;
+	--color-gray-400: #005500;
+	--color-gray-500: #007700;
+	--color-gray-600: #009900;
+	--color-gray-700: #00bb00;
+	--color-gray-800: #00dd00;
+	--color-gray-900: #00ff41;
+
+	--color-d-lightblue: #0a1a0a;
+	--color-d-lighterblue: #050505;
+
+	--shadow-xs: 0 1px 2px 0 rgb(0 255 65 / 0.2);
+	--shadow-sm: 0 1px 3px 0 rgb(0 255 65 / 0.2), 0 1px 2px -1px rgb(0 255 65 / 0.1);
+	--shadow-md: 0 4px 6px -1px rgb(0 255 65 / 0.2), 0 2px 4px -2px rgb(0 255 65 / 0.1);
+	--shadow-lg: 0 10px 15px -3px rgb(0 255 65 / 0.2), 0 4px 6px -4px rgb(0 255 65 / 0.1);
+
+	--t-gradient-colors: #0a1a0a, #0f2a0f;
+}
+
+html.dark {
+	--color-c-bg: #0d0d0d;
+	--color-c-bg-surface: #0a1a0a;
+	--color-c-bg-elevated: #0f2a0f;
+	--color-c-bg-modal: #0a1a0a;
+	--color-c-nav-hover: #0f2a0f;
+	--color-c-nav-active: #003300;
+	--color-c-nav-active-text: #00ff41;
+	--color-c-neutral: #0f2a0f;
+}
+.logo { filter: grayscale(1) sepia(1) hue-rotate(90deg) saturate(8) brightness(0.8); }

@@ -1,0 +1,92 @@
+/* Atari — always dark, neon on black, pixel font, sharp corners */
+/* Inspired by the Atari 2600/800 era: pure black, blazing orange, cyan, magenta. */
+
+:root {
+	--t-font-body: 'Press Start 2P', monospace;
+	--t-font-heading: 'Press Start 2P', monospace;
+	--font-sans: 'Press Start 2P', monospace;
+
+	/* Border radius — everything sharp */
+	--radius-xs: 0px;
+	--radius-sm: 0px;
+	--radius-md: 0px;
+	--radius-lg: 0px;
+	--radius-xl: 0px;
+	--radius-2xl: 0px;
+	--radius-3xl: 0px;
+	--radius-4xl: 0px;
+	--radius-full: 0px;
+
+	/* Shadows — neon orange glow */
+	--shadow-xs: 0 0 4px 0 rgb(255 102 0 / 0.4);
+	--shadow-sm: 0 0 6px 0 rgb(255 102 0 / 0.4), 0 0 2px 0 rgb(255 102 0 / 0.2);
+	--shadow-md: 0 0 12px 0 rgb(255 102 0 / 0.5), 0 0 4px 0 rgb(255 102 0 / 0.3);
+	--shadow-lg: 0 0 20px 0 rgb(255 102 0 / 0.5), 0 0 8px 0 rgb(255 102 0 / 0.3);
+	--drop-shadow-sm: 0 0 4px rgb(255 102 0 / 0.5);
+	--drop-shadow-md: 0 0 8px rgb(255 102 0 / 0.5);
+
+	/* Semantic color tokens */
+	--color-c-primary: #ff6600;
+	--color-c-heading: #ffcc00;
+	--color-c-heading-base: #ffffff;
+	--color-c-btn: #0055cc;
+	--color-c-btn-hover: #0077ff;
+	--color-c-action: #ff6600;
+	--color-c-action-hover: #ffcc00;
+	--color-c-danger: #ff0033;
+	--color-c-danger-hover: #cc0022;
+	--color-c-success: #00ff66;
+	--color-c-warning: #ffcc00;
+
+	/* Background tokens */
+	--color-c-bg: #000000;
+	--color-c-bg-surface: #0d0020;
+	--color-c-bg-elevated: #1a0040;
+	--color-c-bg-modal: #0d0020;
+	--color-c-nav-hover: #1a0040;
+	--color-c-nav-active: #ff6600;
+	--color-c-nav-active-text: #000000;
+	--color-c-neutral: #1a0040;
+	--color-c-border: #ff6600;
+
+	/* Override s-dark palette for dark: prefixed classes */
+	--color-s-dark: #000000;
+	--color-s-dark-2: #0d0020;
+	--color-s-dark-3: #1a0040;
+	--color-s-dark-shadow: rgb(255, 102, 0);
+
+	--color-white: #ffffff;
+
+	--color-gray-50: #0a0010;
+	--color-gray-100: #0d0020;
+	--color-gray-200: #1a0040;
+	--color-gray-300: #260060;
+	--color-gray-400: #440080;
+	--color-gray-500: #6600aa;
+	--color-gray-600: #8800cc;
+	--color-gray-700: #aa44dd;
+	--color-gray-800: #cc88ee;
+	--color-gray-900: #ffffff;
+
+	--color-d-lightblue: #0d0020;
+	--color-d-lighterblue: #0a0010;
+
+	/* Nav gradient — deep black to dark purple */
+	--t-gradient-colors: #000000, #0d0020;
+}
+
+/* Single mode — enforce dark regardless of light/dark toggle */
+html.dark {
+	--color-c-bg: #000000;
+	--color-c-bg-surface: #0d0020;
+	--color-c-bg-elevated: #1a0040;
+	--color-c-bg-modal: #0d0020;
+	--color-c-nav-hover: #1a0040;
+	--color-c-nav-active: #ff6600;
+	--color-c-nav-active-text: #000000;
+	--color-c-neutral: #1a0040;
+}
+
+html { font-size: 12px; }
+
+.logo { filter: grayscale(1) sepia(1) hue-rotate(0deg) saturate(8) brightness(1.2); }

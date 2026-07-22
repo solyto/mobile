@@ -1,0 +1,52 @@
+/* Paper — always light, warm off-white, serif font, minimal */
+
+:root {
+	--t-font-body: 'Lora', serif;
+	--t-font-heading: 'Lora', serif;
+	--font-sans: 'Lora', serif;
+
+	--color-c-primary: #6b7280;
+	--color-c-heading: #374151;
+	--color-c-heading-base: #1c1917;
+	--color-c-btn: #374151;
+	--color-c-btn-hover: #1f2937;
+	--color-c-action: #92400e;
+	--color-c-action-hover: #b45309;
+	--color-c-danger: #991b1b;
+	--color-c-danger-hover: #7f1d1d;
+	--color-c-success: #166534;
+	--color-c-warning: #92400e;
+
+	--color-c-bg: #faf9f7;
+	--color-c-bg-surface: #f3f0eb;
+	--color-c-bg-elevated: #e8e4dc;
+	--color-c-bg-modal: #f3f0eb;
+	--color-c-nav-hover: #e0dbd3;
+	--color-c-nav-active: #374151;
+	--color-c-nav-active-text: #faf9f7;
+
+	--color-c-neutral-2: #e8e4dc;
+
+	--color-d-lightblue: #f3f0eb;
+	--color-d-lighterblue: #faf9f7;
+
+	--shadow-xs: 0 1px 2px 0 rgb(28 25 23 / 0.1);
+	--shadow-sm: 0 1px 3px 0 rgb(28 25 23 / 0.1), 0 1px 2px -1px rgb(28 25 23 / 0.05);
+	--shadow-md: 0 4px 6px -1px rgb(28 25 23 / 0.1), 0 2px 4px -2px rgb(28 25 23 / 0.05);
+	--shadow-lg: 0 10px 15px -3px rgb(28 25 23 / 0.1), 0 4px 6px -4px rgb(28 25 23 / 0.05);
+
+	--t-gradient-colors: #f3f0eb, #e8e4dc;
+}
+
+/* Light only — enforce light backgrounds regardless of dark toggle */
+html.dark {
+	--color-c-bg: #faf9f7;
+	--color-c-bg-surface: #f3f0eb;
+	--color-c-bg-elevated: #e8e4dc;
+	--color-c-bg-modal: #f3f0eb;
+	--color-c-nav-hover: #e0dbd3;
+	--color-c-nav-active: #374151;
+	--color-c-nav-active-text: #faf9f7;
+	--color-c-neutral: #e8e4dc;
+}
+.logo { filter: grayscale(0.6) sepia(0.4) brightness(1.05); }

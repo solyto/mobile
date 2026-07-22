@@ -1,0 +1,23 @@
+html {
+    font-family: var(--t-font-body);
+    @apply text-c-neutral-7;
+    @apply dark:text-white;
+}
+
+html.no-animations *, html.no-animations *::before, html.no-animations *::after {
+    animation: none !important;
+    transition: none !important;
+}
+
+.gradient-down {
+    background: linear-gradient(to bottom, var(--t-gradient-colors));
+}
+
+.gradient-right {
+    background: linear-gradient(to right, var(--t-gradient-colors));
+}
+
+html.dark .gradient-down,
+html.dark .gradient-right {
+    background: var(--color-s-dark-3);
+}

@@ -1,0 +1,66 @@
+/* Dracula — always dark, purple/pink accents */
+
+:root {
+	--t-font-body: 'Barlow', sans-serif;
+	--t-font-heading: 'Barlow', sans-serif;
+
+	--color-c-primary: #bd93f9;
+	--color-c-heading: #ff79c6;
+	--color-c-heading-base: #f8f8f2;
+	--color-c-btn: #6272a4;
+	--color-c-btn-hover: #bd93f9;
+	--color-c-action: #ffb86c;
+	--color-c-action-hover: #f1fa8c;
+	--color-c-danger: #ff5555;
+	--color-c-danger-hover: #ff6e6e;
+	--color-c-success: #50fa7b;
+	--color-c-warning: #f1fa8c;
+
+	--color-c-bg: #282a36;
+	--color-c-bg-surface: #363747;
+	--color-c-bg-elevated: #44475a;
+	--color-c-bg-modal: #363747;
+	--color-c-nav-hover: #44475a;
+	--color-c-nav-active: #bd93f9;
+	--color-c-nav-active-text: #f8f8f2;
+
+	--color-s-dark: #282a36;
+	--color-s-dark-2: #363747;
+	--color-s-dark-3: #44475a;
+	--color-s-dark-shadow: rgb(40, 42, 54);
+
+	--color-white: #f8f8f2;
+
+	--color-c-neutral: #1e1f29;
+	--color-c-neutral-1: #282a36;
+	--color-c-neutral-2: #363747;
+	--color-c-neutral-3: #44475a;
+	--color-c-neutral-4: #6272a4;
+	--color-c-neutral-5: #7b8ab8;
+	--color-c-neutral-6: #9aa5ce;
+	--color-c-neutral-7: #bfc9e0;
+	--color-c-neutral-8: #e0e4f0;
+	--color-c-neutral-9: #f8f8f2;
+
+	--color-d-lightblue: #363747;
+	--color-d-lighterblue: #1e1f29;
+
+	--shadow-xs: 0 1px 2px 0 rgb(40 42 54 / 0.8);
+	--shadow-sm: 0 1px 3px 0 rgb(40 42 54 / 0.7), 0 1px 2px -1px rgb(189 147 249 / 0.2);
+	--shadow-md: 0 4px 6px -1px rgb(40 42 54 / 0.7), 0 2px 4px -2px rgb(189 147 249 / 0.2);
+	--shadow-lg: 0 10px 15px -3px rgb(40 42 54 / 0.7), 0 4px 6px -4px rgb(189 147 249 / 0.2);
+
+	--t-gradient-colors: #363747, #44475a;
+}
+
+html.dark {
+	--color-c-bg: #282a36;
+	--color-c-bg-surface: #363747;
+	--color-c-bg-elevated: #44475a;
+	--color-c-bg-modal: #363747;
+	--color-c-nav-hover: #44475a;
+	--color-c-nav-active: #bd93f9;
+	--color-c-nav-active-text: #f8f8f2;
+	--color-c-neutral: #44475a;
+}
+.logo { filter: grayscale(0.5) sepia(0.4) hue-rotate(250deg) saturate(3) brightness(0.9); }

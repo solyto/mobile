@@ -1,0 +1,31 @@
+export interface StatisticsOverview {
+	users: number;
+	confirmed_users: number;
+	todos: number;
+	todo_categories: number;
+	todo_workspaces: number;
+	tags: number;
+	notes: number;
+	note_folders: number;
+	time_tracking_entries: number;
+	time_tracking_categories: number;
+	time_tracking_projects: number;
+	calendars: number;
+	calendar_events: number;
+	address_books: number;
+	contacts: number;
+	friends: number;
+	albums: number;
+	books: number;
+	movies: number;
+	recipes: number;
+	links: number;
+	quotes: number;
+	library_games: number;
+	feed_subscriptions: number;
+	income_entries: number;
+	wealth_entries: number;
+	ui_notifications: number;
+	check_in_entries: number;
+	ai_tokens: number;
+}

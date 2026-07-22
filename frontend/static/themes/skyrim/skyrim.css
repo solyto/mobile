@@ -1,0 +1,130 @@
+/* Skyrim theme — single mode (always dark)                                   */
+/* Dark cool gray palette, sharp corners, amber shadows, Cinzel font.         */
+/* Corner ornaments and textures are a future addition requiring SVG assets.  */
+
+:root {
+	/* Fonts */
+	--t-font-body: 'Cinzel', serif;
+	--t-font-heading: 'Cinzel Decorative', serif;
+	--font-sans: 'Cinzel', serif;
+
+	/* Border radius — everything sharp */
+	--radius-xs: 0px;
+	--radius-sm: 0px;
+	--radius-md: 0px;
+	--radius-lg: 0px;
+	--radius-xl: 0px;
+	--radius-2xl: 0px;
+	--radius-3xl: 0px;
+	--radius-4xl: 0px;
+	--radius-full: 0px;
+
+	.rounded-full {
+		border-radius: 0;
+	}
+
+	/* Shadows — subtle amber glow */
+	--shadow-xs: none;
+	--shadow-sm: none;
+	--shadow-md: none;
+	--shadow-lg: none;
+	--drop-shadow-sm: none;
+	--drop-shadow-md: none;
+
+	/* Semantic color tokens */
+	--color-c-primary: #a09880;
+	--color-c-heading: #d4cdb8;
+	--color-c-heading-base: #e8e4dc;
+	--color-c-btn: #2a2830;
+	--color-c-btn-hover: #3e3a48;
+	--color-c-action: #3a3240;
+	--color-c-action-hover: #504860;
+	--color-c-danger: #6b1a1a;
+	--color-c-danger-hover: #8b2020;
+	--color-c-success: #2a4a1a;
+	--color-c-warning: #7a7060;
+
+	/* Background tokens — dark cool grays */
+	--color-c-bg: transparent;
+	--color-c-bg-surface: transparent;
+	--color-c-bg-elevated: transparent;
+	--color-c-bg-modal: rgba(0, 0, 0, 0.7);
+	--color-c-nav-hover: rgba(14, 14, 18, 0.7);
+	--color-c-nav-active: rgba(14, 14, 18, 0.7);
+	--color-c-nav-active-text: #eceff4;;
+
+	/* Override s-dark palette for dark: prefixed classes */
+	--color-s-dark: #0e0e12;
+	--color-s-dark-2: #16161e;
+	--color-s-dark-3: #1e1e28;
+	--color-s-dark-shadow: rgb(180, 140, 60);
+
+	/* White — keep near-white so text-white on buttons stays legible */
+	--color-white: #e8e0d0;
+
+	/* Gray scale — dark tones for backgrounds, lighter for text */
+	--color-c-neutral: #1a1a24;
+	--color-c-neutral-1: #22222e;
+	--color-c-neutral-2: #32303c;
+	--color-c-neutral-3: #44404e;
+	--color-c-neutral-4: #6a6478;
+	--color-c-neutral-5: #7a7488;
+	--color-c-neutral-6: #9a9098;
+	--color-c-neutral-7: #b8b0c0;
+	--color-c-neutral-8: #ccc4d0;
+	--color-c-neutral-9: #e0d8e8;
+
+	/* Override light-blue utility colors used for borders and subtle backgrounds */
+	--color-d-lightblue: transparent;
+	--color-d-lighterblue: #1a1a24;
+
+	--color-c-border: #888888;
+
+	/* Nav — solid dark, no gradient */
+	--t-gradient-colors: #0e0e12, #0e0e12;
+}
+
+/* Single mode — enforce dark backgrounds regardless of light/dark toggle */
+html.dark {
+	--color-c-bg: #0e0e12;
+	--color-c-bg-surface: #16161e;
+	--color-c-bg-elevated: #1e1e28;
+	--color-c-bg-modal: #16161e;
+}
+
+body {
+	background-image: url('./wallpaper.jpg');
+	background-size: cover;
+}
+
+.page-container {
+	background: none;
+}
+
+.content-container {
+	background-color: rgba(14, 14, 18, 0.9);
+}
+
+.nav-desktop-container {
+	padding: 0.5rem;
+	background-color: rgba(14, 14, 18, 0.3);
+	border-right: 3px solid var(--color-c-border);
+}
+
+.nav-mobile-container {
+	padding: 0.5rem;
+	background-color: rgba(14, 14, 18, 0.3);
+	border-top: 3px solid var(--color-c-border);
+}
+
+.nav-desktop {
+	background: none !important;
+}
+
+.nav-mobile {
+	background: none !important;
+}
+
+.logo {
+	filter: grayscale(0.7) sepia(0.5) brightness(0.85);
+}

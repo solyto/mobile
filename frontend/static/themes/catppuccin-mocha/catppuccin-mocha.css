@@ -1,0 +1,60 @@
+/* Catppuccin Mocha — always dark, pastel purple/blue accents */
+
+:root {
+	--t-font-body: 'Barlow', sans-serif;
+	--t-font-heading: 'Barlow', sans-serif;
+
+	--color-c-primary: #cba6f7;
+	--color-c-heading: #b4befe;
+	--color-c-heading-base: #cdd6f4;
+	--color-c-btn: #89b4fa;
+	--color-c-btn-hover: #74c7ec;
+	--color-c-action: #fab387;
+	--color-c-action-hover: #f9e2af;
+	--color-c-danger: #f38ba8;
+	--color-c-danger-hover: #eba0ac;
+	--color-c-success: #a6e3a1;
+	--color-c-warning: #f9e2af;
+
+	--color-c-bg: #1e1e2e;
+	--color-c-bg-surface: #313244;
+	--color-c-bg-elevated: #45475a;
+	--color-c-bg-modal: #313244;
+	--color-c-nav-hover: #45475a;
+	--color-c-nav-active: #89b4fa;
+	--color-c-nav-active-text: #cdd6f4;
+
+	--color-s-dark: #1e1e2e;
+	--color-s-dark-2: #313244;
+	--color-s-dark-3: #45475a;
+	--color-s-dark-shadow: rgb(30, 30, 46);
+
+	--color-white: #cdd6f4;
+
+	--color-c-neutral: #181825;
+	--color-c-neutral-1: #1e1e2e;
+	--color-c-neutral-2: #313244;
+	--color-c-neutral-3: #45475a;
+	--color-c-neutral-4: #585b70;
+	--color-c-neutral-5: #6c7086;
+	--color-c-neutral-6: #9399b2;
+	--color-c-neutral-7: #bac2de;
+	--color-c-neutral-8: #cdd6f4;
+	--color-c-neutral-9: #cdd6f4;
+
+	--color-d-lightblue: #313244;
+	--color-d-lighterblue: #181825;
+
+	--t-gradient-colors: #313244, #45475a;
+}
+
+html.dark {
+	--color-c-bg: #1e1e2e;
+	--color-c-bg-surface: #313244;
+	--color-c-bg-elevated: #45475a;
+	--color-c-bg-modal: #313244;
+	--color-c-nav-hover: #45475a;
+	--color-c-nav-active: #89b4fa;
+	--color-c-nav-active-text: #cdd6f4;
+	--color-c-neutral: #45475a;
+}

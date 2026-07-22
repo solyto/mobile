@@ -17,11 +17,6 @@ jobs:
         with:
           path: mobile
 
-      - uses: actions/checkout@v4
-        with:
-          repository: solyto/app
-          path: app
-
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -43,7 +38,7 @@ jobs:
 
       - name: Build web assets
         working-directory: mobile
-        run: bash build.sh
+        run: bash scripts/build-fdroid.sh
 
       - name: Decode keystore
         run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > mobile/keystore.jks

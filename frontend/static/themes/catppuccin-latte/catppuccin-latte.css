@@ -1,0 +1,44 @@
+/* Catppuccin Latte — always light, pastel accents */
+
+:root {
+	--t-font-body: 'Barlow', sans-serif;
+	--t-font-heading: 'Barlow', sans-serif;
+
+	--color-c-primary: #8839ef;
+	--color-c-heading: #7287fd;
+	--color-c-heading-base: #4c4f69;
+	--color-c-btn: #1e66f5;
+	--color-c-btn-hover: #209fb5;
+	--color-c-action: #fe640b;
+	--color-c-action-hover: #df8e1d;
+	--color-c-danger: #d20f39;
+	--color-c-danger-hover: #e64553;
+	--color-c-success: #40a02b;
+	--color-c-warning: #df8e1d;
+
+	--color-c-bg: #eff1f5;
+	--color-c-bg-surface: #e6e9ef;
+	--color-c-bg-elevated: #ccd0da;
+	--color-c-bg-modal: #e6e9ef;
+	--color-c-nav-hover: #bcc0cc;
+	--color-c-nav-active: #1e66f5;
+	--color-c-nav-active-text: #eff1f5;
+	--color-c-neutral: #ccd0da;
+
+	--color-d-lightblue: #e6e9ef;
+	--color-d-lighterblue: #eff1f5;
+
+	--t-gradient-colors: #dce0e8, #ccd0da;
+}
+
+/* Light only — enforce light backgrounds regardless of dark toggle */
+html.dark {
+	--color-c-bg: #eff1f5;
+	--color-c-bg-surface: #e6e9ef;
+	--color-c-bg-elevated: #ccd0da;
+	--color-c-bg-modal: #e6e9ef;
+	--color-c-nav-hover: #bcc0cc;
+	--color-c-nav-active: #1e66f5;
+	--color-c-nav-active-text: #eff1f5;
+	--color-c-neutral: #ccd0da;
+}

@@ -1,0 +1,64 @@
+@theme {
+	/* Palette — raw color values, referenced by semantic tokens below */
+	--color-s-yellow: #fdbe24;
+	--color-s-orange: #fc9427;
+	--color-s-red: #ec3a41;
+	--color-s-blue: #1c68c3;
+	--color-s-purple: #992f8c;
+	--color-s-darkpurple: #4e1f90;
+	--color-s-lightblue: #14a5cd;
+	--color-s-teal: #1dbda5;
+	--color-s-green: #61d96a;
+	--color-d-lightblue: #eaf2fc;
+	--color-d-lighterblue: #f3f7fc;
+	--color-s-light: #fcfcfc;
+	--color-s-dark: #121212;
+	--color-s-dark-2: #222222;
+	--color-s-dark-3: #2f3741;
+	--color-s-dark-shadow: rgb(8, 54, 47);
+
+	/* Semantic tokens — what components and themes use */
+
+	/* Backgrounds — dark mode values overridden in default.css */
+	--color-c-bg: #ffffff;
+	--color-c-bg-surface: #ffffff;
+	--color-c-bg-elevated: #ffffff;
+	--color-c-bg-modal: #ffffff;
+
+	/* Nav hover — background of hovered nav items */
+	--color-c-nav-hover: #ffffff;
+
+	/* Nav active — background and text of active nav items */
+	--color-c-nav-active: #14a5cd;
+	--color-c-nav-active-text: var(--color-c-neutral-2);
+
+	/* Border — general themed border color */
+	--color-c-border: transparent;
+
+	/* Neutral — inactive/default state for UI elements (toggles, status dots, badges) */
+	--color-c-neutral: var(--color-gray-50);
+	--color-c-neutral-1: var(--color-gray-100);
+	--color-c-neutral-2: var(--color-gray-200);
+	--color-c-neutral-3: var(--color-gray-300);
+	--color-c-neutral-4: var(--color-gray-400);
+	--color-c-neutral-5: var(--color-gray-500);
+	--color-c-neutral-6: var(--color-gray-600);
+	--color-c-neutral-7: var(--color-gray-700);
+	--color-c-neutral-8: var(--color-gray-800);
+	--color-c-neutral-9: var(--color-gray-900);
+
+	--color-c-primary: var(--color-s-teal);
+	--color-c-heading: var(--color-s-darkpurple);
+	--color-c-heading-base: #1f2937;
+	--color-c-btn: var(--color-s-lightblue);
+	--color-c-btn-hover: var(--color-s-blue);
+	--color-c-btn-text: #f9fafb;
+	--color-c-action: var(--color-s-orange);
+	--color-c-action-hover: var(--color-s-yellow);
+	--color-c-danger: var(--color-s-red);
+	--color-c-danger-hover: var(--color-s-purple);
+	--color-c-success: var(--color-s-green);
+	--color-c-warning: var(--color-s-yellow);
+
+	--animate-shake: shake 0.5s ease-out;
+}
