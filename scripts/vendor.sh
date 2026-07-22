@@ -16,8 +16,11 @@ rsync -a --delete \
 
 echo "→ Applying mobile patches ..."
 cp "$ROOT/patch/svelte.config.js" "$DEST/svelte.config.js"
-cp "$ROOT/patch/package.json"     "$DEST/package.json"
 cp "$ROOT/patch/layout.svelte"    "$DEST/src/routes/+layout.svelte"
 
-rm -f "$DEST/package-lock.json"   # package.json was replaced; build uses npm install
+# Mobile-only build dependency: Capacitor needs a static (prerendered) build.
+# Add it to the vendored package.json + lockfile (carried over from app) without
+# disturbing the rest of the locked tree, so `npm ci` stays deterministic.
+# Everything else comes from app (single source of truth).
+( cd "$DEST" && npm install --save-dev --save-exact --package-lock-only @sveltejs/adapter-static@3.0.10 )
 echo "✓ Vendored into $DEST — review and commit."

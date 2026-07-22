@@ -16,7 +16,7 @@ sed -i "s/versionName \"[^\"]*\"/versionName \"$VERSION_NAME\"/" "$GRADLE"
 
 echo "→ Building frontend..."
 cd "$ROOT/frontend"
-npm install
+npm ci
 PUBLIC_MOBILE=true PUBLIC_VERSION="$VERSION_NAME" PUBLIC_REDIRECT_AFTER_LOGOUT=/ npm run build
 
 echo "→ Syncing to Capacitor..."

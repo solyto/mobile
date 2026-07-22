@@ -45,6 +45,7 @@
 >
 	<input
 		type="number"
+		inputmode="none"
 		class="w-full rounded-lg border-1 border-c-neutral-2 text-sm shadow-xs transition-all focus:ring-2 focus:ring-d-lightblue focus:outline-none dark:border-s-dark-3 dark:bg-inherit dark:text-white dark:focus:ring-c-primary"
 		bind:value={hours}
 		onclick={onOpen}
@@ -52,6 +53,7 @@
 	<span>:</span>
 	<input
 		type="number"
+		inputmode="none"
 		class="w-full rounded-lg border-1 border-c-neutral-2 text-sm shadow-xs transition-all focus:ring-2 focus:ring-d-lightblue focus:outline-none dark:border-s-dark-3 dark:bg-inherit dark:text-white dark:focus:ring-c-primary"
 		bind:value={minutes}
 		onclick={onOpen}
