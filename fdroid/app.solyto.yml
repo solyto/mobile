@@ -1,42 +1,45 @@
 Categories:
-  - Productivity
-
+  - Task
+  - Note
+  - Calendar & Agenda
+  - Contact
+  - Inventory
 License: AGPL-3.0-only
-
+AuthorName: Leander Muskalla
 WebSite: https://solyto.app
 SourceCode: https://github.com/solyto/mobile
 IssueTracker: https://github.com/solyto/mobile/issues
+Changelog: https://github.com/solyto/mobile/releases
 
-Name: solyto
-Summary: Free, private, all-in-one personal organizer. Self-hostable.
-Description: Free, private, all-in-one personal organizer. Self-hostable.
+Summary: Personal organizer and digital library
+Description: |-
+  solyto is a personal organizer and digital library. Manage your links, books,
+  movies, music, games, recipes, notes, todos, contacts, finances, and more in
+  one place.
 
-AllowedAPKSigningKeys: 6d9c87cc80440be581327168​8d14c0aaee9415ae571b72cc75d37c3f385609ac
+  The app connects to a solyto server — either the hosted service at solyto.app,
+  or your own self-hosted instance if you prefer to keep your data on
+  infrastructure you control.
 
 RepoType: git
 Repo: https://github.com/solyto/mobile
 
 Builds:
-  - versionName: 1.0.11
-    versionCode: 10011
-    commit: 5bb42f3e848db8b75564464a679daa646fb34a9d
-    sudo:
-      - apt-get install -y nodejs npm rsync git
-    prebuild: bash build-fdroid.sh
-    gradle:
-      - yes
-    Binaries: https://github.com/solyto/mobile/releases/download/v%v/solyto-%v.apk
-
   - versionName: 1.0.12
     versionCode: 10012
-    commit: 6401f66b3df1cfe0283ee61e75decf280591354e
+    commit: v1.0.12
+    subdir: android/app
     sudo:
-      - apt-get install -y nodejs npm rsync git
-    prebuild: bash build-fdroid.sh
+      - curl -Lo node.tar.gz 
+        https://nodejs.org/dist/v22.23.1/node-v22.23.1-linux-x64.tar.gz
+      - echo "7a8cb04b4a1df4eaf432125324b81b29a088e73570a23259a8de1c65d07fc129  
+        node.tar.gz" | sha256sum -c -
+      - tar xzf node.tar.gz --strip-components=1 -C /usr/local/
     gradle:
       - yes
+    prebuild: bash ../../scripts/build-fdroid.sh
 
-AutoUpdateMode: Version
+AutoUpdateMode: Version v%v
 UpdateCheckMode: Tags
 CurrentVersion: 1.0.12
 CurrentVersionCode: 10012
