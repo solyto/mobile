@@ -16,6 +16,8 @@
 	import { urls } from '$lib/config/urls';
 	import { resolve } from '$app/paths';
 	import { setUserNotifications } from '$lib/state/UserNotifications.svelte';
+	import { setCookieConsent } from '$lib/state/CookieConsent.svelte';
+	import CookieBanner from '$lib/components/ui/CookieBanner.svelte';
 	import { setPwaInstall } from '$lib/state/PwaInstall.svelte';
 	import { setWelcomeTour } from '$lib/state/WelcomeTour.svelte';
 	import WelcomeTour from '$lib/components/tour/WelcomeTour.svelte';
@@ -23,9 +25,11 @@
 	import { getQuickAdd, setQuickAdd } from '$lib/state/QuickAdd.svelte';
 	import QuickAddFab from '$lib/components/quick-add/QuickAddFab.svelte';
 	import QuickAddModal from '$lib/components/quick-add/QuickAddModal.svelte';
+	import TitleBar from '$lib/components/desktop/TitleBar.svelte';
 	import { getNavigation, setNavigation } from '$lib/state/Navigation.svelte';
 	import { getPageFeature, isAuthRoute, isDashboard, isSetupRoute, showNavbar } from '$lib/helpers/NavHelper';
 	import { featureConfig } from '$lib/config/features';
+	import { IS_WEB, IS_DESKTOP } from '$lib/config/platform';
 
 	let { children } = $props();
 
@@ -37,6 +41,7 @@
 	setUiNotifications();
 	setUserNotifications();
 	setNavigation();
+	setCookieConsent();
 	setPwaInstall();
 	setWelcomeTour();
 	setQuickAdd();
@@ -81,7 +86,14 @@
 	<link rel="manifest" href="/site.webmanifest" />
 </svelte:head>
 
-<div class="flex w-screen flex-col overflow-hidden 2xl:flex-row bg-c-bg page-container" style="height: {innerHeight}px;">
+<div 
+	class="flex w-screen flex-col overflow-hidden 2xl:flex-row bg-c-bg page-container"
+	class:pt-6={IS_DESKTOP}
+	style="height: {innerHeight}px;"
+>
+	{#if IS_DESKTOP}
+		<TitleBar />
+	{/if}
 	<LoadingIndicator />
 	<Notifications />
 	{#if viewPoint.isDesktop && showNavbar()}
@@ -98,6 +110,9 @@
 		</div>
 	{/if}
 	<WelcomeTour />
+	{#if IS_WEB && !isAuthRoute()}
+		<CookieBanner />
+	{/if}
 	{#if showNavbar() && isDashboard()}
 		<QuickAddFab />
 		{#if quickAdd.open}

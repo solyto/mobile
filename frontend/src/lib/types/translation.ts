@@ -17,6 +17,7 @@ export interface LayoutRecords {
 	legal_notice: string;
 	privacy_policy: string;
 	terms_of_service: string;
+	reload: string;
 }
 
 export interface NavigationRecords {

@@ -16,7 +16,6 @@ rsync -a --delete \
 
 echo "→ Applying mobile patches ..."
 cp "$ROOT/patch/svelte.config.js" "$DEST/svelte.config.js"
-cp "$ROOT/patch/layout.svelte"    "$DEST/src/routes/+layout.svelte"
 
 # Mobile-only build dependency: Capacitor needs a static (prerendered) build.
 # Add it to the vendored package.json + lockfile (carried over from app) without

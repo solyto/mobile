@@ -44,7 +44,8 @@ const layout: LayoutRecords = {
 	apply: 'Apply',
 	legal_notice: 'Legal Notice',
 	privacy_policy: 'Privacy Policy',
-	terms_of_service: 'Terms of Service'
+	terms_of_service: 'Terms of Service',
+	reload: 'Reload'
 };
 
 const nav: NavigationRecords = {

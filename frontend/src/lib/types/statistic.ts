@@ -1,6 +1,7 @@
 export interface StatisticsOverview {
 	users: number;
 	confirmed_users: number;
+	active_users: number;
 	todos: number;
 	todo_categories: number;
 	todo_workspaces: number;
