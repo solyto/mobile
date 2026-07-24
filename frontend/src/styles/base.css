@@ -21,3 +21,7 @@ html.dark .gradient-down,
 html.dark .gradient-right {
     background: var(--color-s-dark-3);
 }
+
+.pointer-events-all {
+    pointer-events: all;
+}

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Modal from '$lib/components/ui/Modal.svelte';
+	import ConfirmationModal from '$lib/components/ui/ConfirmationModal.svelte';
 	import TextInput from '$lib/components/forms/TextInput.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
@@ -20,7 +20,7 @@
 </script>
 
 {#if contacts.createModal}
-	<Modal
+	<ConfirmationModal
 		onConfirm={onCreate}
 		onCancel={() => {
 			contacts.createModal = false;
@@ -28,5 +28,5 @@
 		title="Create Address Book"
 	>
 		<TextInput bind:input bind:value placeholder="Enter address book name" onblur={() => {}} />
-	</Modal>
+	</ConfirmationModal>
 {/if}

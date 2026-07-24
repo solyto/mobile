@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Modal from '$lib/components/ui/Modal.svelte'
+	import ConfirmationModal from '$lib/components/ui/ConfirmationModal.svelte'
 	import TextInput from '$lib/components/forms/TextInput.svelte'
 	import FileUpload from '$lib/components/forms/FileUpload.svelte'
 	import { getTranslation } from '$lib/state/Translation.svelte'
@@ -58,7 +58,7 @@
 	}
 </script>
 
-<Modal title={ts.get.notes.insert_image} onConfirm={confirm} onCancel={onCancel} width="w-112">
+<ConfirmationModal title={ts.get.notes.insert_image} onConfirm={confirm} onCancel={onCancel} width="w-112">
 	<!-- Tabs -->
 	<div class="mb-4 flex gap-1 rounded-lg bg-c-neutral-1 p-1 dark:bg-s-dark-3">
 		{#each (['url', 'clipboard', 'upload'] as Mode[]) as tab}
@@ -111,4 +111,4 @@
 			</div>
 		{/if}
 	</div>
-</Modal>
+</ConfirmationModal>

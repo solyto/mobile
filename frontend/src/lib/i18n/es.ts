@@ -683,7 +683,8 @@ const finances: FinanceRecords = {
 	hide_history: 'Ocultar historial',
 	wealth_distribution: 'Distribución del patrimonio',
 	income_vs_expenses: 'Ingresos vs Gastos',
-	wealth_trend: 'Tendencia del patrimonio'
+	wealth_trend: 'Tendencia del patrimonio',
+	add_entry: 'Añadir entrada'
 };
 
 

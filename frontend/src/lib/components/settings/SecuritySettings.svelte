@@ -7,7 +7,7 @@
 	import SettingsSection from '$lib/components/settings/SettingsSection.svelte';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
 	import IconButton from '$lib/components/ui/buttons/IconButton.svelte';
-	import Modal from '$lib/components/ui/Modal.svelte';
+	import ConfirmationModal from '$lib/components/ui/ConfirmationModal.svelte';
 	import type { Passkey } from '$lib/types/auth';
 	import IconKey from '@lucide/svelte/icons/key';
 	import IconTrash2 from '@lucide/svelte/icons/trash-2';
@@ -202,7 +202,7 @@
 </div>
 
 {#if confirmDeletePasskey}
-	<Modal
+	<ConfirmationModal
 		type="confirm-delete"
 		description={ts.get.settings.passkey_delete_confirm}
 		onConfirm={deletePasskey}

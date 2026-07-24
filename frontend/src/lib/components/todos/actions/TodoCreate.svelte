@@ -10,6 +10,8 @@
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
 	import InlineAutocomplete from '$lib/components/forms/InlineAutocomplete.svelte';
+	import { getViewPoint } from '$lib/state/Viewpoint.svelte';
+	import BottomSheetConfirmationModal from '$lib/components/ui/BottomSheetConfirmationModal.svelte';
 
 	const keyManager = getKeyManager();
 	const todos = getTodos();
@@ -17,6 +19,7 @@
 	const loadingIndicator = getLoadingIndicator();
 	const notifications = getUiNotifications();
 	const ts = getTranslation();
+	const viewPoint = getViewPoint();
 
 	let formOpen = $state<boolean>(false);
 	let userInput = $state<string>('');
@@ -71,11 +74,7 @@
 		keyManager.unregisterKeyDown(keyHandlers.Escape);
 	}
 
-	function handleEscape(event: KeyboardEvent): void {
-		onblur();
-	}
-
-	async function handleEnter(event: KeyboardEvent): Promise<void> {
+	async function onSubmit(): Promise<void> {
 		if (autocompleteOpen) return;
 		if (!formOpen) {
 			await toggleForm();
@@ -100,45 +99,70 @@
 		await toggleForm();
 		loadingIndicator.stop();
 	}
+
+	function handleEscape(event: KeyboardEvent): void {
+		onblur();
+	}
+
+	async function handleEnter(event: KeyboardEvent): Promise<void> {
+		await onSubmit();
+	}
 </script>
 
 <div
 	class="relative mb-4 flex h-14 w-full flex-row justify-end p-2 pl-20 sm:pl-30 lg:pl-2 2xl:pl-14 pr-0"
 >
 	{#if formOpen}
-		<InlineAutocomplete
-			bind:input
-			bind:value={userInput}
-			{onblur}
-			placeholder="Enter todo"
-			triggers={autocompleteTriggers}
-			bind:open={autocompleteOpen}
-		/>
-		<div
-			class="absolute top-[-24px] right-8 flex items-center gap-8 text-xs max-md:hidden"
-			in:fade
-		>
-			<div class="flex items-center gap-1">
-				<div class="bg-c-neutral-1 px-2 py-1 dark:bg-s-dark-2">/</div>
-				<span>Category</span>
+		{#if viewPoint.isDesktop}
+			<InlineAutocomplete
+				bind:input
+				bind:value={userInput}
+				{onblur}
+				placeholder="Enter todo"
+				triggers={autocompleteTriggers}
+				bind:open={autocompleteOpen}
+			/>
+			<div
+				class="absolute top-[-24px] right-8 flex items-center gap-8 text-xs max-md:hidden"
+				in:fade
+			>
+				<div class="flex items-center gap-1">
+					<div class="bg-c-neutral-1 px-2 py-1 dark:bg-s-dark-2">/</div>
+					<span>Category</span>
+				</div>
+				<div class="flex items-center gap-1">
+					<div class="bg-c-neutral-1 px-2 py-1 dark:bg-s-dark-2">#</div>
+					<span>Tag</span>
+				</div>
+				<div class="flex items-center gap-1">
+					<div class="bg-c-neutral-1 px-2 py-1 dark:bg-s-dark-2">due:</div>
+					<span>Due Date</span>
+				</div>
+				<div class="flex items-center gap-1">
+					<div class="bg-c-neutral-1 px-2 py-1 dark:bg-s-dark-2">repeat:</div>
+					<span>Recurrence</span>
+				</div>
+				<div class="flex items-center gap-1">
+					<div class="bg-c-neutral-1 px-2 py-1 dark:bg-s-dark-2">link:</div>
+					<span>Link</span>
+				</div>
 			</div>
-			<div class="flex items-center gap-1">
-				<div class="bg-c-neutral-1 px-2 py-1 dark:bg-s-dark-2">#</div>
-				<span>Tag</span>
-			</div>
-			<div class="flex items-center gap-1">
-				<div class="bg-c-neutral-1 px-2 py-1 dark:bg-s-dark-2">due:</div>
-				<span>Due Date</span>
-			</div>
-			<div class="flex items-center gap-1">
-				<div class="bg-c-neutral-1 px-2 py-1 dark:bg-s-dark-2">repeat:</div>
-				<span>Recurrence</span>
-			</div>
-			<div class="flex items-center gap-1">
-				<div class="bg-c-neutral-1 px-2 py-1 dark:bg-s-dark-2">link:</div>
-				<span>Link</span>
-			</div>
-		</div>
+		{:else}
+			<BottomSheetConfirmationModal
+				title={ts.get.todos.new_todo}
+				onConfirm={onSubmit}
+				onCancel={onblur}
+			>
+				<InlineAutocomplete
+					bind:input
+					bind:value={userInput}
+					{onblur}
+					placeholder="Enter todo"
+					triggers={autocompleteTriggers}
+					bind:open={autocompleteOpen}
+				/>
+			</BottomSheetConfirmationModal>
+		{/if}
 	{:else}
 		<TextButton title={ts.get.todos.new_todo} onclick={toggleForm} />
 	{/if}

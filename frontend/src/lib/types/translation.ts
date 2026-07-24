@@ -665,6 +665,7 @@ export interface FinanceRecords {
 	wealth_distribution: string;
 	income_vs_expenses: string;
 	wealth_trend: string;
+	add_entry: string;
 }
 
 

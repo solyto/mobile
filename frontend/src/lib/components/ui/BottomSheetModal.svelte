@@ -15,13 +15,11 @@
 
 <div
 	class="fixed top-0 left-0 z-40 flex h-dvh w-screen items-end bg-transparent backdrop-blur-xs modal-blur pb-16 2xl:pb-0"
-	out:fade
-	in:blur={{ duration: 300 }}
+	in:fly={{ y: 400, duration: 350 }}
+	out:fly={{ y: 400, duration: 250 }}
 >
 	<div
 		class="relative w-full"
-		in:fly={{ y: 400, duration: 350 }}
-		out:fly={{ y: 400, duration: 250 }}
 	>
 		{#if onClose}
 			<CloseButton onClick={onClose} />

@@ -9,7 +9,7 @@
 	import { onDestroy, onMount, tick } from 'svelte';
 	import IconStar from '@lucide/svelte/icons/star';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
-	import Modal from '$lib/components/ui/Modal.svelte';
+	import ConfirmationModal from '$lib/components/ui/ConfirmationModal.svelte';
 	import DeleteButton from '$lib/components/ui/buttons/DeleteButton.svelte';
 	import type { Note } from '$lib/types/note';
 
@@ -158,7 +158,7 @@
 {/if}
 
 {#if deleteModalOpen}
-	<Modal
+	<ConfirmationModal
 		title={ts.get.notes.delete_confirm_label}
 		description={ts.get.notes.delete_confirm_message}
 		type="confirm-delete"

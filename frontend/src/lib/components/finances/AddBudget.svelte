@@ -7,10 +7,15 @@
 	import TextInput from '$lib/components/forms/TextInput.svelte';
 	import type { BudgetType, CreateBudgetRequest } from '$lib/types/finance';
 	import IconPlus from '@lucide/svelte/icons/plus';
+	import { getViewPoint } from '$lib/state/Viewpoint.svelte';
+	import BottomSheetConfirmationModal from '../ui/BottomSheetConfirmationModal.svelte';
+	import { getTranslation } from '$lib/state/Translation.svelte';
 
+	const ts = getTranslation();
 	const loadingIndicator = getLoadingIndicator();
 	const keyManager = getKeyManager();
 	const finances = getFinances();
+	const viewPoint = getViewPoint();
 
 	let { type } = $props<{ type: BudgetType }>();
 
@@ -40,7 +45,7 @@
 		keyManager.unregisterAll(keyHandlers);
 	}
 
-	async function handleEnter(event: KeyboardEvent): Promise<void> {
+	async function onSubmit(): Promise<void> {
 		loadingIndicator.start();
 
 		if (titleValue.trim() !== '' && valueValue !== null) {
@@ -60,6 +65,10 @@
 		}
 	}
 
+	async function handleEnter(event: KeyboardEvent): Promise<void> {
+		await onSubmit();
+	}
+
 	function handleEscape(event: KeyboardEvent): void {
 		onblur();
 	}
@@ -67,11 +76,25 @@
 
 <div class="flex justify-start">
 	{#if formOpen}
-		<div class="flex flex-row gap-2">
-			<TextInput placeholder="Title" bind:input={titleInput} bind:value={titleValue} />
-			<NumberInput placeholder="Value" bind:input={valueInput} bind:value={valueValue} />
-		</div>
-	{:else}
+		{#if viewPoint.isDesktop}
+			<div class="flex flex-row gap-2">
+				<TextInput placeholder="Title" bind:input={titleInput} bind:value={titleValue} />
+				<NumberInput placeholder="Value" bind:input={valueInput} bind:value={valueValue} />
+			</div>
+		{:else}
+			<BottomSheetConfirmationModal
+				title={ts.get.finances.add_entry}
+				onConfirm={onSubmit}
+				onCancel={onblur}
+			>
+				<div class="flex flex-row gap-2">
+					<TextInput placeholder="Title" bind:input={titleInput} bind:value={titleValue} />
+					<NumberInput placeholder="Value" bind:input={valueInput} bind:value={valueValue} />
+				</div>
+			</BottomSheetConfirmationModal>
+		{/if}
+	{/if}
+	{#if viewPoint.isMobile || !formOpen}
 		<button
 			class="cursor-pointer rounded-lg p-2 transition-all hover:text-white"
 			class:hover:bg-c-success={type === 'income'}

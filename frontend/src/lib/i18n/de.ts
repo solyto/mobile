@@ -684,7 +684,8 @@ const finances: FinanceRecords = {
 	hide_history: 'Verlauf ausblenden',
 	wealth_distribution: 'Vermögensverteilung',
 	income_vs_expenses: 'Einkommen vs Ausgaben',
-	wealth_trend: 'Vermögensverlauf'
+	wealth_trend: 'Vermögensverlauf',
+	add_entry: 'Eintrag hinzufügen'
 };
 
 

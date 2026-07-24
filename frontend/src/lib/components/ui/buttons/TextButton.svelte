@@ -20,7 +20,7 @@
 
 {#if href === null}
 	<button
-		class="rounded-sm p-1 font-bold transition-all {customClass}"
+		class="rounded-sm p-1 font-bold transition-all pointer-events-all {customClass}"
 		class:cursor-pointer={!disabled}
 		class:cursor-not-allowed={disabled}
 		class:opacity-40={disabled}

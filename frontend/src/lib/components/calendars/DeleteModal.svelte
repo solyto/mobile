@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { getTranslation } from '$lib/state/Translation.svelte';
-	import Modal from '$lib/components/ui/Modal.svelte';
+	import ConfirmationModal from '$lib/components/ui/ConfirmationModal.svelte';
 	import { getCalendars } from '$lib/state/Calendars.svelte';
 
 	const ts = getTranslation();
@@ -8,7 +8,7 @@
 </script>
 
 {#if calendars.deletionModal && calendars.selectedCalendar}
-	<Modal
+	<ConfirmationModal
 		title={ts.get.calendar.delete_title}
 		description={ts.get.calendar.delete_description}
 		type="confirm-delete"

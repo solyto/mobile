@@ -2,7 +2,7 @@
 	import { getNotes, setNotes } from '$lib/state/Notes.svelte';
 	import NoteNavigationDesktop from '$lib/components/notes/NoteNavigationDesktop.svelte';
 	import NoteNavigationMobile from '$lib/components/notes/NoteNavigationMobile.svelte';
-	import Modal from '$lib/components/ui/Modal.svelte';
+	import ConfirmationModal from '$lib/components/ui/ConfirmationModal.svelte';
 	import TextInput from '$lib/components/forms/TextInput.svelte';
 	import { onMount } from 'svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
@@ -97,7 +97,7 @@
 
 {#if notes.modalOpen}
 	{#if notes.createType === 'note'}
-		<Modal
+		<ConfirmationModal
 			onConfirm={createNote}
 			onCancel={() => notes.closeModal()}
 			title={ts.get.notes.new_note}
@@ -108,9 +108,9 @@
 				placeholder={ts.get.notes.enter_note_title}
 				onblur={() => {}}
 			/>
-		</Modal>
+		</ConfirmationModal>
 	{:else}
-		<Modal
+		<ConfirmationModal
 			onConfirm={createCategory}
 			onCancel={() => notes.closeModal()}
 			title={ts.get.notes.new_folder}
@@ -121,7 +121,7 @@
 				placeholder={ts.get.notes.enter_folder_title}
 				onblur={() => {}}
 			/>
-		</Modal>
+		</ConfirmationModal>
 	{/if}
 {/if}
 

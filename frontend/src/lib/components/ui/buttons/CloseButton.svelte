@@ -8,7 +8,7 @@
 </script>
 
 <button
-	class="z-40 flex size-[34px] cursor-pointer items-center justify-center rounded-full bg-c-action p-1 text-white drop-shadow-md transition-all hover:text-c-heading hover:drop-shadow-xl"
+	class="z-40 flex size-[34px] cursor-pointer items-center justify-center rounded-full bg-c-action p-1 text-white drop-shadow-md transition-all hover:text-c-heading hover:drop-shadow-xl pointer-events-all"
 	class:absolute={inModal}
 	class:right-4={inModal}
 	class:top-4={inModal}

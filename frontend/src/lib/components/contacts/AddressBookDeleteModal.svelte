@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { getTranslation } from '$lib/state/Translation.svelte';
-	import Modal from '$lib/components/ui/Modal.svelte';
+	import ConfirmationModal from '$lib/components/ui/ConfirmationModal.svelte';
 	import { getContacts } from '$lib/state/Contacts.svelte';
 
 	const ts = getTranslation();
@@ -8,7 +8,7 @@
 </script>
 
 {#if contacts.deleteModal && contacts.activeAddressBook}
-	<Modal
+	<ConfirmationModal
 		title={ts.get.calendar.delete_title}
 		description={ts.get.calendar.delete_description}
 		type="confirm-delete"

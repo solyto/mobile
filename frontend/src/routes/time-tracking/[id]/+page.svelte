@@ -16,7 +16,7 @@
 	import ProjectCreate from '$lib/components/time-tracking/ProjectCreate.svelte';
 	import EntryCreate from '$lib/components/time-tracking/EntryCreate.svelte';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
-	import Modal from '$lib/components/ui/Modal.svelte';
+	import ConfirmationModal from '$lib/components/ui/ConfirmationModal.svelte';
 
 	const tt = getTimeTracking();
 	const ts = getTranslation();
@@ -88,7 +88,7 @@
 {/if}
 
 {#if deleteModal}
-	<Modal
+	<ConfirmationModal
 		title={ts.get.timeTracking.deletion_title}
 		description={ts.get.timeTracking.deletion_description}
 		type="confirm"

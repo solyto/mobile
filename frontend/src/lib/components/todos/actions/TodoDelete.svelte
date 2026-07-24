@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Todo } from '$lib/types/todo';
-	import Modal from '$lib/components/ui/Modal.svelte';
+	import ConfirmationModal from '$lib/components/ui/ConfirmationModal.svelte';
 	import { getTodos } from '$lib/state/Todos.svelte';
 	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
@@ -37,7 +37,7 @@
 </div>
 
 {#if modalOpen}
-	<Modal
+	<ConfirmationModal
 		title={ts.get.todos.delete_confirm_label}
 		description={ts.get.todos.delete_confirm_message}
 		type="confirm-delete"
