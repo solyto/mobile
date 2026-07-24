@@ -66,7 +66,7 @@
 {#if open}
 	<div
 		class="fixed inset-0 z-50 flex flex-col bg-c-bg lg:hidden dark:bg-s-dark-1"
-		transition:fade={{ duration: 150 }}
+		transition:fly={{ x: -400, duration: 200 }}
 	>
 		<div class="relative flex-1 overflow-hidden">
 			{#key current ?? 'root'}

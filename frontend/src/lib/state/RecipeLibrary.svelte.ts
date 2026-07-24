@@ -58,10 +58,18 @@ export class RecipeLibrary {
 
 	search(): void {
 		this.ratingFilter = null;
-		this.filteredEntries = this.filterService.search(this.entries, this.searchTerm, [
-			'title',
-			'ingredients'
-		]);
+
+		const term = this.searchTerm.trim().toLowerCase();
+		if (term.length === 0) {
+			this.filteredEntries = this.entries;
+			return;
+		}
+
+		this.filteredEntries = this.entries.filter(
+			(entry) =>
+				entry.title.toLowerCase().includes(term) ||
+				entry.ingredients.some((ingredient) => ingredient.name.toLowerCase().includes(term))
+		);
 	}
 
 	filter(): void {
@@ -149,7 +157,10 @@ export class RecipeLibrary {
 	}
 
 	async importFrom(provider: string, url: string): Promise<RecipeRelease | null> {
-		const res = await this.apiService.post(`${apiRoutes.libraries.recipes.import}/${provider}`, { url });
+		const res = await this.apiService.post(
+			`${apiRoutes.libraries.recipes.import}/${provider}`,
+			{ url }
+		);
 		if (res) return res.data as RecipeRelease;
 		return null;
 	}

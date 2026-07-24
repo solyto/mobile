@@ -78,7 +78,7 @@
 				<div class="mt-4 ml-1 flex items-center gap-3">
 					<div class="flex items-center gap-2">
 						<IconMapPin class="size-3 text-c-neutral-4 dark:text-c-neutral-5" />
-						<span class="text-xs text-c-neutral-5 dark:text-c-neutral-4">{weather.city}</span>
+						<button class="text-xs text-c-neutral-5 dark:text-c-neutral-4" onclick={toggleWeatherModal}>{weather.city}</button>
 					</div>
 					<div class="h-3 w-px bg-c-neutral-2 dark:bg-s-dark-3"></div>
 					<div class="flex items-center gap-2.5">
@@ -95,7 +95,9 @@
 					<button
 						class="ml-auto shrink-0 cursor-pointer rounded-md bg-c-neutral-1 px-2 py-1 text-xs font-medium text-c-neutral-5 transition-colors hover:bg-c-neutral-2 hover:text-c-neutral-7 dark:bg-s-dark-3 dark:text-c-neutral-4 dark:hover:bg-s-dark-2 dark:hover:text-c-neutral-2"
 						onclick={() => toggleTemperatureUnit(temperatureUnit === 'c' ? 'f' : 'c')}
-					>{temperatureUnit.toUpperCase()}°</button>
+					>
+						{temperatureUnit.toUpperCase()}°
+					</button>
 				</div>
 			{:else if weather.loaded}
 				<button

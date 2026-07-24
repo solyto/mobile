@@ -56,6 +56,7 @@ export class Calendars {
 	deletionModal = $state<boolean>(false);
 	importModal = $state<boolean>(false);
 	syncModal = $state<boolean>(false);
+	manageModal = $state<boolean>(false);
 	hiddenCalendars = $state<number[]>([]);
 	mobileSelectedDate = $state<SvelteDate>(new SvelteDate());
 	mobileWeekStart = $state<SvelteDate>(new SvelteDate());
@@ -470,7 +471,10 @@ export class Calendars {
 		return res !== null;
 	}
 
-	async updateCalendarColor(calendar: Calendar, request: UpdateCalendarRequest): Promise<boolean> {
+	async updateCalendarColor(
+		calendar: Calendar,
+		request: UpdateCalendarRequest
+	): Promise<boolean> {
 		const res = await this.apiService.update(
 			apiRoutes.calendars.updateCalendarColor,
 			calendar.id,

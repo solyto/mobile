@@ -9,14 +9,26 @@
 	import IconDay from '$lib/components/ui/icons/IconDay.svelte';
 	import IconList from '$lib/components/ui/icons/IconList.svelte';
 	import NavigationEntry from '$lib/components/calendars/NavigationEntry.svelte';
+	import EditButton from '$lib/components/ui/buttons/EditButton.svelte';
+	import ImportButton from '$lib/components/ui/buttons/ImportButton.svelte';
+	import CloudButton from '$lib/components/ui/buttons/CloudButton.svelte';
+	import Divider from '$lib/components/ui/Divider.svelte';
+	import BottomSheetModal from '$lib/components/ui/BottomSheetModal.svelte';
+	import ManageCalendars from '$lib/components/calendars/ManageCalendars.svelte';
 	import { getCalendars } from '$lib/state/Calendars.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { formatDateWithoutYear } from '$lib/helpers/DateHelper';
+	import { page } from '$app/state';
+	import { slide } from 'svelte/transition';
 
 	const calendars = getCalendars();
 	const ts = getTranslation();
 
-	let calendarsExpanded = $state<boolean>(false);
+	let calendarsExpanded = $state<boolean>(page.url.searchParams.has('invitations'));
+
+	if (page.url.searchParams.has('invitations')) {
+		calendars.manageModal = true;
+	}
 
 	function getNavigationLabel(): string {
 		if (calendars.view === 'month') {
@@ -116,6 +128,36 @@
 			</button>
 		</div>
 	</div>
+
+	{#if calendarsExpanded}
+		<div class="flex flex-col" transition:slide>
+			<div class="flex items-start justify-center gap-8 px-2 pt-1 pb-2">
+				<div class="flex flex-col items-center gap-2">
+					<EditButton
+						inModal={false}
+						onClick={() => (calendars.manageModal = true)}
+						title={ts.get.calendar.manage_calendars}
+					/>
+					<span class="text-xs text-c-neutral-4">{ts.get.calendar.manage_calendars}</span>
+				</div>
+				<div class="flex flex-col items-center gap-2">
+					<ImportButton
+						onClick={() => (calendars.importModal = true)}
+						title={ts.get.calendar.import_calendars}
+					/>
+					<span class="text-xs text-c-neutral-4">{ts.get.calendar.import_calendars}</span>
+				</div>
+				<div class="flex flex-col items-center gap-2">
+					<CloudButton
+						onClick={() => (calendars.syncModal = true)}
+						title={ts.get.calendar.synchronize}
+					/>
+					<span class="text-xs text-c-neutral-4">{ts.get.calendar.synchronize}</span>
+				</div>
+			</div>
+		</div>
+	{/if}
+
 	{#if calendars.view !== 'list'}
 		<div class="flex items-center justify-center gap-4">
 			<button
@@ -133,11 +175,19 @@
 			</button>
 		</div>
 	{/if}
-	{#if calendarsExpanded}
-		<div class="flex flex-wrap gap-2 px-2 pb-1">
-			{#each calendars.calendars as calendar (calendar.id)}
-				<NavigationEntry {calendar} />
-			{/each}
-		</div>
+
+	{#if calendars.manageModal}
+		<BottomSheetModal
+			title={ts.get.calendar.manage_calendars}
+			onClose={() => {
+				calendars.manageModal = false;
+			}}
+		>
+			<ManageCalendars
+				onClose={() => {
+					calendars.manageModal = false;
+				}}
+			/>
+		</BottomSheetModal>
 	{/if}
 </div>

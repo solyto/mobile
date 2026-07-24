@@ -35,10 +35,10 @@
 	}
 </script>
 
-<div class="flex h-full w-full flex-col justify-center gap-2 p-4">
+<div class="flex h-full w-full flex-col justify-center gap-2 p-4 max-lg:p-0">
 	<button
 		onclick={onClose}
-		class="cursor-pointer self-center rounded-full bg-c-neutral p-2 transition-all hover:bg-white dark:bg-s-dark-3 dark:hover:bg-s-dark-2"
+		class="cursor-pointer self-center rounded-full bg-c-neutral p-2 transition-all hover:bg-white dark:bg-s-dark-3 dark:hover:bg-s-dark-2 max-lg:hidden"
 	>
 		<IconChevronLeft class="h-6 w-6" />
 	</button>

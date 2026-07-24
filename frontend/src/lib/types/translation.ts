@@ -521,7 +521,15 @@ export interface LibraryRecords {
 	recipes: {
 		title: string;
 		ingredients: string;
+		ingredient_name: string;
+		amount: string;
+		unit: string;
+		steps: string;
 		description: string;
+		calories: string;
+		kcal_per_serving: string;
+		servings: string;
+		portions: string;
 		cover: string;
 		link: string;
 		time_to_make: string;

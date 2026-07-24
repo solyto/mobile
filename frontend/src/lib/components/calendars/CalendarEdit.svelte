@@ -8,6 +8,8 @@
 	import { clickOutside } from '$lib/helpers/ClickHelper';
 	import InlineDeleteButton from '$lib/components/ui/buttons/InlineDeleteButton.svelte';
 	import IconShare2 from '@lucide/svelte/icons/share-2';
+	import IconEye from '@lucide/svelte/icons/eye';
+	import IconEyeOff from '@lucide/svelte/icons/eye-off';
 
 	const calendars = getCalendars();
 	const loadingIndicator = getLoadingIndicator();
@@ -19,6 +21,7 @@
 	let hex = $state<string>(calendar.color !== null ? calendar.color : 'var(--color-c-neutral-2)');
 
 	const isOwned = $derived(!calendar.is_shared && calendar.invite_status === null);
+	let hidden = $derived(calendars.isCalendarHidden(calendar.id));
 
 	async function onColorChange(): Promise<void> {
 		if (hex === calendar.color) return;
@@ -69,6 +72,18 @@
 		{#if calendar.is_shared && calendar.share_owner}
 			<span class="truncate text-xs text-c-neutral-4">{ts.get.calendar.shared_by.toLowerCase().replace('%s', calendar.share_owner)}</span>
 		{/if}
+	</div>
+	<div class="lg:hidden">
+		<button
+			class="text-c-neutral-4"
+			onclick={() => calendars.toggleCalendar(calendar.id)}
+		>
+			{#if hidden}
+				<IconEyeOff class="size-4" />
+			{:else}
+				<IconEye class="size-4" />
+			{/if}
+		</button>
 	</div>
 	<div class="flex items-center">
 		{#if isOwned}

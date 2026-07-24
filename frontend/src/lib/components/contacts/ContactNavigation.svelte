@@ -35,7 +35,7 @@
 
 <div
 	bind:this={navigation}
-	class="absolute top-0 left-0 z-20 hidden h-full max-h-screen w-full flex-col overflow-y-auto bg-c-bg drop-shadow-xl sm:relative sm:flex sm:w-60 dark:border-r-1 dark:border-s-dark-2 dark:drop-shadow-sm dark:drop-shadow-s-dark-shadow"
+	class="absolute top-0 left-0 z-40 hidden h-full max-h-screen w-full flex-col overflow-y-auto bg-c-bg drop-shadow-xl sm:relative sm:flex sm:w-60 dark:border-r-1 dark:border-s-dark-2 dark:drop-shadow-sm dark:drop-shadow-s-dark-shadow"
 	class:lg:w-60={editMode}
 	class:lg:w-80={editMode}
 	in:fade

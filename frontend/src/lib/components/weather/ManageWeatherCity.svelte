@@ -62,7 +62,7 @@
 	}
 </script>
 
-<ContentModal title={ts.get.widgets.select_city} rounded="2xl" p="4" {onClose}>
+<ContentModal title={ts.get.widgets.select_city} rounded="2xl" p="4" showTitleOnMobile={true} {onClose}>
 	<div class="flex w-full min-w-80 flex-col gap-4">
 		<div class="relative">
 			<TextInput
