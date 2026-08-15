@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Matches the web app's light and dark background colors. -->
+    <color name="solyto_bg_light">#FFFFFF</color>
+    <color name="solyto_bg_dark">#121212</color>
+</resources>
