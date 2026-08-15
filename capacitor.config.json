@@ -5,5 +5,8 @@
   "server": {
     "androidScheme": "https",
     "hostname": "my.solyto.app"
+  },
+  "android": {
+    "adjustMarginsForEdgeToEdge": "auto"
   }
 }
