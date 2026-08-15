@@ -8,12 +8,12 @@
 	let props = $props();
 </script>
 
-{#if viewPoint.isMobile}
-	<BottomSheetModal {...props}>
-		{@render props.children?.()}
-	</BottomSheetModal>
-{:else}
+{#if props.forcePopup || !viewPoint.isMobile}
 	<PopupContentModal {...props}>
 		{@render props.children?.()}
 	</PopupContentModal>
+{:else}
+	<BottomSheetModal {...props}>
+		{@render props.children?.()}
+	</BottomSheetModal>
 {/if}

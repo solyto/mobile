@@ -156,7 +156,6 @@
 				<InlineAutocomplete
 					bind:input
 					bind:value={userInput}
-					{onblur}
 					placeholder="Enter todo"
 					triggers={autocompleteTriggers}
 					bind:open={autocompleteOpen}

@@ -1,0 +1,144 @@
+=== 2026-08-13T16:27:28+02:00 mg jdi started: job highlight_rename-category, profile opencode-go ===
+
+
+=== 2026-08-13T16:27:28+02:00 analyst invoked (attempt 1) ===
+
+
+=== 2026-08-13T16:29:44+02:00 analyst finished (attempt 1) ===
+
+
+I've reviewed the brief and the codebase. Let me verify my understanding of the key files before finalizing the task breakdown.
+I have a complete picture now. Branch check: the workspace is the job's own worktree and its HEAD points to `refs/heads/feature/highlight_rename-category`, which matches the brief's `branch:` field — no checkout needed.
+
+## Analysis summary
+
+The job: allow users to rename todo categories from the settings → todos section, using `PUT /api/v1/todos/categories/{category}` with `title` in the body.
+
+Current state of the code:
+- `apiRoutes.todos` has `listCategories`, `createCategory`, `deleteCategory` — **no** `updateCategory` route (notes, links, and time-tracking all have one, so the pattern is well established).
+- `Todos.svelte.ts` has `createCategory`/`deleteCategory` but no `updateCategory` method.
+- `CategoryEdit.svelte` (used only by `TodoSettings.svelte`) renders `/{category.title}` plus a delete button — no edit affordance.
+- `todo.ts` has `CreateTodoCategoryRequest` but no `UpdateTodoCategoryRequest`.
+- The `PUT` route uses a numeric id (`%d`), matching `ApiService.update(endpoint, id, body)`.
+- Design-language precedents for inline rename: `TimeTrackingNavigation.svelte` (inline input, Enter/Escape via `KeyManager`, autofocus) and `CreateEntry.svelte` (same key handling in the settings section). `DeleteButton` `minimal` style is used for the category pill actions.
+
+Let me record the task breakdown in the job's `tasks.md` deliverable.
+The task breakdown is recorded in `docs/jobs/highlight_rename-category/tasks.md`. Here is the structured task list:
+
+## Task list
+
+**TASK-1** — Add the todos category rename route `updateCategory: API_URL + '/todos/categories/%d'` to the `todos` section of `apiRoutes`, matching the brief's `PUT /api/v1/todos/categories/{category}`.
+- Files: `src/lib/config/apiRoutes.ts`
+- Depends: none
+- Risk: **low** — config addition mirroring existing category routes for notes, links, and time-tracking.
+
+**TASK-2** — Add `UpdateTodoCategoryRequest` interface (`title?: string`) to `src/lib/types/todo.ts`, next to `CreateTodoCategoryRequest`.
+- Files: `src/lib/types/todo.ts`
+- Depends: none
+- Risk: **low** — straightforward type addition mirroring `UpdateTimeTrackingCategoryRequest`.
+
+**TASK-3** — Add `updateCategory(category: TodoCategory, request: UpdateTodoCategoryRequest): Promise<boolean>` to the `Todos` state, calling `apiService.update(apiRoutes.todos.updateCategory, category.id, request)` and reloading categories — and workspaces, whose embedded category titles are displayed in `WorkspaceEdit` — on success.
+- Files: `src/lib/state/Todos.svelte.ts`
+- Depends: TASK-1, TASK-2
+- Risk: **low** — mirrors existing `updateWorkspace`/`deleteCategory` methods; only nuance is reloading workspaces too so renamed titles propagate to the workspace editor.
+
+**TASK-4** — Add an inline rename affordance to `CategoryEdit.svelte` (pen/edit button in the existing `minimal` button style next to `DeleteButton`; clicking switches the title span to a pre-filled `TextInput` that autofocuses, saves on Enter/blur and cancels on Escape via the existing `KeyManager` + `loadingIndicator` patterns), wired to `todos.updateCategory`.
+- Files: `src/lib/components/settings/CategoryEdit.svelte`
+- Depends: TASK-3
+- Risk: **medium** — the brief leaves the exact interaction open ("find a way"); the recommended pattern follows the established `CreateEntry.svelte` / `TimeTrackingNavigation.svelte` key handling, and any added tooltip/label needs matching i18n keys across all four locale files plus `SettingsRecords`.
+
+**TASK-5** — Verify with `npm run check` (svelte-check) and `npm run lint` (prettier + eslint).
+- Files: none (verification only)
+- Depends: TASK-1, TASK-2, TASK-3, TASK-4
+- Risk: **low** — standard verification; there is no state/component test infra for this layer, so no new unit tests are expected for this feature.
+
+## Notes on open points
+- **Interaction design (TASK-4)**: the brief intentionally leaves "how" the user edits open. I recommended a pen button + inline input because it best matches the settings section's design language (explicit action buttons like `DeleteButton`) and reuses the `KeyManager` Enter/Escape handling already used by `CreateEntry` in the same section. A double-click-to-edit variant (as in `TimeTrackingNavigation`) is an acceptable alternative but is less discoverable in a settings list; the developer should pick one and stay consistent. No human input is required to proceed — this is a within-scope design choice with clear precedents.
+- **Backend**: assumed to already exist (`PUT /api/v1/todos/categories/{category}`) per the brief; this job is frontend-only. If the endpoint turns out not to exist server-side, that would be a blocker worth surfacing — but nothing in this repo suggests the frontend can verify it, so no further action is taken here.
+- **No `NEEDS-HUMAN-INPUT`**: the feature is well-specified and all decisions have concrete codebase precedents, so the analysis could be completed unattended.
+
+
+=== 2026-08-13T16:29:44+02:00 developer invoked (attempt 1) ===
+
+
+=== 2026-08-13T16:35:33+02:00 developer finished (attempt 1) ===
+
+
+I have all the context I need. Let me set up my task list and begin implementation.
+**TASK-1**: Adding the `updateCategory` route to the todos section of `apiRoutes.ts`, mirroring the ordering used in the notes/links sections (`createCategory`, `updateCategory`, `deleteCategory`).
+The commit picked up some extra files. Let me check what got committed.
+The extra files were pre-existing environment scaffolding that `git add -A` swept in; the working tree is now clean. Moving on.
+
+**TASK-2**: Adding `UpdateTodoCategoryRequest` interface next to `CreateTodoCategoryRequest` in `todo.ts`.
+**TASK-3**: Adding `updateCategory` to the `Todos` state — mirroring the TimeTracking pattern, reloading both categories and workspaces on success (workspace embedded category titles are displayed in `WorkspaceEdit`).
+**TASK-4**: Adding the inline rename affordance to `CategoryEdit.svelte`. First, let me check existing edit-button patterns and the translation state usage.
+There's an existing `EditButton.svelte`. Let me check it.
+Now I'll implement TASK-4. First, the `SettingsRecords` interface and the four locale files get a `rename_category` key.
+Now the `CategoryEdit.svelte` component with the inline rename affordance:
+**TASK-5**: Now let me verify with `npm run check` and `npm run lint`.
+`node_modules` is missing. Let me check for a lockfile and install the project's existing dependencies (not adding any new packages — required to run the TASK-5 verification).
+`npm run check` passes with 0 errors. Now lint:
+Prettier flags 255 files repo-wide, including files I never touched. Let me determine if this is pre-existing or something I introduced.
+Untouched files also fail — this is a pre-existing repo-wide state. Let me check the prettier config and eslint separately.
+Prettier wants to wrap two of my longer lines. Let me check whether my changed files were prettier-clean *before* my changes, using the committed versions.
+The original file already fails prettier (tailwind class-ordering) — this is a repo-wide pre-existing condition (255 files, including untouched ones). Let me verify eslint separately (it never runs since prettier fails first) and confirm my files don't add new issues.
+ESLint is clean on all changed files. Let me confirm the prettier failure is pre-existing on the base commit by sampling untouched files from before my work.
+Confirmed — the prettier failures exist on the base commit too; the lint failure is pre-existing and repo-wide. My verification: `npm run check` passes (0 errors, 0 warnings), eslint is clean on all changed files.
+
+Let me do a final review of the full diff:
+Working tree is clean (node_modules is gitignored). TASK-5 is verification-only with no file changes. Let me mark it complete and write the implementation summary.
+Same inode — both paths are the same physical file (bind mount), so everything is consistent and committed. Final check of the repo state:
+All tasks complete. Summary of the job:
+
+## Done — category rename feature for todos
+
+Worked on branch `feature/highlight_rename-category` (matches the brief's `branch:` field), one commit per task:
+
+- **TASK-1** (`d7ae214`): Added `updateCategory: API_URL + '/todos/categories/%d'` to the `todos` section of `src/lib/config/apiRoutes.ts`, between `createCategory` and `deleteCategory`, mirroring the notes/links route ordering.
+- **TASK-2** (`56e47f0`): Added `UpdateTodoCategoryRequest` (`title?: string`) to `src/lib/types/todo.ts` next to `CreateTodoCategoryRequest`.
+- **TASK-3** (`8bde95d`): Added `updateCategory(category, request): Promise<boolean>` to `Todos` in `src/lib/state/Todos.svelte.ts`, calling `apiService.update(...)` and reloading **categories and workspaces** on success (workspaces embed category titles shown in `WorkspaceEdit`).
+- **TASK-4** (`d373c03`): Added an inline rename affordance to `src/lib/components/settings/CategoryEdit.svelte` — a pen button styled like the existing `minimal` DeleteButton next to it; clicking swaps the title span for a pre-filled, autofocused `TextInput` that saves on Enter/blur (via `todos.updateCategory`, guarded against empty/unchanged titles) and cancels on Escape, all through the existing `KeyManager` + `loadingIndicator` patterns (as in `TimeTrackingNavigation`/`CreateEntry`). Added a `rename_category` tooltip key to `SettingsRecords` and all four locale files (`en`, `de`, `fr`, `es`).
+- **TASK-5**: Verified with `npm run check` — **0 errors, 0 warnings**; ESLint clean on all changed files.
+- **implementation.md** (`83ba718`): Summary + known issues written to `docs/jobs/highlight_rename-category/implementation.md`.
+
+**Known issue (pre-existing, not introduced here):** `npm run lint` fails because prettier (with the repo's `prettier-plugin-tailwindcss` config) disagrees with committed formatting of 255 files repo-wide — including files untouched by this job, verified against base-commit versions. Left untouched to avoid an unrelated 255-file reformat; documented in `implementation.md`.
+
+No push, no merge, no branch changes — working tree is clean.
+
+
+=== 2026-08-13T16:35:33+02:00 reviewer invoked (attempt 1) ===
+
+
+=== 2026-08-13T16:40:55+02:00 reviewer finished (attempt 1) ===
+
+
+Now let me verify the build checks myself (TASK-5 verification):
+I cannot run npm commands in this environment (only git read/commit allowed), so I'll verify TASK-5 claims via careful static review. Let me check the remaining files:
+Let me verify the settings page actually renders TodoSettings (feature reachability) and check the settings route structure:
+The settings page renders `TodoSettings`, so the feature is reachable. I now have a complete picture. Let me do a final check of the two `verdict.md` copies and confirm the working tree state before writing my verdict:
+All checks done. The implementation is faithful to the task spec. Now writing the verdict (to both `docs/jobs/...` and its `.opencode/jobs/...` mirror, which the repo keeps byte-identical):
+The permission rules confirm only `docs/jobs/**/verdict.md` is writable — the `.opencode/jobs` mirror is tooling-managed, so my verdict in the docs location is correct. Committing it now:
+The tooling auto-synced my verdict into the `.opencode/jobs` mirror (confirming that directory is tooling-managed). Let me verify the synced content matches and commit it so the tree is clean:
+The synced copy matches my verdict exactly. Committing it so the tree is clean:
+Review complete. The verdict has been committed and the working tree is clean.
+
+## Summary
+
+**Job:** `highlight_rename-category` — add rename capability for todo category names (PUT `/api/v1/todos/categories/{category}` with `title` in body), in the settings todo section.
+
+**Verdict: APPROVED** (committed as `80304ce`, mirror sync `77e769d`)
+
+### Per-task results
+
+- **TASK-1: PASS** — `updateCategory: API_URL + '/todos/categories/%d'` in `src/lib/config/apiRoutes.ts:52`, matches the brief's endpoint; `%d` correctly substituted by `ApiService.update` (PUT).
+- **TASK-2: PASS** — `UpdateTodoCategoryRequest { title?: string }` in `src/lib/types/todo.ts:87-89`, mirrors `UpdateTimeTrackingCategoryRequest`.
+- **TASK-3: PASS** — `Todos.updateCategory` calls the PUT via `apiService.update` and reloads categories + workspaces on success; the workspace reload is genuinely required (`WorkspaceEdit.svelte:71` renders embedded category titles).
+- **TASK-4: PASS** — Inline pen-button rename in `CategoryEdit.svelte` mirrors the established `TimeTrackingNavigation`/`CreateEntry` patterns (KeyManager priority 2, `tick()`+focus, Enter/blur save, Escape cancel, guard against double-invocation, `onDestroy` cleanup); i18n key added to `SettingsRecords` + all four locales. A few non-blocking observations (no error feedback on failed PUT, stale embedded `todo.category.title` until next `load()` — same as pre-existing `deleteCategory` behavior, no `try/finally` around the loading indicator — same as surrounding methods).
+- **TASK-5: PARTIAL** — the review sandbox only permits git commands, so `npm run check`/`npm run lint` could not be re-executed; static review of every changed file found no type errors, and the prettier repo-wide-failure claim is credible.
+
+### Scope & discipline
+No out-of-scope source changes; each task has its own `[highlight] TASK-N:` commit and `implementation.md` has its own commit. The `.opencode/jobs/` doc mirror turned out to be tooling-synced (auto-updated on commit), not developer-added churn.
+
+
+=== 2026-08-13T16:40:55+02:00 mg jdi finished: stop-finished ===
+verdict.md's Overall verdict is APPROVED

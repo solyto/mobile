@@ -52,6 +52,7 @@
 		await library.delete(entry);
 		library.closeDetailModal();
 	}}
+	forcePopup={true}
 >
 	{#if entry}
 		<div class="mr-4 flex flex-col gap-4 max-md:min-w-72 md:min-h-32 md:min-w-128 md:max-w-3xl md:flex-row">

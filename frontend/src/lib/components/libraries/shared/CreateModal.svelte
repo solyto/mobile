@@ -32,7 +32,7 @@
 	}>();
 </script>
 
-<ContentModal rounded="2xl" p="8" onClose={() => library.closeCreateModal()} {title}>
+<ContentModal rounded="2xl" p="8" onClose={() => library.closeCreateModal()} {title} forcePopup={true}>
 	<div class="flex flex-col gap-8 overflow-x-hidden md:flex-row">
 		{#if library.config.hasCovers || library.config.hasRatings || library.config.hasWishlist}
 			<div class="flex flex-col items-center gap-2">
