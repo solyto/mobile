@@ -74,7 +74,7 @@
 	/>
 {:else}
 	<button
-		class="flex flex-row items-center space-x-2 rounded-lg px-4 py-1 text-sm hover:bg-white"
+		class="flex flex-row items-center space-x-2 rounded-lg px-4 py-1 text-sm hover:bg-c-bg-elevated"
 		onclick={toggleForm}
 	>
 		<IconFolderPlus size={18} />

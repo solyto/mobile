@@ -24,7 +24,7 @@
 	<div style="width: 56px; height: 71px;">
 		<StaggeredLogo path="../" />
 	</div>
-	<div class="mb-4 space-y-4 rounded bg-white px-8 pt-6 pb-8 shadow-md dark:bg-s-dark-2">
+	<div class="mb-4 space-y-4 rounded bg-c-bg-surface px-8 pt-6 pb-8 shadow-md">
 		{ts.get.auth.logout_success}
 	</div>
 </div>

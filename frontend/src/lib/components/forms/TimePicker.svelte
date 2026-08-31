@@ -60,7 +60,7 @@
 	/>
 	{#if menu}
 		<div
-			class="absolute top-10 right-0 z-40 w-60 flex items-start gap-8 overflow-y-auto rounded-lg bg-white p-4 text-md shadow-lg dark:bg-s-dark-3"
+			class="absolute top-10 right-0 z-40 w-60 flex items-start gap-8 overflow-y-auto rounded-lg bg-c-bg-modal p-4 text-md shadow-lg"
 			transition:scale
 		>
 			<div class="grid w-1/2 grid-cols-3 flex-wrap gap-4">

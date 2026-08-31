@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Card from '$lib/components/ui/Card.svelte';
+	import CardButton from '$lib/components/ui/CardButton.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import type { LibraryType } from '$lib/types/library';
 	import { goto } from '$app/navigation';
@@ -19,9 +19,8 @@
 				goto(item.url);
 			}}
 		>
-			<Card
+			<CardButton
 				label={ts.get.libraries.navigation[item.type]}
-				fixedWidth={false}
 				icon={item.icon}
 			/>
 		</button>

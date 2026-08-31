@@ -1,0 +1,216 @@
+{
+  "url": "http://127.0.0.1:8199/fixed/",
+  "capturedAt": "2026-08-18T19:17:00.675Z",
+  "options": {
+    "widths": [
+      1280
+    ],
+    "fullPage": false,
+    "describe": false
+  },
+  "prose": [],
+  "measures": [
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "devicePixelRatio": 1,
+      "documentSize": {
+        "scrollWidth": 1280,
+        "scrollHeight": 900,
+        "clientWidth": 1280
+      },
+      "inventory": [
+        {
+          "tag": "h1",
+          "text": "Run 2 — fixed service worker (same-origin only) + retry-once / fallback <img> (T",
+          "interactive": false,
+          "rect": {
+            "x": 24,
+            "y": 24,
+            "width": 1232,
+            "height": 25
+          },
+          "fontSize": 22,
+          "fontWeight": "700",
+          "lineHeight": "normal",
+          "color": "rgb(17, 17, 17)",
+          "background": "rgba(0, 0, 0, 0)",
+          "backgroundEffective": "rgb(255, 255, 255)",
+          "fontFamily": "system-ui",
+          "zIndex": "auto",
+          "position": "static",
+          "contrast": {
+            "ratio": 18.88,
+            "aa": true,
+            "aaa": true,
+            "large": true
+          }
+        },
+        {
+          "tag": "p",
+          "classes": [
+            "sub"
+          ],
+          "text": "Same simulated cold-start failure: storage request destroyed at socket level onc",
+          "interactive": false,
+          "rect": {
+            "x": 24,
+            "y": 53,
+            "width": 1232,
+            "height": 19
+          },
+          "fontSize": 16,
+          "fontWeight": "400",
+          "lineHeight": "normal",
+          "color": "rgb(85, 85, 85)",
+          "background": "rgba(0, 0, 0, 0)",
+          "backgroundEffective": "rgb(255, 255, 255)",
+          "fontFamily": "system-ui",
+          "zIndex": "auto",
+          "position": "static",
+          "contrast": {
+            "ratio": 7.46,
+            "aa": true,
+            "aaa": true,
+            "large": false
+          }
+        },
+        {
+          "tag": "div",
+          "id": "verdict",
+          "classes": [
+            "good"
+          ],
+          "text": "PICTURE LOADED (after one retry — self-healed, no reload needed)",
+          "interactive": false,
+          "rect": {
+            "x": 24,
+            "y": 88,
+            "width": 1232,
+            "height": 69
+          },
+          "fontSize": 30,
+          "fontWeight": "800",
+          "lineHeight": "normal",
+          "color": "rgb(30, 123, 52)",
+          "background": "rgb(230, 244, 234)",
+          "backgroundEffective": "rgb(255, 255, 255)",
+          "fontFamily": "system-ui",
+          "zIndex": "auto",
+          "position": "static",
+          "contrast": {
+            "ratio": 5.33,
+            "aa": true,
+            "aaa": true,
+            "large": true
+          }
+        },
+        {
+          "tag": "div",
+          "classes": [
+            "entry"
+          ],
+          "text": "profile entry",
+          "interactive": false,
+          "rect": {
+            "x": 24,
+            "y": 173,
+            "width": 73.45,
+            "height": 84
+          },
+          "fontSize": 12,
+          "fontWeight": "400",
+          "lineHeight": "normal",
+          "color": "rgb(85, 85, 85)",
+          "background": "rgba(0, 0, 0, 0)",
+          "backgroundEffective": "rgb(255, 255, 255)",
+          "fontFamily": "system-ui",
+          "zIndex": "auto",
+          "position": "static",
+          "contrast": {
+            "ratio": 7.46,
+            "aa": true,
+            "aaa": true,
+            "large": false
+          }
+        },
+        {
+          "tag": "div",
+          "classes": [
+            "entry"
+          ],
+          "text": "same-origin control",
+          "interactive": false,
+          "rect": {
+            "x": 109.45,
+            "y": 173,
+            "width": 116.81,
+            "height": 84
+          },
+          "fontSize": 12,
+          "fontWeight": "400",
+          "lineHeight": "normal",
+          "color": "rgb(85, 85, 85)",
+          "background": "rgba(0, 0, 0, 0)",
+          "backgroundEffective": "rgb(255, 255, 255)",
+          "fontFamily": "system-ui",
+          "zIndex": "auto",
+          "position": "static",
+          "contrast": {
+            "ratio": 7.46,
+            "aa": true,
+            "aaa": true,
+            "large": false
+          }
+        },
+        {
+          "tag": "pre",
+          "id": "log",
+          "text": "19:17:00.116  page controlled by service worker\n19:17:00.117  sw   skipped cross",
+          "interactive": false,
+          "rect": {
+            "x": 24,
+            "y": 273,
+            "width": 1232,
+            "height": 208
+          },
+          "fontSize": 13,
+          "fontWeight": "400",
+          "lineHeight": "19.5px",
+          "color": "rgb(159, 232, 181)",
+          "background": "rgb(17, 17, 17)",
+          "backgroundEffective": "rgb(255, 255, 255)",
+          "fontFamily": "monospace",
+          "zIndex": "auto",
+          "position": "static",
+          "contrast": {
+            "ratio": 1.43,
+            "aa": false,
+            "aaa": false,
+            "large": false
+          }
+        }
+      ],
+      "overflow": [],
+      "alignment": [],
+      "spacingScale": [],
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          {
+            "family": "system-ui",
+            "loaded": true
+          },
+          {
+            "family": "monospace",
+            "loaded": true
+          }
+        ],
+        "fallbacks": []
+      },
+      "overlaps": []
+    }
+  ]
+}

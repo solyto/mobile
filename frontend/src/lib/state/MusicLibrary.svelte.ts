@@ -52,6 +52,8 @@ export class MusicLibrary {
 	searchTerm = $state<string>('');
 	releases = $state<MusicRelease[]>([]);
 	releasesLoaded = $state<boolean>(false);
+	integrations = $state<string[]>(['deezer', 'discogs']);
+	integrationsLoaded = $state<boolean>(false);
 	view = $state<'list' | 'cards' | 'shelf' | 'spine'>('cards');
 	auth = getAuth();
 	apiService: ApiService;
@@ -72,6 +74,17 @@ export class MusicLibrary {
 			this.filteredEntries = this.entries;
 			await this.loadGenres();
 			this.loaded = true;
+		}
+		await this.loadIntegrations();
+	}
+
+	async loadIntegrations(): Promise<void> {
+		if (this.integrationsLoaded) return;
+		this.integrationsLoaded = true;
+		const res = await this.apiService.list(apiRoutes.libraries.music.integrations);
+		const integrations = (res?.data as { integrations?: string[] } | undefined)?.integrations;
+		if (Array.isArray(integrations) && integrations.length > 0) {
+			this.integrations = integrations;
 		}
 	}
 

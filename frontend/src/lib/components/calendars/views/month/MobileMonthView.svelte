@@ -123,7 +123,7 @@
 		class="flex-1 overflow-y-auto border-t border-c-neutral-2 bg-c-bg-surface dark:border-s-dark"
 	>
 		<div
-			class="sticky top-0 z-10 flex items-center justify-between border-b border-c-neutral-1 bg-white px-4 py-2 dark:border-s-dark dark:bg-s-dark-2"
+			class="sticky top-0 z-10 flex items-center justify-between border-b border-c-neutral-1 bg-c-bg-surface px-4 py-2 dark:border-s-dark"
 		>
 			<span class="text-sm font-bold text-c-heading dark:text-c-primary">
 				{formatDate(selectedDate)}

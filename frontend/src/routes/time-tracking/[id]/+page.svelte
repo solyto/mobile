@@ -102,7 +102,7 @@
 {#if project}
 	<div class="flex h-full flex-1 flex-col" in:fade>
 		<div
-			class="flex-shrink-0 border-b border-c-neutral-1 bg-white/80 px-4 py-4 backdrop-blur-sm lg:px-8 dark:border-s-dark-3 dark:bg-s-dark/80"
+			class="flex-shrink-0 border-b border-c-neutral-1 bg-c-bg-surface/80 px-4 py-4 backdrop-blur-sm lg:px-8 dark:border-s-dark-3"
 		>
 			<div class="flex w-full flex-row items-center justify-between">
 				<div class="flex flex-row items-center gap-4">
@@ -156,7 +156,7 @@
 
 		<div class="flex flex-col gap-6 overflow-y-auto p-4 lg:px-8">
 			<div
-				class="flex flex-row items-center gap-2 rounded-md bg-white p-4 shadow-sm dark:bg-s-dark-2"
+				class="flex flex-row items-center gap-2 rounded-md bg-c-bg-surface p-4 shadow-sm"
 			>
 				<span class="text-sm font-medium text-c-neutral-5 dark:text-c-neutral-4">
 					{ts.get.timeTracking.total_time}:

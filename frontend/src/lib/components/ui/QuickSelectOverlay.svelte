@@ -18,7 +18,7 @@
 <div
 	use:clickOutside={onClose}
 	transition:fade={{ duration: 200 }}
-	class="absolute top-0 z-50 flex flex-col gap-2 rounded-lg bg-white drop-shadow-lg dark:bg-s-dark-2 {p !== null ? 'p-' + p : 'p-4'} {className}"
+	class="absolute top-0 z-50 flex flex-col gap-2 rounded-lg bg-c-bg-modal drop-shadow-lg {p !== null ? 'p-' + p : 'p-4'} {className}"
 >
 	{@render children?.()}
 </div>

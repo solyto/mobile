@@ -23,7 +23,7 @@
 
 {#if visible}
 	<div
-		class="absolute z-50 flex flex-col justify-start rounded-lg border-1 border-c-neutral-2 bg-white shadow-md dark:border-s-dark dark:bg-s-dark-2"
+		class="absolute z-50 flex flex-col justify-start rounded-lg border-1 border-c-neutral-2 bg-c-bg-modal shadow-md dark:border-s-dark"
 		style="top: {y}px; left: {x}px;"
 		transition:fade
 		use:clickOutside={() => {

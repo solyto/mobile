@@ -65,7 +65,7 @@
 			<button
 				onclick={() => switchMode(tab)}
 				class="flex-1 rounded-md py-1.5 text-sm font-medium transition-all cursor-pointer"
-				class:bg-white={mode === tab}
+				class:bg-c-bg-elevated={mode === tab}
 				class:text-c-text={mode === tab}
 				class:shadow-xs={mode === tab}
 				class:dark:bg-s-dark-2={mode === tab}

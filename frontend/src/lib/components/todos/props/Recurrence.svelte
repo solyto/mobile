@@ -94,7 +94,7 @@
 
 {#if isOpen}
 	<div
-		class="absolute z-50 mt-1 flex flex-col gap-3 rounded-lg border border-c-neutral-2 bg-white p-4 shadow-lg dark:border-s-dark dark:bg-s-dark-2"
+		class="absolute z-50 mt-1 flex flex-col gap-3 rounded-lg border border-c-neutral-2 bg-c-bg-modal p-4 shadow-lg dark:border-s-dark"
 		role="dialog"
 	>
 		<div class="flex flex-wrap gap-2">

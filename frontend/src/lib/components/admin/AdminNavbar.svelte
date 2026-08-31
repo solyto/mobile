@@ -14,7 +14,7 @@
 	function select(slug: string): void {}
 </script>
 
-<div class="h-full bg-white p-1 dark:bg-s-dark" out:slide>
+<div class="h-full bg-c-bg p-1" out:slide>
 	<div
 		class="flex h-full w-16 flex-col rounded-md p-1 text-c-neutral-8 drop-shadow-xl not-dark:bg-gradient-to-b not-dark:from-c-btn not-dark:to-c-success dark:bg-s-dark-3 dark:text-c-neutral-2"
 	>

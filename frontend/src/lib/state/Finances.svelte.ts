@@ -8,7 +8,7 @@ import type {
 	FinancePage
 } from '$lib/types/finance';
 import { getContext, setContext } from 'svelte';
-import { getAuth } from '$lib/state/Auth.svelte';
+import { getAuth, type Auth } from '$lib/state/Auth.svelte';
 import ApiService from '$lib/services/ApiService';
 import { apiRoutes } from '$lib/config/apiRoutes';
 import { page } from '$app/state';
@@ -20,11 +20,12 @@ export class Finances {
 	expenses = $state<Budget[]>([]);
 	wealth = $state<WealthField[]>([]);
 	activePage = $state<FinancePage>(null);
-	auth = getAuth();
+	auth: Auth;
 	apiService: ApiService;
 
-	constructor() {
-		this.apiService = new ApiService(this.auth.getToken());
+	constructor(auth: Auth = getAuth(), apiService: ApiService = new ApiService(auth.getToken())) {
+		this.auth = auth;
+		this.apiService = apiService;
 		this.activePage = this.getActivePage();
 	}
 

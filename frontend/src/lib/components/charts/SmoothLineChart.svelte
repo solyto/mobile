@@ -10,6 +10,7 @@
 		min,
 		max,
 		filled = false,
+		color = '#61d96a',
 		class: extraClass = 'h-96'
 	} = $props<{
 		title?: string;
@@ -18,12 +19,33 @@
 		min?: number;
 		max?: number;
 		filled?: boolean;
+		color?: string;
 		class?: string;
 	}>();
 
 	let chartContainer = $state<HTMLDivElement | null>(null);
 	let myChart = $state<ECharts | null>(null);
 	let isInitialized = $state<boolean>(false);
+
+	// echarts renders to canvas, so CSS variables like var(--color-c-success) must be
+	// resolved to a concrete color value before being passed to the chart options.
+	function resolveColor(cssColor: string): string {
+		const probe = document.createElement('div');
+		probe.style.color = cssColor;
+		document.body.appendChild(probe);
+		const resolved = getComputedStyle(probe).color;
+		document.body.removeChild(probe);
+		return resolved;
+	}
+
+	function withAlpha(rgb: string, alpha: number): string {
+		// rgb()/rgba() computed value, e.g. "rgb(97, 217, 106)"
+		const match = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+		if (match) {
+			return `rgba(${match[1]}, ${match[2]}, ${match[3]}, ${alpha})`;
+		}
+		return rgb;
+	}
 
 	function createChart() {
 		if (!chartContainer || !categories?.length || !values?.length) return;
@@ -34,6 +56,8 @@
 		}
 
 		myChart = init(chartContainer);
+
+		const lineColor = resolveColor(color);
 
 		const options = {
 			title: {
@@ -63,11 +87,11 @@
 					smooth: true,
 					data: values,
 					itemStyle: {
-						color: '#61d96a'
+						color: lineColor
 					},
 					lineStyle: {
 						width: 2.5,
-						color: '#61d96a'
+						color: lineColor
 					},
 					...(filled
 						? {
@@ -76,8 +100,8 @@
 										type: 'linear',
 										x: 0, y: 0, x2: 0, y2: 1,
 										colorStops: [
-											{ offset: 0, color: 'rgba(97, 217, 106, 0.25)' },
-											{ offset: 1, color: 'rgba(97, 217, 106, 0.02)' }
+											{ offset: 0, color: withAlpha(lineColor, 0.25) },
+											{ offset: 1, color: withAlpha(lineColor, 0.02) }
 										]
 									}
 								}

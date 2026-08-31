@@ -36,7 +36,7 @@
 	</button>
 	{#if menuOpen}
 		<div
-			class="absolute top-0 right-[-10px] z-60 flex flex-col rounded-lg bg-white p-2 shadow-lg dark:bg-s-dark-3"
+			class="absolute top-0 right-[-10px] z-60 flex flex-col rounded-lg bg-c-bg-modal p-2 shadow-lg"
 		>
 			<button
 				class="cursor-pointer rounded-lg p-2 hover:bg-c-neutral dark:hover:bg-s-dark-2"

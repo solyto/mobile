@@ -112,7 +112,7 @@
 							+
 						</button>
 						{#if showCategoryDropdown}
-							<div class="absolute top-8 left-0 z-10 max-h-40 min-w-36 overflow-y-auto rounded-md border-1 border-c-neutral-2 bg-white shadow-md dark:border-s-dark-3 dark:bg-s-dark-2">
+							<div class="absolute top-8 left-0 z-10 max-h-40 min-w-36 overflow-y-auto rounded-md border-1 border-c-neutral-2 bg-c-bg-modal shadow-md dark:border-s-dark-3">
 								{#each availableCategories as cat (cat.id)}
 									<button
 										class="flex w-full cursor-pointer flex-row items-center gap-2 px-3 py-2 text-left text-sm transition-all hover:bg-c-neutral-1 dark:hover:bg-s-dark-3"

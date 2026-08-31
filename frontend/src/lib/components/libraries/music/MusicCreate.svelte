@@ -6,6 +6,7 @@
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
 	import DeezerIcon from '$lib/assets/services/deezer_icon.svg';
 	import DiscogsIcon from '$lib/assets/services/discogs_icon.png';
+	import SpotifyIcon from '$lib/assets/services/spotify_icon.svg';
 	import type {
 		CreateMusicRequest,
 		MusicRelease,
@@ -85,10 +86,46 @@
 		data.option.value = created.id.toString();
 	}
 
-	const importOptions: { label: string; icon: any; onClick: () => void; }[] = [
-		{ label: 'Deezer', icon: DeezerIcon, onClick: () => importFrom('deezer', 'deezer.com', ts.get.libraries.music.deezer_import_validation_error) },
-		{ label: 'Discogs', icon: DiscogsIcon, onClick: () => importFrom('discogs', 'discogs.com', ts.get.libraries.music.discogs_import_validation_error) }
-	];
+	const importDefs: Record<
+		string,
+		{ label: string; icon: any; domain: string; validationError: string }
+	> = {
+		deezer: {
+			label: 'Deezer',
+			icon: DeezerIcon,
+			domain: 'deezer.com',
+			validationError: ts.get.libraries.music.deezer_import_validation_error
+		},
+		discogs: {
+			label: 'Discogs',
+			icon: DiscogsIcon,
+			domain: 'discogs.com',
+			validationError: ts.get.libraries.music.discogs_import_validation_error
+		},
+		spotify: {
+			label: 'Spotify',
+			icon: SpotifyIcon,
+			domain: 'open.spotify.com',
+			validationError: ts.get.libraries.music.spotify_import_validation_error
+		}
+	};
+
+	const importOptions: { label: string; icon: any; onClick: () => Promise<void> }[] = $derived(
+		library.integrations
+			.map((provider) => {
+				const def = importDefs[provider];
+				if (!def) return null;
+				return {
+					label: def.label,
+					icon: def.icon,
+					onClick: () => importFrom(provider, def.domain, def.validationError)
+				};
+			})
+			.filter(
+				(option): option is { label: string; icon: any; onClick: () => Promise<void> } =>
+					option !== null
+			)
+	);
 
 	async function onsubmit(): Promise<void> {
 		if (activeEntry) {

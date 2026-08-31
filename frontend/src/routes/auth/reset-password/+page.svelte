@@ -69,7 +69,7 @@
 
 	{#if invalidLink || failed}
 		<div
-			class="mb-4 flex flex-col gap-4 rounded-lg border-2 border-white/5 bg-white px-8 pt-6 pb-8 shadow-sm md:min-w-80 dark:bg-s-dark-2"
+			class="mb-4 flex flex-col gap-4 rounded-lg border-2 border-white/5 bg-c-bg-surface px-8 pt-6 pb-8 shadow-sm md:min-w-80"
 			in:scale
 		>
 			<p class="text-sm dark:text-white">{ts.get.auth.reset_password_invalid}</p>
@@ -82,7 +82,7 @@
 		</div>
 	{:else if done}
 		<div
-			class="mb-4 flex flex-col gap-4 rounded-lg border-2 border-white/5 bg-white px-8 pt-6 pb-8 shadow-sm md:min-w-80 dark:bg-s-dark-2"
+			class="mb-4 flex flex-col gap-4 rounded-lg border-2 border-white/5 bg-c-bg-surface px-8 pt-6 pb-8 shadow-sm md:min-w-80"
 			in:scale
 		>
 			<p class="text-sm dark:text-white">{ts.get.auth.reset_password_success}</p>
@@ -102,7 +102,7 @@
 		</div>
 	{:else}
 		<form
-			class="mb-4 flex flex-col gap-4 rounded-lg border-2 border-white/5 bg-white px-8 pt-6 pb-8 shadow-sm md:min-w-80 dark:bg-s-dark-2"
+			class="mb-4 flex flex-col gap-4 rounded-lg border-2 border-white/5 bg-c-bg-surface px-8 pt-6 pb-8 shadow-sm md:min-w-80"
 			{onsubmit}
 		>
 			<p class="text-base font-bold dark:text-white">{ts.get.auth.reset_password_title}</p>

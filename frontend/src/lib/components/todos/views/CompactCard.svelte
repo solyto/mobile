@@ -38,7 +38,7 @@
 			<DueDate {todo} reversed={true} />
 		</div>
 	{/if}
-	<div class="shrink-0">
+	<div class="flex shrink-0 items-center">
 		<Checkbox isChecked={todo.is_completed} onchange={(e: Event) => handleCheck(e, todo)} />
 	</div>
 </div>

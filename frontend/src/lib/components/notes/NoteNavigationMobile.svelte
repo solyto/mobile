@@ -10,7 +10,7 @@
 	import AddNoteButton from '$lib/components/notes/AddNoteButton.svelte';
 	import AddFolderButton from '$lib/components/notes/AddFolderButton.svelte';
 	import CloseButton from '$lib/components/ui/buttons/CloseButton.svelte';
-	import FunnelButton from '$lib/components/ui/buttons/FunnelButton.svelte';
+	import HamburgerButton from '$lib/components/ui/buttons/HamburgerButton.svelte';
 
 	const notes = getNotes();
 	const ts = getTranslation();
@@ -41,11 +41,11 @@
 	}
 </script>
 
-<FunnelButton onclick={() => (open = true)} />
+<HamburgerButton onclick={() => (open = true)} />
 
 {#if open}
 	<div
-		class="fixed inset-0 z-50 flex flex-col bg-c-bg sm:hidden dark:bg-s-dark-1"
+		class="secondary-nav-mobile-container-sm fixed inset-0 z-50 flex flex-col bg-c-bg sm:hidden dark:bg-s-dark-1"
 		transition:fly={{ x: -400, duration: 200 }}
 	>
 		<div class="relative flex-1 overflow-hidden">

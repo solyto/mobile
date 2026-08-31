@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>prod: SW + plain img</title>
+<style>
+	body { font-family: system-ui, sans-serif; margin: 24px; background: #fff; color: #111; }
+	h1 { font-size: 22px; margin: 0 0 4px; }
+	p.sub { color: #555; margin: 0 0 16px; }
+	#verdict { font-size: 30px; font-weight: 800; padding: 14px 18px; border-radius: 10px; margin-bottom: 16px; }
+	#verdict.bad { background: #fdecea; color: #b3261e; border: 3px solid #b3261e; }
+	#verdict.good { background: #e6f4ea; color: #1e7b34; border: 3px solid #1e7b34; }
+	#verdict.running { background: #f1f3f4; color: #555; border: 3px solid #999; }
+	.navbar-sim { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; }
+	.entry { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12px; color: #555; }
+	.profile-entry { width: 64px; height: 64px; border-radius: 999px; background: #e5e7eb; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+	.profile-entry img { width: 100%; height: 100%; object-fit: cover; }
+	pre { background: #111; color: #9fe8b5; padding: 14px; border-radius: 10px; font-size: 13px; line-height: 1.5; min-height: 180px; }
+</style>
+</head>
+<body>
+<h1>Run 1 — production service worker + plain &lt;img&gt; (current NavProfileEntry markup)</h1>
+<p class="sub">Cross-origin profile image <code>http://127.0.0.1:8299/storage/user/pic.png</code>; storage request destroyed at socket level once (simulated cold-start).</p>
+<div id="verdict" class="running">running…</div>
+<div class="navbar-sim">
+	<div class="entry"><div class="profile-entry"><img id="pic" alt="Profile" /></div>profile entry</div>
+	<div class="entry"><div class="profile-entry"><img id="ok" alt="control" /></div>same-origin control</div>
+</div>
+<pre id="log"></pre>
+<script>
+	const logEl = document.getElementById('log');
+	const lines = [];
+	function log(line) {
+		lines.push(new Date().toISOString().slice(11, 23) + '  ' + line);
+		logEl.textContent = lines.join('\n');
+	}
+	function finish(state) {
+		const v = document.getElementById('verdict');
+		v.textContent = state;
+		v.className = state.includes('BROKEN') ? 'bad' : 'good';
+		document.title = state;
+		log('VERDICT: ' + state);
+	}
+	navigator.serviceWorker.addEventListener('message', (e) => log('sw   ' + e.data.msg));
+
+	async function boot() {
+		const reg = await navigator.serviceWorker.register('/prod/sw.js', { scope: '/prod/' });
+		await navigator.serviceWorker.ready;
+		if (!navigator.serviceWorker.controller) {
+			await new Promise((r) => navigator.serviceWorker.addEventListener('controllerchange', r, { once: true }));
+		}
+		log('page controlled by service worker');
+		await fetch('http://127.0.0.1:8299/ping', { mode: 'no-cors' });
+		log('api re-armed: next storage request will fail at socket level');
+
+		document.getElementById('ok').src = '/ok.png';
+
+		const img = document.getElementById('pic');
+		img.onload = () => finish('PICTURE LOADED');
+		img.onerror = () => finish('PICTURE BROKEN (no retry, stays broken until reload)');
+		img.src = 'http://127.0.0.1:8299/storage/user/pic.png';
+		log('img   src set — plain <img>, current NavProfileEntry markup');
+	}
+	boot().catch((e) => { log('boot error: ' + e); finish('HARNESS ERROR: ' + e.message); });
+</script>
+</body>
+</html>

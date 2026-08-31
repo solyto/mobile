@@ -2,7 +2,6 @@
 	import { fade } from 'svelte/transition';
 	import { tick } from 'svelte';
 	import { resolve } from '$app/paths';
-	import IconFunnel from '@lucide/svelte/icons/funnel';
 	import IconLayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
 	import IconList from '@lucide/svelte/icons/list';
 	import IconPlus from '@lucide/svelte/icons/plus';
@@ -19,7 +18,7 @@
 	import CloseButton from '$lib/components/ui/buttons/CloseButton.svelte';
 	import TextInput from '$lib/components/forms/TextInput.svelte';
 	import SaveButton from '$lib/components/ui/buttons/SaveButton.svelte';
-	import FunnelButton from '$lib/components/ui/buttons/FunnelButton.svelte';
+	import HamburgerButton from '$lib/components/ui/buttons/HamburgerButton.svelte';
 
 	const tt = getTimeTracking();
 	const ts = getTranslation();
@@ -138,10 +137,10 @@
 	});
 </script>
 
-<FunnelButton onclick={toggleMobile} />
+<HamburgerButton onclick={toggleMobile} />
 
 <div
-	class="absolute z-50 hidden h-full max-h-screen w-full flex-col gap-4 overflow-y-auto bg-c-bg drop-shadow-xl lg:relative lg:flex lg:w-64 lg:shrink-0 lg:p-4 dark:border-r-1 dark:border-s-dark-2 dark:drop-shadow-sm dark:drop-shadow-s-dark-shadow"
+	class="secondary-nav-mobile-container absolute z-50 hidden h-full max-h-screen w-full flex-col gap-4 overflow-y-auto bg-c-bg drop-shadow-xl lg:relative lg:flex lg:w-64 lg:shrink-0 lg:p-4 dark:border-r-1 dark:border-s-dark-2 dark:drop-shadow-sm dark:drop-shadow-s-dark-shadow"
 	in:fade
 	bind:this={navigation}
 >

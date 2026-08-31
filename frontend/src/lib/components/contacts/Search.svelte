@@ -45,7 +45,7 @@
 	<div class="absolute top-6 flex w-full justify-center">
 		<input
 			type="text"
-			class="w-0 rounded-xl border-1 border-c-neutral-2 bg-white text-xl transition-all duration-300 dark:bg-s-dark"
+			class="w-0 rounded-xl border-1 border-c-neutral-2 bg-c-bg-surface text-xl transition-all duration-300"
 			class:w-96={searchVisible}
 			in:fade
 			bind:this={searchInput}

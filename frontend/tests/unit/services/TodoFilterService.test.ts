@@ -47,7 +47,11 @@ const service = new TodoFilterService();
 
 describe('filterByPriority', () => {
 	it('keeps only todos with the matching priority', () => {
-		const todos = [todo({ priority: 'high' }), todo({ priority: 'low' }), todo({ priority: 'high' })];
+		const todos = [
+			todo({ priority: 'high' }),
+			todo({ priority: 'low' }),
+			todo({ priority: 'high' })
+		];
 		expect(service.filterByPriority('high', todos)).toHaveLength(2);
 		expect(service.filterByPriority('low', todos)).toHaveLength(1);
 		expect(service.filterByPriority('medium', todos)).toHaveLength(0);
@@ -82,7 +86,11 @@ describe('filterByEffort', () => {
 
 describe('filterOutBacklog', () => {
 	it('removes backlog todos and keeps the rest', () => {
-		const todos = [todo({ status: 'backlog' }), todo({ status: 'pending' }), todo({ status: 'backlog' })];
+		const todos = [
+			todo({ status: 'backlog' }),
+			todo({ status: 'pending' }),
+			todo({ status: 'backlog' })
+		];
 		expect(service.filterOutBacklog(todos)).toHaveLength(1);
 		expect(service.filterOutBacklog(todos)[0].status).toBe('pending');
 	});
@@ -98,7 +106,11 @@ describe('filterByDueDate', () => {
 	})();
 
 	it('filters by today', () => {
-		const todos = [todo({ due_at: todayStr }), todo({ due_at: '2099-01-01' }), todo({ due_at: '' })];
+		const todos = [
+			todo({ due_at: todayStr }),
+			todo({ due_at: '2099-01-01' }),
+			todo({ due_at: '' })
+		];
 		const result = service.filterByDueDate('today', todos);
 		expect(result).toHaveLength(1);
 		expect(result[0].due_at).toBe(todayStr);
@@ -132,7 +144,11 @@ describe('filterByCategory', () => {
 	it('keeps only todos in the given category', () => {
 		const cat1 = category(1);
 		const cat2 = category(2);
-		const todos = [todo({ category: cat1 }), todo({ category: cat2 }), todo({ category: null })];
+		const todos = [
+			todo({ category: cat1 }),
+			todo({ category: cat2 }),
+			todo({ category: null })
+		];
 		expect(service.filterByCategory(1, todos)).toHaveLength(1);
 		expect(service.filterByCategory(99, todos)).toHaveLength(0);
 	});
@@ -154,7 +170,11 @@ describe('filterByWorkspace', () => {
 		const cat1 = category(1);
 		const cat2 = category(2);
 		const ws = workspace(1, [cat1]);
-		const todos = [todo({ category: cat1 }), todo({ category: cat2 }), todo({ category: null })];
+		const todos = [
+			todo({ category: cat1 }),
+			todo({ category: cat2 }),
+			todo({ category: null })
+		];
 		expect(service.filterByWorkspace(ws, todos)).toHaveLength(1);
 	});
 });
@@ -163,7 +183,11 @@ describe('filterByHideIt', () => {
 	it('hides todos whose category is in a hideable workspace', () => {
 		const cat = category(1);
 		const hideable = workspace(1, [cat], true);
-		const todos = [todo({ category: cat }), todo({ category: category(2) }), todo({ category: null })];
+		const todos = [
+			todo({ category: cat }),
+			todo({ category: category(2) }),
+			todo({ category: null })
+		];
 		const result = service.filterByHideIt(todos, [hideable]);
 		expect(result).toHaveLength(2);
 		expect(result.every((t) => t.category?.id !== 1)).toBe(true);
@@ -195,5 +219,62 @@ describe('filter (dispatch)', () => {
 	it('returns all todos for unknown filter type', () => {
 		// @ts-expect-error testing fallback path
 		expect(service.filter({ type: 'unknown', value: '' }, [todo(), todo()])).toHaveLength(2);
+	});
+});
+
+describe('filterByDueDate (week)', () => {
+	it('keeps only todos due within the current week', () => {
+		// isDateThisWeek uses a Sunday-start week: today - getDay() to +6 days
+		const now = new Date();
+		const startOfWeek = new Date(now);
+		startOfWeek.setDate(now.getDate() - now.getDay());
+		const endOfWeek = new Date(now);
+		endOfWeek.setDate(startOfWeek.getDate() + 6);
+
+		const todos = [
+			todo({ due_at: startOfWeek.toISOString().split('T')[0] }),
+			todo({ due_at: endOfWeek.toISOString().split('T')[0] }),
+			todo({ due_at: '2099-01-01' }),
+			todo({ due_at: '' })
+		];
+
+		expect(service.filterByDueDate('week', todos)).toHaveLength(2);
+	});
+
+	it('routes the week filter through the dispatch method', () => {
+		const now = new Date();
+		const todos = [
+			todo({ due_at: now.toISOString().split('T')[0] }),
+			todo({ due_at: '2099-01-01' })
+		];
+		expect(service.filter({ type: 'due', value: 'week' }, todos)).toHaveLength(1);
+	});
+});
+
+describe('filterCategoriesByHideIt', () => {
+	it('removes categories that belong to a hideable workspace', () => {
+		const cat1 = category(1);
+		const cat2 = category(2);
+		const hideable = workspace(1, [cat1], true);
+		const visible = workspace(2, [cat2], false);
+
+		const result = service.filterCategoriesByHideIt(
+			[cat1, cat2, category(3)],
+			[hideable, visible]
+		);
+		expect(result.map((c) => c.id)).toEqual([2, 3]);
+	});
+
+	it('keeps all categories when no workspace is hideable', () => {
+		const cats = [category(1), category(2)];
+		expect(
+			service.filterCategoriesByHideIt(cats, [workspace(1, [cats[0]], false)])
+		).toHaveLength(2);
+	});
+
+	it('keeps categories not assigned to any hideable workspace', () => {
+		const cat = category(1);
+		const result = service.filterCategoriesByHideIt([cat], [workspace(1, [category(9)], true)]);
+		expect(result.map((c) => c.id)).toEqual([1]);
 	});
 });

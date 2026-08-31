@@ -45,8 +45,16 @@ sw.addEventListener('activate', (event) => {
 sw.addEventListener('fetch', (event) => {
 	const url = new URL(event.request.url);
 
-	// Skip non-GET and API calls
-	if (event.request.method !== 'GET' || url.pathname.startsWith('/api')) return;
+	// Only handle same-origin GETs. Cross-origin resources (e.g. the API's
+	// /storage images) must go straight to the network: they can never be
+	// cached here (opaque responses fail the status-200 guard), and wrapping
+	// them in the synthetic offline response below breaks them for the rest of
+	// the page load whenever their fetch hits a transient error (e.g. cold
+	// browser session).
+	if (event.request.method !== 'GET' || url.origin !== sw.location.origin) return;
+
+	// Skip API calls
+	if (url.pathname.startsWith('/api')) return;
 
 	event.respondWith(
 		(async () => {

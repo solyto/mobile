@@ -41,7 +41,7 @@
 	{/if}
 	{#if menuOpen}
 		<div
-			class="absolute top-10 right-0 z-40 flex max-h-40 w-full flex-col gap-1 overflow-y-auto rounded-lg bg-white p-3 shadow-lg dark:bg-s-dark-3"
+			class="absolute top-10 right-0 z-40 flex max-h-40 w-full flex-col gap-1 overflow-y-auto rounded-lg bg-c-bg-modal p-3 shadow-lg"
 		>
 			{#each availableAddressBooks as a (a.id)}
 				<button

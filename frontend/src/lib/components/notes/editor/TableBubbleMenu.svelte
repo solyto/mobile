@@ -15,7 +15,7 @@
 
 <div bind:this={root} style="position:fixed;top:-9999px;left:-9999px">
 	<div
-		class="flex items-center gap-0.5 rounded-lg border border-c-neutral-2 bg-white px-1.5 py-1 shadow-md dark:border-s-dark dark:bg-s-dark-2"
+		class="flex items-center gap-0.5 rounded-lg border border-c-neutral-2 bg-c-bg-modal px-1.5 py-1 shadow-md dark:border-s-dark"
 	>
 		<button
 			onclick={() => editor?.chain().focus().addRowBefore().run()}

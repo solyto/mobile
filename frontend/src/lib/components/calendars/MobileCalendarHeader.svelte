@@ -63,7 +63,7 @@
 </script>
 
 <div
-	class="flex w-full flex-col gap-2 border-b border-c-neutral-1 bg-white px-3 py-2 lg:hidden dark:border-s-dark dark:bg-s-dark-2"
+	class="flex w-full flex-col gap-2 border-b border-c-neutral-1 bg-c-bg-surface px-3 py-2 lg:hidden dark:border-s-dark"
 >
 	<div class="flex items-center justify-between">
 		<div class="flex items-center gap-1">

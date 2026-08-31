@@ -8,9 +8,8 @@
 	import ManageAddressBooks from '$lib/components/contacts/ManageAddressBooks.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
 	import CloudButton from '$lib/components/ui/buttons/CloudButton.svelte';
-	import IconFunnel from '@lucide/svelte/icons/funnel';
 	import CloseButton from '$lib/components/ui/buttons/CloseButton.svelte';
-	import FunnelButton from '$lib/components/ui/buttons/FunnelButton.svelte';
+	import HamburgerButton from '$lib/components/ui/buttons/HamburgerButton.svelte';
 
 	let editMode = $state<boolean>(false);
 	let navigation = $state<HTMLDivElement | null>(null);
@@ -31,11 +30,11 @@
 	}
 </script>
 
-<FunnelButton onclick={toggleMobile} />
+<HamburgerButton onclick={toggleMobile} />
 
 <div
 	bind:this={navigation}
-	class="absolute top-0 left-0 z-40 hidden h-full max-h-screen w-full flex-col overflow-y-auto bg-c-bg drop-shadow-xl sm:relative sm:flex sm:w-60 dark:border-r-1 dark:border-s-dark-2 dark:drop-shadow-sm dark:drop-shadow-s-dark-shadow"
+	class="secondary-nav-mobile-container-sm absolute top-0 left-0 z-40 hidden h-full max-h-screen w-full flex-col overflow-y-auto bg-c-bg drop-shadow-xl sm:relative sm:flex sm:w-60 dark:border-r-1 dark:border-s-dark-2 dark:drop-shadow-sm dark:drop-shadow-s-dark-shadow"
 	class:lg:w-60={editMode}
 	class:lg:w-80={editMode}
 	in:fade

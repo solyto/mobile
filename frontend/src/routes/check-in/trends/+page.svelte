@@ -115,7 +115,7 @@
 						</p>
 					</div>
 					{#key selectedRange}
-						<div class="rounded-xl bg-white p-4 shadow-sm dark:bg-s-dark-2">
+						<div class="rounded-xl bg-c-bg-surface p-4 shadow-sm">
 							<SmoothLineChart
 								categories={chartData.categories}
 								values={chartData.values}

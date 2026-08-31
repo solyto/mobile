@@ -41,7 +41,7 @@
 	</div>
 	{#if loaded}
 		<div
-			class="mb-4 space-y-4 rounded bg-white px-8 pt-6 pb-8 shadow-md dark:bg-s-dark-2"
+			class="mb-4 space-y-4 rounded bg-c-bg-surface px-8 pt-6 pb-8 shadow-md"
 			in:scale
 		>
 			{#if status || errors.includes('already_verified')}

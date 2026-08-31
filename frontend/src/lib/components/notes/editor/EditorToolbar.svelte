@@ -212,13 +212,13 @@
 {/snippet}
 
 <!-- Desktop: sticky horizontal toolbar -->
-<div class="sticky top-0 z-10 mb-1 hidden flex-wrap items-center gap-0.5 rounded-lg border border-c-neutral-2 bg-white px-3 py-1.5 shadow-sm md:flex dark:border-s-dark dark:bg-s-dark-2">
+<div class="sticky top-0 z-10 mb-1 hidden flex-wrap items-center gap-0.5 rounded-lg border border-c-neutral-2 bg-c-bg-surface px-3 py-1.5 shadow-sm md:flex dark:border-s-dark">
 	{@render toolbarContent()}
 </div>
 
 <!-- Mobile: floating toggle button -->
 <button
-	class="fixed bottom-20 right-3 z-30 flex h-12 w-12 cursor-pointer items-center justify-center rounded-full border border-c-neutral-2 bg-white shadow-lg transition-colors hover:bg-c-neutral md:hidden dark:border-s-dark dark:bg-s-dark-2 dark:hover:bg-s-dark-3"
+	class="fixed bottom-20 right-3 z-30 flex h-12 w-12 cursor-pointer items-center justify-center rounded-full border border-c-neutral-2 bg-c-bg-surface shadow-lg transition-colors hover:bg-c-neutral md:hidden dark:border-s-dark dark:hover:bg-s-dark-3"
 	class:text-s-teal={open}
 	class:text-c-neutral-6={!open}
 	onclick={() => (open = true)}
@@ -230,7 +230,7 @@
 <!-- Mobile: backdrop -->
 {#if open}
 	<div
-		class="fixed right-3 top-20 z-30 flex flex-col items-center gap-0.5 rounded-lg border border-c-neutral-2 bg-white px-1.5 py-2 shadow-xl md:hidden dark:border-s-dark dark:bg-s-dark-2"
+		class="fixed right-3 top-20 z-30 flex flex-col items-center gap-0.5 rounded-lg border border-c-neutral-2 bg-c-bg-surface px-1.5 py-2 shadow-xl md:hidden dark:border-s-dark"
 		transition:fly={{ y: 20 }}
 		use:clickOutside={() => (open = false)}
 	>

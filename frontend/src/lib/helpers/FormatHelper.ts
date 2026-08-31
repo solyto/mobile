@@ -7,3 +7,8 @@ export function nl2br(text: string): string {
 export function markdownToHtml(text: string): string {
 	return marked.parse(text, { async: false });
 }
+
+export function truncate(text: string, maxLength: number): string {
+	if (text.length <= maxLength) return text;
+	return text.slice(0, maxLength).trimEnd() + '...';
+}

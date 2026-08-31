@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { fade } from 'svelte/transition';
-	import IconFunnel from '@lucide/svelte/icons/funnel';
 	import IconPlus from '@lucide/svelte/icons/plus';
 	import IconSearch from '@lucide/svelte/icons/search';
 	import { getFeeds } from '$lib/state/Feeds.svelte';
@@ -8,7 +7,7 @@
 	import Divider from '$lib/components/ui/Divider.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
 	import CloseButton from '$lib/components/ui/buttons/CloseButton.svelte';
-	import FunnelButton from '$lib/components/ui/buttons/FunnelButton.svelte';
+	import HamburgerButton from '$lib/components/ui/buttons/HamburgerButton.svelte';
 
 	const ts = getTranslation();
 	const feeds = getFeeds();
@@ -28,9 +27,9 @@
 	}
 </script>
 
-<FunnelButton onclick={toggleMobile} top={3} />
+<HamburgerButton onclick={toggleMobile} top={3} />
 <div
-	class="absolute z-50 hidden h-full max-h-screen w-full flex-col overflow-y-auto bg-c-bg max-md:pb-20 drop-shadow-xl lg:relative lg:flex lg:w-32 lg:p-2 2xl:w-60 2xl:p-4 dark:drop-shadow-sm dark:drop-shadow-s-dark-shadow"
+	class="secondary-nav-mobile-container absolute z-50 hidden h-full max-h-screen w-full flex-col overflow-y-auto bg-c-bg max-md:pb-20 drop-shadow-xl lg:relative lg:flex lg:w-32 lg:p-2 2xl:w-60 2xl:p-4 dark:drop-shadow-sm dark:drop-shadow-s-dark-shadow"
 	in:fade
 	bind:this={navigation}
 >

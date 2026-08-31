@@ -84,6 +84,10 @@ export interface CreateTodoCategoryRequest {
 	title: string;
 }
 
+export interface UpdateTodoCategoryRequest {
+	title?: string;
+}
+
 export interface TodoNavigationItem {
 	filter: TodoFilter | null;
 	label: string;

@@ -3,6 +3,7 @@
 	import IconClipboardCopy from '@lucide/svelte/icons/clipboard-copy';
 	import IconTrash from '@lucide/svelte/icons/trash-2';
 	import { formatDate } from '$lib/helpers/DateHelper';
+	import { truncate } from '$lib/helpers/FormatHelper';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
@@ -13,6 +14,8 @@
 	const ts = getTranslation();
 	const notifications = getUiNotifications();
 	const loadingIndicator = getLoadingIndicator();
+
+	const MAX_TEXT_PREVIEW_LENGTH = 200;
 
 	async function onCopyText(content: string): Promise<void> {
 		await navigator.clipboard.writeText(content);
@@ -114,7 +117,9 @@
 				<div class="absolute top-[-10px] right-[-10px]">
 					{@render actionButtons(entry)}
 				</div>
-				<p class="pr-16 text-sm">{entry.content}</p>
+				<p class="pr-16 text-sm break-words whitespace-pre-wrap">
+					{truncate(entry.content, MAX_TEXT_PREVIEW_LENGTH)}
+				</p>
 				<div class="mt-2 text-xs text-c-neutral-4">
 					{formatDate(entry.created_at)}
 				</div>

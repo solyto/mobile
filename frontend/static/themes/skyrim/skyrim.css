@@ -125,6 +125,23 @@ body {
 	background: none !important;
 }
 
+/* Secondary navigation overlays (mobile hamburger/funnel menus) — opaque so   */
+/* their entries stay readable over the wallpaper and the content behind them. */
+/* Desktop sidebars (lg: and up, sm: and up for contacts) keep the transparent */
+/* look, matching .nav-desktop-container. Breakpoints mirror Tailwind's        */
+/* lg (64rem) and sm (40rem).                                                  */
+@media (width < 64rem) {
+	.secondary-nav-mobile-container {
+		background-color: rgba(14, 14, 18, 0.9);
+	}
+}
+
+@media (width < 40rem) {
+	.secondary-nav-mobile-container-sm {
+		background-color: rgba(14, 14, 18, 0.9);
+	}
+}
+
 .logo {
 	filter: grayscale(0.7) sepia(0.5) brightness(0.85);
 }

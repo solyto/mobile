@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
 	average,
 	withDecimals,
+	europeanFormat,
 	formatTimeElapsed,
 	withLeadingZero,
 	humanReadableNumber
@@ -68,6 +69,18 @@ describe('withLeadingZero', () => {
 	it('leaves double-digit numbers unchanged', () => {
 		expect(withLeadingZero(10)).toBe('10');
 		expect(withLeadingZero(99)).toBe('99');
+	});
+});
+
+describe('europeanFormat', () => {
+	it('formats as EUR currency with de-DE separators', () => {
+		const result = europeanFormat(1234.5);
+		expect(result).toContain('1.234,50');
+		expect(result).toContain('€');
+	});
+
+	it('formats zero', () => {
+		expect(europeanFormat(0)).toContain('0,00');
 	});
 });
 

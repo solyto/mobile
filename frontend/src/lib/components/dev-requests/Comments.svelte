@@ -55,7 +55,7 @@
 		{#if comments.length > 0}
 			<div class="flex flex-col gap-2" in:blur>
 				{#each comments as comment (comment.id)}
-					<div class="flex flex-col gap-1 rounded bg-white p-3 dark:bg-s-dark-3">
+					<div class="flex flex-col gap-1 rounded bg-c-bg-surface p-3">
 						<div class="flex flex-row items-center gap-2 text-sm">
 							<span class="font-medium">{comment.user.name}</span>
 							<span class="text-c-neutral-4">{formatDate(comment.created_at)}</span>

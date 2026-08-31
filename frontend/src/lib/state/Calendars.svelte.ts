@@ -27,6 +27,8 @@ import {
 import type { Todo, UpdateTodoRequest } from '$lib/types/todo';
 import type { Note } from '$lib/types/note';
 import LocalStorageService from '$lib/services/LocalStorageService';
+import CalendarDragService from '$lib/services/CalendarDragService';
+import type { CalendarDropTarget } from '$lib/services/CalendarDragService';
 
 export class Calendars {
 	static readonly LS_VIEW_KEY: string = 'calendars_view';
@@ -62,8 +64,10 @@ export class Calendars {
 	mobileWeekStart = $state<SvelteDate>(new SvelteDate());
 	shareModal = $state<boolean>(false);
 	shareCalendarTarget = $state<Calendar | null>(null);
+	pendingMove = $state<{ event: CalendarEvent; request: UpdateEventRequest } | null>(null);
 	apiService: ApiService;
 	localStorage = new LocalStorageService();
+	dragService = new CalendarDragService();
 
 	pendingInvites = $derived(this.calendars.filter((c) => c.invite_status === 'pending'));
 	ownedCalendars = $derived(this.calendars.filter((c) => c.invite_status === null));
@@ -377,6 +381,47 @@ export class Calendars {
 		);
 		if (res) await this.loadEvents();
 		return res;
+	}
+
+	/**
+	 * Moves an event to a new date/time (drag & drop). Returns true when the
+	 * move was applied, when it was a no-op (same slot) or when a recurring
+	 * decision is pending (see pendingMove); false when the API call failed.
+	 */
+	async moveEvent(event: CalendarEvent, target: CalendarDropTarget): Promise<boolean> {
+		const request = this.dragService.buildMoveRequest(event, target);
+		if (request === null) return true;
+
+		if (event.is_recurring && event.original_start_date !== null) {
+			this.pendingMove = { event, request };
+			return true;
+		}
+
+		return this.applyEventMove(event, request, false);
+	}
+
+	async applyEventMove(
+		event: CalendarEvent,
+		request: UpdateEventRequest,
+		thisOccurrenceOnly: boolean
+	): Promise<boolean> {
+		if (thisOccurrenceOnly) {
+			return this.updateOccurrence(event, request, event.original_start_date!);
+		}
+		return this.updateEvent(event, request);
+	}
+
+	async resolvePendingMove(thisOccurrenceOnly: boolean): Promise<boolean> {
+		const pending = this.pendingMove;
+		if (!pending) return false;
+
+		const ok = await this.applyEventMove(pending.event, pending.request, thisOccurrenceOnly);
+		this.pendingMove = null;
+		return ok;
+	}
+
+	cancelPendingMove(): void {
+		this.pendingMove = null;
 	}
 
 	async loadEventTodos(eventId: number): Promise<void> {
