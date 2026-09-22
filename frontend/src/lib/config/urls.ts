@@ -12,6 +12,7 @@ export const urls = {
 	home: '/',
 	setup: '/setup',
 	settings: '/settings',
+	notifications: '/notifications',
 	todos: '/todos',
 	notes: '/notes',
 	notesImport: '/notes/import',

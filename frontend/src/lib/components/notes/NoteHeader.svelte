@@ -36,6 +36,8 @@
 		if (res) {
 			notifications.success(ts.get.notes.save_success);
 			lastSaved = new Date();
+		} else {
+			notifications.error(ts.get.notes.save_error);
 		}
 		loadingIndicator.stop();
 	}

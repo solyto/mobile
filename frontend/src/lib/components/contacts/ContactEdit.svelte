@@ -2,6 +2,7 @@
 	import ContentModal from '$lib/components/ui/ContentModal.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
+	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
 	import type { CreateContactForm, CreateContactRequest } from '$lib/types/contact';
 	import TextInput from '$lib/components/forms/TextInput.svelte';
 	import IconMapPinHouse from '@lucide/svelte/icons/map-pin-house';
@@ -23,6 +24,9 @@
 	const contacts = getContacts();
 	const ts = getTranslation();
 	const loadingIndicator = getLoadingIndicator();
+	const notifications = getUiNotifications();
+
+	const canSubmit = $derived(submittable());
 
 	let loadedContactId = $state<string | null>(null);
 
@@ -75,7 +79,16 @@
 		form.email = c.email ? [...c.email] : [];
 	}
 
+	function submittable(): boolean {
+		return form.first_name.trim() !== '' && form.last_name.trim() !== '';
+	}
+
 	async function onsubmit(): Promise<void> {
+		if (!canSubmit) {
+			notifications.error(ts.get.contacts.name_required);
+			return;
+		}
+
 		loadingIndicator.start();
 		const request: CreateContactRequest = {
 			...form,
@@ -88,13 +101,17 @@
 					: null
 		};
 
-		if (contacts.activeContact) {
-			await contacts.update(contacts.activeContact, request);
-		} else {
-			await contacts.create(request);
-		}
+		const res = contacts.activeContact
+			? await contacts.update(contacts.activeContact, request)
+			: await contacts.create(request);
 
 		loadingIndicator.stop();
+
+		if (!res) {
+			notifications.error(ts.get.contacts.save_error);
+			return;
+		}
+
 		form = structuredClone(emptyForm);
 		contacts.closeCreateModal();
 	}
@@ -184,7 +201,7 @@
 			<TextInput placeholder="Notes" multiLine={true} height={80} bind:value={form.note} />
 		</div>
 		<div class="mt-8 flex w-full flex-row items-center justify-end">
-			<TextButton title={ts.get.layout.save} onclick={onsubmit} />
+			<TextButton title={ts.get.layout.save} onclick={onsubmit} disabled={!canSubmit} />
 		</div>
 	</div>
 </ContentModal>

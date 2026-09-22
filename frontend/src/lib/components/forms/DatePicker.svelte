@@ -18,6 +18,7 @@
 	enableFutureDates={true}
 	enablePastDates={true}
 	startOfWeek="1"
+	includeFont={false}
 	bind:isOpen
 	bind:startDate
 	theme="custom-datepicker"

@@ -167,6 +167,10 @@ export class Todos {
 	}
 
 	useFilters(filters: TodoFilter[]): void {
+		// Set before the hide-it guard below (which reads it via
+		// isCategoryFilterActive()/isTagFilterActive()) so that guard reflects
+		// the filters being applied, not the previous selection.
+		this.activeFilters = filters;
 		this.filteredTodos = this.todos;
 
 		const visibilityThreshold = new SvelteDate();
@@ -198,7 +202,6 @@ export class Todos {
 			this.filteredTodos = this.filterService.filter(filter, this.filteredTodos);
 		}
 
-		this.activeFilters = filters;
 		this.filteredTodos = this.sortingService.sort(this.filteredTodos);
 		this.groupByStatus();
 	}

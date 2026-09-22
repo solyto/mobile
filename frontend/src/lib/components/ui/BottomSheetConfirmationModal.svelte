@@ -3,6 +3,7 @@
 	import CloseButton from '$lib/components/ui/buttons/CloseButton.svelte';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
+	import { onMount } from 'svelte';
 
 	const ts = getTranslation();
 
@@ -21,10 +22,36 @@
 		onConfirm: () => void | Promise<any>;
 		onCancel: () => void | Promise<any>;
 	}>();
+
+	// Keyboard-aware bottom offset: when the on-screen keyboard opens on mobile it would
+	// otherwise cover the sheet, so we lift the sheet up by the keyboard height.
+	let keyboardPadding = $state<string>('');
+
+	onMount(() => {
+		const vv = window.visualViewport;
+		if (!vv) return;
+
+		const update = () => {
+			const diff = window.innerHeight - vv.height;
+			// Only lift when the difference clearly comes from the keyboard, ignoring
+			// normal browser chrome and small jitter.
+			keyboardPadding = diff > 60 ? `${diff}px` : '';
+		};
+
+		vv.addEventListener('resize', update);
+		vv.addEventListener('scroll', update);
+		update();
+
+		return () => {
+			vv.removeEventListener('resize', update);
+			vv.removeEventListener('scroll', update);
+		};
+	});
 </script>
 
 <div
 	class="fixed top-0 left-0 z-[60] flex h-dvh w-screen items-end bg-transparent backdrop-blur-xs modal-blur pb-16 2xl:pb-0 overflow-x-hidden"
+	style:padding-bottom={keyboardPadding}
 	in:fly|global={{ y: 400, duration: 350 }}
 	out:fly|global={{ y: 400, duration: 250 }}
 >

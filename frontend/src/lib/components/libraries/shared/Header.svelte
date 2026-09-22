@@ -16,7 +16,7 @@
 	const ts = getTranslation();
 </script>
 
-<div class="relative mb-4 w-full text-right">
+<div class="relative mb-4 w-full">
 	{#if library.config.hasViewSwitcher}
 		<ViewSwitcher {library} />
 	{/if}
@@ -42,5 +42,5 @@
 			<IconPlus />
 		</IconButton>
 	</div>
-	<div class="text-surface-300 mx-2 my-4 text-xs">{library.entries.length} entries</div>
+	<div class="text-surface-300 mx-2 my-4 text-right text-xs">{library.entries.length} entries</div>
 </div>

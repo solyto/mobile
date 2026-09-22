@@ -30,6 +30,8 @@
 	import { getPageFeature, isAuthRoute, isDashboard, isSetupRoute, showNavbar } from '$lib/helpers/NavHelper';
 	import { featureConfig } from '$lib/config/features';
 	import { IS_WEB, IS_DESKTOP } from '$lib/config/platform';
+	import { browser } from '$app/environment';
+	import IconLoaderCircle from '@lucide/svelte/icons/loader-circle';
 
 	let { children } = $props();
 
@@ -54,12 +56,14 @@
 	const quickAdd = getQuickAdd();
 	const nav = getNavigation();
 
+	const canAccessRoute = $derived(auth.loggedIn || isAuthRoute() || isSetupRoute());
+
 	let innerHeight = $state<number>(0);
 
 	onMount(async () => {
 		theme.load();
 
-		if (!auth.loggedIn && !isAuthRoute() && !isSetupRoute()) {
+		if (!canAccessRoute) {
 			if (featureConfig.firstStartupOptions) {
 				await goto(resolve(urls.setup));
 			} else {
@@ -96,15 +100,21 @@
 	{/if}
 	<LoadingIndicator />
 	<Notifications />
-	{#if viewPoint.isDesktop && showNavbar()}
+	{#if viewPoint.isDesktop && showNavbar() && (!browser || canAccessRoute)}
 		<div class="z-[100] hidden h-full 2xl:block">
 			<DesktopNavbar />
 		</div>
 	{/if}
 	<div class="min-h-0 w-full grow overflow-auto content-container">
-		{@render children?.()}
+		{#if !browser || canAccessRoute}
+			{@render children?.()}
+		{:else}
+			<div class="flex h-full w-full items-center justify-center">
+				<IconLoaderCircle class="size-6 animate-spin text-c-btn" />
+			</div>
+		{/if}
 	</div>
-	{#if !viewPoint.isDesktop && showNavbar()}
+	{#if !viewPoint.isDesktop && showNavbar() && (!browser || canAccessRoute)}
 		<div class="z-[100] block h-16 w-full 2xl:hidden">
 			<MobileNavbar />
 		</div>

@@ -1,0 +1,427 @@
+{
+  "url": "http://localhost:5173/auth/dev-preview-search?dark=1",
+  "capturedAt": "2026-08-31T18:41:41.973Z",
+  "options": {
+    "widths": [
+      1280
+    ],
+    "fullPage": false,
+    "describe": false
+  },
+  "prose": [],
+  "measures": [
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "devicePixelRatio": 1,
+      "documentSize": {
+        "scrollWidth": 1280,
+        "scrollHeight": 900,
+        "clientWidth": 1280
+      },
+      "inventory": [
+        {
+          "tag": "span",
+          "classes": [
+            "text-white"
+          ],
+          "text": "Library header (varied background)",
+          "interactive": false,
+          "rect": {
+            "x": 501.5,
+            "y": 68,
+            "width": 244,
+            "height": 24
+          },
+          "fontSize": 16,
+          "fontWeight": "400",
+          "lineHeight": "24px",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)",
+          "backgroundEffective": "rgb(255, 255, 255)",
+          "fontFamily": "Barlow",
+          "zIndex": "auto",
+          "position": "static",
+          "contrast": {
+            "ratio": 1,
+            "aa": false,
+            "aaa": false,
+            "large": false
+          }
+        },
+        {
+          "tag": "button",
+          "classes": [
+            "cursor-pointer"
+          ],
+          "interactive": true,
+          "rect": {
+            "x": 769.5,
+            "y": 68,
+            "width": 24,
+            "height": 24
+          },
+          "fontSize": 16,
+          "fontWeight": "400",
+          "lineHeight": "24px",
+          "color": "oklch(0.278 0.033 256.848)",
+          "background": "rgba(0, 0, 0, 0)",
+          "backgroundEffective": "rgb(255, 255, 255)",
+          "fontFamily": "Barlow",
+          "zIndex": "auto",
+          "position": "static"
+        },
+        {
+          "tag": "input",
+          "classes": [
+            "w-0",
+            "rounded-xl",
+            "border-1",
+            "border-c-neutral-2"
+          ],
+          "interactive": true,
+          "rect": {
+            "x": 454.5,
+            "y": 57,
+            "width": 345,
+            "height": 46
+          },
+          "fontSize": 20,
+          "fontWeight": "400",
+          "lineHeight": "28px",
+          "color": "oklch(0.278 0.033 256.848)",
+          "background": "oklab(0.182203 0.0000082776 0.00000365078 / 0.8)",
+          "backgroundEffective": "rgb(255, 255, 255)",
+          "fontFamily": "Barlow",
+          "zIndex": "auto",
+          "position": "static"
+        },
+        {
+          "tag": "button",
+          "classes": [
+            "z-20",
+            "ml-[-30px]",
+            "cursor-pointer",
+            "text-c-neutral-3"
+          ],
+          "interactive": true,
+          "rect": {
+            "x": 769.5,
+            "y": 57,
+            "width": 24,
+            "height": 46
+          },
+          "fontSize": 16,
+          "fontWeight": "400",
+          "lineHeight": "24px",
+          "color": "oklch(0.872 0.01 258.338)",
+          "background": "rgba(0, 0, 0, 0)",
+          "backgroundEffective": "rgb(255, 255, 255)",
+          "fontFamily": "Barlow",
+          "zIndex": "20",
+          "position": "static"
+        },
+        {
+          "tag": "span",
+          "classes": [
+            "text-white"
+          ],
+          "text": "Contacts header (varied background)",
+          "interactive": false,
+          "rect": {
+            "x": 486.5,
+            "y": 228,
+            "width": 259,
+            "height": 24
+          },
+          "fontSize": 16,
+          "fontWeight": "400",
+          "lineHeight": "24px",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgba(0, 0, 0, 0)",
+          "backgroundEffective": "rgb(255, 255, 255)",
+          "fontFamily": "Barlow",
+          "zIndex": "auto",
+          "position": "static",
+          "contrast": {
+            "ratio": 1,
+            "aa": false,
+            "aaa": false,
+            "large": false
+          }
+        },
+        {
+          "tag": "button",
+          "classes": [
+            "cursor-pointer",
+            "max-md:hidden"
+          ],
+          "interactive": true,
+          "rect": {
+            "x": 769.5,
+            "y": 228,
+            "width": 24,
+            "height": 24
+          },
+          "fontSize": 16,
+          "fontWeight": "400",
+          "lineHeight": "24px",
+          "color": "oklch(0.278 0.033 256.848)",
+          "background": "rgba(0, 0, 0, 0)",
+          "backgroundEffective": "rgb(255, 255, 255)",
+          "fontFamily": "Barlow",
+          "zIndex": "auto",
+          "position": "static"
+        },
+        {
+          "tag": "input",
+          "classes": [
+            "w-0",
+            "rounded-xl",
+            "border-1",
+            "border-c-neutral-2"
+          ],
+          "interactive": true,
+          "rect": {
+            "x": 454.5,
+            "y": 216,
+            "width": 345,
+            "height": 46
+          },
+          "fontSize": 20,
+          "fontWeight": "400",
+          "lineHeight": "28px",
+          "color": "oklch(0.278 0.033 256.848)",
+          "background": "oklab(0.182203 0.0000082776 0.00000365078 / 0.8)",
+          "backgroundEffective": "rgb(255, 255, 255)",
+          "fontFamily": "Barlow",
+          "zIndex": "auto",
+          "position": "static"
+        },
+        {
+          "tag": "button",
+          "classes": [
+            "z-20",
+            "ml-[-30px]",
+            "cursor-pointer",
+            "text-c-neutral-3"
+          ],
+          "interactive": true,
+          "rect": {
+            "x": 769.5,
+            "y": 216,
+            "width": 24,
+            "height": 46
+          },
+          "fontSize": 16,
+          "fontWeight": "400",
+          "lineHeight": "24px",
+          "color": "oklch(0.872 0.01 258.338)",
+          "background": "rgba(0, 0, 0, 0)",
+          "backgroundEffective": "rgb(255, 255, 255)",
+          "fontFamily": "Barlow",
+          "zIndex": "20",
+          "position": "static"
+        }
+      ],
+      "overflow": [
+        {
+          "element": "div.absolute.z-30",
+          "kind": "internal-horizontal-overflow",
+          "detail": "scrollWidth 345 > clientWidth 339 (overflow-x: visible)"
+        },
+        {
+          "element": "div.absolute.top-6",
+          "kind": "internal-horizontal-overflow",
+          "detail": "scrollWidth 345 > clientWidth 339 (overflow-x: visible)"
+        }
+      ],
+      "alignment": [],
+      "spacingScale": [
+        64
+      ],
+      "fonts": {
+        "status": "loaded",
+        "families": [
+          {
+            "family": "Barlow",
+            "loaded": true
+          }
+        ],
+        "fallbacks": []
+      },
+      "overlaps": [
+        {
+          "a": "span.text-white\"Library header (varied background)\"",
+          "b": "div.absolute.z-30",
+          "zA": 0,
+          "zB": 30,
+          "detail": "rects overlap 100% of the smaller (z-index 0 vs 30)"
+        },
+        {
+          "a": "span.text-white\"Library header (varied background)\"",
+          "b": "input.w-0.rounded-xl",
+          "zA": 0,
+          "zB": 0,
+          "detail": "rects overlap 100% of the smaller (z-index 0 vs 0)"
+        },
+        {
+          "a": "button.cursor-pointer",
+          "b": "div.absolute.z-30",
+          "zA": 0,
+          "zB": 30,
+          "detail": "rects overlap 100% of the smaller (z-index 0 vs 30)"
+        },
+        {
+          "a": "button.cursor-pointer",
+          "b": "input.w-0.rounded-xl",
+          "zA": 0,
+          "zB": 0,
+          "detail": "rects overlap 100% of the smaller (z-index 0 vs 0)"
+        },
+        {
+          "a": "button.cursor-pointer",
+          "b": "button.z-20.ml-[-30px]",
+          "zA": 0,
+          "zB": 20,
+          "detail": "rects overlap 100% of the smaller (z-index 0 vs 20)"
+        },
+        {
+          "a": "button.cursor-pointer",
+          "b": "svg",
+          "zA": 0,
+          "zB": 0,
+          "detail": "rects overlap 100% of the smaller (z-index 0 vs 0)"
+        },
+        {
+          "a": "svg",
+          "b": "div.absolute.z-30",
+          "zA": 0,
+          "zB": 30,
+          "detail": "rects overlap 100% of the smaller (z-index 0 vs 30)"
+        },
+        {
+          "a": "svg",
+          "b": "input.w-0.rounded-xl",
+          "zA": 0,
+          "zB": 0,
+          "detail": "rects overlap 100% of the smaller (z-index 0 vs 0)"
+        },
+        {
+          "a": "svg",
+          "b": "button.z-20.ml-[-30px]",
+          "zA": 0,
+          "zB": 20,
+          "detail": "rects overlap 100% of the smaller (z-index 0 vs 20)"
+        },
+        {
+          "a": "svg",
+          "b": "svg",
+          "zA": 0,
+          "zB": 0,
+          "detail": "rects overlap 100% of the smaller (z-index 0 vs 0)"
+        },
+        {
+          "a": "input.w-0.rounded-xl",
+          "b": "button.z-20.ml-[-30px]",
+          "zA": 0,
+          "zB": 20,
+          "detail": "rects overlap 100% of the smaller (z-index 0 vs 20)"
+        },
+        {
+          "a": "input.w-0.rounded-xl",
+          "b": "svg",
+          "zA": 0,
+          "zB": 0,
+          "detail": "rects overlap 100% of the smaller (z-index 0 vs 0)"
+        },
+        {
+          "a": "span.text-white\"Contacts header (varied background)\"",
+          "b": "div.absolute.top-6",
+          "zA": 0,
+          "zB": 0,
+          "detail": "rects overlap 100% of the smaller (z-index 0 vs 0)"
+        },
+        {
+          "a": "span.text-white\"Contacts header (varied background)\"",
+          "b": "input.w-0.rounded-xl",
+          "zA": 0,
+          "zB": 0,
+          "detail": "rects overlap 100% of the smaller (z-index 0 vs 0)"
+        },
+        {
+          "a": "button.cursor-pointer.max-md:hidden",
+          "b": "div.absolute.top-6",
+          "zA": 0,
+          "zB": 0,
+          "detail": "rects overlap 100% of the smaller (z-index 0 vs 0)"
+        },
+        {
+          "a": "button.cursor-pointer.max-md:hidden",
+          "b": "input.w-0.rounded-xl",
+          "zA": 0,
+          "zB": 0,
+          "detail": "rects overlap 100% of the smaller (z-index 0 vs 0)"
+        },
+        {
+          "a": "button.cursor-pointer.max-md:hidden",
+          "b": "button.z-20.ml-[-30px]",
+          "zA": 0,
+          "zB": 20,
+          "detail": "rects overlap 100% of the smaller (z-index 0 vs 20)"
+        },
+        {
+          "a": "button.cursor-pointer.max-md:hidden",
+          "b": "svg",
+          "zA": 0,
+          "zB": 0,
+          "detail": "rects overlap 96% of the smaller (z-index 0 vs 0)"
+        },
+        {
+          "a": "svg",
+          "b": "div.absolute.top-6",
+          "zA": 0,
+          "zB": 0,
+          "detail": "rects overlap 100% of the smaller (z-index 0 vs 0)"
+        },
+        {
+          "a": "svg",
+          "b": "input.w-0.rounded-xl",
+          "zA": 0,
+          "zB": 0,
+          "detail": "rects overlap 100% of the smaller (z-index 0 vs 0)"
+        },
+        {
+          "a": "svg",
+          "b": "button.z-20.ml-[-30px]",
+          "zA": 0,
+          "zB": 20,
+          "detail": "rects overlap 100% of the smaller (z-index 0 vs 20)"
+        },
+        {
+          "a": "svg",
+          "b": "svg",
+          "zA": 0,
+          "zB": 0,
+          "detail": "rects overlap 96% of the smaller (z-index 0 vs 0)"
+        },
+        {
+          "a": "input.w-0.rounded-xl",
+          "b": "button.z-20.ml-[-30px]",
+          "zA": 0,
+          "zB": 20,
+          "detail": "rects overlap 100% of the smaller (z-index 0 vs 20)"
+        },
+        {
+          "a": "input.w-0.rounded-xl",
+          "b": "svg",
+          "zA": 0,
+          "zB": 0,
+          "detail": "rects overlap 100% of the smaller (z-index 0 vs 0)"
+        }
+      ]
+    }
+  ]
+}

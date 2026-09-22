@@ -36,6 +36,7 @@ export interface NavigationRecords {
 	feeds: string;
 	admin: string;
 	notifications: string;
+	notifications_empty: string;
 	calendar: string;
 	contacts: string;
 	clipboard: string;
@@ -357,6 +358,7 @@ export interface NoteRecords {
 	create_note_success: string;
 	create_folder_success: string;
 	save_success: string;
+	save_error: string;
 	import: string;
 	export: string;
 	created_days_ago: string;
@@ -818,6 +820,8 @@ export interface ContactRecords {
 	import_address_books: string;
 	import_contacts: string;
 	import_contacts_running: string;
+	save_error: string;
+	name_required: string;
 }
 
 export interface DavRecords {

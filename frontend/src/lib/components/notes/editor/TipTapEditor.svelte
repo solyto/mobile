@@ -13,11 +13,13 @@
 	import { marked } from 'marked'
 	import { onDestroy, onMount } from 'svelte'
 	import { getNotes } from '$lib/state/Notes.svelte'
+	import { getViewPoint } from '$lib/state/Viewpoint.svelte'
 	import EditorToolbar from './EditorToolbar.svelte'
 	import TableBubbleMenu from './TableBubbleMenu.svelte'
 	import type { ActiveStates } from './EditorToolbar.svelte'
 
 	const notes = getNotes()
+	const viewPoint = getViewPoint()
 
 	let editorDiv = $state<HTMLDivElement | null>(null)
 	let tableBubbleRoot = $state<HTMLDivElement | null>(null)
@@ -36,6 +38,12 @@
 		blockquote: false,
 		link: false
 	})
+
+	// Keyboard-aware bottom padding: on mobile, when the on-screen keyboard opens it
+	// otherwise clips the scrollable editor pane so the caret can't be scrolled into
+	// view. Padding the scroll container by the keyboard height gives it room to do so.
+	let keyboardPadding = $state<string>('')
+	let removeViewportListeners: (() => void) | null = null
 
 	function syncActiveStates() {
 		if (!editor) return
@@ -114,17 +122,35 @@
 		})
 
 		editor = instance
+
+		const vv = window.visualViewport
+		if (vv && viewPoint.isMobile) {
+			const updateKeyboardPadding = () => {
+				const diff = window.innerHeight - vv.height
+				keyboardPadding = diff > 60 ? `${diff}px` : ''
+			}
+
+			vv.addEventListener('resize', updateKeyboardPadding)
+			vv.addEventListener('scroll', updateKeyboardPadding)
+			updateKeyboardPadding()
+
+			removeViewportListeners = () => {
+				vv.removeEventListener('resize', updateKeyboardPadding)
+				vv.removeEventListener('scroll', updateKeyboardPadding)
+			}
+		}
 	})
 
 	onDestroy(() => {
 		editor?.destroy()
 		editor = null
+		removeViewportListeners?.()
 	})
 </script>
 
 <TableBubbleMenu {editor} bind:root={tableBubbleRoot} />
 
-<div class="flex flex-1 flex-col overflow-y-auto">
+<div class="flex flex-1 flex-col overflow-y-auto" style:padding-bottom={keyboardPadding}>
 	{#if editor}
 		<EditorToolbar {editor} {activeStates} />
 	{/if}
@@ -329,7 +355,7 @@
 		}
 
 		:global(.tiptap-editor hr) {
-			border-top-color: var(--color-s-dark, #121212);
+			border-top-color: var(--color-s-dark-3, #2f3741);
 		}
 
 		:global(.tiptap-editor a) {

@@ -60,7 +60,7 @@
 						<div class="flex shrink-0 items-center justify-between border-b border-c-neutral-2 p-4 dark:border-s-dark-3">
 							<span class="text-2xl font-bold">{ts.get.notes.notebook}</span>
 							<div class="flex gap-1">
-								<AddNoteButton onClick={() => notes.openModal('note')} />
+								<AddNoteButton onClick={() => notes.openCreateNoteModal(null)} />
 								<AddFolderButton onClick={() => notes.openModal('category')} />
 								<CloseButton onClick={close} inModal={false} />
 							</div>
@@ -115,7 +115,7 @@
 								<span class="text-xl font-semibold">{current.title}</span>
 							</div>
 							<div class="flex gap-1">
-								<AddNoteButton onClick={() => notes.openModal('note')} />
+								<AddNoteButton onClick={() => notes.openCreateNoteModal(current.id)} />
 								<CloseButton onClick={close} inModal={false} />
 							</div>
 						</div>

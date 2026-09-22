@@ -85,6 +85,58 @@ describe('Todos store', () => {
 			expect(t.filteredTodos.map((x) => x.id)).toEqual(['2']);
 		});
 
+		it('hides backlog todos from hideable workspaces when hide-it is active and the backlog filter is selected', () => {
+			const cat1 = category(1);
+			const cat2 = category(2);
+			const hideable = {
+				id: 1,
+				title: 'Hidden',
+				is_hideable: true,
+				categories: [cat1],
+				created_at: '',
+				updated_at: ''
+			};
+			const t = new Todos();
+			t.workspaces = [hideable];
+			t.hideItActive = true;
+			t.todos = [
+				todo({ id: '1', status: 'backlog', category: cat1 }),
+				todo({ id: '2', status: 'backlog', category: cat2 })
+			];
+
+			t.useFilters([{ type: 'status', value: 'backlog' }]);
+			expect(t.filteredTodos.map((x) => x.id)).toEqual(['2']);
+		});
+
+		it('re-evaluates hide-it against the filters being applied, not the previous selection', () => {
+			// Regression test: selecting a category filter and then switching to
+			// the backlog status filter used to leak hidden-workspace backlog
+			// items through, because the hide-it guard read the stale
+			// this.activeFilters from before the switch.
+			const cat1 = category(1);
+			const cat2 = category(2);
+			const hideable = {
+				id: 1,
+				title: 'Hidden',
+				is_hideable: true,
+				categories: [cat1],
+				created_at: '',
+				updated_at: ''
+			};
+			const t = new Todos();
+			t.workspaces = [hideable];
+			t.hideItActive = true;
+			t.todos = [
+				todo({ id: '1', status: 'backlog', category: cat1 }),
+				todo({ id: '2', status: 'backlog', category: cat2 })
+			];
+
+			t.useFilters([{ type: 'category', value: 2 }]);
+			t.useFilters([{ type: 'status', value: 'backlog' }]);
+
+			expect(t.filteredTodos.map((x) => x.id)).toEqual(['2']);
+		});
+
 		it('keeps only auto-generated todos due within the visibility window', () => {
 			const far = new Date();
 			far.setDate(far.getDate() + 10);

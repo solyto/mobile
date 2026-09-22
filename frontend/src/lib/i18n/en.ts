@@ -64,6 +64,7 @@ const nav: NavigationRecords = {
 	feeds: 'Feeds',
 	admin: 'Admin',
 	notifications: 'Notifications',
+	notifications_empty: "You're all caught up",
 	calendar: 'Calendar',
 	contacts: 'Contacts',
 	clipboard: 'Clipboard',
@@ -377,6 +378,7 @@ const notes: NoteRecords = {
 	create_note_success: 'Note was successfully created.',
 	create_folder_success: 'Folder was successfully created.',
 	save_success: 'Note was successfully saved.',
+	save_error: 'Failed to save note.',
 	import: 'Import',
 	export: 'Export',
 	created_days_ago: 'Created %d days ago',
@@ -835,7 +837,9 @@ const contacts: ContactRecords = {
 	import_create_address_book: 'Creating Address Book %s..',
 	import_address_books: 'Importing Address Books..',
 	import_contacts: 'Import Contacts',
-	import_contacts_running: 'Importing %dcontacts for Address Book %s..'
+	import_contacts_running: 'Importing %dcontacts for Address Book %s..',
+	save_error: 'Failed to save contact.',
+	name_required: 'First and last name are required.'
 };
 
 const dav: DavRecords = {

@@ -61,7 +61,7 @@
 	<div class="absolute z-30 flex w-full justify-center">
 		<input
 			type="text"
-			class="w-0 rounded-xl border-1 border-c-neutral-2 bg-transparent text-xl backdrop-blur-xs transition-all duration-300"
+			class="w-0 rounded-xl border-1 border-c-neutral-2 !bg-c-neutral/60 text-xl backdrop-blur-sm transition-all duration-300 dark:!bg-s-dark/80"
 			class:w-72={inputExpanded}
 			class:md:w-96={inputExpanded}
 			in:fade

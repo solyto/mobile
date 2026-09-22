@@ -64,6 +64,7 @@ const nav: NavigationRecords = {
 	feeds: 'Flux',
 	admin: 'Admin',
 	notifications: 'Notifications',
+	notifications_empty: 'Vous êtes à jour',
 	calendar: 'Calendrier',
 	contacts: 'Contacts',
 	clipboard: 'Presse-papiers',
@@ -376,6 +377,7 @@ const notes: NoteRecords = {
 	create_note_success: 'La note a été créée avec succès.',
 	create_folder_success: 'Le dossier a été créé avec succès.',
 	save_success: 'La note a été enregistrée avec succès.',
+	save_error: 'Échec de l\'enregistrement de la note.',
 	import: 'Importer',
 	export: 'Exporter',
 	created_days_ago: 'Créée il y a %d jours',
@@ -836,7 +838,9 @@ const contacts: ContactRecords = {
 	import_create_address_book: 'Création du carnet d\'adresses %s..',
 	import_address_books: 'Importation des carnets d\'adresses en cours..',
 	import_contacts_running: 'Importation de %d contacts pour le carnet d\'adresses %s…',
-	import_contacts: 'Importer les contacts'
+	import_contacts: 'Importer les contacts',
+	save_error: 'Échec de l\'enregistrement du contact.',
+	name_required: 'Le prénom et le nom sont obligatoires.'
 };
 
 const notifications: NotificationRecords = {

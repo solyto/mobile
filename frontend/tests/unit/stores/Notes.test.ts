@@ -177,6 +177,27 @@ describe('Notes store', () => {
 		});
 	});
 
+	describe('openCreateNoteModal', () => {
+		it('sets the create parent and opens the note modal', async () => {
+			const n = new NotesSvelte();
+			await n.openCreateNoteModal(5);
+
+			expect(n.createParent).toBe(5);
+			expect(n.createType).toBe('note');
+			expect(n.modalOpen).toBe(true);
+		});
+
+		it('clears a stale create parent when given null', async () => {
+			const n = new NotesSvelte();
+			n.createParent = 5;
+			await n.openCreateNoteModal(null);
+
+			expect(n.createParent).toBeNull();
+			expect(n.createType).toBe('note');
+			expect(n.modalOpen).toBe(true);
+		});
+	});
+
 	describe('create', () => {
 		it('does nothing when the input is empty', async () => {
 			const n = new NotesSvelte();

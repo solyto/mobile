@@ -1,20 +1,33 @@
 <script lang="ts">
 	import { fly, scale } from 'svelte/transition';
+	import { onMount, onDestroy } from 'svelte';
 	import IconEllipsisVertical from '@lucide/svelte/icons/ellipsis-vertical';
 	import NavEntry from '$lib/components/ui/NavEntry.svelte';
 	import NavProfileEntry from '$lib/components/ui/NavProfileEntry.svelte';
 	import NavLegalEntry from '$lib/components/ui/NavLegalEntry.svelte';
+	import Badge from '$lib/components/ui/Badge.svelte';
 	import { urls } from '$lib/config/urls';
 	import { navItems, mobileVisibleCount } from '$lib/config/navigation';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import NavEntryIcon from '$lib/components/ui/NavEntryIcon.svelte';
 	import { getPageSlug } from '$lib/helpers/NavHelper';
 	import { getNavigation } from '$lib/state/Navigation.svelte';
+	import { getUserNotifications } from '$lib/state/UserNotifications.svelte';
 
 	const ts = getTranslation();
 	const nav = getNavigation();
+	const userNotifications = getUserNotifications();
 
 	let submenuVisible = $state<boolean>(false);
+	let unreadNotificationCount = $derived(userNotifications.getUnread().length);
+
+	onMount(() => {
+		userNotifications.load();
+	});
+
+	onDestroy(() => {
+		userNotifications.destroy();
+	});
 
 	function select(): void {
 		submenuVisible = false;
@@ -24,6 +37,7 @@
 	const overflowOnlyItems: Record<string, { iconType: string }> = {
 		settings: { iconType: 'settings' },
 		profile: { iconType: 'profile' },
+		notifications: { iconType: 'notifications' },
 	};
 	let activeInOverflow = $derived(
 		nav.mobileOrder.slice(mobileVisibleCount).some((slug) => slug === active) || active in overflowOnlyItems
@@ -66,11 +80,14 @@
 							<NavEntryIcon type={activeOverflowItem.iconType} />
 						</div>
 					{/if}
+					{#if unreadNotificationCount > 0}
+						<div class="absolute right-[-3px] top-[-3px] size-2 rounded-full bg-c-btn-hover shadow-sm"></div>
+					{/if}
 				</div>
 			</button>
 			{#if submenuVisible}
 				<div
-					class="gradient-down absolute z-50 flex w-16 flex-col gap-2 rounded-lg p-1 text-c-neutral-8 shadow-lg dark:text-c-neutral-2"
+					class="gradient-down absolute z-50 flex w-16 max-h-[calc(100dvh-8rem)] flex-col gap-2 overflow-y-auto rounded-lg p-1 text-c-neutral-8 shadow-lg dark:text-c-neutral-2"
 					style="bottom:80px; right:15px;"
 					transition:fly={{ x: 50, duration: 200 }}
 				>
@@ -92,6 +109,26 @@
 					>
 						<NavEntryIcon type="settings" />
 					</NavEntry>
+					<div class="relative">
+						<NavEntry
+							slug="notifications"
+							href={urls.notifications}
+							title={ts.get.nav.notifications}
+							active={active === 'notifications'}
+							mobile={true}
+							onSelect={select}
+						>
+							<NavEntryIcon type="notifications" />
+						</NavEntry>
+						{#if unreadNotificationCount > 0}
+							<Badge
+								i={unreadNotificationCount}
+								color="var(--color-c-btn-hover)"
+								top="-2px"
+								right="-2px"
+							/>
+						{/if}
+					</div>
 					<NavProfileEntry active={active === 'profile'} mobile={true} onSelect={select} />
 					<NavLegalEntry mobile={true} />
 				</div>

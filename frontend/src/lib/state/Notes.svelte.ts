@@ -161,6 +161,11 @@ export class NotesSvelte {
 		this.modalOpen = false;
 	}
 
+	async openCreateNoteModal(parent: number | null): Promise<void> {
+		this.createParent = parent;
+		await this.openModal('note');
+	}
+
 	openRightClickMenu(event: MouseEvent, type: 'note' | 'category', id: number | string): void {
 		event.preventDefault();
 
