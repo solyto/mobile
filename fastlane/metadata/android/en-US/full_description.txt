@@ -30,4 +30,4 @@ Connect to your own self-hosted solyto instance or use solyto.app.
 
 <b>Privacy</b>
 
-No tracking, no analytics, no cookies, no AI, no subscriptions. solyto only contacts external services when you explicitly request it.
+No tracking, no analytics, no cookies, no AI, no subscriptions. Most external services (Deezer, Discogs, Hardcover, Goodreads, Telegram, etc.) are only contacted when you explicitly request it. Weather city search queries OpenStreetMap's Nominatim service (nominatim.openstreetmap.org) directly from your device to look up locations as you type.

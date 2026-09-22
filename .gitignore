@@ -2,3 +2,5 @@ build-src/
 node_modules/
 app-src/
 .env
+.manigot/
+.mcp.json
