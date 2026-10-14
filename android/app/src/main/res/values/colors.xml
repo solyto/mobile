@@ -3,4 +3,8 @@
     <!-- Matches the web app's light and dark background colors. -->
     <color name="solyto_bg_light">#FFFFFF</color>
     <color name="solyto_bg_dark">#121212</color>
+    <!-- Pull-to-refresh spinner: web app surface colour (dark) and accent colours. -->
+    <color name="solyto_surface_dark">#222222</color>
+    <color name="solyto_lightblue">#14A5CD</color>
+    <color name="solyto_green">#61D96A</color>
 </resources>

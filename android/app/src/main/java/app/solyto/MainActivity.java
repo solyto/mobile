@@ -5,18 +5,39 @@ import android.content.res.Configuration;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.view.ViewGroup;
+import android.webkit.WebView;
+import android.widget.FrameLayout;
 import androidx.core.content.ContextCompat;
+import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 import com.getcapacitor.BridgeActivity;
+import com.getcapacitor.WebViewListener;
 
 public class MainActivity extends BridgeActivity {
 
+    // Safety net: hide the spinner even if no page-load callback arrives.
+    private static final long REFRESH_TIMEOUT_MS = 15000;
+
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private final Runnable stopRefreshing = this::finishRefresh;
+    // Where the spinner rests below the top of the WebView (SwipeRefreshLayout's default).
+    private static final int REFRESH_INDICATOR_REST_DP = 64;
+
+    private PullToRefreshLayout swipeRefresh;
+    private int appliedIndicatorTop = 0;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        registerPlugin(PullToRefreshPlugin.class);
         super.onCreate(savedInstanceState);
+        setupPullToRefresh();
         handleShareIntent(getIntent());
         applySystemBarAppearance();
+        styleRefreshIndicator();
     }
 
     @Override
@@ -29,6 +50,114 @@ public class MainActivity extends BridgeActivity {
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
         applySystemBarAppearance();
+        styleRefreshIndicator();
+    }
+
+    /**
+     * Wraps the Capacitor WebView in a SwipeRefreshLayout so pulling down from
+     * the top reloads the page with the standard Material spinner.
+     * PullToRefreshPlugin decides whether a pull may start (see there).
+     *
+     * The WebView is put into an intermediate FrameLayout because Capacitor's
+     * edge-to-edge handling ("adjustMarginsForEdgeToEdge") insets the WebView
+     * via its layout margins, and SwipeRefreshLayout ignores child margins.
+     */
+    private void setupPullToRefresh() {
+        WebView webView = getBridge().getWebView();
+        if (!(webView.getParent() instanceof ViewGroup)) return;
+        ViewGroup parent = (ViewGroup) webView.getParent();
+
+        int index = parent.indexOfChild(webView);
+        ViewGroup.LayoutParams webViewParams = webView.getLayoutParams();
+        parent.removeView(webView);
+
+        FrameLayout container = new FrameLayout(this);
+        container.addView(webView, webViewParams instanceof ViewGroup.MarginLayoutParams
+                ? new FrameLayout.LayoutParams((ViewGroup.MarginLayoutParams) webViewParams)
+                : new FrameLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+        swipeRefresh = new PullToRefreshLayout(this);
+        PullToRefreshPlugin gate = (PullToRefreshPlugin) getBridge()
+                .getPlugin("PullToRefresh").getInstance();
+        swipeRefresh.setGate(new PullToRefreshLayout.Gate() {
+            @Override
+            public void onTouchDown() {
+                gate.onTouchDown();
+            }
+
+            @Override
+            public boolean canContentScrollUp() {
+                return gate.canContentScrollUp(webView);
+            }
+        });
+        swipeRefresh.addView(container, new ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        parent.addView(swipeRefresh, index, new ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+        swipeRefresh.setOnRefreshListener(() -> {
+            mainHandler.removeCallbacks(stopRefreshing);
+            mainHandler.postDelayed(stopRefreshing, REFRESH_TIMEOUT_MS);
+            webView.reload();
+        });
+
+        getBridge().addWebViewListener(new WebViewListener() {
+            @Override
+            public void onPageLoaded(WebView view) {
+                finishRefresh();
+            }
+
+            @Override
+            public void onReceivedError(WebView view) {
+                finishRefresh();
+            }
+        });
+
+        // Keep the spinner below the status bar: under edge-to-edge (Android
+        // 15+) the WebView's top margin is the status bar height.
+        webView.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
+            if (t != ot) v.post(this::applyRefreshIndicatorOffset);
+        });
+
+        // Re-dispatch insets so the WebView gets its edge-to-edge margins in
+        // its new parent.
+        ViewCompat.requestApplyInsets(swipeRefresh);
+    }
+
+    private void finishRefresh() {
+        mainHandler.removeCallbacks(stopRefreshing);
+        if (swipeRefresh != null && swipeRefresh.isRefreshing()) {
+            swipeRefresh.setRefreshing(false);
+        }
+        applyRefreshIndicatorOffset();
+    }
+
+    /** Positions the spinner relative to the top of the WebView. */
+    private void applyRefreshIndicatorOffset() {
+        // setProgressViewOffset() resets the indicator, so never call it while
+        // a refresh is showing; finishRefresh() calls this again afterwards.
+        if (swipeRefresh == null || swipeRefresh.isRefreshing()) return;
+        int top = getBridge().getWebView().getTop();
+        if (top == appliedIndicatorTop) return;
+        appliedIndicatorTop = top;
+
+        int restingDistance = Math.round(
+                REFRESH_INDICATOR_REST_DP * getResources().getDisplayMetrics().density);
+        swipeRefresh.setProgressViewOffset(false,
+                top - swipeRefresh.getProgressCircleDiameter(), top + restingDistance);
+    }
+
+    /** Spinner colours that follow the system light/dark mode. */
+    private void styleRefreshIndicator() {
+        if (swipeRefresh == null) return;
+        boolean darkMode = (getResources().getConfiguration().uiMode
+                & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
+        swipeRefresh.setProgressBackgroundColorSchemeColor(ContextCompat.getColor(
+                this, darkMode ? R.color.solyto_surface_dark : R.color.solyto_bg_light));
+        swipeRefresh.setColorSchemeColors(
+                ContextCompat.getColor(this, R.color.solyto_lightblue),
+                ContextCompat.getColor(this, R.color.solyto_green));
     }
 
     private void handleShareIntent(Intent intent) {
