@@ -19,7 +19,35 @@ Repo: https://github.com/solyto/mobile
 Builds:
   - versionName: 1.0.12
     versionCode: 10012
-    commit: dea6e936a3b0f4f6f47095863e268e426af219e6
+    commit: 114935c396199e08ff296fec5b3de1321c10b5f7
+    subdir: android/app
+    sudo:
+      - apt-get update
+      - apt-get install -y nodejs npm
+    gradle:
+      - yes
+    prebuild: bash ../../scripts/build-fdroid.sh
+    scandelete:
+      - frontend/node_modules
+      - node_modules/@capacitor/cli
+
+  - versionName: 1.0.13
+    versionCode: 10013
+    commit: 99e501bbaafa95528e1dee2815ef204ebf2e3cdb
+    subdir: android/app
+    sudo:
+      - apt-get update
+      - apt-get install -y nodejs npm
+    gradle:
+      - yes
+    prebuild: bash ../../scripts/build-fdroid.sh
+    scandelete:
+      - frontend/node_modules
+      - node_modules/@capacitor/cli
+
+  - versionName: 1.0.15
+    versionCode: 10015
+    commit: a2b4182d0819af8b076782b7f5174c71795185e1
     subdir: android/app
     sudo:
       - apt-get update
@@ -33,5 +61,5 @@ Builds:
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
-CurrentVersion: 1.0.12
-CurrentVersionCode: 10012
+CurrentVersion: 1.0.15
+CurrentVersionCode: 10015
