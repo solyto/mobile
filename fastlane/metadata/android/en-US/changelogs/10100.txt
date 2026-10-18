@@ -1,0 +1,7 @@
+Journal in Notes, with calendar marks for journal entries and check-ins.
+Finance history for budget and wealth items.
+Rearrangeable navigation, new themes (95, XP, Aero) and a Light/Dark/Auto mode.
+Change your password in the app.
+Calendar, todo and time-tracking improvements.
+Pull down to reload.
+For self-hosters: please update your server first.
