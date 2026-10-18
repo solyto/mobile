@@ -4,4 +4,5 @@ Rearrangeable navigation, new themes (95, XP, Aero) and a Light/Dark/Auto mode.
 New todo editor and a Grouped view for your todos.
 Rebuilt recurring events, plus calendar and time-tracking improvements.
 Pull down to reload.
+Several UI improvements.
 For self-hosters: please update your server first.
