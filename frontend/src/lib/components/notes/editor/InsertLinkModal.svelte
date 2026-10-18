@@ -1,23 +1,23 @@
 <script lang="ts">
-	import ConfirmationModal from '$lib/components/ui/ConfirmationModal.svelte'
-	import TextInput from '$lib/components/forms/TextInput.svelte'
-	import { getTranslation } from '$lib/state/Translation.svelte'
+	import ConfirmationModal from '$lib/components/ui/ConfirmationModal.svelte';
+	import TextInput from '$lib/components/forms/TextInput.svelte';
+	import { getTranslation } from '$lib/state/Translation.svelte';
 
 	let {
 		onConfirm,
 		onCancel,
 		initialName = ''
 	}: { onConfirm: (url: string, name: string) => void; onCancel: () => void; initialName?: string } =
-		$props()
+		$props();
 
-	const ts = getTranslation()
+	const ts = getTranslation();
 
-	let urlValue = $state('')
-	let nameValue = $state(initialName)
+	let urlValue = $state('');
+	let nameValue = $state(initialName);
 
 	function confirm() {
 		if (urlValue.trim()) {
-			onConfirm(urlValue.trim(), nameValue.trim())
+			onConfirm(urlValue.trim(), nameValue.trim());
 		}
 	}
 </script>

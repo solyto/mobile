@@ -5,7 +5,7 @@
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
 	import NoteTags from '$lib/components/notes/NoteTags.svelte';
-	import { getKeyManager } from '$lib/KeyManager.svelte';
+	import { getKeyManager } from '$lib/state/KeyManager.svelte';
 	import { onDestroy, onMount, tick } from 'svelte';
 	import IconStar from '@lucide/svelte/icons/star';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
@@ -20,17 +20,33 @@
 	const notifications = getUiNotifications();
 	const keyManager = getKeyManager();
 
+	let { isJournal = false }: {
+		isJournal?: boolean;
+	} = $props();
+
 	let changeTitle = $state<boolean>(false);
 	let titleInput = $state<HTMLInputElement | null>(null);
 	let titleValue = $state<string>(notes.activeNote!.title);
 	let lastSaved = $state<Date | null>(null);
-	let keyHandlers = $state<{ [key: string]: string | null }>({
+	let keyHandlers: { [key: string]: string | null } = {
 		CtrlS: null,
 		Enter: null,
 		Escape: null
-	});
+	};
+
+	let isDraft = $derived(notes.isJournalDraft(notes.activeNote));
+
+	function journalTitle(): string {
+		const date = notes.journalService.parseEntryTitle(notes.activeNote!.title);
+
+		return date === null ? 
+			notes.activeNote!.title :
+			`${ts.get.notes.journal}: ${auth.getDateInUserPreferredFormat(date)}`;
+	}
 
 	async function saveNote() {
+		if (isDraft && !notes.journalService.hasContent(notes.activeNote!.content)) return;
+
 		loadingIndicator.start();
 		const res = await notes.saveContent();
 		if (res) {
@@ -102,12 +118,12 @@
 		deleteModalOpen = false;
 	}
 
-	onMount(
-		() =>
-			(keyHandlers.CtrlS = keyManager.registerKeyDown('s', saveNote, {
-				withHelperKey: 'Control'
-			}))
-	);
+	onMount(() => {
+		keyHandlers.CtrlS = keyManager.registerKeyDown('s', saveNote, {
+			withHelperKey: 'Control'
+		});
+	});
+
 	onDestroy(() => keyManager.unregisterAll(keyHandlers));
 </script>
 
@@ -115,7 +131,9 @@
 	<div class="relative flex flex-col gap-1 max-md:pt-18">
 		<div class="flex flex-row items-start gap-4">
 			<div class="flex min-w-0 flex-1 flex-col gap-0.5">
-				{#if changeTitle}
+				{#if isJournal}
+					<h1 class="text-left text-3xl leading-tight">{journalTitle()}</h1>
+				{:else if changeTitle}
 					<input
 						type="text"
 						class="text-xl font-bold dark:bg-s-dark-3 dark:text-white"
@@ -124,7 +142,11 @@
 						bind:value={titleValue}
 					/>
 				{:else}
-					<button type="button" class="text-3xl font-bold leading-tight text-left" ondblclick={toggleChangeTitle}>
+					<button
+						type="button"
+						class="text-left text-3xl leading-tight"
+						ondblclick={toggleChangeTitle}
+					>
 						{notes.activeNote.title}
 					</button>
 				{/if}
@@ -134,28 +156,42 @@
 					</span>
 				{/if}
 			</div>
-			<div class="flex shrink-0 items-center gap-3 pt-1 max-md:absolute max-md:top-0 max-md:right-0">
-				<button
-					class="flex cursor-pointer items-center justify-center rounded-sm p-1.5 transition-all hover:bg-c-neutral dark:hover:bg-s-dark-3"
-					class:text-c-action={notes.activeNote.is_favorite}
-					class:text-c-neutral-4={!notes.activeNote.is_favorite}
-					title={notes.activeNote.is_favorite
-						? ts.get.notes.remove_from_favorites
-						: ts.get.notes.add_to_favorites}
-					onclick={async () => {
-						changeFavoriteStatus(notes.activeNote!);
-					}}
-				>
-					<IconStar
-						size={16}
-						fill={notes.activeNote.is_favorite ? 'currentColor' : 'none'}
+			<div
+				class="flex shrink-0 items-center gap-3 pt-1 max-md:absolute max-md:top-0 max-md:right-0"
+			>
+				{#if !isJournal}
+					<button
+						class="flex cursor-pointer items-center justify-center rounded-sm p-1.5 transition-all hover:bg-c-neutral dark:hover:bg-s-dark-3"
+						class:text-c-action={notes.activeNote.is_favorite}
+						class:text-c-neutral-4={!notes.activeNote.is_favorite}
+						title={notes.activeNote.is_favorite
+							? ts.get.notes.remove_from_favorites
+							: ts.get.notes.add_to_favorites}
+						onclick={async () => {
+							changeFavoriteStatus(notes.activeNote!);
+						}}
+					>
+						<IconStar
+							size={16}
+							fill={notes.activeNote.is_favorite ? 'currentColor' : 'none'}
+						/>
+					</button>
+				{/if}
+				{#if !isDraft}
+					<DeleteButton
+						onClick={() => {
+							deleteModalOpen = true;
+						}}
+						inModal={false}
+						buttonStyle="plain"
 					/>
-				</button>
-				<DeleteButton onClick={() => { deleteModalOpen = true; }} inModal={false} buttonStyle="plain" />
+				{/if}
 				<TextButton title={ts.get.layout.save} onclick={saveNote} />
 			</div>
 		</div>
-		<NoteTags />
+		{#if !isDraft}
+			<NoteTags />
+		{/if}
 	</div>
 {/if}
 
@@ -165,6 +201,8 @@
 		description={ts.get.notes.delete_confirm_message}
 		type="confirm-delete"
 		onConfirm={onDeleteConfirm}
-		onCancel={() => { deleteModalOpen = false; }}
+		onCancel={() => {
+			deleteModalOpen = false;
+		}}
 	/>
 {/if}

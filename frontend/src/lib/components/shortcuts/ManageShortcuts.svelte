@@ -9,7 +9,7 @@
 	import TextInput from '$lib/components/forms/TextInput.svelte';
 	import SaveButton from '$lib/components/ui/buttons/SaveButton.svelte';
 	import AddButton from '$lib/components/ui/buttons/AddButton.svelte';
-	import { getKeyManager } from '$lib/KeyManager.svelte';
+	import { getKeyManager } from '$lib/state/KeyManager.svelte';
 	import { onDestroy, tick } from 'svelte';
 	import { dndzone } from 'svelte-dnd-action';
 	import { flip } from 'svelte/animate';
@@ -20,15 +20,11 @@
 	const shortcuts = getShortcuts();
 	const keyManager = getKeyManager();
 
-	let { onClose } = $props<{ onClose: () => void }>();
+	let { onClose }: { onClose: () => void } = $props();
 
 	const flipDurationMs = 200;
-	let items = $state<Shortcut[]>([]);
+	let items = $derived<Shortcut[]>(shortcuts.shortcuts);
 	let dragDisabled = $state(true);
-
-	$effect(() => {
-		items = shortcuts.shortcuts;
-	});
 
 	function handleConsider(e: CustomEvent) {
 		items = e.detail.items;
@@ -44,7 +40,7 @@
 	let titleValue = $state<string>('');
 	let urlValue = $state<string>('');
 	let titleInput = $state<HTMLInputElement | null>(null);
-	let keyHandlers = $state<{ Enter: string | null; Escape: string | null }>({ Enter: null, Escape: null });
+	let keyHandlers: { Enter: string | null; Escape: string | null } = { Enter: null, Escape: null };
 
 	onDestroy(() => keyManager.unregisterAll(keyHandlers));
 
@@ -94,7 +90,7 @@
 				<div class="flex items-center gap-1" animate:flip={{ duration: flipDurationMs }}>
 					<IconGripVertical
 						size={16}
-						class="shrink-0 cursor-grab text-c-neutral-3"
+						class="shrink-0 cursor-grab touch-none text-c-neutral-3"
 						onpointerdown={() => (dragDisabled = false)}
 						onpointerup={() => (dragDisabled = true)}
 					/>

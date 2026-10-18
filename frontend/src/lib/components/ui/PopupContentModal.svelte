@@ -1,13 +1,18 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	import { fade, blur, scale } from 'svelte/transition';
 	import CloseButton from '$lib/components/ui/buttons/CloseButton.svelte';
 	import EditButton from '$lib/components/ui/buttons/EditButton.svelte';
 	import DeleteButton from '$lib/components/ui/buttons/DeleteButton.svelte';
+	import AcceptButton from '$lib/components/ui/buttons/AcceptButton.svelte';
+	import ModalTitle from '$lib/components/ui/ModalTitle.svelte';
 
 	let {
 		onClose,
 		onEdit,
 		onDelete,
+		onComplete,
+		onRename,
 		children,
 		small = false,
 		rounded = null,
@@ -17,11 +22,13 @@
 		transparent = false,
 		higherZIndex = false,
 		showTitleOnMobile = false
-	} = $props<{
+	}: {
 		onClose?: () => void | Promise<void>;
 		onEdit?: () => void | Promise<void>;
 		onDelete?: () => void | Promise<void>;
-		children?: any;
+		onComplete?: (event?: MouseEvent) => void | Promise<void>;
+		onRename?: (title: string) => Promise<boolean>;
+		children?: Snippet;
 		small?: boolean;
 		rounded?: string | null;
 		p?: string;
@@ -30,7 +37,7 @@
 		transparent?: boolean;
 		higherZIndex?: boolean;
 		showTitleOnMobile?: boolean;
-	}>();
+	} = $props();
 </script>
 
 <div
@@ -51,15 +58,18 @@
 				class:top-3={transparent}
 				class:left-15={transparent}
 			>
-				{title}
+				<ModalTitle {title} {onRename} />
 			</div>
 		{/if}
-		{#if onClose || onEdit || onDelete}
+		{#if onClose || onEdit || onComplete || onDelete}
 			{#if onClose}
 				<CloseButton onClick={onClose} />
 			{/if}
 			{#if onEdit}
 				<EditButton onClick={onEdit} />
+			{/if}
+			{#if onComplete}
+				<AcceptButton onClick={onComplete} inModal />
 			{/if}
 			{#if onDelete}
 				<DeleteButton onClick={onDelete} />
@@ -81,9 +91,9 @@
 			class:dark:shadow-s-dark-shadow={!transparent}
 			in:scale|global={{ start: 0.75 }}
 		>
-			{#if showTitleOnMobile}
+			{#if showTitleOnMobile && title}
 				<div class="text-2xl font-bold tracking-wide text-c-heading dark:text-c-primary md:hidden mb-6">
-					{title}
+					<ModalTitle {title} {onRename} />
 				</div>
 			{/if}
 			{@render children?.()}
@@ -91,4 +101,4 @@
 	</div>
 </div>
 
-<!-- md:rounded-lg md:rounded-xl md:rounded-2xl md:w-60 md:w-72 md:w-96 md:w-2xl md:w-3xl md:w-4xl p-8 p-10 p-12 p-16 -->
+<!-- md:rounded-lg md:rounded-xl md:rounded-2xl md:w-60 md:w-72 md:w-96 md:w-2xl md:w-3xl md:w-4xl md:p-6 p-8 p-10 p-12 p-16 -->

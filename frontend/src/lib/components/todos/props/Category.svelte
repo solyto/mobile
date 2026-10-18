@@ -2,7 +2,7 @@
 	import type { Todo } from '$lib/types/todo';
 	import { getTodos } from '$lib/state/Todos.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
-	import { getKeyManager } from '$lib/KeyManager.svelte';
+	import { getKeyManager } from '$lib/state/KeyManager.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import { onDestroy, tick } from 'svelte';
 	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
@@ -15,15 +15,17 @@
 	const loadingIndicator = getLoadingIndicator();
 	const notifications = getUiNotifications();
 
-	let { todo } = $props<{
+	let { todo, readonly = false, hoverReveal = false }: {
 		todo: Todo;
-	}>();
+		readonly?: boolean;
+		hoverReveal?: boolean;
+	} = $props();
 
 	let addCategoryVisible = $state<boolean>(false);
 	let addCategoryInput = $state<HTMLInputElement | null>(null);
 	let addCategoryTitle = $state<string>('');
 	let autocompleteOpen = $state<boolean>(false);
-	let keyHandlers = $state<{ [key: string]: string | null }>({ Enter: null, Escape: null });
+	let keyHandlers: { [key: string]: string | null } = { Enter: null, Escape: null };
 
 	async function toggleAddCategories(): Promise<void> {
 		addCategoryVisible = !addCategoryVisible;
@@ -96,7 +98,7 @@
 	}
 </script>
 
-{#if addCategoryVisible}
+{#if addCategoryVisible && !readonly}
 	<div class="w-32 {todos.view === 'kanban' ? 'px-2 py-1 text-xs' : ''}">
 		<InputAutocomplete
 			bind:input={addCategoryInput}
@@ -110,28 +112,34 @@
 {:else}
 	<div class="flex flex-row gap-1">
 		{#if todo.category}
-			<div class="group relative">
-				<button
-					type="button"
-					class="cursor-pointer bg-c-neutral-1 px-2 py-1 text-xs font-semibold dark:bg-c-neutral-7 dark:text-white"
-					onclick={toggleAddCategories}
-				>
+			{#if readonly}
+				<div class="bg-c-neutral-1 px-2 py-1 text-xs dark:bg-c-neutral-7 dark:text-white">
 					/{todo.category.title}
-				</button>
-				<button
-					class="absolute top-[-14px] right-[-14px] z-40 hidden size-[20px] cursor-pointer items-center justify-center rounded-full bg-c-danger text-white drop-shadow-md transition-all group-hover:flex hover:text-c-heading hover:drop-shadow-xl"
-					onclick={onRemove}
-				>
-					<IconTrash class="size-3" />
-				</button>
-			</div>
-		{:else}
+				</div>
+			{:else}
+				<div class="group relative">
+					<button
+						type="button"
+						class="cursor-pointer bg-c-neutral-1 px-2 py-1 text-xs dark:bg-c-neutral-7 dark:text-white"
+						onclick={toggleAddCategories}
+					>
+						/{todo.category.title}
+					</button>
+					<button
+						class="absolute top-[-14px] right-[-14px] z-40 hidden size-[20px] cursor-pointer items-center justify-center rounded-full bg-c-danger text-white drop-shadow-md transition-all group-hover:flex hover:text-c-heading hover:drop-shadow-xl"
+						onclick={onRemove}
+					>
+						<IconTrash class="size-3" />
+					</button>
+				</div>
+			{/if}
+		{:else if !readonly}
 			<button
 				class="cursor-pointer text-xs text-c-neutral-4 transition-all hover:text-c-neutral-7 dark:hover:text-white"
-				class:opacity-0={todos.view === 'list'}
-				class:group-hover:opacity-100={todos.view === 'list'}
-				class:ml-2={todos.view === 'list'}
-				onclick={toggleAddCategories}>+ {ts.get.todos.add_category}</button
+				class:opacity-0={hoverReveal}
+				class:group-hover:opacity-100={hoverReveal}
+				class:ml-2={hoverReveal}
+				onclick={toggleAddCategories}>+ {ts.get.todos.category}</button
 			>
 		{/if}
 	</div>

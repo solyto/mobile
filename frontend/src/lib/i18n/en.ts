@@ -25,7 +25,8 @@ import type {
 	CookieConsentRecords,
 	TimeTrackingRecords,
 	QuickAddRecords,
-	SetupRecords
+	SetupRecords,
+	UpdateRequiredRecords
 } from '$lib/types/translation';
 
 const layout: LayoutRecords = {
@@ -45,7 +46,10 @@ const layout: LayoutRecords = {
 	legal_notice: 'Legal Notice',
 	privacy_policy: 'Privacy Policy',
 	terms_of_service: 'Terms of Service',
-	reload: 'Reload'
+	reload: 'Reload',
+	remove: 'Remove',
+	rename: 'Rename',
+	network_error: 'Connection problem. Please check your connection and try again.'
 };
 
 const nav: NavigationRecords = {
@@ -123,7 +127,8 @@ const auth: AuthRecords = {
 	no_account: "Don't have an account?",
 	register_link: 'Create account',
 	have_account: 'Already have an account?',
-	open_in_app: 'Open in App'
+	open_in_app: 'Open in App',
+	session_expired: 'Your session expired. Please sign in again.'
 };
 
 const home: HomeRecords = {
@@ -148,14 +153,8 @@ const settings: SettingsRecords = {
 	german: 'German',
 	french: 'French',
 	spanish: 'Spanish',
-	todos: 'Todos',
 	tags: 'Tags',
 	new_tag: 'New Tag',
-	categories: 'Categories',
-	new_category: 'New Category',
-	rename_category: 'Rename Category',
-	workspaces: 'Workspaces',
-	new_workspace: 'New Workspace',
 	localization: 'Localization',
 	language: 'Language',
 	integrations: 'Integrations',
@@ -169,11 +168,16 @@ const settings: SettingsRecords = {
 	nextcloud: 'Nextcloud',
 	widgets: 'Widgets',
 	ai: 'AI',
+	plugins: 'Plugins',
 	telegram_bot: 'Telegram Bot',
 	telegram_bot_notifications: 'Telegram Bot Notifications',
 	enable_telegram_bot_notifications: 'Enable Telegram Bot Notifications',
-	openai_token: 'OpenAI Token',
 	features: 'Features',
+	navigation_order_desktop: 'Desktop',
+	navigation_order_mobile: 'Mobile',
+	navigation_order_hint: 'Choose which features you use and drag to set their order in the navigation.',
+	navigation_order_more_menu: 'In the "more" menu',
+	navigation_order_reset: 'Reset to default',
 	timezone: 'Timezone',
 	date_format: 'Date Format',
 	time_format: 'Time Format',
@@ -199,6 +203,7 @@ const settings: SettingsRecords = {
 	export_rate_limited: 'You can only export once every 24 hours.',
 	export_next_available: 'Next export available in',
 	export_expired: 'Export has expired.',
+	export_download_failed: 'Download failed.',
 	export_expires_at: 'Expires at',
 	export_no_exports: 'No exports yet.',
 	security: 'Security',
@@ -214,36 +219,81 @@ const settings: SettingsRecords = {
 	passkey_last_used: 'Last used',
 	passkey_never_used: 'Never used',
 	passkey_no_passkeys: 'No passkeys registered yet.',
+	change_password: 'Change password',
+	current_password: 'Current password',
+	new_password: 'New password',
+	confirm_new_password: 'Confirm new password',
+	change_password_submit: 'Change password',
+	current_password_required: 'Please enter your current password.',
+	current_password_incorrect: 'The current password is incorrect.',
+	new_password_same_as_current: 'The new password must be different from your current password.',
+	password_changed: 'Password changed. Please sign in again with your new password.',
+	password_change_error: 'Failed to change password.',
+	no_tags: 'You have no tags yet.',
 	theme: 'Theme',
 	animations: 'Animations',
-	animations_label: 'Enable animations and transitions'
+	animations_label: 'Enable animations and transitions',
+	flat_navigation: 'Navigation bar',
+	flat_navigation_label: 'Flat bar along the window edge',
+	bottom_navigation_label: 'Show the bar at the bottom on desktop',
+	appearance: 'Appearance',
+	color_mode: 'Color Mode',
+	appearance_system: 'Auto',
+	appearance_light: 'Light',
+	appearance_dark: 'Dark',
+	calendar_life_marks: 'Journal & Calendar Marks',
+	journal_enabled: 'Enable journal',
+	journal_calendar_mark: 'Journal mark in calendar',
+	check_in_calendar_mark: 'Check-in mark in calendar',
+	ai_plugin_description: 'Bring your own provider and API key. AI recommendations for books and music use these settings.',
+	ai_plugin_enabled: 'Enable AI features',
+	ai_plugin_provider: 'Provider',
+	ai_plugin_select_provider: 'Select a provider',
+	ai_plugin_model: 'Model',
+	ai_plugin_select_model: 'Select a model',
+	ai_plugin_model_unavailable: 'The model you chose is no longer available. Please pick a new one.',
+	ai_plugin_api_key: 'API key',
+	ai_plugin_api_key_placeholder: 'Paste your API key',
+	ai_plugin_api_key_replace_placeholder: 'Enter a new key to replace the stored one',
+	ai_plugin_api_key_stored: 'An API key is stored. Leave the field empty to keep it.',
+	ai_plugin_api_key_required: 'An API key is required to save the AI settings.',
+	ai_plugin_saved: 'AI settings saved.',
+	ai_plugin_save_error: 'AI settings could not be saved.',
+	ai_plugin_load_error: 'AI settings could not be loaded.'
 };
 
 const todos: TodoRecords = {
 	all_todos: 'All Todos',
 	new_todo: 'New Todo',
+	title: 'Title',
 	enter_todo: 'Enter Todo',
 	no_todos: 'No Todos found.',
 	no_todos_desc: 'Press Enter to add one.',
 	tags: 'Tags',
-	add_tag: 'Add Tag',
+	tag: 'Tag',
 	tag_error: 'Tag does not exist',
+	category: 'Category',
 	categories: 'Categories',
 	category_error: 'Category does not exist',
-	add_category: 'Add Category',
 	workspaces: 'Workspaces',
 	workspace_hide_it: 'Hide It',
-	workspace_hide_it_description: 'Available in Hide It',
+	new_category: 'New Category',
+	rename_category: 'Rename Category',
+	no_categories: 'You have no categories yet.',
+	new_workspace: 'New Workspace',
+	no_workspaces: 'You have no workspaces yet.',
+	workspaces_help: 'Workspaces group your categories, for example one workspace for your private life and one for work. Select a workspace in the sidebar to see only its todos.\n\nHide It: make a workspace available in Hide It, then turn on Hide It on the todos page, and all of that workspace\'s todos vanish. For example, hide everything work-related to focus on your private life.',
 	priority: 'Priority',
 	priority_high: 'High',
 	priority_medium: 'Medium',
 	priority_low: 'Low',
 	due_at: 'Due at',
+	due_date: 'Due Date',
 	due_today: 'Today',
 	due_tomorrow: 'Tomorrow',
 	due_week: 'This week',
 	due_overdue: 'Overdue',
-	add_due_at: 'Add due date',
+	add_due_at: 'Date',
 	status: 'Status',
 	status_pending: 'Pending',
 	status_in_progress: 'In Progress',
@@ -263,11 +313,12 @@ const todos: TodoRecords = {
 	view_kanban: 'Kanban',
 	view_overview: 'Overview',
 	view_card: 'Card',
+	view_grouped: 'Grouped',
 	uncategorized: 'Uncategorized',
 	delete_confirm_label: 'Delete Todo',
 	delete_confirm_message: 'Are you sure you want to delete this Todo?',
 	add_subtask: 'Add Subtask',
-	sort_by_score: 'Sort by Smart Score',
+	sort_by_score: 'Smart Score',
 	no_description: 'No description',
 	recurrence: 'Recurrence',
 	recurrence_daily: 'Daily',
@@ -276,10 +327,16 @@ const todos: TodoRecords = {
 	recurrence_yearly: 'Yearly',
 	recurrence_ends_at: 'Ends at',
 	add_recurrence: 'Add recurrence',
-	remove_recurrence: 'Remove recurrence',
 	recurrence_requires_due: 'Set a due date first',
+	recurrence_every: 'Every',
+	recurrence_unit_daily: 'day(s)',
+	recurrence_unit_weekly: 'week(s)',
+	recurrence_unit_monthly: 'month(s)',
+	recurrence_unit_yearly: 'year(s)',
+	recurrence_unit_fallback: 'occurrence(s)',
 	link: 'Link',
 	no_link: 'No link',
+	open_link: 'Open link',
 	add_link: 'Add link'
 };
 
@@ -312,7 +369,11 @@ const checkIn: CheckInRecords = {
 	sport_yoga: 'Yoga',
 	sport_replace_with: 'Replace with...',
 	score: 'Score',
-	score_description: 'Build an average score for this type (also counts towards the total score)'
+	score_description: 'Build an average score for this type (also counts towards the total score)',
+	range_30_days: '30 Days',
+	range_3_months: '3 Months',
+	range_6_months: '6 Months',
+	range_all: 'All'
 };
 
 const checkInSummary: CheckInSummaryRecords = {
@@ -321,7 +382,7 @@ const checkInSummary: CheckInSummaryRecords = {
 	dreams_1: 'had terrible nightmares', dreams_2: 'had bad dreams', dreams_3: 'had average dreams', dreams_4: 'had good dreams', dreams_5: 'had great dreams',
 	water_1: 'barely drank', water_2: 'drank a little', water_3: 'drank enough', water_4: 'drank well', water_5: 'stayed well hydrated',
 	food_quality_1: 'ate very poorly', food_quality_2: 'ate poorly', food_quality_3: 'ate okay', food_quality_4: 'ate well', food_quality_5: 'ate great',
-	food_amount_1: 'ate very little', food_amount_2: 'ate too little', food_amount_3: 'ate a moderate amount', food_amount_4: 'ate a good amount', food_amount_5: 'ate plenty',
+	food_amount_1: 'ate very little', food_amount_2: 'ate too little', food_amount_3: 'ate a moderate amount', food_amount_4: 'ate a good amount', food_amount_5: 'ate too much',
 	work_1: 'had a terrible workday', work_2: 'had a rough workday', work_3: 'had an average workday', work_4: 'had a good workday', work_5: 'had a great workday',
 	alcohol_1: 'drank heavily', alcohol_2: 'drank quite a bit', alcohol_3: 'had a few drinks', alcohol_4: 'had a drink or two', alcohol_5: 'no alcohol',
 	smoking_1: 'smoked heavily', smoking_2: 'smoked quite a bit', smoking_3: 'smoked moderately', smoking_4: 'smoked a little', smoking_5: "didn't smoke",
@@ -377,6 +438,8 @@ const notes: NoteRecords = {
 	output: 'Output',
 	create_note_success: 'Note was successfully created.',
 	create_folder_success: 'Folder was successfully created.',
+	create_error: 'Failed to create note.',
+	create_folder_error: 'Failed to create folder.',
 	save_success: 'Note was successfully saved.',
 	save_error: 'Failed to save note.',
 	import: 'Import',
@@ -402,7 +465,13 @@ const notes: NoteRecords = {
 	insert_link_name: 'Link name',
 	delete_confirm_label: 'Delete Note',
 	delete_confirm_message: 'Are you sure you want to delete this note?',
-	delete_success: 'Note was successfully deleted.'
+	delete_success: 'Note was successfully deleted.',
+	journal: 'Journal',
+	today: 'Today',
+	yesterday: 'Yesterday',
+	other: 'Other',
+	journal_empty: 'There is no entry for this day yet.',
+	journal_create_error: 'Failed to create the journal entry.'
 };
 
 const libraries: LibraryRecords = {
@@ -609,7 +678,9 @@ const libraries: LibraryRecords = {
 		favorite: 'A favorite',
 		random: 'Just something random',
 		unrated: "Something I haven't seen before",
-		new: 'Something new'
+		new: 'Something new',
+		ai_plugin_hint: 'No recommendation available. Recommending something new needs the AI plugin, which you can set up in the settings.',
+		open_settings: 'Open settings'
 	},
 	navigation: {
 		music: 'Music',
@@ -679,17 +750,30 @@ const dev: DevRecords = {
 
 const finances: FinanceRecords = {
 	wealth: 'Wealth',
-	budget: 'Income',
+	budget: 'Budget',
 	positions: 'Positions',
 	total: 'Total',
 	income: 'Income',
 	expenses: 'Expenses',
-	show_history: 'Show History',
-	hide_history: 'Hide History',
 	wealth_distribution: 'Wealth Distribution',
 	income_vs_expenses: 'Income vs Expenses',
 	wealth_trend: 'Wealth Trend',
-	add_entry: 'Add Entry'
+	add_entry: 'Add Entry',
+	history: 'History',
+	date: 'Date',
+	amount: 'Amount',
+	no_values: 'No entries yet.',
+	replaces_value: 'Replaces the existing entry of %s on this date.',
+	date_taken: 'There is already an entry on this date.',
+	edit_value: 'Edit entry',
+	dashboard: 'Dashboard',
+	history_development: 'Development',
+	history_composition: 'Composition',
+	new_entry: 'New Entry',
+	delete_value_label: 'Delete entry',
+	delete_value_message: 'Do you really want to delete this entry?',
+	delete_item: 'Delete %s',
+	delete_item_message: 'Do you really want to delete %s and all its entries?'
 };
 
 
@@ -776,6 +860,19 @@ const calendar: CalendarRecords = {
 	location: 'Location',
 	is_all_day: 'All Day',
 	is_recurring: 'Recurring',
+	recurrence_daily: 'Every day',
+	recurrence_weekly: 'Weekly',
+	recurrence_monthly_date: 'Monthly on this date',
+	recurrence_monthly_weekday: 'Monthly on weekday',
+	recurrence_yearly: 'Every year',
+	recurrence_on_the: 'on the',
+	recurrence_not_editable: "This recurrence can't be edited here. It is kept as it is.",
+	recurrence_ordinals: {
+		1: '1st',
+		2: '2nd',
+		3: '3rd',
+		4: '4th'
+	},
 	choose_calendar: 'Choose Calendar',
 	request_sync: 'Synchronize',
 	sync_success: 'Synchronization was successful.',
@@ -826,6 +923,8 @@ const calendar: CalendarRecords = {
 	attach_note: 'Attach Note',
 	search_todo: 'Search Todo',
 	search_note: 'Search Note',
+	life_journal: 'Journal',
+	life_check_in: 'Check-in'
 };
 
 const contacts: ContactRecords = {
@@ -839,7 +938,9 @@ const contacts: ContactRecords = {
 	import_contacts: 'Import Contacts',
 	import_contacts_running: 'Importing %dcontacts for Address Book %s..',
 	save_error: 'Failed to save contact.',
-	name_required: 'First and last name are required.'
+	name_required: 'First and last name are required.',
+	email_placeholder: 'Email',
+	phone_placeholder: 'Phone number'
 };
 
 const dav: DavRecords = {
@@ -892,6 +993,8 @@ const clipboard: ClipboardRecords = {
 	delete_error: 'Failed to delete entry',
 	image_save_success: 'Image saved',
 	image_save_error: 'Failed to save image',
+	image_too_large: 'The image could not be uploaded. It may be too large.',
+	image_reduce: 'Reduce size',
 	image_copy_success: 'Image copied to clipboard',
 	image_copy_error: 'Failed to copy image'
 };
@@ -909,7 +1012,8 @@ const profile: ProfileRecords = {
 
 const admin: AdminRecords = {
 	role_update_success: 'User role was successfully updated.',
-	role_update_error: 'Failed to update user role.'
+	role_update_error: 'Failed to update user role.',
+	search_placeholder: 'Search by name or email...'
 };
 
 const welcome_tour: WelcomeTourRecords = {
@@ -1080,9 +1184,7 @@ const timeTracking: TimeTrackingRecords = {
 	started_at: 'Started at',
 	stopped_at: 'Stopped at',
 	duration: 'Duration',
-	duration_minutes: 'Duration (minutes)',
 	project: 'Project',
-	category: 'Category',
 	start_timer: 'Start Timer',
 	stop_timer: 'Stop Timer',
 	timer_running: 'Timer Running',
@@ -1101,7 +1203,6 @@ const timeTracking: TimeTrackingRecords = {
 	recent_entries: 'Recent Entries',
 	today: 'Today',
 	this_week: 'This Week',
-	this_month: 'This Month',
 	deletion_title: 'Delete Project',
 	deletion_description:
 		'Are you sure you want to delete this project? All associated entries will be removed.',
@@ -1117,7 +1218,11 @@ const timeTracking: TimeTrackingRecords = {
 	reset: 'Reset',
 	filter_by_category: 'Filter by Category',
 	all_categories: 'All',
-	edit_entry: 'Edit Entry'
+	edit_entry: 'Edit Entry',
+	entry_deletion_title: 'Delete Entry',
+	entry_deletion_description: 'Are you sure you want to delete this entry?',
+	category_deletion_title: 'Delete Category',
+	category_deletion_description: 'Are you sure you want to delete this category?'
 };
 
 const cookie_consent: CookieConsentRecords = {
@@ -1184,7 +1289,20 @@ const setup: SetupRecords = {
 	continue: 'Continue',
 	done: 'All done!',
 	checking: 'Checking connection…',
-	url_error: 'Could not connect. Check the URL and try again.'
+	url_error: 'Could not connect. Check the URL and try again.',
+	back: 'Back'
+};
+
+const update_required: UpdateRequiredRecords = {
+	title: 'Update required',
+	explanation: 'This version of solyto is no longer supported by the server.',
+	instruction_web: 'Reload the page to load the latest version.',
+	instruction_desktop: 'Quit and restart solyto so it can install the latest update.',
+	instruction_mobile: 'Update solyto from the app store or F-Droid, wherever you installed it from.',
+	reload: 'Load latest version',
+	required_version: 'Required version: %s',
+	your_version: 'Your version: %s',
+	server_outdated: 'Your server runs version %server, but this app is %app. Some things may not work until the server is updated.'
 };
 
 export const en: LanguageFile = {
@@ -1213,5 +1331,6 @@ export const en: LanguageFile = {
 	cookie_consent,
 	timeTracking,
 	quick_add,
-	setup
+	setup,
+	update_required
 };

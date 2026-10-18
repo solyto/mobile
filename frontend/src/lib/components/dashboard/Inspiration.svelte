@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { urls } from '$lib/config/urls';
+	import { resolve } from '$app/paths';
 	import type { Link } from '$lib/types/library_link';
 	import type { Quote } from '$lib/types/library_quote';
 	import type { MusicRelease } from '$lib/types/library_music';
@@ -9,18 +11,16 @@
 	import { blur } from 'svelte/transition';
 	import { getAuth } from '$lib/state/Auth.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
-	import ApiService from '$lib/services/ApiService';
 	import { apiRoutes } from '$lib/config/apiRoutes';
 	import MusicReleasesWidget from '$lib/components/dashboard/widgets/MusicReleasesWidget.svelte';
 	import BookReleasesWidget from '$lib/components/dashboard/widgets/BookReleasesWidget.svelte';
-	import MovieReleasesWidget from '$lib/components/dashboard/widgets/MovieReleasesWidget.svelte';
 	import NewestNotesWidget from '$lib/components/dashboard/widgets/NewestNotesWidget.svelte';
 	import NewestLinksWidget from '$lib/components/dashboard/widgets/NewestLinksWidget.svelte';
 	import QuoteWidget from '$lib/components/dashboard/widgets/QuoteWidget.svelte';
 
 	const auth = getAuth();
 	const ts = getTranslation();
-	const apiService = new ApiService(auth.getToken());
+	const apiService = auth.apiService;
 
 	let quote = $state<Quote | null>(null);
 	let musicReleases = $state<MusicRelease[]>([]);
@@ -102,13 +102,13 @@
 			<p class="text-sm text-c-neutral-4 dark:text-c-neutral-5">{ts.get.home.inspiration_empty_hint}</p>
 			<div class="flex flex-wrap gap-3">
 				<a
-					href="/notes"
+					href={resolve(urls.notes)}
 					class="text-xs text-c-primary transition-colors hover:text-c-primary/70"
 				>
 					{ts.get.nav.notes} →
 				</a>
 				<a
-					href="/libraries"
+					href={resolve(urls.libraries)}
 					class="text-xs text-c-primary transition-colors hover:text-c-primary/70"
 				>
 					{ts.get.nav.libraries} →

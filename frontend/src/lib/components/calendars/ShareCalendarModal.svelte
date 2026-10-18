@@ -2,25 +2,23 @@
 	import ContentModal from '$lib/components/ui/ContentModal.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
-	import { getCalendars } from '$lib/state/Calendars.svelte';
+	import { getCalendarSharing } from '$lib/state/CalendarSharing.svelte';
 	import { getAuth } from '$lib/state/Auth.svelte';
 	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
 	import { apiRoutes, API_USER_STORAGE_URL } from '$lib/config/apiRoutes.js';
-	import ApiService from '$lib/services/ApiService.js';
 	import type { Friend } from '$lib/types/friend.js';
 	import type { Calendar, CalendarSharee } from '$lib/types/calendar.js';
 	import IconUserPlus from '@lucide/svelte/icons/user-plus';
-	import IconUsers from '@lucide/svelte/icons/users';
 	import IconX from '@lucide/svelte/icons/x';
 	import { onMount } from 'svelte';
 
 	const ts = getTranslation();
 	const loadingIndicator = getLoadingIndicator();
-	const calendars = getCalendars();
+	const calendarSharing = getCalendarSharing();
 	const auth = getAuth();
 	const notifications = getUiNotifications();
 
-	let { calendar, onClose } = $props<{ calendar: Calendar; onClose: () => void }>();
+	let { calendar, onClose }: { calendar: Calendar; onClose: () => void } = $props();
 
 	let friends = $state<Friend[]>([]);
 	let sharees = $state<CalendarSharee[]>([]);
@@ -28,7 +26,7 @@
 	let sharing = $state<string | null>(null);
 	let revoking = $state<string | null>(null);
 
-	const apiService = new ApiService(auth.getToken());
+	const apiService = auth.apiService;
 
 	const sharedUserIds = $derived(new Set(sharees.map((s) => s.user_id)));
 	const unsharedFriends = $derived(friends.filter((f) => !sharedUserIds.has(f.id)));
@@ -49,7 +47,7 @@
 		sharing = friend.id;
 		loadingIndicator.start();
 
-		const success = await calendars.shareCalendar(calendar.id, friend.id);
+		const success = await calendarSharing.shareCalendar(calendar.id, friend.id);
 
 		if (success) {
 			sharees = [...sharees, { user_id: friend.id, user_name: friend.name, user_email: '', access: 3, status: 'pending' }];
@@ -66,7 +64,7 @@
 		revoking = sharee.user_id;
 		loadingIndicator.start();
 
-		const success = await calendars.revokeShare(calendar.id, sharee.user_id);
+		const success = await calendarSharing.revokeShare(calendar.id, sharee.user_id);
 
 		if (success) {
 			sharees = sharees.filter((s) => s.user_id !== sharee.user_id);

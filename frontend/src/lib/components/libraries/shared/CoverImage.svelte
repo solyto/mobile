@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { scale, blur } from 'svelte/transition';
 
-	let { src, previewSrc = '', alt = '', class: customClass = '' } = $props<{
+	let { src, previewSrc = '', alt = '', class: customClass = '' }: {
 		src: string;
 		previewSrc?: string;
 		alt?: string;
 		class?: string;
-	}>();
+	} = $props();
 
 	let previewLoaded = $state(false);
 	let fullLoaded = $state(false);
@@ -15,8 +15,8 @@
 		previewLoaded = false;
 		fullLoaded = false;
 
+		const preview = new Image();
 		if (previewSrc) {
-			const preview = new Image();
 			preview.onload = () => (previewLoaded = true);
 			preview.src = previewSrc;
 		}
@@ -24,6 +24,11 @@
 		const full = new Image();
 		full.onload = () => (fullLoaded = true);
 		full.src = src;
+
+		return () => {
+			preview.onload = null;
+			full.onload = null;
+		};
 	});
 </script>
 

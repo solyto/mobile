@@ -2,7 +2,7 @@
 	import IconMoveUp from '@lucide/svelte/icons/move-up';
 	import { onMount } from 'svelte';
 
-	let { angle } = $props<{ angle: number }>();
+	let { angle }: { angle: number } = $props();
 	let rotationAngle = $state<number>(0);
 
 	onMount(() => {

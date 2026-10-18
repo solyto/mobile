@@ -90,3 +90,26 @@ describe('getGraphValues', () => {
 		expect(last.values).toContainEqual({ field: 'Cash', value: 20 });
 	});
 });
+
+describe('WealthStatisticsService.getTrendMin', () => {
+	it('returns a bound just below the lowest value, rounded down to the thousand', () => {
+		expect(service.getTrendMin([205000, 195000, 200000])).toBe(185000);
+	});
+
+	it('returns undefined when there are no values', () => {
+		expect(service.getTrendMin([])).toBeUndefined();
+	});
+
+	it('returns undefined when the lowest value is zero or negative', () => {
+		expect(service.getTrendMin([1000, 0])).toBeUndefined();
+		expect(service.getTrendMin([1000, -500])).toBeUndefined();
+	});
+});
+
+describe('getMonthLabels', () => {
+	it('labels each point with its month in the given date format', () => {
+		const stats = [{ date: '2025-11-01' }, { date: '2026-01-31' }];
+		expect(service.getMonthLabels(stats, null)).toEqual(['11.2025', '01.2026']);
+		expect(service.getMonthLabels(stats, 'YYYY-mm-dd')).toEqual(['2025-11', '2026-01']);
+	});
+});

@@ -1,14 +1,14 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	interface Tab {
 		id: number;
 		title: string;
-		component: any;
+		component: Snippet;
 	}
 
-	let { tabs } = $props<{
+	let { tabs }: {
 		tabs: Tab[];
-		defaultTab?: string;
-	}>();
+	} = $props();
 
 	let selected = $state<number>(tabs[0].id);
 

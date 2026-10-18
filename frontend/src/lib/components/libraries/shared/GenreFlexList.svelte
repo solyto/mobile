@@ -2,9 +2,9 @@
 	import type { MusicGenre } from '$lib/types/library_music';
 	import type { BookGenre } from '$lib/types/library_book';
 
-	let { genres } = $props<{
+	let { genres }: {
 		genres: MusicGenre[] | BookGenre[];
-	}>();
+	} = $props();
 </script>
 
 <div class="flex flex-row gap-1">

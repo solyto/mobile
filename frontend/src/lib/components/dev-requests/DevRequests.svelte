@@ -12,7 +12,7 @@
 	const devRequests = getDevRequests();
 	const loadingIndicator = getLoadingIndicator();
 
-	let { openedEntry = null } = $props<number | null>();
+	let { openedEntry = null }: { openedEntry?: number | null } = $props();
 
 	let createOpen = $state<boolean>(false);
 

@@ -12,7 +12,7 @@
 		selectedLanguage = $bindable(),
 		selectedDateFormat = $bindable(),
 		selectedTimeFormat = $bindable()
-	} = $props<{ selectedLanguage: string; selectedDateFormat: string; selectedTimeFormat: string }>();
+	}: { selectedLanguage: string; selectedDateFormat: string; selectedTimeFormat: string } = $props();
 
 	const languages = [
 		{ value: 'en', label: ts.get.settings.english },
@@ -67,7 +67,7 @@
 				{ts.get.settings.language}
 			</span>
 			<div class="grid grid-cols-4 gap-2">
-				{#each languages as lang}
+				{#each languages as lang (lang.value)}
 					<button
 						class="cursor-pointer rounded-lg border-2 px-3 py-2 text-sm font-medium transition-all
 							{selectedLanguage === lang.value
@@ -85,7 +85,7 @@
 				{ts.get.settings.date_format}
 			</span>
 			<div class="grid grid-cols-2 gap-2">
-				{#each dateFormats as format}
+				{#each dateFormats as format (format.value)}
 					<button
 						class="cursor-pointer rounded-lg border-2 px-3 py-2 text-left text-sm font-medium transition-all
 							{selectedDateFormat === format.value
@@ -103,7 +103,7 @@
 				{ts.get.settings.time_format}
 			</span>
 			<div class="grid grid-cols-3 gap-2">
-				{#each timeFormats as format}
+				{#each timeFormats as format (format.value)}
 					<button
 						class="cursor-pointer rounded-lg border-2 px-3 py-2 text-sm font-medium transition-all
 							{selectedTimeFormat === format.value

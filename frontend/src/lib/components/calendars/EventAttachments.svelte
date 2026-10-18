@@ -1,9 +1,10 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { onDestroy, tick } from 'svelte';
 	import { getCalendars } from '$lib/state/Calendars.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
-	import { getKeyManager } from '$lib/KeyManager.svelte';
+	import { getKeyManager } from '$lib/state/KeyManager.svelte';
 	import InputAutocomplete from '$lib/components/forms/InputAutocomplete.svelte';
 	import QuickSelectOverlay from '$lib/components/ui/QuickSelectOverlay.svelte';
 	import TodoEntry from '$lib/components/calendars/TodoEntry.svelte';
@@ -20,10 +21,10 @@
 	const loadingIndicator = getLoadingIndicator();
 	const keyManager = getKeyManager();
 
-	let keyHandlers = $state<{ Escape: string | null }>({ Escape: null });
+	let keyHandlers: { Escape: string | null } = { Escape: null };
 	onDestroy(() => keyManager.unregisterAll(keyHandlers));
 
-	let { eventId } = $props<{ eventId: number }>();
+	let { eventId }: { eventId: number } = $props();
 
 	let menuOpen = $state(false);
 	let addingTodo = $state(false);
@@ -167,7 +168,7 @@
 			{#each calendars.activeEventNotes as note (note.id)}
 				<div class="flex items-center justify-between gap-2 py-1">
 					<a
-						href={urls.note.replace('[id]', note.id)}
+						href={resolve(urls.note, { id: note.id })}
 						target="_blank"
 						rel="noopener noreferrer"
 						class="flex min-w-0 items-center gap-1.5 truncate hover:opacity-80"

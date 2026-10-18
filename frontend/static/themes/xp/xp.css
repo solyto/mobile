@@ -1,0 +1,222 @@
+/* Windows XP — always light, Luna blue: beige window faces, blue taskbar, green start */
+
+:root {
+	--t-font-body: Tahoma, 'Segoe UI', Verdana, sans-serif;
+	--t-font-heading: 'Trebuchet MS', Tahoma, sans-serif;
+	--font-sans: Tahoma, 'Segoe UI', Verdana, sans-serif;
+
+	--radius-xs: 2px;
+	--radius-sm: 3px;
+	--radius-md: 3px;
+	--radius-lg: 4px;
+	--radius-xl: 6px;
+	--radius-2xl: 8px;
+
+	--color-c-primary: #316ac5;
+	--color-c-heading: #0b3d91;
+	--color-c-heading-base: #000000;
+	--color-c-btn: #245edb;
+	--color-c-btn-hover: #3a7bf0;
+	--color-c-btn-text: #ffffff;
+	--color-c-action: #d86f0b;
+	--color-c-action-hover: #f08a24;
+	--color-c-danger: #c42b1c;
+	--color-c-danger-hover: #a01f12;
+	--color-c-success: #3c9a3c;
+	--color-c-warning: #e6b800;
+
+	--color-c-bg: #ece9d8;
+	--color-c-bg-surface: #ffffff;
+	--color-c-bg-elevated: #f5f4ea;
+	--color-c-bg-modal: #ece9d8;
+	--color-c-nav-hover: rgba(255, 255, 255, 0.15);
+	--color-c-nav-active: #1941a5;
+	--color-c-nav-active-text: #ffffff;
+	--color-c-neutral: #f5f4ea;
+	--color-c-border: #7f9db9;
+
+	--color-white: #ffffff;
+
+	--color-gray-50: #f9f8f2;
+	--color-gray-100: #f0eee0;
+	--color-gray-200: #7f9db9;
+	--color-gray-300: #7f9db9;
+	--color-gray-400: #8a8a8a;
+	--color-gray-500: #6d6d6d;
+	--color-gray-600: #404040;
+	--color-gray-700: #000000;
+	--color-gray-800: #000000;
+	--color-gray-900: #000000;
+
+	--color-d-lightblue: #c1d3fb;
+	--color-d-lighterblue: #e6eefc;
+
+	--t-gradient-colors: #3a7bf0, #245edb 40%, #1941a5;
+}
+
+/* Light only — enforce light backgrounds regardless of dark toggle */
+html.dark {
+	--color-c-bg: #ece9d8;
+	--color-c-bg-surface: #ffffff;
+	--color-c-bg-elevated: #f5f4ea;
+	--color-c-bg-modal: #ece9d8;
+	--color-c-nav-hover: rgba(255, 255, 255, 0.15);
+	--color-c-nav-active: #1941a5;
+	--color-c-nav-active-text: #ffffff;
+	--color-c-neutral: #f5f4ea;
+}
+
+body {
+	background-image: url('./wallpaper.jpg');
+	background-size: cover;
+	background-position: center;
+}
+
+.page-container {
+	background: none;
+}
+
+/* The content area is a window on the desktop: blue frame, rounded top, wallpaper around it */
+.content-container {
+	width: auto;
+	min-width: 0;
+	margin: 7px;
+	border: 3px solid #0054e3;
+	border-radius: 8px 8px 0 0;
+	background-color: var(--color-c-bg);
+}
+
+@media (width < 96rem) {
+	.content-container {
+		margin: 3px;
+	}
+}
+
+/* The quick-add button is fixed to the viewport; offset it by the window's margin and border (and the bottom bar) */
+.quick-add-fab {
+	right: calc(1.5rem + 6px);
+	bottom: calc(6rem + 6px);
+}
+
+@media (width >= 96rem) {
+	.quick-add-fab {
+		right: calc(2.5rem + 10px);
+		bottom: calc(2.5rem + 10px);
+	}
+
+	.bottom-nav .quick-add-fab {
+		bottom: calc(2.5rem + 10px + 72px);
+	}
+
+	.bottom-nav.flat-nav .quick-add-fab {
+		bottom: calc(2.5rem + 10px + 64px);
+	}
+}
+
+/* Nav text sits on the blue taskbar gradient; popovers inside the nav keep their own colours */
+.nav-desktop-container,
+.nav-mobile-container {
+	--color-c-neutral-8: #ffffff;
+	background: transparent;
+}
+
+/* Taskbar: dark edge, bright highlight band, then darkening — runs across the bar's thickness */
+.nav-desktop,
+.nav-mobile {
+	--t-taskbar: #1f2f86 0, #3165c4 3%, #3682e5 6%, #4490e6 10%, #3883e5 12%, #2b71e0 15%, #2663da 18%, #235bd6 20%, #2258d5 23%, #2157d6 38%, #245ddb 54%, #2562df 86%, #245fdc 89%, #2158d4 92%, #1d4ec0 95%, #1941a5 98%;
+}
+
+.nav-desktop {
+	background: linear-gradient(to right, var(--t-taskbar));
+}
+
+.bottom-nav .nav-desktop,
+.nav-mobile {
+	background: linear-gradient(to bottom, var(--t-taskbar));
+}
+
+.nav-desktop .bg-c-nav-active,
+.nav-mobile .bg-c-nav-active {
+	background: linear-gradient(to bottom, #1a46a8, #1e52b7 40%, #2058c2);
+	box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.55), inset -1px -1px 0 rgba(255, 255, 255, 0.15);
+	border-radius: 3px;
+}
+
+.nav-desktop .hover\:bg-c-nav-hover:hover {
+	background: linear-gradient(to bottom, #5c9bf7, #4a8cf2 45%, #3c7ee9);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+	border-radius: 3px;
+}
+
+::selection {
+	background-color: #316ac5;
+	color: #ffffff;
+}
+
+/* Standard XP push button */
+button.bg-c-btn,
+a.bg-c-btn,
+button.bg-c-action,
+a.bg-c-action,
+button.bg-c-success,
+button.bg-c-danger {
+	background: linear-gradient(to bottom, #ffffff 0%, #f3f2ec 40%, #ecebe6 86%, #d6d0c5 100%);
+	border: 1px solid #003c74;
+	border-radius: 3px;
+	color: #000000;
+	box-shadow: none;
+	filter: none;
+}
+
+button.bg-c-btn:hover,
+a.bg-c-btn:hover,
+button.bg-c-action:hover,
+a.bg-c-action:hover,
+button.bg-c-success:hover,
+button.bg-c-danger:hover {
+	color: #000000;
+	box-shadow: inset 0 0 0 2px #fbc95a, inset 0 2px 0 1px #ffe9a8;
+}
+
+button.bg-c-btn:active,
+button.bg-c-action:active,
+button.bg-c-success:active,
+button.bg-c-danger:active,
+button.bg-c-btn[aria-pressed='true'] {
+	background: linear-gradient(to bottom, #cdcac3 0%, #e3e2da 15%, #ecebe6 100%);
+}
+
+button.bg-c-danger,
+button.bg-c-danger:hover {
+	color: #c42b1c;
+}
+
+input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='submit']):not([type='button']):not([type='reset']),
+textarea,
+select {
+	background-color: #ffffff;
+	color: #000000;
+	border-color: #7f9db9;
+	border-radius: 0;
+}
+
+.checkbox-box,
+.checkbox-box:hover,
+.checkbox-box:checked { background-color: #ffffff; border: 1px solid #1c5180; box-shadow: none; }
+.checkbox-mark { color: #21a121; }
+
+/* Balloon tooltip */
+.notification-toast {
+	background-color: #ffffe1;
+	border-top: 1px solid #000000;
+	border-right: 1px solid #000000;
+	border-bottom: 1px solid #000000;
+	-webkit-backdrop-filter: none;
+	backdrop-filter: none;
+	color: #000000;
+}
+
+::-webkit-scrollbar { width: 16px; height: 16px; background: #f4f3ee; }
+::-webkit-scrollbar-thumb { background: #c1d3fb; border: 1px solid #ffffff; border-radius: 3px; }
+
+.logo { filter: none; }

@@ -1,9 +1,10 @@
 <script lang="ts">
 	import type { Tag } from '$lib/types/tag';
 	import TagFlexList from '$lib/components/tags/TagFlexList.svelte';
+	import TextInput from '$lib/components/forms/TextInput.svelte';
 	import { getTags } from '$lib/state/Tags.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
-	import { getKeyManager } from '$lib/KeyManager.svelte';
+	import { getKeyManager } from '$lib/state/KeyManager.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import { onDestroy, tick } from 'svelte';
 	import { getNotes } from '$lib/state/Notes.svelte';
@@ -19,7 +20,7 @@
 	let addTagVisible = $state<boolean>(false);
 	let addTagInput = $state<HTMLInputElement | null>(null);
 	let addTagName = $state<string>('');
-	let keyHandlers = $state<{ [key: string]: string | null }>({ Enter: null, Escape: null });
+	let keyHandlers: { [key: string]: string | null } = { Enter: null, Escape: null };
 
 	async function toggleAddTags(): Promise<void> {
 		addTagVisible = !addTagVisible;
@@ -82,18 +83,14 @@
 <div class="flex flex-row gap-2">
 	{#if notes.activeNote !== null}
 		{#if addTagVisible}
-			<input
-				type="text"
-				class="dark:bg-surface-700 w-32 dark:text-white"
-				{onblur}
-				bind:this={addTagInput}
-				bind:value={addTagName}
-			/>
+			<div class="w-32">
+				<TextInput bind:input={addTagInput} bind:value={addTagName} {onblur} />
+			</div>
 		{:else}
 			<TagFlexList tags={notes.activeNote.tags} onRemove={onRemoveTag} />
 			<button
 				class="text-surface-300 hover:text-surface-700 dark:hover:text-surface-400 cursor-pointer text-xs transition-all"
-				onclick={toggleAddTags}>+ {ts.get.todos.add_tag}</button
+				onclick={toggleAddTags}>+ {ts.get.todos.tag}</button
 			>
 		{/if}
 	{/if}

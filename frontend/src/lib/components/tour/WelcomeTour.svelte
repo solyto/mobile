@@ -1,51 +1,52 @@
 <script lang="ts">
-	import { getWelcomeTour, type TourStep } from '$lib/state/WelcomeTour.svelte'
-	import { getTranslation } from '$lib/state/Translation.svelte'
-	import { getViewPoint } from '$lib/state/Viewpoint.svelte'
-	import { goto } from '$app/navigation'
-	import { tick, untrack } from 'svelte'
-	import { page } from '$app/state'
-	import { scale } from 'svelte/transition'
-	import IconChevronLeft from '@lucide/svelte/icons/chevron-left'
-	import IconChevronRight from '@lucide/svelte/icons/chevron-right'
-	import IconX from '@lucide/svelte/icons/x'
-	import IconCheck from '@lucide/svelte/icons/check'
+	import { getWelcomeTour, type TourStep } from '$lib/state/WelcomeTour.svelte';
+	import { getTranslation } from '$lib/state/Translation.svelte';
+	import { getViewPoint } from '$lib/state/Viewpoint.svelte';
+	import { goto } from '$app/navigation';
+	import { tick, untrack } from 'svelte';
+	import { page } from '$app/state';
+	import { scale } from 'svelte/transition';
+	import IconChevronLeft from '@lucide/svelte/icons/chevron-left';
+	import IconChevronRight from '@lucide/svelte/icons/chevron-right';
+	import IconX from '@lucide/svelte/icons/x';
+	import IconCheck from '@lucide/svelte/icons/check';
 
-	const tour = getWelcomeTour()
-	const ts = getTranslation()
-	const viewPoint = getViewPoint()
+	const tour = getWelcomeTour();
+	const ts = getTranslation();
+	const viewPoint = getViewPoint();
 
-	const PADDING = 8
+	const PADDING = 8;
 
-	let targetRect = $state<DOMRect | null>(null)
-	let transitioning = $state(false)
+	let targetRect = $state<DOMRect | null>(null);
+	let transitioning = $state(false);
 
 	$effect(() => {
-		if (!tour.active) return
-		const step = tour.currentStep
-		untrack(() => void handleStep(step))
-	})
+		if (!tour.active) return;
+		const step = tour.currentStep;
+		untrack(() => void handleStep(step));
+	});
 
 	async function handleStep(step: TourStep | null): Promise<void> {
-		if (!step || transitioning) return
-		transitioning = true
-		targetRect = null
+		if (!step || transitioning) return;
+		transitioning = true;
+		targetRect = null;
 
 		if (page.url.pathname !== step.route) {
-			await goto(step.route)
+			// eslint-disable-next-line svelte/no-navigation-without-resolve -- route from the step list, resolve() rejects a plain string
+			await goto(step.route);
 		}
 
-		await tick()
-		await new Promise<void>((r) => requestAnimationFrame(() => r()))
+		await tick();
+		await new Promise<void>((r) => requestAnimationFrame(() => r()));
 
 		if (step.selector) {
-			const el = document.querySelector(step.selector)
-			targetRect = el ? el.getBoundingClientRect() : null
+			const el = document.querySelector(step.selector);
+			targetRect = el ? el.getBoundingClientRect() : null;
 		} else {
-			targetRect = null
+			targetRect = null;
 		}
 
-		transitioning = false
+		transitioning = false;
 	}
 
 	interface StepContent {
@@ -55,62 +56,62 @@
 	}
 
 	function getStepContent(step: TourStep | null): StepContent | null {
-		if (!step) return null
+		if (!step) return null;
 		if (step.key === 'intro') {
 			return {
 				title: ts.get.welcome_tour.tour_intro_title,
 				description: ts.get.welcome_tour.tour_intro_description,
 				tips: []
-			}
+			};
 		}
 		if (step.key === 'outro') {
 			return {
 				title: ts.get.welcome_tour.tour_outro_title,
 				description: ts.get.welcome_tour.tour_outro_description,
 				tips: []
-			}
+			};
 		}
-		const section = ts.get.welcome_tour.steps[step.key]
-		if (!section) return null
+		const section = ts.get.welcome_tour.steps[step.key];
+		if (!section) return null;
 		const tips = Object.entries(section)
 			.filter(([key]) => key.endsWith('_tip'))
-			.map(([, value]) => value)
-		return { title: section.title, description: section.description, tips }
+			.map(([, value]) => value);
+		return { title: section.title, description: section.description, tips };
 	}
 
-	let content = $derived(getStepContent(tour.currentStep))
+	let content = $derived(getStepContent(tour.currentStep));
 
 	let spotlightStyle = $derived.by(() => {
-		if (!targetRect) return ''
+		if (!targetRect) return '';
 		return [
 			`left:${targetRect.left - PADDING}px`,
 			`top:${targetRect.top - PADDING}px`,
 			`width:${targetRect.width + PADDING * 2}px`,
 			`height:${targetRect.height + PADDING * 2}px`
-		].join(';')
-	})
+		].join(';');
+	});
 
 	let tooltipStyle = $derived.by(() => {
 		if (!targetRect) {
-			return 'position:fixed;left:50%;top:50%;transform:translate(-50%,-50%)'
+			return 'position:fixed;left:50%;top:50%;transform:translate(-50%,-50%)';
 		}
 		if (viewPoint.isDesktop) {
-			const left = targetRect.right + PADDING + 16
-			const vh = typeof window !== 'undefined' ? window.innerHeight : 800
-			const tooltipHeight = 360
-			const idealTop = targetRect.top + targetRect.height / 2 - tooltipHeight / 2
-			const top = Math.min(Math.max(idealTop, 8), vh - tooltipHeight - 8)
-			return `position:fixed;left:${left}px;top:${top}px`
+			const left = targetRect.right + PADDING + 16;
+			const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
+			const tooltipHeight = 360;
+			const idealTop = targetRect.top + targetRect.height / 2 - tooltipHeight / 2;
+			const top = Math.min(Math.max(idealTop, 8), vh - tooltipHeight - 8);
+			return `position:fixed;left:${left}px;top:${top}px`;
 		}
-		const top = targetRect.top - 16
-		return `position:fixed;left:50%;top:${top}px;transform:translate(-50%,-100%)`
-	})
+		const top = targetRect.top - 16;
+		return `position:fixed;left:50%;top:${top}px;transform:translate(-50%,-100%)`;
+	});
 
 	let stepLabel = $derived(
 		ts.get.welcome_tour.step_of
 			.replace('%d', (tour.currentStepIndex + 1).toString())
 			.replace('%d', tour.totalSteps.toString())
-	)
+	);
 </script>
 
 {#if tour.active}
@@ -153,7 +154,7 @@
 
 			{#if content.tips.length > 0}
 				<ul class="mx-5 mb-4 space-y-1.5 border-t border-c-neutral-1 pt-3 dark:border-s-dark-3">
-					{#each content.tips as tip}
+					{#each content.tips as tip, i (i)}
 						<li class="flex items-start gap-2 text-xs text-c-neutral-5 dark:text-c-neutral-4">
 							<IconCheck class="mt-0.5 size-3.5 shrink-0 text-c-primary" />
 							{tip}

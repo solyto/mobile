@@ -2,7 +2,7 @@
 	import { scale } from 'svelte/transition';
 	import type { MusicRelease } from '$lib/types/library_music';
 
-	let { release } = $props<{ release: MusicRelease }>();
+	let { release }: { release: MusicRelease } = $props();
 </script>
 
 <iframe

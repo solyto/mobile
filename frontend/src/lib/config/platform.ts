@@ -15,6 +15,8 @@ export const IS_MOBILE = PLATFORM === 'mobile';
 export const IS_WEB = PLATFORM === 'web';
 export const IS_NATIVE = !IS_WEB;
 
+export const CLIENT_VERSION: string = env.PUBLIC_VERSION ?? '';
+
 export function getApiUrl(): string {
 	return PLATFORM === 'web' ? getPwaApiUrl() : getCustomApiUrl();
 }

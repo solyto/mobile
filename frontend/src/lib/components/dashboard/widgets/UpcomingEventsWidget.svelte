@@ -5,12 +5,12 @@
 	import { Auth } from '$lib/state/Auth.svelte';
 	import type { CalendarEvent } from '$lib/types/calendar';
 
-	let { upcomingEvents, ts, auth, mt = false } = $props<{
+	let { upcomingEvents, ts, auth, mt = false }: {
 		upcomingEvents: CalendarEvent[];
 		ts: Translation;
 		auth: Auth;
 		mt: boolean;
-	}>();
+	} = $props();
 </script>
 
 <div class:mt-12={mt}>

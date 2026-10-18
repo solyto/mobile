@@ -1,67 +1,67 @@
 <script lang="ts">
-	import ConfirmationModal from '$lib/components/ui/ConfirmationModal.svelte'
-	import TextInput from '$lib/components/forms/TextInput.svelte'
-	import FileUpload from '$lib/components/forms/FileUpload.svelte'
-	import { getTranslation } from '$lib/state/Translation.svelte'
+	import ConfirmationModal from '$lib/components/ui/ConfirmationModal.svelte';
+	import TextInput from '$lib/components/forms/TextInput.svelte';
+	import FileUpload from '$lib/components/forms/FileUpload.svelte';
+	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { fly } from 'svelte/transition';
 
 	let { onConfirm, onCancel }: { onConfirm: (src: string) => void; onCancel: () => void } =
-		$props()
+		$props();
 
-	const ts = getTranslation()
+	const ts = getTranslation();
 
 	type Mode = 'url' | 'clipboard' | 'upload'
-	let mode = $state<Mode>('url')
-	let urlValue = $state('')
-	let uploadedBase64 = $state('')
-	let clipboardPreview = $state<string | null>(null)
-	let clipboardError = $state(false)
+	let mode = $state<Mode>('url');
+	let urlValue = $state('');
+	let uploadedBase64 = $state('');
+	let clipboardPreview = $state<string | null>(null);
+	let clipboardError = $state(false);
 
 	async function pasteFromClipboard() {
-		clipboardError = false
-		clipboardPreview = null
+		clipboardError = false;
+		clipboardPreview = null;
 		try {
-			const items = await navigator.clipboard.read()
+			const items = await navigator.clipboard.read();
 			for (const item of items) {
 				for (const type of item.types) {
 					if (type.startsWith('image/')) {
-						const blob = await item.getType(type)
-						const reader = new FileReader()
+						const blob = await item.getType(type);
+						const reader = new FileReader();
 						reader.onload = (e) => {
-							clipboardPreview = e.target?.result as string
-						}
-						reader.readAsDataURL(blob)
-						return
+							clipboardPreview = e.target?.result as string;
+						};
+						reader.readAsDataURL(blob);
+						return;
 					}
 				}
 			}
-			clipboardError = true
+			clipboardError = true;
 		} catch {
-			clipboardError = true
+			clipboardError = true;
 		}
 	}
 
 	function confirm() {
 		if (mode === 'url' && urlValue.trim()) {
-			onConfirm(urlValue.trim())
+			onConfirm(urlValue.trim());
 		} else if (mode === 'clipboard' && clipboardPreview) {
-			onConfirm(clipboardPreview)
+			onConfirm(clipboardPreview);
 		} else if (mode === 'upload' && uploadedBase64) {
-			onConfirm(uploadedBase64)
+			onConfirm(uploadedBase64);
 		}
 	}
 
 	function switchMode(next: Mode) {
-		mode = next
-		clipboardError = false
-		clipboardPreview = null
+		mode = next;
+		clipboardError = false;
+		clipboardPreview = null;
 	}
 </script>
 
 <ConfirmationModal title={ts.get.notes.insert_image} onConfirm={confirm} onCancel={onCancel} width="w-112">
 	<!-- Tabs -->
 	<div class="mb-4 flex gap-1 rounded-lg bg-c-neutral-1 p-1 dark:bg-s-dark-3">
-		{#each (['url', 'clipboard', 'upload'] as Mode[]) as tab}
+		{#each (['url', 'clipboard', 'upload'] as Mode[]) as tab (tab)}
 			<button
 				onclick={() => switchMode(tab)}
 				class="flex-1 rounded-md py-1.5 text-sm font-medium transition-all cursor-pointer"

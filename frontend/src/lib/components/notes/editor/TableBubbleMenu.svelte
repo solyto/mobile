@@ -1,16 +1,16 @@
 <script lang="ts">
-	import type { Editor } from '@tiptap/core'
-	import TableRowInsertBefore from '@lucide/svelte/icons/between-vertical-start'
-	import TableRowInsertAfter from '@lucide/svelte/icons/between-vertical-end'
-	import TableColInsertBefore from '@lucide/svelte/icons/between-horizontal-start'
-	import TableColInsertAfter from '@lucide/svelte/icons/between-horizontal-end'
-	import TableIcon from '@lucide/svelte/icons/table'
-	import Trash from '@lucide/svelte/icons/trash-2'
+	import type { Editor } from '@tiptap/core';
+	import TableRowInsertBefore from '@lucide/svelte/icons/between-vertical-start';
+	import TableRowInsertAfter from '@lucide/svelte/icons/between-vertical-end';
+	import TableColInsertBefore from '@lucide/svelte/icons/between-horizontal-start';
+	import TableColInsertAfter from '@lucide/svelte/icons/between-horizontal-end';
+	import TableIcon from '@lucide/svelte/icons/table';
+	import Trash from '@lucide/svelte/icons/trash-2';
 
 	let {
 		editor,
 		root = $bindable<HTMLDivElement | null>(null)
-	}: { editor: Editor | null; root: HTMLDivElement | null } = $props()
+	}: { editor: Editor | null; root: HTMLDivElement | null } = $props();
 </script>
 
 <div bind:this={root} style="position:fixed;top:-9999px;left:-9999px">

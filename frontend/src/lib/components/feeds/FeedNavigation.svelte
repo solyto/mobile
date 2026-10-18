@@ -80,7 +80,7 @@
 						top="7px"
 						light={true}
 					/>
-					{feed.title}
+					<div class="truncate pr-6">{feed.title}</div>
 				</div>
 			</button>
 		{/each}

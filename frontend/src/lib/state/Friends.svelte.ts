@@ -1,5 +1,5 @@
 import { getContext, setContext } from 'svelte';
-import { getAuth } from '$lib/state/Auth.svelte';
+import { getAuth, type Auth } from '$lib/state/Auth.svelte';
 import ApiService from '$lib/services/ApiService';
 import { apiRoutes } from '$lib/config/apiRoutes';
 import type { Friend, FriendRequest } from '$lib/types/friend';
@@ -10,11 +10,12 @@ export class Friends {
 	friends = $state<Friend[]>([]);
 	sentRequests = $state<FriendRequest[]>([]);
 	receivedRequests = $state<FriendRequest[]>([]);
-	auth = getAuth();
+	auth: Auth;
 	apiService: ApiService;
 
-	constructor() {
-		this.apiService = new ApiService(this.auth.getToken());
+	constructor(auth: Auth = getAuth(), apiService: ApiService = auth.apiService) {
+		this.auth = auth;
+		this.apiService = apiService;
 	}
 
 	async load(): Promise<void> {

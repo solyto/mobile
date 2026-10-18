@@ -5,12 +5,12 @@
 	import Checkbox from '$lib/components/forms/Checkbox.svelte';
 	import IconTrendingUp from '@lucide/svelte/icons/trending-up';
 
-	let { scoredTodos, handleCheck, ts, mt = false } = $props<{
+	let { scoredTodos, handleCheck, ts, mt = false }: {
 		scoredTodos: Todo[];
 		handleCheck: (event: Event, todo: Todo) => Promise<void>;
 		ts: Translation;
 		mt: boolean
-	}>();
+	} = $props();
 </script>
 
 
@@ -39,7 +39,7 @@
 					{todo.title}
 				</span>
 				<span class="text-xs text-c-neutral-4 dark:text-c-neutral-5">
-					{withDecimals(todo.relevance, 2)}
+					{withDecimals(todo.relevance ?? 0, 2)}
 				</span>
 				<Checkbox
 					isChecked={todo.is_completed}

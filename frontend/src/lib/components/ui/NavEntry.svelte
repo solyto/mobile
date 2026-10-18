@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	import { slide } from 'svelte/transition';
 
 	let {
@@ -10,16 +11,16 @@
 		children,
 		mobile = false,
 		dataTour = undefined
-	} = $props<{
+	}: {
 		slug: string;
 		title: string;
 		href: string;
 		onSelect?: (slug: string) => void;
 		active?: boolean;
-		children?: any;
+		children?: Snippet;
 		mobile?: boolean;
 		dataTour?: string;
-	}>();
+	} = $props();
 </script>
 
 <a

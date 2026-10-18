@@ -23,13 +23,13 @@
 	import type { CheckInType, SportId } from '$lib/types/check_in';
 	import { DEFAULT_SPORTS } from '$lib/types/check_in';
 
-	let { type, index, onSelect, isHighlighted, selectedSports = DEFAULT_SPORTS } = $props<{
+	let { type, index, onSelect, isHighlighted, selectedSports = DEFAULT_SPORTS }: {
 		type: CheckInType;
 		index: number;
 		onSelect: (index: number) => void;
 		isHighlighted: (index: number) => boolean;
 		selectedSports?: SportId[];
-	}>();
+	} = $props();
 
 	const sportId = $derived(type === 'sports' ? selectedSports[index - 1] : undefined);
 

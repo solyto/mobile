@@ -12,7 +12,6 @@
 	import IconQuote from '@lucide/svelte/icons/quote';
 	import IconCookingPot from '@lucide/svelte/icons/cooking-pot';
 	import IconUser from '@lucide/svelte/icons/user';
-	import IconCoins from '@lucide/svelte/icons/coins';
 	import IconLayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
 	import IconFolderOpen from '@lucide/svelte/icons/folder-open';
 	import IconLayoutGrid from '@lucide/svelte/icons/layout-grid';
@@ -47,7 +46,7 @@
 	});
 </script>
 
-<div class="flex h-full w-full flex-col gap-8 overflow-auto bg-c-neutral p-8 dark:bg-s-dark">
+<div class="flex h-full w-full flex-col gap-8 overflow-auto p-8">
 	<div class="flex items-center gap-3">
 		<div class="rounded-lg bg-c-primary/10 p-2 dark:bg-c-primary/20">
 			<IconLayoutDashboard class="h-6 w-6 text-c-primary" />
@@ -151,7 +150,6 @@
 			<h2 class="text-sm font-semibold uppercase tracking-wider text-c-neutral-4 dark:text-c-neutral-5">Other</h2>
 			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 				<StatisticWidget label="Tags" number={statistics.overview?.tags ?? 0} icon={IconTag} color="purple" loadDelay={delay()} />
-				<StatisticWidget label="AI Tokens" number={statistics.overview?.ai_tokens ?? 0} icon={IconCoins} color="yellow" loadDelay={delay()} />
 			</div>
 		</section>
 	{/if}

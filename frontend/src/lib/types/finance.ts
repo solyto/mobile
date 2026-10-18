@@ -1,10 +1,27 @@
-export type FinancePage = 'wealth' | 'budget' | null;
 export type BudgetType = 'income' | 'expense';
 
-export interface WealthValue {
+export interface FinanceValue {
 	id: number;
 	date: string;
 	value: number;
+}
+
+export type WealthValue = FinanceValue;
+export type BudgetValue = FinanceValue;
+
+export interface FinanceValueForm {
+	date: string;
+	value: number | null;
+}
+
+export interface StoreFinanceValueRequest {
+	value: number;
+	date?: string;
+}
+
+export interface UpdateFinanceValueRequest {
+	value?: number;
+	date?: string;
 }
 
 export interface WealthField {
@@ -22,10 +39,6 @@ export interface CreateWealthFieldRequest {
 
 export interface UpdateWealthFieldRequest {
 	title: string;
-}
-
-export interface UpdateWealthValueRequest {
-	value: number;
 }
 
 export interface Budget {

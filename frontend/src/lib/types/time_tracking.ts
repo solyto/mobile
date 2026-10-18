@@ -10,6 +10,7 @@ export interface TimeTrackingProject {
 	id: string;
 	title: string;
 	description: string | null;
+	color?: string | null;
 	categories: TimeTrackingCategory[];
 	total_duration: number;
 	created_at: string;
@@ -41,12 +42,14 @@ export interface UpdateTimeTrackingCategoryRequest {
 export interface CreateTimeTrackingProjectRequest {
 	title: string;
 	description?: string | null;
+	color?: string | null;
 	category_ids?: number[];
 }
 
 export interface UpdateTimeTrackingProjectRequest {
 	title?: string;
 	description?: string | null;
+	color?: string | null;
 	category_ids?: number[];
 }
 
@@ -64,7 +67,14 @@ export interface UpdateTimeTrackingEntryRequest {
 	started_at?: string;
 	stopped_at?: string;
 	duration_minutes?: number;
+	has_exact_times?: boolean;
 	project_id?: string;
+}
+
+export interface TimeTrackingStatisticsRequest {
+	from: string;
+	to: string;
+	category_ids?: number[];
 }
 
 export interface StartTimerRequest {

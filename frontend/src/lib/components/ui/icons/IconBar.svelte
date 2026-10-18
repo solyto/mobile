@@ -1,5 +1,5 @@
 <script lang="ts">
-	let { fill } = $props<{ fill: 0 | 25 | 50 | 75 | 100 }>();
+	let { fill }: { fill: 0 | 25 | 50 | 75 | 100 } = $props();
 
 	function getFill(): string {
 		switch (fill) {

@@ -1,29 +1,31 @@
 <script lang="ts">
-	import { Editor } from '@tiptap/core'
-	import StarterKit from '@tiptap/starter-kit'
-	import Placeholder from '@tiptap/extension-placeholder'
-	import Typography from '@tiptap/extension-typography'
-	import Link from '@tiptap/extension-link'
-	import Image from '@tiptap/extension-image'
-	import { Table } from '@tiptap/extension-table'
-	import { TableRow } from '@tiptap/extension-table-row'
-	import { TableCell } from '@tiptap/extension-table-cell'
-	import { TableHeader } from '@tiptap/extension-table-header'
-	import BubbleMenu from '@tiptap/extension-bubble-menu'
-	import { marked } from 'marked'
-	import { onDestroy, onMount } from 'svelte'
-	import { getNotes } from '$lib/state/Notes.svelte'
-	import { getViewPoint } from '$lib/state/Viewpoint.svelte'
-	import EditorToolbar from './EditorToolbar.svelte'
-	import TableBubbleMenu from './TableBubbleMenu.svelte'
-	import type { ActiveStates } from './EditorToolbar.svelte'
+	import { Editor } from '@tiptap/core';
+	import StarterKit from '@tiptap/starter-kit';
+	import Placeholder from '@tiptap/extension-placeholder';
+	import Typography from '@tiptap/extension-typography';
+	import Link from '@tiptap/extension-link';
+	import Image from '@tiptap/extension-image';
+	import { Table } from '@tiptap/extension-table';
+	import { TableRow } from '@tiptap/extension-table-row';
+	import { TableCell } from '@tiptap/extension-table-cell';
+	import { TableHeader } from '@tiptap/extension-table-header';
+	import BubbleMenu from '@tiptap/extension-bubble-menu';
+	import { marked } from 'marked';
+	import { onDestroy, onMount } from 'svelte';
+	import { getNotes } from '$lib/state/Notes.svelte';
+	import { getViewPoint } from '$lib/state/Viewpoint.svelte';
+	import EditorToolbar from './EditorToolbar.svelte';
+	import TableBubbleMenu from './TableBubbleMenu.svelte';
+	import type { ActiveStates } from './EditorToolbar.svelte';
 
-	const notes = getNotes()
-	const viewPoint = getViewPoint()
+	const notes = getNotes();
+	const viewPoint = getViewPoint();
 
-	let editorDiv = $state<HTMLDivElement | null>(null)
-	let tableBubbleRoot = $state<HTMLDivElement | null>(null)
-	let editor = $state<Editor | null>(null)
+	let { autofocus = false }: { autofocus?: boolean } = $props();
+
+	let editorDiv = $state<HTMLDivElement | null>(null);
+	let tableBubbleRoot = $state<HTMLDivElement | null>(null);
+	let editor = $state<Editor | null>(null);
 	let activeStates = $state<ActiveStates>({
 		bold: false,
 		italic: false,
@@ -37,16 +39,14 @@
 		orderedList: false,
 		blockquote: false,
 		link: false
-	})
+	});
 
-	// Keyboard-aware bottom padding: on mobile, when the on-screen keyboard opens it
-	// otherwise clips the scrollable editor pane so the caret can't be scrolled into
-	// view. Padding the scroll container by the keyboard height gives it room to do so.
-	let keyboardPadding = $state<string>('')
-	let removeViewportListeners: (() => void) | null = null
+	function keyboardPadding() {
+		return viewPoint.isMobile && viewPoint.keyboardHeight ? `${viewPoint.keyboardHeight}px` : '';
+	}
 
 	function syncActiveStates() {
-		if (!editor) return
+		if (!editor) return;
 		activeStates = {
 			bold: editor.isActive('bold'),
 			italic: editor.isActive('italic'),
@@ -60,34 +60,34 @@
 			orderedList: editor.isActive('orderedList'),
 			blockquote: editor.isActive('blockquote'),
 			link: editor.isActive('link')
-		}
+		};
 	}
 
 	function handlePaste(event: ClipboardEvent) {
-		const items = event.clipboardData?.items
-		if (!items || !editor) return
-		const instance = editor
+		const items = event.clipboardData?.items;
+		if (!items || !editor) return;
+		const instance = editor;
 		for (const item of items) {
 			if (item.type.startsWith('image/')) {
-				event.preventDefault()
-				const file = item.getAsFile()
-				if (!file) return
-				const reader = new FileReader()
+				event.preventDefault();
+				const file = item.getAsFile();
+				if (!file) return;
+				const reader = new FileReader();
 				reader.onload = (e) => {
-					const base64 = e.target?.result as string
-					if (base64) instance.chain().focus().setImage({ src: base64 }).run()
-				}
-				reader.readAsDataURL(file)
-				return
+					const base64 = e.target?.result as string;
+					if (base64) instance.chain().focus().setImage({ src: base64 }).run();
+				};
+				reader.readAsDataURL(file);
+				return;
 			}
 		}
 	}
 
 	onMount(async () => {
-		if (!editorDiv || !tableBubbleRoot) return
+		if (!editorDiv || !tableBubbleRoot) return;
 
-		const raw = notes.activeNote?.content ?? ''
-		const content = raw.trimStart().startsWith('<') ? raw : await marked(raw)
+		const raw = notes.activeNote?.content ?? '';
+		const content = raw.trimStart().startsWith('<') ? raw : await marked(raw);
 
 		const instance = new Editor({
 			element: editorDiv,
@@ -108,49 +108,33 @@
 			],
 			content,
 			onUpdate({ editor: e }) {
-				syncActiveStates()
+				syncActiveStates();
 				if (notes.activeNote) {
-					notes.activeNote.content = e.getHTML()
+					notes.activeNote.content = e.getHTML();
 				}
 			},
 			onSelectionUpdate() {
-				syncActiveStates()
+				syncActiveStates();
 			},
 			editorProps: {
 				attributes: { class: 'tiptap-editor' }
 			}
-		})
+		});
 
-		editor = instance
+		editor = instance;
 
-		const vv = window.visualViewport
-		if (vv && viewPoint.isMobile) {
-			const updateKeyboardPadding = () => {
-				const diff = window.innerHeight - vv.height
-				keyboardPadding = diff > 60 ? `${diff}px` : ''
-			}
-
-			vv.addEventListener('resize', updateKeyboardPadding)
-			vv.addEventListener('scroll', updateKeyboardPadding)
-			updateKeyboardPadding()
-
-			removeViewportListeners = () => {
-				vv.removeEventListener('resize', updateKeyboardPadding)
-				vv.removeEventListener('scroll', updateKeyboardPadding)
-			}
-		}
-	})
+		if (autofocus) instance.commands.focus();
+	});
 
 	onDestroy(() => {
-		editor?.destroy()
-		editor = null
-		removeViewportListeners?.()
-	})
+		editor?.destroy();
+		editor = null;
+	});
 </script>
 
 <TableBubbleMenu {editor} bind:root={tableBubbleRoot} />
 
-<div class="flex flex-1 flex-col overflow-y-auto" style:padding-bottom={keyboardPadding}>
+<div class="flex flex-1 flex-col overflow-y-auto" style:padding-bottom={keyboardPadding()}>
 	{#if editor}
 		<EditorToolbar {editor} {activeStates} />
 	{/if}
@@ -348,38 +332,36 @@
 		cursor: col-resize;
 	}
 
-	@media (prefers-color-scheme: dark) {
-		:global(.tiptap-editor code) {
-			background-color: var(--color-s-dark-3, #2f3741);
-			color: #e5e7eb;
-		}
+	:global(html:is(.dark, .theme-dark) .tiptap-editor code) {
+		background-color: var(--color-s-dark-3, #2f3741);
+		color: #e5e7eb;
+	}
 
-		:global(.tiptap-editor hr) {
-			border-top-color: var(--color-s-dark-3, #2f3741);
-		}
+	:global(html:is(.dark, .theme-dark) .tiptap-editor hr) {
+		border-top-color: var(--color-s-dark-3, #2f3741);
+	}
 
-		:global(.tiptap-editor a) {
-			color: #b1b1b1;
-		}
+	:global(html:is(.dark, .theme-dark) .tiptap-editor a) {
+		color: #b1b1b1;
+	}
 
-		:global(.tiptap-editor h1),
-		:global(.tiptap-editor h2),
-		:global(.tiptap-editor h3) {
-			color: var(--color-s-teal, #1dbda5);
-		}
+	:global(html:is(.dark, .theme-dark) .tiptap-editor h1),
+	:global(html:is(.dark, .theme-dark) .tiptap-editor h2),
+	:global(html:is(.dark, .theme-dark) .tiptap-editor h3) {
+		color: var(--color-s-teal, #1dbda5);
+	}
 
-		:global(.tiptap-editor blockquote) {
-			background-color: var(--color-s-dark-3, #2f3741);
-			color: var(--color-c-neutral-4, #9ca3af);
-		}
+	:global(html:is(.dark, .theme-dark) .tiptap-editor blockquote) {
+		background-color: var(--color-s-dark-3, #2f3741);
+		color: var(--color-c-neutral-4, #9ca3af);
+	}
 
-		:global(.tiptap-editor th) {
-			background-color: var(--color-s-dark-3, #2f3741);
-		}
+	:global(html:is(.dark, .theme-dark) .tiptap-editor th) {
+		background-color: var(--color-s-dark-3, #2f3741);
+	}
 
-		:global(.tiptap-editor th),
-		:global(.tiptap-editor td) {
-			border-color: var(--color-s-dark, #121212);
-		}
+	:global(html:is(.dark, .theme-dark) .tiptap-editor th),
+	:global(html:is(.dark, .theme-dark) .tiptap-editor td) {
+		border-color: var(--color-s-dark, #121212);
 	}
 </style>

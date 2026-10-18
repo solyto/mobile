@@ -2,7 +2,7 @@
 	import type { DevRequest } from '$lib/types/dev_request';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 
-	let { entry } = $props<{ entry: DevRequest }>();
+	let { entry }: { entry: DevRequest } = $props();
 
 	const ts = getTranslation();
 </script>

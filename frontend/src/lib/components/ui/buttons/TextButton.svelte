@@ -7,7 +7,7 @@
 		align = 'center',
 		disabled = false,
 		class: customClass = ''
-	} = $props<{
+	}: {
 		title: string;
 		onclick?: () => void;
 		href?: string | null;
@@ -15,7 +15,7 @@
 		align?: 'left' | 'center' | 'right';
 		disabled?: boolean;
 		class?: string;
-	}>();
+	} = $props();
 </script>
 
 {#if href === null}

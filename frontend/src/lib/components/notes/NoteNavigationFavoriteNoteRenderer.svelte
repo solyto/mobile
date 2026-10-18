@@ -8,10 +8,10 @@
 
 	const notes = getNotes();
 
-	let { favorites, handleNavigation } = $props<{
+	let { favorites, handleNavigation }: {
 		favorites: Note[];
 		handleNavigation: () => void;
-	}>();
+	} = $props();
 </script>
 
 <div transition:fade>

@@ -13,7 +13,7 @@
 	const ts = getTranslation();
 	const loadingIndicator = getLoadingIndicator();
 
-	let { addressBook } = $props<{ addressBook: AddressBook }>();
+	let { addressBook }: { addressBook: AddressBook } = $props();
 
 	let hex = $state<string>(addressBook.color !== null ? addressBook.color : 'var(--color-c-neutral-2)');
 

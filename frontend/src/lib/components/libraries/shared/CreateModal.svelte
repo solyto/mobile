@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	import { fade } from 'svelte/transition';
 	import MissingCover from '$lib/components/libraries/shared/MissingCover.svelte';
 	import Rating from '$lib/components/libraries/shared/Rating.svelte';
@@ -19,17 +20,17 @@
 		onCoverRemove,
 		selectedRating = $bindable(),
 		isWishlist = $bindable()
-	} = $props<{
+	}: {
 		title: string;
 		library: Library;
-		children: any;
+		children: Snippet;
 		existingCover?: string | null;
 		newCover?: string;
 		onCoverClick?: () => void;
 		onCoverRemove?: () => void;
 		selectedRating?: number | null;
 		isWishlist?: boolean;
-	}>();
+	} = $props();
 </script>
 
 <ContentModal rounded="2xl" p="8" onClose={() => library.closeCreateModal()} {title} forcePopup={true}>
@@ -124,7 +125,7 @@
 				{/if}
 				{#if library.config.hasRatings}
 					<Rating
-						startRating={selectedRating}
+						startRating={selectedRating ?? 0}
 						onchange={(rating: number) => {
 							selectedRating = rating;
 						}}

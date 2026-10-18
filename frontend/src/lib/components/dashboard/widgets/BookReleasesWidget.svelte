@@ -6,10 +6,10 @@
 	import type { Translation } from '$lib/state/Translation.svelte';
 	import { formatDate } from '$lib/helpers/DateHelper';
 
-	let { bookReleases, ts } = $props<{
+	let { bookReleases, ts }: {
 		bookReleases: BookRelease[];
 		ts: Translation;
-	}>();
+	} = $props();
 </script>
 
 <div in:blur>
@@ -43,7 +43,7 @@
 						{release.title}
 					</span>
 					<span class="truncate text-xs text-c-neutral-5 dark:text-c-neutral-4">
-						{release.author} &middot; {formatDate(release.release_date)}
+						{release.author} &middot; {release.release_date ? formatDate(release.release_date) : '—'}
 					</span>
 				</div>
 				<IconExternalLink

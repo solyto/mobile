@@ -8,10 +8,10 @@
 	import { resolve } from '$app/paths';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 
-	let { dates, trackers } = $props<{
+	let { dates, trackers }: {
 		dates: Date[];
 		trackers: CheckInType[];
-	}>();
+	} = $props();
 
 	const checkInData = getCheckInData();
 	const ts = getTranslation();
@@ -34,18 +34,17 @@
 	</div>
 	<div class="flex flex-row items-start">
 		{#each dates as date (date.getTime())}
-			{@const dateStr = getUrlFormat(new Date(date))}
 			<div class="flex h-full flex-col w-8 items-center justify-center">
 				<button
 					type="button"
 					class="h-10 flex items-center justify-center cursor-pointer font-medium hover:font-bold hover:scale-125 transition-transform"
-					onclick={() => goto(resolve(urls.checkInDate, { date: dateStr }))}
+					onclick={() => goto(resolve(urls.checkInDate, { date: getUrlFormat(date) }))}
 				>
 					{date.getDate()}
 				</button>
 				{#each trackers as tracker (tracker)}
 					<div class="size-12 flex items-center justify-center p-3">
-						<CheckInIcon type={tracker} value={getData(dateStr, tracker)} />
+						<CheckInIcon type={tracker} value={getData(getUrlFormat(date), tracker)} />
 					</div>
 				{/each}
 			</div>

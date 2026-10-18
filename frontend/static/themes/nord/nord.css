@@ -78,3 +78,8 @@ html.dark {
 	--color-c-nav-active-text: #eceff4;
 	--color-c-neutral: #4c566a;
 }
+
+/* Frost-blue heading text is unreadable on the Aurora orange/yellow action buttons */
+.bg-c-action.text-c-heading {
+	color: #2e3440;
+}

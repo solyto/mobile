@@ -1,5 +1,5 @@
 import type { LibraryType } from '$lib/types/library';
-import { getContext, setContext } from 'svelte';
+import { getContext, setContext, type Component } from 'svelte';
 import { page } from '$app/state';
 import { urls } from '$lib/config/urls';
 import IconMusic from '@lucide/svelte/icons/music';
@@ -11,7 +11,7 @@ import IconQuote from '@lucide/svelte/icons/quote';
 import IconCookingPot from '@lucide/svelte/icons/cooking-pot';
 import IconLeaf from '@lucide/svelte/icons/leaf';
 
-export const navigationItems: { type: LibraryType; url: string; icon: any }[] = [
+export const navigationItems: { type: LibraryType; url: `/libraries/${LibraryType}`; icon: Component }[] = [
 	{ type: 'music', url: urls.musicLibrary, icon: IconMusic },
 	{ type: 'books', url: urls.bookLibrary, icon: IconBook },
 	{ type: 'movies', url: urls.movieLibrary, icon: IconClapperboard },

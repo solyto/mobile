@@ -1,7 +1,7 @@
 <script lang="ts">
 	import IconPizza from '@lucide/svelte/icons/pizza';
 
-	let { fill } = $props<{ fill: 0 | 25 | 50 | 75 | 100 }>();
+	let { fill }: { fill: 0 | 25 | 50 | 75 | 100 } = $props();
 </script>
 
 <div

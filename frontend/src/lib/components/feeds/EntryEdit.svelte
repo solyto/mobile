@@ -18,9 +18,9 @@
 	const notifications = getUiNotifications();
 	const feeds = getFeeds();
 
-	let { onClose } = $props<{
+	let { onClose }: {
 		onClose: () => void;
-	}>();
+	} = $props();
 
 	let titleInput = $state<HTMLInputElement | null>(null);
 	let titleValue = $state<string>(feeds.activeFeed ? feeds.activeFeed.title : '');
@@ -41,7 +41,7 @@
 
 	async function onSave(): Promise<void> {
 		loadingIndicator.start();
-		let res = null;
+		let res: boolean;
 
 		const keywordsString = keywordsValue.map((k) => k.value).join(',');
 		const blacklistString = blacklistValue.map((k) => k.value).join(',');

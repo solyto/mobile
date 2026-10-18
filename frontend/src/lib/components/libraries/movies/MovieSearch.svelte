@@ -5,11 +5,11 @@
 	import type { MovieRelease, MovieSearchResult } from '$lib/types/library_movie';
 	import TmdbIcon from '$lib/assets/services/tmdb_icon.svg';
 
-	let { library, ts, onSelect } = $props<{
+	let { library, ts, onSelect }: {
 		library: MovieLibrary;
 		ts: Translation;
 		onSelect: (entry: MovieRelease) => void;
-	}>();
+	} = $props();
 
 	const searchSources: SearchSource[] = [
 		{

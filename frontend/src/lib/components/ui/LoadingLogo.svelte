@@ -1,7 +1,7 @@
 <script lang="ts">
 	import logo from '$lib/assets/logo_cut.png';
 
-	let { label } = $props<{ label?: string }>();
+	let { label }: { label?: string } = $props();
 </script>
 
 <div class="flex items-center justify-center gap-2">

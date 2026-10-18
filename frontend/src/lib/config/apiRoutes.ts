@@ -4,8 +4,10 @@ const BASE_URL = getApiUrl();
 const API_URL = `${BASE_URL}/api/v1`;
 export const API_STORAGE_URL = `${BASE_URL}/storage`;
 export const API_USER_STORAGE_URL = `${BASE_URL}/storage/user`;
+export const API_FAVICON_URL = `${BASE_URL}/favicons`;
 
 export const apiRoutes = {
+	health: API_URL + '/health',
 	auth: {
 		login: API_URL + '/auth/login',
 		refresh: API_URL + '/auth/refresh',
@@ -20,26 +22,40 @@ export const apiRoutes = {
 			authenticate: API_URL + '/auth/passkey/authenticate',
 			list: API_URL + '/auth/passkeys',
 			update: API_URL + '/auth/passkeys/%s',
-			delete: API_URL + '/auth/passkeys/%s',
-		},
+			delete: API_URL + '/auth/passkeys/%s'
+		}
 	},
 	users: {
 		get: API_URL + '/users/me',
 		updateProfileImage: API_URL + '/users/me/profile-image',
 		getPublicProfile: API_URL + '/users/%s/public-profile',
+		changePassword: API_URL + '/users/change-password',
 		settings: {
 			updateNavigationSettings: API_URL + '/users/me/settings/navigation',
 			updateTimezone: API_URL + '/users/me/settings/timezone',
 			updateDateFormat: API_URL + '/users/me/settings/date-format',
 			updateTimeFormat: API_URL + '/users/me/settings/time-format',
-			updateOpenaiApiKey: API_URL + '/users/me/settings/openai-api-key',
 			updateLanguage: API_URL + '/users/me/settings/language',
 			completeOnboarding: API_URL + '/users/me/settings/complete-onboarding',
 			updateWeatherCity: API_URL + '/users/me/settings/weather-city',
 			updateWeatherTemperatureUnit: API_URL + '/users/me/settings/weather-temperature-unit',
-			updateCheckInSettings: API_URL + '/users/me/settings/check-in'
+			updateCheckInSettings: API_URL + '/users/me/settings/check-in',
+			updateJournal: API_URL + '/users/me/settings/journal',
+			updateJournalCalendarMark: API_URL + '/users/me/settings/journal-calendar-mark',
+			updateCheckInCalendarMark: API_URL + '/users/me/settings/check-in-calendar-mark'
+		},
+		plugins: {
+			list: API_URL + '/users/me/plugins',
+			get: API_URL + '/users/me/plugins/%s',
+			update: API_URL + '/users/me/plugins/%s'
 		}
 	},
+	plugins: {
+		ai: {
+			providers: API_URL + '/plugins/ai/providers'
+		}
+	},
+	integrations: API_URL + '/integrations',
 	todos: {
 		list: API_URL + '/todos',
 		listDueDate: API_URL + '/todos/due-date',
@@ -71,10 +87,12 @@ export const apiRoutes = {
 	checkIn: {
 		list: API_URL + '/check-in',
 		create: API_URL + '/check-in',
-		update: API_URL + '/check-in/%s'
+		update: API_URL + '/check-in/%s',
+		marks: API_URL + '/check-in/marks'
 	},
 	notes: {
 		list: API_URL + '/notes',
+		listHidden: API_URL + '/notes/hidden',
 		get: API_URL + '/notes/%s',
 		create: API_URL + '/notes',
 		update: API_URL + '/notes/%s',
@@ -83,9 +101,12 @@ export const apiRoutes = {
 		import: API_URL + '/notes/import',
 		export: API_URL + '/notes/export',
 		listCategories: API_URL + '/notes/categories',
+		listHiddenCategories: API_URL + '/notes/categories/hidden',
 		createCategory: API_URL + '/notes/categories',
 		updateCategory: API_URL + '/notes/categories/%d',
-		deleteCategory: API_URL + '/notes/categories/%d'
+		updateCategoryHidden: API_URL + '/notes/categories/%d/hidden',
+		deleteCategory: API_URL + '/notes/categories/%d',
+		journalMarks: API_URL + '/notes/journal/marks'
 	},
 	weather: {
 		today: API_URL + '/weather/today'
@@ -204,13 +225,19 @@ export const apiRoutes = {
 			createField: API_URL + '/finances/wealth/fields',
 			updateField: API_URL + '/finances/wealth/fields/%d',
 			deleteField: API_URL + '/finances/wealth/fields/%d',
-			updateValue: API_URL + '/finances/wealth/fields/%d/value'
+			storeValue: API_URL + '/finances/wealth/fields/%d/value',
+			updateValue: API_URL + '/finances/wealth/fields/%d/values/%d',
+			deleteValue: API_URL + '/finances/wealth/fields/%d/values/%d'
 		},
 		budget: {
 			list: API_URL + '/finances/budget',
 			create: API_URL + '/finances/budget',
 			update: API_URL + '/finances/budget/%d',
-			delete: API_URL + '/finances/budget/%d'
+			delete: API_URL + '/finances/budget/%d',
+			listValues: API_URL + '/finances/budget/%d/values',
+			storeValue: API_URL + '/finances/budget/%d/values',
+			updateValue: API_URL + '/finances/budget/%d/values/%d',
+			deleteValue: API_URL + '/finances/budget/%d/values/%d'
 		}
 	},
 	feeds: {

@@ -15,6 +15,7 @@
 	import IconCigarette from '@lucide/svelte/icons/cigarette';
 	import IconUsersRound from '@lucide/svelte/icons/users-round';
 	import { onMount, tick } from 'svelte';
+	import CheckInWidgetRow from '$lib/components/dashboard/widgets/CheckInWidgetRow.svelte';
 
 	const checkInData = getCheckInData();
 	const entries = $derived(checkInData.activeTrackers.filter((t) => t !== 'sports' && checkInData.scoredTrackers.includes(t)));
@@ -58,22 +59,6 @@
 				return null;
 		}
 	}
-
-	function getBarColor(value: number): string {
-		if (value >= 4) return 'bg-c-success';
-		if (value >= 3) return 'bg-c-btn';
-		if (value >= 2) return 'bg-c-warning';
-		if (value >= 1.5) return 'bg-c-action';
-		return 'bg-c-danger';
-	}
-
-	function getBarColorFood(value: number): string {
-		if (value >= 3.5 && value < 4.5) return 'bg-c-success';
-		if (value >= 3) return 'bg-c-btn';
-		if (value >= 2) return 'bg-c-warning';
-		if (value >= 1.5) return 'bg-c-action';
-		return 'bg-c-danger';
-	}
 </script>
 
 {#if loaded}
@@ -86,35 +71,11 @@
 		</div>
 		<div class="flex flex-col gap-2.5">
 			{#each entries as entry (entry)}
-				{@const value = getMeanValue(checkInData.data, entry)}
-				{@const IconComponent = getIcon(entry)}
-				<div class="flex items-center gap-2.5">
-					{#if IconComponent}
-						<IconComponent
-							class="h-3.5 w-3.5 shrink-0 text-c-neutral-4 dark:text-c-neutral-5"
-						/>
-					{/if}
-					<div class="min-w-0 flex-1">
-						<div class="mb-0.5 flex items-center justify-between">
-							<span class="text-xs text-c-neutral-6 dark:text-c-neutral-4">
-								{ts.get.checkIn[entry]}
-							</span>
-							<span class="text-xs font-medium text-c-neutral-8 dark:text-white">
-								{#if isNaN(value)}
-									-
-								{:else}
-									{value.toFixed(2)}
-								{/if}
-							</span>
-						</div>
-						<div class="h-1 overflow-hidden rounded-full bg-c-neutral-1 dark:bg-s-dark-3">
-							<div
-								class="h-full rounded-full transition-all duration-300 {entry === 'food_amount'? getBarColorFood(value): getBarColor(value)}"
-								style="width: {isNaN(value) ? 0 : (value / 5) * 100}%"
-							></div>
-						</div>
-					</div>
-				</div>
+				<CheckInWidgetRow
+					label={ts.get.checkIn[entry]}
+					value={getMeanValue(checkInData.data, entry)}
+					icon={getIcon(entry)}
+				/>
 			{/each}
 			<div class="mt-1 border-t border-c-neutral-1 pt-2 dark:border-s-dark-3">
 				<div class="flex items-center gap-2.5">

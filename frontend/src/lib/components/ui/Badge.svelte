@@ -5,13 +5,13 @@
 		top,
 		right,
 		light = false
-	} = $props<{
+	}: {
 		i: number;
 		color: string;
 		top?: string;
 		right?: string;
 		light?: boolean;
-	}>();
+	} = $props();
 </script>
 
 <div

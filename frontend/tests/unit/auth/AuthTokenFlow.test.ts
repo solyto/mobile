@@ -1,11 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import type ApiService from '$lib/services/ApiService';
+import ApiService from '$lib/services/ApiService';
 import { Todos } from '$lib/state/Todos.svelte';
 import { Finances } from '$lib/state/Finances.svelte';
 
-const { testAuth, constructorTokens } = vi.hoisted(() => ({
-	testAuth: { getToken: vi.fn(() => 'default-token') },
-	constructorTokens: [] as (string | null)[]
+const { testAuth } = vi.hoisted(() => ({
+	testAuth: {
+		getToken: vi.fn(() => 'default-token'),
+		apiService: null as unknown as ApiService
+	}
 }));
 
 vi.mock('$app/state', () => ({
@@ -20,52 +22,29 @@ vi.mock('$lib/state/Auth.svelte', () => ({
 	setAuth: () => testAuth
 }));
 
-vi.mock('$lib/services/ApiService', async (importOriginal) => {
-	const actual = await importOriginal<typeof import('$lib/services/ApiService')>();
-	const ApiServiceCtor = actual.default as new (token?: string | null) => ApiService;
-	return {
-		default: class extends ApiServiceCtor {
-			constructor(token?: string | null) {
-				super(token);
-				constructorTokens.push(token ?? null);
-			}
-		}
-	};
-});
-
 beforeEach(() => {
-	constructorTokens.length = 0;
 	vi.clearAllMocks();
 	testAuth.getToken.mockReturnValue('default-token');
+	testAuth.apiService = new ApiService('session-token');
 });
 
 afterEach(() => {
 	vi.unstubAllGlobals();
 });
 
-describe('auth token capture at store construction', () => {
-	it('passes the current auth token into the Todos ApiService', () => {
-		testAuth.getToken.mockReturnValue('todo-session-token');
-		new Todos();
-		expect(constructorTokens).toEqual(['todo-session-token']);
-	});
-
-	it('passes the current auth token into the Finances ApiService', () => {
-		testAuth.getToken.mockReturnValue('finance-session-token');
-		new Finances();
-		expect(constructorTokens).toEqual(['finance-session-token']);
-	});
-
-	it('captures the token as a snapshot at construction time', () => {
-		testAuth.getToken.mockReturnValue('first-token');
+describe('stores share the Auth ApiService instance', () => {
+	it('does not construct its own ApiService but uses the shared one', () => {
 		const todos = new Todos();
-		testAuth.getToken.mockReturnValue('changed-token');
-		expect(todos.apiService.authToken).toBe('first-token');
+		expect(todos.apiService).toBe(testAuth.apiService);
+
+		const finances = new Finances();
+		expect(finances.apiService).toBe(testAuth.apiService);
 	});
 
-	it('sends the captured token as a Bearer header on requests', async () => {
-		testAuth.getToken.mockReturnValue('session-token');
+	it('sends whatever token the shared instance currently holds', async () => {
 		const todos = new Todos();
+		// A runtime refresh updates the shared instance, not just Auth.
+		testAuth.apiService.updateAuthToken('refreshed-token');
 
 		const fetchMock = vi
 			.fn()
@@ -75,7 +54,7 @@ describe('auth token capture at store construction', () => {
 		await todos.apiService.list('/todos');
 
 		expect(fetchMock).toHaveBeenCalledWith('/todos', {
-			headers: { Authorization: 'Bearer session-token', Accept: 'application/json' }
+			headers: { Authorization: 'Bearer refreshed-token', Accept: 'application/json' }
 		});
 	});
 });

@@ -41,7 +41,7 @@
 			title: titleValue || null,
 			url: urlValue,
 			tags: selectedTags.length > 0 ? selectedTags.map((tag) => Number(tag.value)) : undefined,
-			category_id: null
+			category_id: library.getActiveCategoryId()
 		};
 		const ok = await library.create(request);
 		if (ok) {

@@ -46,6 +46,7 @@
 
 	{#if entry.description}
 		<div class="">
+			<!-- eslint-disable-next-line svelte/no-at-html-tags -- sanitised with DOMPurify -->
 			{@html DOMPurify.sanitize(nl2br(entry.description))}
 		</div>
 	{/if}
@@ -65,7 +66,7 @@
 					{/if}
 				</div>
 				<ul class="flex flex-col gap-1">
-					{#each entry.ingredients as ingredient}
+					{#each entry.ingredients as ingredient, i (i)}
 						<li class="flex gap-2">
 							{#if ingredient.amount !== null}
 								<span class="min-w-16 font-medium">
@@ -84,9 +85,10 @@
 		{#if entry.steps.length > 0}
 			<div class="flex flex-col gap-4">
 				<h3 class="font-bold">{ts.get.libraries.recipes.steps}</h3>
-				{#each entry.steps as step, i}
+				{#each entry.steps as step, i (i)}
 					<div class="flex flex-row items-start gap-4">
 						<span class="rounded-full bg-c-neutral-1 size-6 flex justify-center items-center text-xs">{i+1}</span>
+						<!-- eslint-disable-next-line svelte/no-at-html-tags -- sanitised with DOMPurify -->
 						<div>{@html DOMPurify.sanitize(nl2br(step))}</div>
 					</div>
 				{/each}

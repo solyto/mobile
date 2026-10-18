@@ -8,9 +8,9 @@
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
 	import { onDestroy, onMount } from 'svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
-	import { getKeyManager } from '$lib/KeyManager.svelte';
+	import { getKeyManager } from '$lib/state/KeyManager.svelte';
 
-	let { entry } = $props<{ entry: DevRequest }>();
+	let { entry }: { entry: DevRequest } = $props();
 
 	const devRequests = getDevRequests();
 	const ts = getTranslation();
@@ -20,7 +20,7 @@
 	let comments = $state<DevRequestComment[]>([]);
 	let newComment = $state<string>('');
 	let submitting = $state<boolean>(false);
-	let keyHandlers = $state<{ [key: string]: string | null }>({ Enter: null, Escape: null });
+	let keyHandlers: { [key: string]: string | null } = { Enter: null, Escape: null };
 
 	onMount(async () => {
 		loadingIndicator.start();

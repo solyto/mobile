@@ -3,7 +3,7 @@
 	import { getDevRequests } from '$lib/state/DevRequests.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 
-	let { entry, editable = true } = $props<{ entry: DevRequest; editable?: boolean }>();
+	let { entry, editable = true }: { entry: DevRequest; editable?: boolean } = $props();
 
 	const devRequests = getDevRequests();
 	const ts = getTranslation();

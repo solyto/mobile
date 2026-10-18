@@ -15,7 +15,9 @@ import {
 	getCurrentYearMonthString,
 	getISODateInfo,
 	getCalendarMonth,
-	getCalendarWeek
+	getCalendarWeek,
+	getISOWeek,
+	getISOWeeksInYear
 } from '$lib/helpers/DateHelper';
 
 // Aug 15 2025, 14:30 — TZ=UTC so no timezone surprises
@@ -184,5 +186,34 @@ describe('getCalendarWeek', () => {
 		expect(days[0].weekday).toBe(1);
 		expect(days[0].date.getDate()).toBe(11); // ISO week 33 of 2025 = Aug 11-17
 		expect(days[6].date.getDate()).toBe(17);
+	});
+
+	const ymd = (date: Date) =>
+		`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
+	it.each([
+		[2021, 1, '2021-01-04'], // Jan 1 is a Friday
+		[2025, 1, '2024-12-30'], // Jan 1 is a Wednesday
+		[2026, 1, '2025-12-29'], // Jan 1 is a Thursday
+		[2027, 1, '2027-01-04'], // Jan 1 is a Friday
+		[2027, 10, '2027-03-08'],
+		[2028, 1, '2028-01-03'], // Jan 1 is a Saturday
+		[2023, 1, '2023-01-02'], // Jan 1 is a Sunday
+		[2020, 53, '2020-12-28'],
+		[2026, 53, '2026-12-28']
+	])('starts ISO week %i/%i on %s', (year, week, monday) => {
+		expect(ymd(getCalendarWeek(year, week)[0].date)).toBe(monday);
+	});
+
+	it('matches getISOWeek for every week from 2000 to 2100', () => {
+		for (let year = 2000; year <= 2100; year++) {
+			for (let week = 1; week <= getISOWeeksInYear(year); week++) {
+				const days = getCalendarWeek(year, week);
+				for (const day of days) {
+					expect(getISOWeek(day.date)).toEqual({ week, year });
+				}
+				expect(days[0].weekday).toBe(1);
+			}
+		}
 	});
 });

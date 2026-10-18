@@ -7,13 +7,13 @@
 		placeholder,
 		onblur,
 		oninput
-	} = $props<{
+	}: {
 		input?: HTMLInputElement | null;
 		date: SvelteDate;
 		placeholder?: string;
 		onblur?: () => void;
 		oninput?: () => void;
-	}>();
+	} = $props();
 
 	let value = $derived<string>(
 		`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`

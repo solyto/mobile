@@ -1,10 +1,11 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Calendars } from '$lib/state/Calendars.svelte';
 import { api, storage, resetStoreMocks } from '../setup/storeMocks';
 import { todo } from '../helpers/factories';
 import { SvelteDate } from 'svelte/reactivity';
 import { getWeekNumber } from '$lib/helpers/DateHelper';
-import type { Calendar, CalendarEvent } from '$lib/types/calendar';
+import type { Calendar, CalendarEvent, UpdateEventRequest } from '$lib/types/calendar';
+import { apiRoutes } from '$lib/config/apiRoutes';
 
 function event(overrides: Partial<CalendarEvent> = {}): CalendarEvent {
 	return {
@@ -32,6 +33,10 @@ function event(overrides: Partial<CalendarEvent> = {}): CalendarEvent {
 
 beforeEach(() => {
 	resetStoreMocks();
+});
+
+afterEach(() => {
+	vi.useRealTimers();
 });
 
 describe('Calendars store', () => {
@@ -97,24 +102,49 @@ describe('Calendars store', () => {
 	});
 
 	describe('loadEvents', () => {
-		it('requests events for the current year-month and builds sortedEvents', async () => {
-			const e1 = event({
+		function apiEvent(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+			return {
 				id: 1,
-				start_date: new SvelteDate(2026, 7, 10, 10, 0),
-				end_date: new SvelteDate(2026, 7, 10, 11, 0)
-			});
-			const e2 = event({
-				id: 2,
-				title: 'Second',
-				start_date: new SvelteDate(2026, 7, 14, 9, 0),
-				end_date: new SvelteDate(2026, 7, 14, 10, 0)
-			});
-			api.list.mockResolvedValue({ data: [e1, e2] });
+				uri: 'event-1',
+				title: 'Event',
+				description: '',
+				location: '',
+				start_date: '2026-08-10T10:00:00Z',
+				end_date: '2026-08-10T11:00:00Z',
+				is_all_day: false,
+				is_recurring: false,
+				recurrence_rule: null,
+				recurrence_end: null,
+				original_start_date: null,
+				created_at: null,
+				updated_at: null,
+				calendar_id: 1,
+				calendar_name: 'Personal',
+				calendar_color: '#fff',
+				etag: '',
+				...overrides
+			};
+		}
 
+		async function loadAugust(data: Record<string, unknown>[]): Promise<Calendars> {
+			api.list.mockResolvedValue({ data });
 			const c = new Calendars();
 			c.currentYear = 2026;
 			c.currentMonth = 8;
 			await c.loadEvents();
+			return c;
+		}
+
+		it('requests events for the current year-month and builds sortedEvents', async () => {
+			const c = await loadAugust([
+				apiEvent({ id: 1 }),
+				apiEvent({
+					id: 2,
+					title: 'Second',
+					start_date: '2026-08-14T09:00:00Z',
+					end_date: '2026-08-14T10:00:00Z'
+				})
+			]);
 
 			expect(api.list).toHaveBeenCalledWith(
 				expect.stringContaining('/calendars/events/2026-08')
@@ -124,41 +154,87 @@ describe('Calendars store', () => {
 			expect(c.sortedEvents['14.08.2026'][0].id).toBe(2);
 		});
 
+		it('converts the date strings to Date instances and keeps the other fields', async () => {
+			const c = await loadAugust([
+				apiEvent({ id: 1 }),
+				apiEvent({
+					id: 2,
+					is_recurring: true,
+					recurrence_rule: 'FREQ=WEEKLY',
+					recurrence_end: '2026-12-31T00:00:00Z',
+					original_start_date: '2026-08-03T10:00:00Z'
+				})
+			]);
+
+			const [plain, recurring] = c.events;
+			expect(plain.start_date).toBeInstanceOf(Date);
+			expect(plain.start_date.getTime()).toBe(Date.UTC(2026, 7, 10, 10, 0));
+			expect(plain.end_date).toBeInstanceOf(Date);
+			expect(plain.end_date.getTime()).toBe(Date.UTC(2026, 7, 10, 11, 0));
+			expect(plain.recurrence_end).toBeNull();
+			expect(plain.original_start_date).toBeNull();
+			expect(plain.title).toBe('Event');
+			expect(plain.calendar_name).toBe('Personal');
+
+			expect(recurring.recurrence_end).toBeInstanceOf(Date);
+			expect(recurring.recurrence_end!.getTime()).toBe(Date.UTC(2026, 11, 31));
+			expect(recurring.original_start_date).toBeInstanceOf(Date);
+			expect(recurring.original_start_date!.getTime()).toBe(Date.UTC(2026, 7, 3, 10, 0));
+			expect(recurring.recurrence_rule).toBe('FREQ=WEEKLY');
+		});
+
 		it('expands multi-day all-day events onto every spanned day', async () => {
-			const multiDay = event({
-				id: 1,
-				is_all_day: true,
-				start_date: new SvelteDate(2026, 7, 10),
-				end_date: new SvelteDate(2026, 7, 12)
-			});
-			api.list.mockResolvedValue({ data: [multiDay] });
+			const c = await loadAugust([
+				apiEvent({
+					is_all_day: true,
+					start_date: '2026-08-10T00:00:00Z',
+					end_date: '2026-08-12T00:00:00Z'
+				})
+			]);
 
-			const c = new Calendars();
-			c.currentYear = 2026;
-			c.currentMonth = 8;
-			await c.loadEvents();
-
+			expect(Object.keys(c.sortedEvents)).toEqual(['10.08.2026', '11.08.2026', '12.08.2026']);
 			expect(c.sortedEvents['10.08.2026']).toHaveLength(1);
 			expect(c.sortedEvents['11.08.2026']).toHaveLength(1);
-			// the loop pushes the incremented date before re-checking, so the end date is included
+			// the end date is included
 			expect(c.sortedEvents['12.08.2026']).toHaveLength(1);
 		});
 
 		it('does not expand single-day all-day events', async () => {
-			const singleDay = event({
-				id: 1,
-				is_all_day: true,
-				start_date: new SvelteDate(2026, 7, 10),
-				end_date: new SvelteDate(2026, 7, 11)
-			});
-			api.list.mockResolvedValue({ data: [singleDay] });
-
-			const c = new Calendars();
-			c.currentYear = 2026;
-			c.currentMonth = 8;
-			await c.loadEvents();
+			const c = await loadAugust([
+				apiEvent({
+					is_all_day: true,
+					start_date: '2026-08-10T00:00:00Z',
+					end_date: '2026-08-11T00:00:00Z'
+				})
+			]);
 
 			expect(Object.keys(c.sortedEvents)).toEqual(['10.08.2026']);
+		});
+
+		it('does not expand timed events spanning more than one day', async () => {
+			const c = await loadAugust([
+				apiEvent({
+					start_date: '2026-08-10T10:00:00Z',
+					end_date: '2026-08-12T10:00:00Z'
+				})
+			]);
+
+			expect(Object.keys(c.sortedEvents)).toEqual(['10.08.2026']);
+		});
+
+		it('puts the loaded event into every sortedEvents bucket it spans', async () => {
+			const c = await loadAugust([
+				apiEvent({
+					is_all_day: true,
+					start_date: '2026-08-10T00:00:00Z',
+					end_date: '2026-08-12T00:00:00Z'
+				})
+			]);
+
+			const [loaded] = c.events;
+			expect(c.sortedEvents['10.08.2026'][0]).toEqual(loaded);
+			expect(c.sortedEvents['11.08.2026'][0]).toEqual(loaded);
+			expect(c.sortedEvents['12.08.2026'][0]).toEqual(loaded);
 		});
 
 		it('keeps the previous events when the request fails', async () => {
@@ -276,41 +352,131 @@ describe('Calendars store', () => {
 	describe('week navigation', () => {
 		it('nextWeek advances the week and updates the mobile week start', () => {
 			const c = new Calendars();
-			c.currentYear = 2026;
+			c.currentWeekYear = 2026;
 			c.currentWeek = 32;
 			c.nextWeek();
 			expect(c.currentWeek).toBe(33);
 			expect(c.mobileWeekStart.getFullYear()).toBe(2026);
 		});
 
-		it('nextWeek wraps week 53 into the next year', () => {
-			const c = new Calendars();
-			c.currentYear = 2026;
-			c.currentMonth = 12;
-			c.currentWeek = 53;
-			c.nextWeek();
-			expect(c.currentYear).toBe(2027);
-			expect(c.currentMonth).toBe(13); // month is incremented without clamping (current behaviour)
-			expect(c.currentWeek).toBe(2);
-		});
-
 		it('lastWeek goes back a week', () => {
 			const c = new Calendars();
-			c.currentYear = 2026;
+			c.currentWeekYear = 2026;
 			c.currentWeek = 32;
 			c.lastWeek();
 			expect(c.currentWeek).toBe(31);
 		});
 
-		it('lastWeek wraps week 1 into the previous year', () => {
+		it('nextWeek wraps the last week of a 52-week year into week 1', () => {
 			const c = new Calendars();
-			c.currentYear = 2026;
-			c.currentMonth = 1;
+			c.currentWeekYear = 2025;
+			c.currentWeek = 52;
+			c.nextWeek();
+			expect(c.currentWeekYear).toBe(2026);
+			expect(c.currentWeek).toBe(1);
+			expect(c.mobileWeekStart).toEqual(new Date(2025, 11, 29));
+		});
+
+		it('nextWeek wraps week 53 of a 53-week year into week 1', () => {
+			const c = new Calendars();
+			c.currentWeekYear = 2026;
+			c.currentWeek = 53;
+			c.nextWeek();
+			expect(c.currentWeekYear).toBe(2027);
+			expect(c.currentWeek).toBe(1);
+		});
+
+		it('lastWeek wraps week 1 into the last week of a 52-week year', () => {
+			const c = new Calendars();
+			c.currentWeekYear = 2026;
 			c.currentWeek = 1;
 			c.lastWeek();
-			expect(c.currentYear).toBe(2025);
-			expect(c.currentMonth).toBe(0); // month is decremented without clamping (current behaviour)
+			expect(c.currentWeekYear).toBe(2025);
 			expect(c.currentWeek).toBe(52);
+			expect(c.mobileWeekStart).toEqual(new Date(2025, 11, 22));
+		});
+
+		it('lastWeek wraps week 1 into week 53 of a 53-week year', () => {
+			const c = new Calendars();
+			c.currentWeekYear = 2027;
+			c.currentWeek = 1;
+			c.lastWeek();
+			expect(c.currentWeekYear).toBe(2026);
+			expect(c.currentWeek).toBe(53);
+			expect(c.mobileWeekStart).toEqual(new Date(2026, 11, 28));
+		});
+
+		it('nextWeek and lastWeek leave the calendar year and month alone', () => {
+			const c = new Calendars();
+			c.currentYear = 2026;
+			c.currentMonth = 12;
+			c.currentWeekYear = 2026;
+			c.currentWeek = 53;
+			c.nextWeek();
+			expect(c.currentYear).toBe(2026);
+			expect(c.currentMonth).toBe(12);
+			c.lastWeek();
+			c.lastWeek();
+			expect(c.currentYear).toBe(2026);
+			expect(c.currentMonth).toBe(12);
+		});
+	});
+
+	describe('week-year around New Year', () => {
+		const days = [
+			{ date: new Date(2025, 11, 29, 12, 0), year: 2025, month: 12 },
+			{ date: new Date(2025, 11, 30, 12, 0), year: 2025, month: 12 },
+			{ date: new Date(2025, 11, 31, 12, 0), year: 2025, month: 12 },
+			{ date: new Date(2026, 0, 1, 12, 0), year: 2026, month: 1 },
+			{ date: new Date(2026, 0, 2, 12, 0), year: 2026, month: 1 },
+			{ date: new Date(2026, 0, 3, 12, 0), year: 2026, month: 1 },
+			{ date: new Date(2026, 0, 4, 12, 0), year: 2026, month: 1 }
+		];
+
+		for (const { date, year, month } of days) {
+			const label = date.toDateString();
+
+			it(`constructor on ${label} is in 2026-W1 and the calendar month`, () => {
+				vi.useFakeTimers({ toFake: ['Date'] });
+				vi.setSystemTime(date);
+
+				const c = new Calendars();
+
+				expect(c.currentWeekYear).toBe(2026);
+				expect(c.currentWeek).toBe(1);
+				expect(c.currentYear).toBe(year);
+				expect(c.currentMonth).toBe(month);
+			});
+
+			it(`goToToday on ${label} is in 2026-W1 and the calendar month`, async () => {
+				vi.useFakeTimers({ toFake: ['Date'] });
+				vi.setSystemTime(date);
+
+				const c = new Calendars();
+				c.currentWeekYear = 2020;
+				c.currentWeek = 10;
+				c.currentYear = 2020;
+				c.currentMonth = 3;
+				await c.goToToday();
+
+				expect(c.currentWeekYear).toBe(2026);
+				expect(c.currentWeek).toBe(1);
+				expect(c.currentYear).toBe(year);
+				expect(c.currentMonth).toBe(month);
+			});
+		}
+
+		it('goToToday on 2027-01-01 is in week 53 of 2026', async () => {
+			vi.useFakeTimers({ toFake: ['Date'] });
+			vi.setSystemTime(new Date(2027, 0, 1, 12, 0));
+
+			const c = new Calendars();
+			await c.goToToday();
+
+			expect(c.currentWeekYear).toBe(2026);
+			expect(c.currentWeek).toBe(53);
+			expect(c.currentYear).toBe(2027);
+			expect(c.currentMonth).toBe(1);
 		});
 	});
 
@@ -341,6 +507,24 @@ describe('Calendars store', () => {
 					`/calendars/events/${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
 				)
 			);
+		});
+
+		it('goToToday navigates to a pinned system date', async () => {
+			vi.useFakeTimers({ toFake: ['Date'] });
+			vi.setSystemTime(new Date(2026, 2, 4, 12, 0));
+
+			const c = new Calendars();
+			c.currentDate = new Date(2020, 0, 1);
+			c.currentWeek = 1;
+			c.currentMonth = 1;
+			c.currentYear = 2020;
+			await c.goToToday();
+
+			expect(c.currentYear).toBe(2026);
+			expect(c.currentMonth).toBe(3);
+			expect(c.currentWeek).toBe(10);
+			expect(c.currentDate).toEqual(new Date(2026, 2, 4, 12, 0));
+			expect(api.list).toHaveBeenCalledWith(expect.stringContaining('/calendars/events/2026-03'));
 		});
 	});
 
@@ -410,6 +594,105 @@ describe('Calendars store', () => {
 			await c.loadCalendars();
 			expect(c.calendars).toHaveLength(1);
 			expect(c.loaded).toBe(true);
+		});
+	});
+
+	describe('updateEvent', () => {
+		// Third occurrence (Oct 16) of a daily series at 9:00 that started Oct 14
+		function occurrence(overrides: Partial<CalendarEvent> = {}): CalendarEvent {
+			return event({
+				start_date: new SvelteDate(2030, 9, 16, 9, 0),
+				end_date: new SvelteDate(2030, 9, 16, 10, 0),
+				is_recurring: true,
+				recurrence_rule: 'FREQ=DAILY',
+				original_start_date: new SvelteDate(2030, 9, 16, 9, 0),
+				...overrides
+			});
+		}
+
+		function formRequest(entry: CalendarEvent, start_date: string): UpdateEventRequest {
+			return {
+				calendar_id: entry.calendar_id,
+				title: 'Renamed',
+				description: entry.description,
+				location: entry.location,
+				start_date,
+				end_date: start_date,
+				is_all_day: entry.is_all_day,
+				is_recurring: entry.is_recurring,
+				recurrence_rule: entry.recurrence_rule,
+				recurrence_end: null,
+				etag: entry.etag
+			};
+		}
+
+		function sentBody(): UpdateEventRequest {
+			return api.update.mock.calls[0][2];
+		}
+
+		beforeEach(() => {
+			api.update.mockResolvedValue(true);
+			api.put.mockResolvedValue(true);
+			api.list.mockResolvedValue({ data: [] });
+		});
+
+		it('sends the listed occurrence start unchanged when only the title of the series changes', async () => {
+			const entry = occurrence();
+
+			await new Calendars().updateEvent(entry, formRequest(entry, '2030-10-16T09:00:00'));
+
+			expect(sentBody().start_date).toBe('2030-10-16T09:00:00');
+			expect(sentBody().occurrence_start_date).toBe('2030-10-16T09:00:00');
+		});
+
+		it('sends the start from before the drag when the series is dragged by an hour', async () => {
+			const c = new Calendars();
+
+			await c.moveEvent(occurrence(), { date: new SvelteDate(2030, 9, 16), hour: 10, minute: 0 });
+			await c.resolvePendingMove(false);
+
+			expect(sentBody().start_date).toBe('2030-10-16T10:00:00');
+			expect(sentBody().occurrence_start_date).toBe('2030-10-16T09:00:00');
+		});
+
+		it('sends the start from before the drag when the series is dragged to the next day', async () => {
+			const c = new Calendars();
+
+			await c.moveEvent(occurrence(), { date: new SvelteDate(2030, 9, 17), hour: 9, minute: 0 });
+			await c.resolvePendingMove(false);
+
+			expect(sentBody().start_date).toBe('2030-10-17T09:00:00');
+			expect(sentBody().occurrence_start_date).toBe('2030-10-16T09:00:00');
+		});
+
+		it('sends the listed start of a moved occurrence, not its original slot', async () => {
+			const entry = occurrence({
+				start_date: new SvelteDate(2030, 9, 16, 8, 0),
+				end_date: new SvelteDate(2030, 9, 16, 9, 0)
+			});
+
+			await new Calendars().updateEvent(entry, formRequest(entry, '2030-10-16T08:00:00'));
+
+			expect(sentBody().start_date).toBe('2030-10-16T08:00:00');
+			expect(sentBody().occurrence_start_date).toBe('2030-10-16T08:00:00');
+		});
+
+		it('sends no occurrence start for a single event', async () => {
+			const entry = event();
+
+			await new Calendars().updateEvent(entry, formRequest(entry, '2026-08-10T10:00:00'));
+
+			expect(sentBody()).not.toHaveProperty('occurrence_start_date');
+		});
+
+		it('sends no occurrence start when only this occurrence is changed', async () => {
+			const c = new Calendars();
+
+			await c.moveEvent(occurrence(), { date: new SvelteDate(2030, 9, 16), hour: 10, minute: 0 });
+			await c.resolvePendingMove(true);
+
+			expect(api.update).not.toHaveBeenCalled();
+			expect(api.put.mock.calls[0][1]).not.toHaveProperty('occurrence_start_date');
 		});
 	});
 
@@ -560,6 +843,32 @@ describe('Calendars store', () => {
 			c.cancelPendingMove();
 			expect(c.pendingMove).toBeNull();
 			expect(api.update).not.toHaveBeenCalled();
+		});
+	});
+
+	describe('calendar deletes go through the shared ApiService', () => {
+		it('deleteOccurrence deletes the encoded occurrence and reloads events', async () => {
+			api.delete.mockResolvedValue(true);
+			api.list.mockResolvedValue({ data: [] });
+			const c = new Calendars();
+			const occurrence = new Date(Date.UTC(2026, 7, 10, 10, 0));
+
+			const ok = await c.deleteOccurrence(event(), occurrence);
+
+			expect(ok).toBe(true);
+			expect(api.delete).toHaveBeenCalledWith(
+				apiRoutes.calendars.deleteOccurrence.replace('%d', '1').replace('%s', 'event-1'),
+				encodeURIComponent('2026-08-10T10:00:00.000Z')
+			);
+			expect(api.list).toHaveBeenCalledWith(expect.stringContaining('/calendars/events/'));
+		});
+
+		it('deleteOccurrence does not reload events on failure', async () => {
+			api.delete.mockResolvedValue(false);
+			const c = new Calendars();
+
+			await expect(c.deleteOccurrence(event(), new Date())).resolves.toBe(false);
+			expect(api.list).not.toHaveBeenCalled();
 		});
 	});
 });

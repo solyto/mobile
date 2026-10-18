@@ -2,12 +2,13 @@
 	import { onDestroy, tick } from 'svelte';
 	import { getFinances } from '$lib/state/Finances.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
-	import { getKeyManager } from '$lib/KeyManager.svelte';
+	import { getKeyManager } from '$lib/state/KeyManager.svelte';
 	import TextInput from '$lib/components/forms/TextInput.svelte';
 	import type { CreateWealthFieldRequest } from '$lib/types/finance';
-	import IconPlus from '@lucide/svelte/icons/plus';
+	import AddButton from '$lib/components/ui/buttons/AddButton.svelte';
 	import { getViewPoint } from '$lib/state/Viewpoint.svelte';
-	import BottomSheetConfirmationModal from '../ui/BottomSheetConfirmationModal.svelte';
+	import BottomSheetModal from '$lib/components/ui/BottomSheetModal.svelte';
+	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 
 	const loadingIndicator = getLoadingIndicator();
@@ -19,7 +20,7 @@
 	let formOpen = $state<boolean>(false);
 	let titleInput = $state<HTMLInputElement | null>(null);
 	let titleValue = $state<string>('');
-	let keyHandlers = $state<{ [key: string]: string | null }>({ Enter: null, Escape: null });
+	let keyHandlers: { [key: string]: string | null } = { Enter: null, Escape: null };
 
 	async function toggleForm() {
 		formOpen = !formOpen;
@@ -71,18 +72,13 @@
 		{#if viewPoint.isDesktop}
 			<TextInput placeholder="Title" bind:input={titleInput} bind:value={titleValue} />
 		{:else}
-			<BottomSheetConfirmationModal
-				title={ts.get.finances.add_entry}
-				onConfirm={onSubmit}
-				onCancel={onblur}
-			>
+			<BottomSheetModal title={ts.get.finances.add_entry} onClose={onblur}>
 				<TextInput placeholder="Title" bind:input={titleInput} bind:value={titleValue} />
-			</BottomSheetConfirmationModal>
+				<TextButton title={ts.get.layout.modal_confirm} type="action" onclick={onSubmit} class="mt-8 w-full" />
+			</BottomSheetModal>
 		{/if}
 	{/if}
 	{#if viewPoint.isMobile || !formOpen}
-		<button class="cursor-pointer rounded-lg p-2 transition-all" onclick={toggleForm}>
-			<IconPlus />
-		</button>
+		<AddButton colorOnHover={true} onClick={toggleForm} />
 	{/if}
 </div>

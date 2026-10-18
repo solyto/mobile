@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { fade, slide } from 'svelte/transition';
-	import Heading from '$lib/components/ui/Heading.svelte';
+	import SubHeading from '$lib/components/ui/SubHeading.svelte';
 	import { getFinances } from '$lib/state/Finances.svelte';
+	import { getAuth } from '$lib/state/Auth.svelte';
 	import { europeanFormat } from '$lib/helpers/NumberHelper.js';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { urls } from '$lib/config/urls';
-	import type { FinancePage } from '$lib/types/finance';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
@@ -16,20 +16,17 @@
 
 	const ts = getTranslation();
 	const finances = getFinances();
+	const auth = getAuth();
 
 	let colorLoaded = $state<boolean>(false);
-	const setActivePage = (type: FinancePage) => (finances.activePage = type);
 	const statisticsService = new WealthStatisticsService();
-	let statistics = $state<{ date: string; values: { field: string; value: number }[] }[]>([]);
-
-	$effect(() => {
-		if (finances.wealthLoaded) {
-			statisticsService.setData(finances.wealth);
-			statistics = statisticsService.getGraphValues() as unknown as {
-				date: string;
-				values: { field: string; value: number }[];
-			}[];
-		}
+	let statistics = $derived.by(() => {
+		if (!finances.wealthLoaded) return [];
+		statisticsService.setData(finances.wealth);
+		return statisticsService.getGraphValues() as unknown as {
+			date: string;
+			values: { field: string; value: number }[];
+		}[];
 	});
 
 	onMount(() => {
@@ -51,20 +48,11 @@
 				<button
 					type="button"
 					class="relative w-full cursor-pointer rounded-md p-4 shadow-sm transition-all hover:bg-d-lighterblue dark:shadow-s-dark-shadow dark:hover:bg-s-dark-3 md:dark:bg-s-dark-2"
-					onclick={() => {
-						setActivePage('budget');
-						goto(resolve(urls.budget));
-					}}
+					onclick={() => goto(resolve(urls.budget))}
 				>
-					<div class="absolute top-[10px] bottom-[10px] left-[10px]">
-						<div
-							class="h-full w-1 rounded-full transition-all duration-900"
-							class:bg-c-primary={colorLoaded}
-						></div>
-					</div>
-					<div class="flex w-full flex-row items-center justify-between pl-4">
-						<Heading title={ts.get.finances.budget} my={0} />
-						<span class="text-xl md:text-3xl"
+					<div class="flex w-full flex-col items-start gap-1">
+						<span class="text-sm text-c-neutral-5 dark:text-c-neutral-4">{ts.get.finances.budget}</span>
+						<span class="text-3xl tabular-nums md:text-4xl"
 							>{europeanFormat(finances.getBudgetTotal())}</span
 						>
 					</div>
@@ -74,20 +62,11 @@
 					class="relative w-full cursor-pointer rounded-md p-4 shadow-sm transition-all hover:bg-d-lighterblue dark:shadow-s-dark-shadow dark:hover:bg-s-dark-3 md:dark:bg-s-dark-2"
 					class:border-c-success={colorLoaded && finances.getWealthSum() > 0}
 					class:border-c-danger={colorLoaded && finances.getWealthSum() < 0}
-					onclick={() => {
-						setActivePage('wealth');
-						goto(resolve(urls.wealth));
-					}}
+					onclick={() => goto(resolve(urls.wealth))}
 				>
-					<div class="absolute top-[10px] bottom-[10px] left-[10px]">
-						<div
-							class="h-full w-1 rounded-full transition-all duration-900"
-							class:bg-c-primary={colorLoaded}
-						></div>
-					</div>
-					<div class="flex w-full flex-row items-center justify-between pl-4">
-						<Heading title={ts.get.finances.wealth} my={0} />
-						<span class="text-xl md:text-3xl"
+					<div class="flex w-full flex-col items-start gap-1">
+						<span class="text-sm text-c-neutral-5 dark:text-c-neutral-4">{ts.get.finances.wealth}</span>
+						<span class="text-3xl tabular-nums md:text-4xl"
 							>{europeanFormat(finances.getWealthSum())}</span
 						>
 					</div>
@@ -97,23 +76,21 @@
 
 		<div class="flex w-full flex-row gap-4 max-md:flex-col" in:slide>
 			<div class="relative w-full rounded-md p-4 shadow-sm dark:shadow-s-dark-shadow md:dark:bg-s-dark-2 ">
-				<div class="mb-4 pl-5">
-					<h2 class="text-xl">{ts.get.finances.income_vs_expenses}</h2>
-				</div>
-				<div class="pl-5">
+				<SubHeading title={ts.get.finances.income_vs_expenses} my={0} mb={8} />
+				<div>
 					<BarChart
 						categories={[ts.get.finances.income, ts.get.finances.expenses]}
 						values={[finances.getBudgetIncomeTotal(), finances.getBudgetExpenseTotal()]}
+						colors={['var(--color-c-success)', 'var(--color-c-danger)']}
+						opacity={0.8}
 					/>
 				</div>
 			</div>
 
 			{#if finances.wealth.length > 0}
 				<div class="relative w-full rounded-md p-4 shadow-sm dark:shadow-s-dark-shadow md:dark:bg-s-dark-2">
-					<div class="mb-4 pl-5">
-						<h2 class="text-xl">{ts.get.finances.wealth_distribution}</h2>
-					</div>
-					<div class="pl-5">
+					<SubHeading title={ts.get.finances.wealth_distribution} my={0} mb={4} />
+					<div>
 						<DoughnutChart
 							values={finances.wealth.map((wealth) => ({
 								value: wealth.currentValue?.value ?? 0,
@@ -130,13 +107,12 @@
 				class="relative w-full rounded-md p-4 shadow-sm dark:shadow-s-dark-shadow md:dark:bg-s-dark-2"
 				in:slide
 			>
-				<div class="mb-4 pl-5">
-					<h2 class="text-xl">{ts.get.finances.wealth_trend}</h2>
-				</div>
-				<div class="pl-5">
+				<SubHeading title={ts.get.finances.wealth_trend} my={0} mb={8} />
+				<div>
 					<SmoothLineChart
-						categories={statistics.map((stat) => stat.date)}
+						categories={statisticsService.getMonthLabels(statistics, auth.user?.settings?.date_format ?? null)}
 						values={getTotalSeriesData(statistics)}
+						min={statisticsService.getTrendMin(getTotalSeriesData(statistics))}
 						filled={true}
 					/>
 				</div>

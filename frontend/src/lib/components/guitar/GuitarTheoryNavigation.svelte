@@ -1,8 +1,8 @@
 <script lang="ts">
-	let { selected, onSelect } = $props<{
+	let { selected, onSelect }: {
 		selected: string;
 		onSelect: (key: string) => void;
-	}>();
+	} = $props();
 </script>
 
 {#snippet entry(key: string, label: string)}

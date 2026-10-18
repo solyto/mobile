@@ -88,7 +88,7 @@
 
 	const importDefs: Record<
 		string,
-		{ label: string; icon: any; domain: string; validationError: string }
+		{ label: string; icon: string; domain: string; validationError: string }
 	> = {
 		deezer: {
 			label: 'Deezer',
@@ -110,7 +110,7 @@
 		}
 	};
 
-	const importOptions: { label: string; icon: any; onClick: () => Promise<void> }[] = $derived(
+	const importOptions: { label: string; icon: string; onClick: () => Promise<void> }[] = $derived(
 		library.integrations
 			.map((provider) => {
 				const def = importDefs[provider];
@@ -122,7 +122,7 @@
 				};
 			})
 			.filter(
-				(option): option is { label: string; icon: any; onClick: () => Promise<void> } =>
+				(option): option is { label: string; icon: string; onClick: () => Promise<void> } =>
 					option !== null
 			)
 	);

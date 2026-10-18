@@ -9,7 +9,7 @@ import type {
 	FriendFeed
 } from '$lib/types/feed';
 import { getContext, setContext } from 'svelte';
-import { getAuth } from '$lib/state/Auth.svelte';
+import { getAuth, type Auth } from '$lib/state/Auth.svelte';
 import ApiService from '$lib/services/ApiService';
 import LocalStorageService from '$lib/services/LocalStorageService';
 import { apiRoutes } from '$lib/config/apiRoutes';
@@ -32,12 +32,18 @@ export class Feeds {
 	browseOpen = $state<boolean>(false);
 	view = $state<FeedEntrySize>('compact');
 	inLibrary = $state<string[]>([]);
-	auth = getAuth();
+	auth: Auth;
 	apiService: ApiService;
-	localStorage = new LocalStorageService();
+	localStorage: LocalStorageService;
 
-	constructor() {
-		this.apiService = new ApiService(this.auth.getToken());
+	constructor(
+		auth: Auth = getAuth(),
+		apiService: ApiService = auth.apiService,
+		localStorage: LocalStorageService = new LocalStorageService()
+	) {
+		this.auth = auth;
+		this.apiService = apiService;
+		this.localStorage = localStorage;
 		this.loadView();
 	}
 
@@ -116,7 +122,7 @@ export class Feeds {
 		return this.feedCounts[feed.feed_id] ?? 0;
 	}
 
-	saveToLibrary(feed: FeedSubscription): void {
+	saveToLibrary(feed: FeedItem): void {
 		if (this.inLibrary.includes(feed.id)) {
 			this.inLibrary = this.inLibrary.filter((id) => id !== feed.id);
 		} else {
@@ -126,7 +132,7 @@ export class Feeds {
 		this.storeInLibrary();
 	}
 
-	unsaveToLibrary(feed: FeedSubscription): void {
+	unsaveToLibrary(feed: FeedItem): void {
 		this.inLibrary = this.inLibrary.filter((id) => id !== feed.id);
 		this.storeInLibrary();
 	}

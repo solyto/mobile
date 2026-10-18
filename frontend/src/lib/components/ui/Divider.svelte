@@ -3,11 +3,11 @@
 		height = 2,
 		my = 4,
 		width = '100%'
-	} = $props<{
+	}: {
 		height?: number;
 		my?: number;
 		width?: string;
-	}>();
+	} = $props();
 </script>
 
 <div class="my-{my} bg-c-neutral dark:bg-s-dark-3" style="width: {width}; height: {height}px;"></div>

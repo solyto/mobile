@@ -1,5 +1,5 @@
 <script lang="ts">
-	let { selected = false } = $props<{ selected: boolean }>();
+	let { selected = false }: { selected: boolean } = $props();
 </script>
 
 {#snippet row()}

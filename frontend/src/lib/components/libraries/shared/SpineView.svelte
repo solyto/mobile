@@ -7,6 +7,7 @@
 	import type { Book } from '$lib/types/library_book';
 	import { API_USER_STORAGE_URL } from '$lib/config/apiRoutes';
 	import { getAuth } from '$lib/state/Auth.svelte';
+	import Spine from '$lib/components/libraries/shared/Spine.svelte';
 
 	interface SpineEntry {
 		id: string;
@@ -18,7 +19,7 @@
 	}
 
 	const auth = getAuth();
-	let { library } = $props<{ library: Library }>();
+	let { library }: { library: Library } = $props();
 
 	let entries = $derived(library.filteredEntries as SpineEntry[]);
 	const isSquare = $derived(library.config.type === 'music');
@@ -54,7 +55,6 @@
 		return isSquare ? VINYL_COVER_SIZE : BOOK_SPINE_H;
 	}
 
-	// Rows carry xOffset per entry so we can flip cover direction near left edge
 	let rows = $derived.by(() => {
 		if (containerWidth === 0) return [];
 		const result: { entry: SpineEntry; xOffset: number }[][] = [];
@@ -76,25 +76,8 @@
 		return result;
 	});
 
-	function spineColor(str: string): string {
-		let hash = 0;
-		for (let i = 0; i < str.length; i++) {
-			hash = (hash << 5) - hash + str.charCodeAt(i);
-			hash |= 0;
-		}
-		return `hsl(${Math.abs(hash) % 360}, 28%, 38%)`;
-	}
-
-	function spineTextColor(str: string): string {
-		let hash = 0;
-		for (let i = 0; i < str.length; i++) {
-			hash = (hash << 5) - hash + str.charCodeAt(i);
-			hash |= 0;
-		}
-		return `hsl(${Math.abs(hash) % 360}, 20%, 85%)`;
-	}
-
-	function coverUrl(entry: SpineEntry): string {
+	function coverUrl(entry: SpineEntry): string | null {
+		if (!entry.cover) return null;
 		return `${API_USER_STORAGE_URL}/${auth.user?.id}/${library.config.type}/${entry.cover}`;
 	}
 
@@ -119,7 +102,7 @@
 </script>
 
 <div class="w-full pb-10 pl-3" bind:clientWidth={containerWidth} in:fade>
-	{#each rows as row, rowIndex}
+	{#each rows as row, rowIndex (rowIndex)}
 		<div
 			class="relative flex items-end"
 			style="
@@ -129,121 +112,24 @@
 				perspective-origin: 50% 100%;
 			"
 		>
-			{#each row as { entry, xOffset }}
-				{@const spineW = getSpineWidth(entry)}
-				{@const coverW = getCoverW(entry.id)}
-				{@const coverH = getCoverH()}
-				{@const bg = spineColor(entry.title)}
-				{@const textCol = spineTextColor(entry.title)}
-				{@const isHovered = hoveredId === entry.id}
-				{@const flipRight = xOffset < coverW + 16}
-
-				<button
-					class="relative flex-shrink-0 cursor-pointer"
-					style="
-						width: {spineW}px;
-						height: {SPINE_H}px;
-						margin-right: {GAP}px;
-						z-index: {isHovered ? 20 : 1};
-						overflow: visible;
-						perspective: 700px;
-						perspective-origin: {flipRight ? 'left' : 'right'} center;
-					"
-					onmouseenter={() => (hoveredId = entry.id)}
-					onmouseleave={() => (hoveredId = null)}
-					onclick={() => handleClick(entry)}
-					aria-label={entry.title}
-				>
-					<!-- Spine -->
-					<div
-						style="
-							position: absolute;
-							inset: 0;
-							border-radius: 2px;
-							overflow: hidden;
-							background: {bg};
-							transform: {isHovered ? 'translateZ(30px) translateY(-10px)' : 'translateZ(0) translateY(0)'};
-							transition: transform 0.35s ease;
-							box-shadow: {isHovered ? '0 15px 35px rgba(0,0,0,0.35)' : '2px 0 4px rgba(0,0,0,0.2)'};
-						"
-					>
-						{#if entry.cover}
-							<img
-								src={coverUrl(entry)}
-								alt=""
-								aria-hidden="true"
-								class="pointer-events-none absolute inset-0 h-full w-full object-cover"
-								style="filter: blur(2px) brightness(0.55); transform: scale(1.1);"
-								loading="lazy"
-								decoding="async"
-							/>
-						{/if}
-						<span
-							style="
-								position: absolute;
-								bottom: 8px;
-								left: 0; right: 0;
-								text-align: center;
-								writing-mode: vertical-rl;
-								transform: rotate(180deg);
-								font-size: {isSquare ? 9 : 11}px;
-								font-weight: 600;
-								letter-spacing: 0.02em;
-								color: rgba(255,255,255,0.92);
-								overflow: hidden;
-								white-space: nowrap;
-								text-overflow: ellipsis;
-								max-height: 90%;
-								pointer-events: none;
-								text-shadow: 0 1px 4px rgba(0,0,0,0.6);
-							"
-						>
-							{entry.title}
-						</span>
-					</div>
-
-					<!-- Cover: flips direction near left edge to avoid nav overlap -->
-					<div
-						style="
-							position: absolute;
-							top: 0;
-							{flipRight ? 'left' : 'right'}: 0;
-							width: {coverW}px;
-							height: {coverH}px;
-							border-radius: 2px;
-							overflow: hidden;
-							background: {bg};
-							transform-origin: {flipRight ? 'left' : 'right'} center;
-							opacity: {isHovered ? 1 : 0};
-							transform: {isHovered
-								? `translateZ(50px) translateY(-14px) rotateY(0deg)`
-								: `translateZ(0) translateY(0) rotateY(${flipRight ? -35 : 35}deg)`};
-							transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-							box-shadow: 0 20px 50px rgba(0,0,0,0.45);
-							pointer-events: none;
-						"
-					>
-						{#if entry.cover}
-							<img
-								src={coverUrl(entry)}
-								alt={entry.title}
-								class="h-full w-full object-cover"
-								loading="lazy"
-								decoding="async"
-								onload={(e) => onCoverLoad(e, entry.id)}
-							/>
-						{:else}
-							<div class="flex h-full w-full items-end p-2">
-								<span class="text-xs font-semibold leading-tight" style="color: {textCol};">
-									{entry.title}
-								</span>
-							</div>
-						{/if}
-					</div>
-				</button>
+			{#each row as { entry, xOffset } (entry.id)}
+				<Spine
+					title={entry.title}
+					coverUrl={coverUrl(entry)}
+					{xOffset}
+					spineWidth={getSpineWidth(entry)}
+					spineHeight={SPINE_H}
+					coverWidth={getCoverW(entry.id)}
+					coverHeight={getCoverH()}
+					gap={GAP}
+					{isSquare}
+					hovered={hoveredId === entry.id}
+					onHover={(hovered) => (hoveredId = hovered ? entry.id : null)}
+					onCoverLoad={(e) => onCoverLoad(e, entry.id)}
+					onClick={() => handleClick(entry)}
+				/>
 			{/each}
 
-			<!-- Shelf plank -->
 			<div
 				class="pointer-events-none absolute right-0 bottom-0 left-0"
 				style="height: 5px; background: url('/wood-shelf.jpg') center/cover; box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 2px 8px rgba(0,0,0,0.4);"

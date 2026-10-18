@@ -5,11 +5,11 @@
 	import QuickSelectOverlay from '$lib/components/ui/QuickSelectOverlay.svelte';
 	import CheckInIcon from '$lib/components/check-in/overview/CheckInIcon.svelte';
 
-	let { type, date, value } = $props<{
+	let { type, date, value }: {
 		type: CheckInType;
 		date: string;
 		value: number | null;
-	}>();
+	} = $props();
 
 	const checkInData = getCheckInData();
 	const loadingIndicator = getLoadingIndicator();

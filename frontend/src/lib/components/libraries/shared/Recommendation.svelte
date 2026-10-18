@@ -9,10 +9,10 @@
 
 	const auth = getAuth();
 
-	let { library, item } = $props<{
+	let { library, item }: {
 		library: Library;
 		item: LibraryRecommendation;
-	}>();
+	} = $props();
 </script>
 
 <div

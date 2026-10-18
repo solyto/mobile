@@ -2,20 +2,15 @@
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import type { AddressBook } from '$lib/types/contact';
 
-	let { addressBook = $bindable(), availableAddressBooks } = $props<{
+	let { addressBook = $bindable(), availableAddressBooks }: {
 		addressBook: number;
 		availableAddressBooks: AddressBook[];
-		preSelect?: AddressBook;
-	}>();
+	} = $props();
 
 	const ts = getTranslation();
 
 	let menuOpen = $state<boolean>(false);
-	let selectedAddressBook = $derived(getSelected(addressBook) ?? availableAddressBooks[0]);
-
-	$effect(() => {
-		addressBook = selectedAddressBook.id;
-	});
+	let selectedAddressBook = $derived(getSelected(addressBook));
 
 	function getSelected(id: number): AddressBook | null {
 		if (!id) return null;

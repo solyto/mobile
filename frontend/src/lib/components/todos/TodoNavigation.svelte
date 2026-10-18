@@ -41,7 +41,7 @@
 				{ filter: { type: 'status', value: 'waiting' }, label: ts.get.todos.status_waiting },
 				{ filter: { type: 'status', value: 'almost-done' }, label: ts.get.todos.status_almost_done }
 			]
-		},
+		}
 	];
 </script>
 

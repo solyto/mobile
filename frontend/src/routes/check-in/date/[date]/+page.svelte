@@ -3,9 +3,9 @@
 	import DailyCheckIn from '$lib/components/check-in/daily/DailyCheckIn.svelte';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
 	import { page } from '$app/state';
+	import { afterNavigate } from '$app/navigation';
 	import {
 		formatDate,
-		getUrlFormat,
 		isDateToday,
 		isDateYesterday
 	} from '$lib/helpers/DateHelper';
@@ -13,7 +13,6 @@
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
-	import { SvelteDate } from 'svelte/reactivity';
 
 	const checkInData = getCheckInData();
 	const ts = getTranslation();
@@ -21,19 +20,17 @@
 	const notifications = getUiNotifications();
 
 	let save = $state<CreateCheckInRequest | null>(null);
-	let date = $state(page.params.date);
-	let dayData = $state(checkInData.getDayData());
+	let date = $derived(page.params.date);
+	let dayData = $derived(checkInData.getDayData());
 
-	const isToday = $derived(isDateToday(new SvelteDate(date)));
-	const isYesterday = $derived(isDateYesterday(new SvelteDate(date)));
+	const isToday = $derived(isDateToday(new Date(date as string)));
+	const isYesterday = $derived(isDateYesterday(new Date(date as string)));
 
-	$effect(() => {
-		date = page.params.date;
-		dayData = checkInData.getDayData();
+	afterNavigate(() => {
 		save = null;
 	});
 
-	async function onChange(type: CheckInType, value: number): Promise<void> {
+	async function onChange(type: CheckInType, value: number | null): Promise<void> {
 		if (save === null) {
 			save = { date: checkInData.selectedDate!, [type]: value };
 		} else {
@@ -44,7 +41,7 @@
 	async function onSave(): Promise<void> {
 		if (save === null || save.date === null) return;
 		loadingIndicator.start();
-		await checkInData.save(save);
+		if (await checkInData.save(save)) save = null;
 		loadingIndicator.stop();
 		notifications.success(ts.get.checkIn.save_success);
 	}

@@ -1,5 +1,5 @@
 <script lang="ts">
-	let { fill } = $props<{ fill: 0 | 25 | 50 | 75 | 100 }>();
+	let { fill }: { fill: 0 | 25 | 50 | 75 | 100 } = $props();
 
 	const id = Math.random().toString(36).slice(2, 8);
 	const gradientId = `mg-${id}`;

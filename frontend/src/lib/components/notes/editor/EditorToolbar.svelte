@@ -1,29 +1,28 @@
 <script lang="ts">
-	import type { Editor } from '@tiptap/core'
-	import InsertImageModal from './InsertImageModal.svelte'
-	import InsertLinkModal from './InsertLinkModal.svelte'
-	import ToolbarDivider from '$lib/components/notes/editor/ToolbarDivider.svelte'
-	import { getTranslation } from '$lib/state/Translation.svelte'
+	import type { Editor } from '@tiptap/core';
+	import InsertImageModal from './InsertImageModal.svelte';
+	import InsertLinkModal from './InsertLinkModal.svelte';
+	import ToolbarDivider from '$lib/components/notes/editor/ToolbarDivider.svelte';
 	import { fly } from 'svelte/transition';
 	import { clickOutside } from '$lib/helpers/ClickHelper';
-	import Bold from '@lucide/svelte/icons/bold'
-	import Italic from '@lucide/svelte/icons/italic'
-	import Strikethrough from '@lucide/svelte/icons/strikethrough'
-	import Code from '@lucide/svelte/icons/code'
-	import CodeXml from '@lucide/svelte/icons/code-xml'
-	import Heading1 from '@lucide/svelte/icons/heading-1'
-	import Heading2 from '@lucide/svelte/icons/heading-2'
-	import Heading3 from '@lucide/svelte/icons/heading-3'
-	import List from '@lucide/svelte/icons/list'
-	import ListOrdered from '@lucide/svelte/icons/list-ordered'
-	import Quote from '@lucide/svelte/icons/quote'
-	import Minus from '@lucide/svelte/icons/minus'
-	import Link2 from '@lucide/svelte/icons/link-2'
-	import TableIcon from '@lucide/svelte/icons/table'
-	import ImageIcon from '@lucide/svelte/icons/image'
-	import Undo from '@lucide/svelte/icons/undo'
-	import Redo from '@lucide/svelte/icons/redo'
-	import PenLine from '@lucide/svelte/icons/pen-line'
+	import Bold from '@lucide/svelte/icons/bold';
+	import Italic from '@lucide/svelte/icons/italic';
+	import Strikethrough from '@lucide/svelte/icons/strikethrough';
+	import Code from '@lucide/svelte/icons/code';
+	import CodeXml from '@lucide/svelte/icons/code-xml';
+	import Heading1 from '@lucide/svelte/icons/heading-1';
+	import Heading2 from '@lucide/svelte/icons/heading-2';
+	import Heading3 from '@lucide/svelte/icons/heading-3';
+	import List from '@lucide/svelte/icons/list';
+	import ListOrdered from '@lucide/svelte/icons/list-ordered';
+	import Quote from '@lucide/svelte/icons/quote';
+	import Minus from '@lucide/svelte/icons/minus';
+	import Link2 from '@lucide/svelte/icons/link-2';
+	import TableIcon from '@lucide/svelte/icons/table';
+	import ImageIcon from '@lucide/svelte/icons/image';
+	import Undo from '@lucide/svelte/icons/undo';
+	import Redo from '@lucide/svelte/icons/redo';
+	import PenLine from '@lucide/svelte/icons/pen-line';
 
 	export type ActiveStates = {
 		bold: boolean
@@ -40,19 +39,18 @@
 		link: boolean
 	}
 
-	let { editor, activeStates }: { editor: Editor; activeStates: ActiveStates } = $props()
+	let { editor, activeStates }: { editor: Editor; activeStates: ActiveStates } = $props();
 
-	const ts = getTranslation()
 
-	let imageModalOpen = $state(false)
-	let linkModalOpen = $state(false)
-	let linkInitialName = $state('')
-	let open = $state(false)
+	let imageModalOpen = $state(false);
+	let linkModalOpen = $state(false);
+	let linkInitialName = $state('');
+	let open = $state(false);
 
 	function openLinkModal() {
-		const { from, to } = editor.state.selection
-		linkInitialName = from !== to ? editor.state.doc.textBetween(from, to) : ''
-		linkModalOpen = true
+		const { from, to } = editor.state.selection;
+		linkInitialName = from !== to ? editor.state.doc.textBetween(from, to) : '';
+		linkModalOpen = true;
 	}
 
 	function confirmInsertLink(url: string, name: string) {
@@ -64,17 +62,17 @@
 				text: name || url,
 				marks: [{ type: 'link', attrs: { href: url } }]
 			})
-			.run()
-		linkModalOpen = false
+			.run();
+		linkModalOpen = false;
 	}
 
 	function insertTable() {
-		editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
+		editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
 	}
 
 	function confirmInsertImage(src: string) {
-		editor.chain().focus().setImage({ src }).run()
-		imageModalOpen = false
+		editor.chain().focus().setImage({ src }).run();
+		imageModalOpen = false;
 	}
 </script>
 
@@ -272,9 +270,7 @@
 		color: var(--color-s-teal, #1dbda5);
 	}
 
-	@media (prefers-color-scheme: dark) {
-		:global(.toolbar-btn:hover) {
-			background-color: var(--color-s-dark-3, #2f3741);
-		}
+	:global(html:is(.dark, .theme-dark) .toolbar-btn:hover) {
+		background-color: var(--color-s-dark-3, #2f3741);
 	}
 </style>

@@ -1,14 +1,10 @@
 <script lang="ts">
 	import { getTimeTracking } from '$lib/state/TimeTracking.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
+	import type { ProjectBreakdown } from '$lib/services/TimeTrackingGroupingService';
+	import Heading from '$lib/components/ui/Heading.svelte';
 
-	interface Breakdown {
-		title: string;
-		color: string;
-		minutes: number;
-	}
-
-	let { title, breakdown, total }: { title: string; breakdown: Breakdown[]; total: number } =
+	let { title, breakdown, total }: { title: string; breakdown: ProjectBreakdown[]; total: number } =
 		$props();
 
 	const tt = getTimeTracking();
@@ -16,7 +12,7 @@
 </script>
 
 <div class="flex flex-col gap-3 rounded-lg bg-c-bg-surface p-4 shadow-sm lg:col-span-1">
-	<span class="text-sm font-bold text-c-neutral-5 dark:text-c-neutral-4">{title}</span>
+	<Heading {title} my={0} />
 	<div class="flex flex-col gap-2.5">
 		<div class="flex flex-row items-center justify-between">
 			<span class="text-xs font-medium text-c-neutral-5 dark:text-c-neutral-4">
@@ -26,7 +22,7 @@
 				{tt.formatDuration(total)}
 			</span>
 		</div>
-		{#each breakdown as category (category.title)}
+		{#each breakdown as category (category.projectId)}
 			<div class="flex flex-col gap-0.5">
 				<div class="flex flex-row items-center justify-between">
 					<div class="flex flex-row items-center gap-1.5">

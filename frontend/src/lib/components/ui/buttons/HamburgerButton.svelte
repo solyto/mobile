@@ -1,11 +1,11 @@
 <script lang="ts">
 	import IconMenu from '@lucide/svelte/icons/menu';
 
-	let { onclick, top, left } = $props<{
+	let { onclick, top, left }: {
 		onclick: () => void;
 		top?: number;
 		left?: number;
-	}>();
+	} = $props();
 </script>
 
 <button

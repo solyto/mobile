@@ -8,10 +8,10 @@
 
 	const ts = getTranslation();
 
-	let { entry, library } = $props<{
+	let { entry, library }: {
 		entry: Music;
 		library: MusicLibrary;
-	}>();
+	} = $props();
 </script>
 
 {#if entry.wishlist}

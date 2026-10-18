@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 	import { urls, getDeepLinkUrl } from '$lib/config/urls';
@@ -90,7 +91,7 @@
 				<TextButton title={ts.get.auth.open_in_app} href={deepLinkUrl} align="center" class="w-full" />
 				<div class="flex justify-center">
 					<a
-						href={urls.login}
+						href={resolve(urls.login)}
 						class="text-xs text-c-neutral-5 transition-colors hover:text-c-btn dark:text-c-neutral-4 dark:hover:text-c-btn"
 					>
 						{ts.get.auth.sign_in}

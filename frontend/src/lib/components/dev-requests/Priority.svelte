@@ -1,15 +1,17 @@
 <script lang="ts">
-	import type { DevRequest } from '$lib/types/dev_request';
+	import type { DevRequest, DevRequestPriority } from '$lib/types/dev_request';
 	import { getDevRequests } from '$lib/state/DevRequests.svelte';
 
-	let { entry, editable = true } = $props<{ entry: DevRequest; editable?: boolean }>();
+	let { entry, editable = true }: { entry: DevRequest; editable?: boolean } = $props();
 
 	const devRequests = getDevRequests();
+
+	const NEXT_PRIORITY: Record<DevRequestPriority, DevRequestPriority> = { 1: 2, 2: 3, 3: 4, 4: 5, 5: 1 };
 
 	async function changePriority() {
 		if (!editable) return;
 		const res = await devRequests.update(entry, {
-			priority: entry.priority < 5 ? entry.priority + 1 : 1
+			priority: entry.priority === null ? 1 : NEXT_PRIORITY[entry.priority]
 		});
 		if (res) await devRequests.load();
 	}

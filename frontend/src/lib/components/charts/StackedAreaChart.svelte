@@ -1,17 +1,17 @@
 <script lang="ts">
-	import { init } from 'echarts';
-	import type { ECharts } from 'echarts';
+	import { init } from './echarts';
+	import type { ECharts } from './echarts';
 	import { onMount, onDestroy, tick } from 'svelte';
 
-	let { title, xCategories, dataPoints } = $props<{
+	let { title, xCategories, dataPoints }: {
 		title?: string;
 		xCategories: string[];
 		dataPoints: { title: string; values: number[] }[];
-	}>();
+	} = $props();
 
-	let chartContainer = $state<HTMLDivElement | null>(null);
-	let myChart = $state<ECharts | null>(null);
-	let isInitialized = $state<boolean>(false);
+	let chartContainer: HTMLDivElement | null = null;
+	let myChart: ECharts | null = null;
+	let isInitialized = false;
 
 	/*
 		Fields: categories
@@ -34,12 +34,18 @@
 				text: title || ''
 			},
 			legend: {
+				type: 'scroll',
+				top: 0,
+				padding: 0,
+				left: 0,
+				right: 0,
 				data: dataPoints.map((p: { title: string; values: number[] }) => p.title)
 			},
 			grid: {
-				left: '3%',
-				right: '4%',
-				bottom: '10%',
+				top: 40,
+				left: 0,
+				right: 0,
+				bottom: 0,
 				containLabel: true
 			},
 			xAxis: {
@@ -92,7 +98,6 @@
 		}
 	});
 
-	// Only update when data actually changes, not on every render
 	$effect(() => {
 		if (!isInitialized && chartContainer) {
 			createChart();

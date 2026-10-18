@@ -8,15 +8,18 @@
 	import LoadingLogo from '$lib/components/ui/LoadingLogo.svelte';
 	import type { LibraryRecommendation, LibraryRecommendationType } from '$lib/types/library';
 	import { getAuth } from '$lib/state/Auth.svelte';
-	import type { Library } from '$lib/types/library';
+	import type { MusicLibrary } from '$lib/state/MusicLibrary.svelte';
+	import type { BookLibrary } from '$lib/state/BookLibrary.svelte';
 	import Recommendation from '$lib/components/libraries/shared/Recommendation.svelte';
-	import ApiService from '$lib/services/ApiService';
 	import { apiRoutes } from '$lib/config/apiRoutes';
+	import { urls } from '$lib/config/urls';
+	import { resolve } from '$app/paths';
+	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
 
 	const ts = getTranslation();
 	const auth = getAuth();
 
-	let { library } = $props<{ library: Library }>();
+	let { library }: { library: MusicLibrary | BookLibrary } = $props();
 
 	let modalVisible = $state<boolean>(false);
 	let selection = $state<LibraryRecommendationType | null>(null);
@@ -46,9 +49,13 @@
 		await loadRecommendation();
 	}
 
+	function showsAiPluginHint(): boolean {
+		return selection === 'new' && recommendationLoaded && recommendation === null;
+	}
+
 	async function loadRecommendation(): Promise<void> {
 		recommendationLoaded = false;
-		recommendation = await library.recommend(selection);
+		recommendation = await library.recommend(selection!);
 		setTimeout(() => {
 			recommendationLoaded = true;
 		}, 500);
@@ -56,7 +63,7 @@
 		if (recommendation === null) return;
 
 		if (recommendation.id === null) {
-			const apiService = new ApiService(auth.getToken());
+			const apiService = auth.apiService;
 			const query = encodeURIComponent(`${recommendation.creator} ${recommendation.title}`);
 			const res = await apiService.list(`${apiRoutes.libraries.music.search}/deezer/${query}`);
 			if (res !== null && res.data.length > 0) {
@@ -102,6 +109,12 @@
 							<IconRotateCcw />
 							{ts.get.libraries.recommendations.not_satisfied}
 						</button>
+					</div>
+				{/if}
+				{#if showsAiPluginHint()}
+					<div class="mx-2 flex flex-col items-start gap-4" in:fade>
+						<p class="text-sm">{ts.get.libraries.recommendations.ai_plugin_hint}</p>
+						<TextButton title={ts.get.libraries.recommendations.open_settings} type="primary" href={resolve(urls.settings)} />
 					</div>
 				{/if}
 			{/if}

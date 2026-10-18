@@ -12,6 +12,7 @@
 	<IconQuote size={15} class="mt-0.5 shrink-0 text-c-heading dark:text-c-primary" />
 	<div class="flex flex-col gap-1.5">
 		<p class="text-sm leading-relaxed text-c-neutral-7 dark:text-c-neutral-3">
+			<!-- eslint-disable-next-line svelte/no-at-html-tags -- sanitised with DOMPurify -->
 			{@html DOMPurify.sanitize(nl2br(quote.quote))}
 		</p>
 		{#if quote.author}

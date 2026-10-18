@@ -5,13 +5,13 @@
 		placeholder,
 		onblur,
 		oninput
-	} = $props<{
+	}: {
 		input: HTMLInputElement | null;
 		value: string;
 		placeholder?: string;
 		onblur?: () => void;
 		oninput?: () => void;
-	}>();
+	} = $props();
 </script>
 
 <input

@@ -9,8 +9,7 @@
 	import type {
 		EventForm,
 		CreateEventRequest,
-		UpdateEventRequest,
-		CalendarEvent
+		UpdateEventRequest
 	} from '$lib/types/calendar';
 	import SvelteDateInput from '$lib/components/forms/SvelteDateInput.svelte';
 	import Toggle from '$lib/components/forms/Toggle.svelte';
@@ -21,12 +20,20 @@
 	import ChooseRecurrenceRule from '$lib/components/calendars/ChooseRecurrenceRule.svelte';
 	import RecurrenceActionModal from '$lib/components/calendars/RecurrenceActionModal.svelte';
 	import EventAttachments from '$lib/components/calendars/EventAttachments.svelte';
-	import { formatFloatingDate, getDateDiffInDays, getDateDiffInMinutes } from '$lib/helpers/DateHelper';
+	import { formatFloatingDate } from '$lib/helpers/DateHelper';
+	import { adjustEventRange, combineDateAndTime } from '$lib/helpers/CalendarEventHelper';
+	import RecurrenceRuleService from '$lib/services/RecurrenceRuleService';
+	import type { RecurrenceSelection } from '$lib/services/RecurrenceRuleService';
 
 	const calendars = getCalendars();
 	const ts = getTranslation();
 	const loadingIndicator = getLoadingIndicator();
 	const notifications = getUiNotifications();
+	const recurrenceRuleService = new RecurrenceRuleService();
+	const newEventStartHour = calendars.newEventPreset.hour ?? 12;
+	const newEventEnd = new Date(
+		combineDateAndTime(calendars.selectedDate ?? new Date(), newEventStartHour, 0).getTime() + 60 * 60 * 1000
+	);
 	const emptyForm: EventForm = {
 		calendar_id: 0,
 		title: '',
@@ -43,24 +50,30 @@
 		end_hours: 13,
 		end_minutes: 0
 	};
-	let form = $state<EventForm>({
+	const initialForm: EventForm = {
 		calendar_id: calendars.activeEvent && calendars.activeEvent.calendar_id ?
 			Number(calendars.activeEvent.calendar_id) :
-			0,
+			(calendars.calendars[0]?.id ?? 0),
 		title: calendars.activeEvent ? calendars.activeEvent.title : '',
 		description: calendars.activeEvent ? calendars.activeEvent.description : '',
 		location: calendars.activeEvent ? calendars.activeEvent.location : '',
-		is_all_day: calendars.activeEvent ? calendars.activeEvent.is_all_day : false,
+		is_all_day: calendars.activeEvent ? calendars.activeEvent.is_all_day : (calendars.newEventPreset.allDay ?? false),
 		is_recurring: calendars.activeEvent ? calendars.activeEvent.is_recurring : false,
 		recurrence_rule: calendars.activeEvent ? calendars.activeEvent.recurrence_rule : null,
 		recurrence_end: calendars.activeEvent ? calendars.activeEvent.recurrence_end : null,
 		start_date: getStartDate(),
-		start_hours: calendars.activeEvent ? calendars.activeEvent.start_date.getHours() : 12,
+		start_hours: calendars.activeEvent ? calendars.activeEvent.start_date.getHours() : newEventStartHour,
 		start_minutes: calendars.activeEvent ? calendars.activeEvent.start_date.getMinutes() : 0,
 		end_date: getEndDate(),
-		end_hours: calendars.activeEvent ? calendars.activeEvent.end_date.getHours() : 13,
+		end_hours: calendars.activeEvent ? calendars.activeEvent.end_date.getHours() : newEventEnd.getHours(),
 		end_minutes: calendars.activeEvent ? calendars.activeEvent.end_date.getMinutes() : 0
-	});
+	};
+	let form = $state<EventForm>(initialForm);
+	let recurrence = $state<RecurrenceSelection | null>(
+		recurrenceRuleService.parse(initialForm.recurrence_rule, initialForm.start_date)
+	);
+	// Plain variable: only read inside afterSelect, never rendered.
+	let duration = getDuration();
 	let titleInput = $state<HTMLInputElement | null>(null);
 	let showRecurrenceModal = $state<'edit' | 'delete' | null>(null);
 
@@ -80,41 +93,32 @@
 
 	function getEndDate(): SvelteDate {
 		if (calendars.activeEvent) return new SvelteDate(calendars.activeEvent.end_date);
-		if (calendars.selectedDate) return new SvelteDate(calendars.selectedDate);
-		return new SvelteDate();
+		return new SvelteDate(newEventEnd);
 	}
 
-	async function afterSelectStartDate(): Promise<void> {
-		await tick();
-
-		console.log(form.start_date, form.end_date);
-		if (form.start_date.getTime() > form.end_date.getTime()) {
-			form.end_date = new SvelteDate(form.start_date);
-		}
+	function getStart(): Date {
+		return combineDateAndTime(form.start_date, form.start_hours, form.start_minutes);
 	}
 
-	async function afterSelectEndDate(): Promise<void> {
-		await tick();
-
-		if (form.end_date.getTime() < form.start_date.getTime()) {
-			form.start_date = new SvelteDate(form.end_date);
-		}
+	function getEnd(): Date {
+		return combineDateAndTime(form.end_date, form.end_hours, form.end_minutes);
 	}
 
-	async function afterSelectStartTime(): Promise<void> {
-		await tick();
-
-		if (form.start_date.getTime() === form.end_date.getTime() && form.start_hours > form.end_hours) {
-			form.end_hours = form.start_hours;
-		}
+	function getDuration(): number {
+		return Math.max(0, getEnd().getTime() - getStart().getTime());
 	}
 
-	async function afterSelectEndTime(): Promise<void> {
+	async function afterSelect(changed: 'start' | 'end'): Promise<void> {
 		await tick();
 
-		if (form.start_date.getTime() === form.end_date.getTime() && form.end_hours < form.start_hours) {
-			form.start_hours = form.end_hours;
-		}
+		const { start, end } = adjustEventRange(changed, getStart(), getEnd(), duration);
+		form.start_date = new SvelteDate(start);
+		form.start_hours = start.getHours();
+		form.start_minutes = start.getMinutes();
+		form.end_date = new SvelteDate(end);
+		form.end_hours = end.getHours();
+		form.end_minutes = end.getMinutes();
+		duration = getDuration();
 	}
 
 	function buildRequest(): CreateEventRequest | UpdateEventRequest {
@@ -134,10 +138,14 @@
 			...form,
 			start_date: formatFloatingDate(form.start_date),
 			end_date: formatFloatingDate(form.end_date),
-			recurrence_rule: form.is_recurring ? form.recurrence_rule : null,
+			recurrence_rule: form.is_recurring ? recurrenceRule() : null,
 			recurrence_end: form.recurrence_end ? formatFloatingDate(form.recurrence_end) : null,
 			etag: calendars.activeEvent ? calendars.activeEvent.etag : null
 		} as UpdateEventRequest;
+	}
+
+	function recurrenceRule(): string | null {
+		return recurrence ? recurrenceRuleService.build(recurrence, form.start_date) : form.recurrence_rule;
 	}
 
 	async function onsubmit(): Promise<void> {
@@ -173,6 +181,7 @@
 		loadingIndicator.stop();
 		if (ok) {
 			form = { ...emptyForm };
+			recurrence = recurrenceRuleService.parse(null, form.start_date);
 			calendars.hideSidebar();
 		} else {
 			notifications.error(ts.get.calendar.entry_create_error);
@@ -223,33 +232,32 @@
 		</div>
 		{#if form.start_date}
 			<div class="flex w-full gap-2">
-				<SvelteDateInput bind:date={form.start_date} oninput={() => afterSelectStartDate()} />
+				<SvelteDateInput bind:date={form.start_date} oninput={() => afterSelect('start')} />
 				{#if !form.is_all_day}
 					<TimePicker
 						bind:hours={form.start_hours}
 						bind:minutes={form.start_minutes}
-						oninput={() => afterSelectStartTime()}
+						oninput={() => afterSelect('start')}
 					/>
 				{/if}
 			</div>
 		{/if}
 		{#if form.end_date}
 			<div class="flex w-full gap-2">
-				<SvelteDateInput bind:date={form.end_date} oninput={() => afterSelectEndDate()} />
+				<SvelteDateInput bind:date={form.end_date} oninput={() => afterSelect('end')} />
 				{#if !form.is_all_day}
 					<TimePicker
 						bind:hours={form.end_hours}
 						bind:minutes={form.end_minutes}
-						oninput={() => afterSelectEndTime()}
+						oninput={() => afterSelect('end')}
 					/>
 				{/if}
 			</div>
 		{/if}
-		{#if form.is_recurring}
-			<ChooseRecurrenceRule
-				bind:recurrenceRule={form.recurrence_rule}
-				startDate={form.start_date}
-			/>
+		{#if form.is_recurring && recurrence}
+			<ChooseRecurrenceRule bind:selection={recurrence} startDate={form.start_date} />
+		{:else if form.is_recurring}
+			<p class="text-sm text-c-neutral-5">{ts.get.calendar.recurrence_not_editable}</p>
 		{/if}
 		<TextInput bind:value={form.description} placeholder={ts.get.calendar.description} />
 		<TextInput bind:value={form.location} placeholder={ts.get.calendar.location} />

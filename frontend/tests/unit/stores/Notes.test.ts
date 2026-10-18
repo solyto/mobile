@@ -13,6 +13,27 @@ const { navigation } = vi.hoisted(() => ({
 vi.mock('$app/navigation', () => ({ goto: navigation.goto }));
 vi.mock('$app/paths', () => ({ resolve: navigation.resolve }));
 
+// The Notes store reads getTranslation() / getUiNotifications() at field
+// initialisation; storeMocks does not cover those modules, so stub them here.
+const notifications = { error: vi.fn() };
+const ts = {
+	get: {
+		notes: {
+			create_error: 'Failed to create note.',
+			create_folder_error: 'Failed to create folder.',
+			journal_create_error: 'Failed to create the journal entry.'
+		}
+	}
+};
+
+vi.mock('$lib/state/Translation.svelte', () => ({
+	getTranslation: () => ts
+}));
+
+vi.mock('$lib/state/UiNotifications.svelte', () => ({
+	getUiNotifications: () => notifications
+}));
+
 function note(overrides: Partial<Note> = {}): Note {
 	return {
 		id: 'n1',
@@ -33,11 +54,33 @@ function category(id: number, title: string, overrides: Partial<NoteCategory> = 
 		title,
 		parent_id: null,
 		sort_order: 0,
+		is_system: false,
+		is_hidden: false,
 		created_at: '',
 		updated_at: '',
 		children: [],
 		...overrides
 	};
+}
+
+interface Lists {
+	notes?: Note[];
+	hiddenNotes?: Note[];
+	categories?: NoteCategory[];
+	hiddenCategories?: NoteCategory[];
+}
+
+function mockLists(lists: Lists): void {
+	const byUrl: [string, unknown[] | undefined][] = [
+		['/notes/categories/hidden', lists.hiddenCategories],
+		['/notes/categories', lists.categories],
+		['/notes/hidden', lists.hiddenNotes],
+		['/notes', lists.notes]
+	];
+	api.list.mockImplementation((url: string) => {
+		const data = byUrl.find(([suffix]) => url.endsWith(suffix))?.[1];
+		return Promise.resolve(data === undefined ? null : { data });
+	});
 }
 
 beforeEach(() => {
@@ -46,6 +89,7 @@ beforeEach(() => {
 	pageState.params = {};
 	navigation.goto.mockReset();
 	navigation.goto.mockResolvedValue(undefined);
+	notifications.error.mockReset();
 });
 
 afterEach(() => {
@@ -208,7 +252,7 @@ describe('Notes store', () => {
 
 		it('creates a note, reloads and navigates to it', async () => {
 			api.create.mockResolvedValue({ data: note({ id: 'n9', title: 'Draft' }) });
-			api.list.mockResolvedValue({ data: [note({ id: 'n9' })] });
+			mockLists({ notes: [note({ id: 'n9' })], hiddenNotes: [] });
 
 			const n = new NotesSvelte();
 			n.inputValue = 'Draft';
@@ -251,14 +295,252 @@ describe('Notes store', () => {
 			]);
 		});
 
-		it('returns null and resets the input when creation fails', async () => {
+		it('reports the failure and keeps the input and modal when creation fails', async () => {
 			api.create.mockResolvedValue(null);
 
 			const n = new NotesSvelte();
 			n.inputValue = 'Doomed';
+			n.modalOpen = true;
 			await expect(n.create()).resolves.toBeNull();
-			expect(n.inputValue).toBe('');
+			expect(n.inputValue).toBe('Doomed');
+			expect(n.modalOpen).toBe(true);
+			expect(notifications.error).toHaveBeenCalledWith('Failed to create note.');
 			expect(navigation.goto).not.toHaveBeenCalled();
+		});
+	});
+
+	describe('journal', () => {
+		const journal = category(9, '.journal', { is_system: true, is_hidden: true });
+
+		function withJournal(): NotesSvelte {
+			const n = new NotesSvelte();
+			n.journalCategory = journal;
+			return n;
+		}
+
+		it('loadCategories resolves the journal folder and keeps it out of the tree', async () => {
+			mockLists({
+				categories: [category(1, 'Work'), category(2, 'Private')],
+				hiddenCategories: [journal]
+			});
+
+			const n = new NotesSvelte();
+			await n.loadCategories();
+
+			expect(n.journalCategory?.id).toBe(9);
+			expect(n.categories.map((c) => c.id)).toEqual([1, 2]);
+		});
+
+		it('loadCategories keeps a hidden user folder in the tree', async () => {
+			const hiddenFolder = category(5, 'Secret', { parent_id: 1, is_hidden: true });
+			mockLists({
+				categories: [category(1, 'Work')],
+				hiddenCategories: [journal, hiddenFolder]
+			});
+
+			const n = new NotesSvelte();
+			await n.loadCategories();
+
+			expect(n.journalCategory?.id).toBe(9);
+			expect(n.categories.map((c) => c.id)).toEqual([1]);
+			expect(n.categories[0].children.map((c) => c.id)).toEqual([5]);
+		});
+
+		it('loadCategories keeps the previous state when the hidden call fails', async () => {
+			mockLists({ categories: [category(1, 'Work')] });
+
+			const n = withJournal();
+			n.categories = [category(2, 'Private')];
+			await n.loadCategories();
+
+			expect(n.journalCategory?.id).toBe(9);
+			expect(n.categories.map((c) => c.id)).toEqual([2]);
+		});
+
+		it('load finds journal entries that only come from the hidden notes', async () => {
+			const entry = note({ id: 'j1', title: '2026-08-04', category_id: 9 });
+			const hiddenFolderNote = note({ id: 'h1', title: 'Secret', category_id: 5 });
+			mockLists({ notes: [note({ id: 'o1' })], hiddenNotes: [entry, hiddenFolderNote] });
+
+			const n = withJournal();
+			await n.load();
+
+			expect(n.getJournalEntry(new Date(2026, 7, 4))?.id).toBe('j1');
+			expect(n.getVisibleNotes().map((x) => x.id)).toEqual(['o1', 'h1']);
+		});
+
+		it('load keeps the previous notes when the hidden call fails', async () => {
+			mockLists({ notes: [note({ id: 'o1' })] });
+
+			const n = new NotesSvelte();
+			n.notes = [note({ id: 'old' })];
+			await n.load();
+
+			expect(n.loaded).toBe(false);
+			expect(n.notes.map((x) => x.id)).toEqual(['old']);
+		});
+
+		it('getJournalEntry finds the day entry in the journal folder', () => {
+			const n = withJournal();
+			n.notes = [
+				note({ id: 'j1', title: '2026-08-04', category_id: 9 }),
+				note({ id: 'j2', title: '2026-08-04', category_id: 1 })
+			];
+			expect(n.getJournalEntry(new Date(2026, 7, 4))?.id).toBe('j1');
+		});
+
+		it('getJournalEntryDates lists the dates with entries', () => {
+			const n = withJournal();
+			n.notes = [
+				note({ id: 'j1', title: '2026-08-04', category_id: 9 }),
+				note({ id: 'x', title: 'Scribble', category_id: 9 }),
+				note({ id: 'o', title: '2026-08-01', category_id: 1 })
+			];
+			expect(n.getJournalEntryDates()).toEqual(['2026-08-04']);
+		});
+
+		it('openJournalEntry reuses an existing entry without creating', async () => {
+			const n = withJournal();
+			n.notes = [note({ id: 'j1', title: '2026-08-04', category_id: 9 })];
+
+			const result = await n.openJournalEntry(new Date(2026, 7, 4));
+
+			expect(result?.id).toBe('j1');
+			expect(n.activeNote?.id).toBe('j1');
+			expect(api.create).not.toHaveBeenCalled();
+		});
+
+		it('openJournalEntry opens an in-memory draft without creating', async () => {
+			const n = withJournal();
+			const result = await n.openJournalEntry(new Date(2026, 7, 4));
+
+			expect(api.create).not.toHaveBeenCalled();
+			expect(result?.id).toBe('');
+			expect(result?.title).toBe('2026-08-04');
+			expect(result?.category_id).toBe(9);
+			expect(n.activeNote).toBe(result);
+			expect(n.isJournalDraft(n.activeNote)).toBe(true);
+		});
+
+		it('saveContent does not create an entry for an untouched draft', async () => {
+			const n = withJournal();
+			await n.openJournalEntry(new Date(2026, 7, 4));
+
+			await expect(n.saveContent()).resolves.toBe(true);
+
+			expect(api.create).not.toHaveBeenCalled();
+			expect(api.update).not.toHaveBeenCalled();
+		});
+
+		it('saveContent creates the draft once it has content, then stores the content', async () => {
+			api.create.mockResolvedValue({
+				data: note({ id: 'j5', title: '2026-08-04', category_id: 9 })
+			});
+			api.update.mockResolvedValue({
+				data: note({ id: 'j5', title: '2026-08-04', category_id: 9 })
+			});
+			mockLists({
+				notes: [],
+				hiddenNotes: [note({ id: 'j5', title: '2026-08-04', category_id: 9 })]
+			});
+
+			const n = withJournal();
+			const draft = await n.openJournalEntry(new Date(2026, 7, 4));
+			draft!.content = '<p>Hello</p>';
+
+			await expect(n.saveContent()).resolves.toBe(true);
+
+			expect(api.create).toHaveBeenCalledWith(expect.stringContaining('/notes'), {
+				title: '2026-08-04',
+				category_id: 9
+			});
+			expect(api.update).toHaveBeenCalledWith(expect.stringContaining('/notes'), 'j5', {
+				content: '<p>Hello</p>'
+			});
+			expect(n.activeNote?.id).toBe('j5');
+		});
+
+		it('saveContent reports an error when draft creation fails', async () => {
+			api.create.mockResolvedValue(null);
+
+			const n = withJournal();
+			const draft = await n.openJournalEntry(new Date(2026, 7, 4));
+			draft!.content = '<p>Hello</p>';
+
+			await expect(n.saveContent()).resolves.toBe(false);
+			expect(api.update).not.toHaveBeenCalled();
+			expect(notifications.error).toHaveBeenCalledWith('Failed to create the journal entry.');
+		});
+
+		it('openJournalEntry does nothing when no journal folder is known', async () => {
+			const n = new NotesSvelte();
+			await expect(n.openJournalEntry(new Date(2026, 7, 4))).resolves.toBeNull();
+			expect(api.create).not.toHaveBeenCalled();
+		});
+
+		it('excludes journal entries from the ordinary note surfaces', () => {
+			const n = withJournal();
+			n.notes = [
+				note({
+					id: 'j1',
+					title: '2026-08-04',
+					category_id: 9,
+					is_favorite: true,
+					created_at: '2026-09-01T00:00:00',
+					updated_at: '2026-09-01T00:00:00'
+				}),
+				note({
+					id: 'o1',
+					title: 'Ordinary',
+					category_id: null,
+					created_at: '2026-01-01T00:00:00',
+					updated_at: '2026-01-01T00:00:00'
+				})
+			];
+
+			expect(n.getVisibleNotes().map((x) => x.id)).toEqual(['o1']);
+			expect(n.getNewestNotes().map((x) => x.id)).toEqual(['o1']);
+			expect(n.getLastUpdatedNotes().map((x) => x.id)).toEqual(['o1']);
+			expect(n.getFavorites()).toEqual([]);
+			expect(n.getNotesForCategory(null).map((x) => x.id)).toEqual(['o1']);
+			expect(n.getNotesForCategory(9)).toEqual([]);
+		});
+
+		it('re-snapshots the overview lists once the journal folder is resolved', async () => {
+			const entry = note({
+				id: 'j1',
+				title: '2026-08-04',
+				category_id: 9,
+				is_favorite: true,
+				created_at: '2026-09-01T00:00:00',
+				updated_at: '2026-09-01T00:00:00'
+			});
+			const ordinary = note({
+				id: 'o1',
+				title: 'Ordinary',
+				category_id: null,
+				created_at: '2026-01-01T00:00:00',
+				updated_at: '2026-01-01T00:00:00'
+			});
+
+			mockLists({
+				notes: [ordinary],
+				hiddenNotes: [entry],
+				categories: [],
+				hiddenCategories: [journal]
+			});
+
+			const n = new NotesSvelte();
+			// Worst case: the notes resolve before the categories, so the journal
+			// flag is still unknown when `load()` snapshots the overview.
+			await n.load();
+			expect(n.newestNotes.map((x) => x.id)).toContain('j1');
+
+			await n.loadCategories();
+
+			expect(n.newestNotes.map((x) => x.id)).toEqual(['o1']);
+			expect(n.lastUpdatedNotes.map((x) => x.id)).toEqual(['o1']);
+			expect(n.favoriteNotes).toEqual([]);
 		});
 	});
 
@@ -314,13 +596,14 @@ describe('Notes store', () => {
 
 		it('reloads the categories after creating one', async () => {
 			api.create.mockResolvedValue({ data: category(3, 'Ideas') });
-			api.list.mockResolvedValue({ data: [category(3, 'Ideas')] });
+			mockLists({ categories: [category(3, 'Ideas')], hiddenCategories: [] });
 
 			const n = new NotesSvelte();
 			n.inputValue = 'Ideas';
 			await n.createCategory();
 
-			expect(api.list).toHaveBeenCalledWith(expect.stringContaining('/notes/categories'));
+			expect(api.list).toHaveBeenCalledWith(expect.stringMatching(/\/notes\/categories$/));
+			expect(api.list).toHaveBeenCalledWith(expect.stringMatching(/\/notes\/categories\/hidden$/));
 			expect(n.categories).toHaveLength(1);
 		});
 
@@ -333,6 +616,19 @@ describe('Notes store', () => {
 			await n.createCategory();
 
 			expect(n.isCategoryCollapsed(2)).toBe(true);
+		});
+
+		it('reports the failure and keeps the input and modal when creation fails', async () => {
+			api.create.mockResolvedValue(null);
+
+			const n = new NotesSvelte();
+			n.inputValue = 'Doomed';
+			n.modalOpen = true;
+			await expect(n.createCategory()).resolves.toBeNull();
+			expect(n.inputValue).toBe('Doomed');
+			expect(n.modalOpen).toBe(true);
+			expect(notifications.error).toHaveBeenCalledWith('Failed to create folder.');
+			expect(api.list).not.toHaveBeenCalled();
 		});
 	});
 });

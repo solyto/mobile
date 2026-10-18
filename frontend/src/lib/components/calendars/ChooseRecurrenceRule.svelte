@@ -2,224 +2,92 @@
 	import { slide } from 'svelte/transition';
 	import Select from '$lib/components/forms/Select.svelte';
 	import Checkbox from '$lib/components/forms/Checkbox.svelte';
-	import type { SvelteDate } from 'svelte/reactivity';
+	import { getTranslation } from '$lib/state/Translation.svelte';
+	import RecurrenceRuleService, { WEEKDAYS } from '$lib/services/RecurrenceRuleService';
+	import type {
+		MonthlyOrdinal,
+		RecurrenceSelection,
+		RecurrenceType,
+		Weekday
+	} from '$lib/services/RecurrenceRuleService';
 
-	let { recurrenceRule = $bindable(), startDate } = $props<{
-		recurrenceRule: string | null;
-		startDate: SvelteDate;
-	}>();
+	let { selection = $bindable(), startDate }: {
+		selection: RecurrenceSelection;
+		startDate: Date;
+	} = $props();
 
-	let type = $state<string>('daily');
-	let monthlyWeekdayFrequency = $state<string>('1');
-	let monthlyWeekdayDay = $state<string>('MO');
-	let weeklyMonday = $state<boolean>(false);
-	let weeklyTuesday = $state<boolean>(false);
-	let weeklyWednesday = $state<boolean>(false);
-	let weeklyThursday = $state<boolean>(false);
-	let weeklyFriday = $state<boolean>(false);
-	let weeklySaturday = $state<boolean>(false);
-	let weeklySunday = $state<boolean>(false);
+	const ts = getTranslation();
+	const recurrenceRuleService = new RecurrenceRuleService();
+	const ORDINALS: MonthlyOrdinal[] = [1, 2, 3, 4];
 
-	function initializeFromRule(rule: string) {
-		if (rule.includes('FREQ=YEARLY')) {
-			type = 'yearly';
-		} else if (rule.includes('FREQ=MONTHLY') && rule.includes('BYSETPOS')) {
-			type = 'monthly_weekday';
-			const bydayMatch = rule.match(/BYDAY=([^;]+)/);
-			const bysetposMatch = rule.match(/BYSETPOS=([^;]+)/);
-			if (bydayMatch) monthlyWeekdayDay = bydayMatch[1];
-			if (bysetposMatch) monthlyWeekdayFrequency = bysetposMatch[1];
-		} else if (rule.includes('FREQ=MONTHLY')) {
-			type = 'monthly_date';
-		} else if (rule.includes('FREQ=WEEKLY')) {
-			type = 'weekly';
-			const bydayMatch = rule.match(/BYDAY=([^;]+)/);
-			if (bydayMatch) {
-				const days = bydayMatch[1].split(',');
-				weeklyMonday = days.includes('MO');
-				weeklyTuesday = days.includes('TU');
-				weeklyWednesday = days.includes('WE');
-				weeklyThursday = days.includes('TH');
-				weeklyFriday = days.includes('FR');
-				weeklySaturday = days.includes('SA');
-				weeklySunday = days.includes('SU');
-			}
-		} else {
-			type = 'daily';
-		}
+	function typeOptions(): { label: string; value: RecurrenceType }[] {
+		return [
+			{ label: ts.get.calendar.recurrence_daily, value: 'daily' },
+			{ label: ts.get.calendar.recurrence_weekly, value: 'weekly' },
+			{ label: ts.get.calendar.recurrence_monthly_date, value: 'monthly_date' },
+			{ label: ts.get.calendar.recurrence_monthly_weekday, value: 'monthly_weekday' },
+			{ label: ts.get.calendar.recurrence_yearly, value: 'yearly' }
+		];
 	}
 
-	let initializedFromRule = false;
-	if (recurrenceRule) {
-		initializeFromRule(recurrenceRule);
-		initializedFromRule = true;
+	function ordinalOptions(): { label: string; value: string }[] {
+		return ORDINALS.map((ordinal) => ({
+			label: ts.get.calendar.recurrence_ordinals[ordinal],
+			value: String(ordinal)
+		}));
 	}
 
-	const typeOptions: { label: string; value: string }[] = [
-		{ label: 'Every Day', value: 'daily' },
-		{ label: 'Weekly', value: 'weekly' },
-		{ label: 'Monthly on this date', value: 'monthly_date' },
-		{ label: 'Monthly on weekday', value: 'monthly_weekday' },
-		{ label: 'Every year', value: 'yearly' }
-	];
-
-	const everyXOptions: { label: string; value: string }[] = [
-		{ label: '1st', value: '1' },
-		{ label: '2nd', value: '2' },
-		{ label: '3rd', value: '3' },
-		{ label: '4th', value: '4' }
-	];
-
-	const dayOptions: { label: string; value: string }[] = [
-		{ label: 'Monday', value: 'MO' },
-		{ label: 'Tuesday', value: 'TU' },
-		{ label: 'Wednesday', value: 'WE' },
-		{ label: 'Thursday', value: 'TH' },
-		{ label: 'Friday', value: 'FR' },
-		{ label: 'Saturday', value: 'SA' },
-		{ label: 'Sunday', value: 'SU' }
-	];
-
-	const weekdayMap: Record<number, string> = {
-		0: 'SU',
-		1: 'MO',
-		2: 'TU',
-		3: 'WE',
-		4: 'TH',
-		5: 'FR',
-		6: 'SA'
-	};
-
-	function initializeFromStartDate() {
-		const dayOfWeek = startDate.getDay();
-		weeklyMonday = dayOfWeek === 1;
-		weeklyTuesday = dayOfWeek === 2;
-		weeklyWednesday = dayOfWeek === 3;
-		weeklyThursday = dayOfWeek === 4;
-		weeklyFriday = dayOfWeek === 5;
-		weeklySaturday = dayOfWeek === 6;
-		weeklySunday = dayOfWeek === 0;
-
-		monthlyWeekdayDay = weekdayMap[dayOfWeek];
-		const dayOfMonth = startDate.getDate();
-		monthlyWeekdayFrequency = String(Math.min(Math.ceil(dayOfMonth / 7), 4));
+	function weekdayOptions(): { label: string; value: Weekday }[] {
+		return WEEKDAYS.map((day) => ({ label: ts.get.calendar.weekdays[weekdayNumber(day)], value: day }));
 	}
 
-	$effect(() => {
-		if (startDate && !initializedFromRule) {
-			initializeFromStartDate();
-		}
-	});
-
-	function createRecurrenceString(): string {
-		if (type === 'daily') {
-			return 'FREQ=DAILY';
-		}
-
-		if (type === 'weekly') {
-			const weekdays: string[] = [];
-			if (weeklyMonday) weekdays.push('MO');
-			if (weeklyTuesday) weekdays.push('TU');
-			if (weeklyWednesday) weekdays.push('WE');
-			if (weeklyThursday) weekdays.push('TH');
-			if (weeklyFriday) weekdays.push('FR');
-			if (weeklySaturday) weekdays.push('SA');
-			if (weeklySunday) weekdays.push('SU');
-
-			if (weekdays.length === 0) {
-				weekdays.push(weekdayMap[startDate.getDay()]);
-			}
-
-			return 'FREQ=WEEKLY;BYDAY=' + weekdays.join(',');
-		}
-
-		if (type === 'monthly_date') {
-			const dayOfMonth = startDate.getDate();
-			return 'FREQ=MONTHLY;BYMONTHDAY=' + dayOfMonth;
-		}
-
-		if (type === 'monthly_weekday') {
-			return (
-				'FREQ=MONTHLY;BYDAY=' + monthlyWeekdayDay + ';BYSETPOS=' + monthlyWeekdayFrequency
-			);
-		}
-
-		if (type === 'yearly') {
-			const month = startDate.getMonth() + 1;
-			const dayOfMonth = startDate.getDate();
-			return 'FREQ=YEARLY;BYMONTH=' + month + ';BYMONTHDAY=' + dayOfMonth;
-		}
-
-		return 'FREQ=DAILY';
+	function weekdayNumber(day: Weekday): number {
+		return WEEKDAYS.indexOf(day) + 1;
 	}
 
-	$effect(() => {
-		recurrenceRule = createRecurrenceString();
-	});
+	function isWeekdayChecked(day: Weekday): boolean {
+		return recurrenceRuleService.effectiveWeekdays(selection, startDate).includes(day);
+	}
+
+	function toggleWeekday(day: Weekday): void {
+		const current = recurrenceRuleService.effectiveWeekdays(selection, startDate);
+		selection.weekdays = current.includes(day)
+			? current.filter((weekday) => weekday !== day)
+			: [...current, day];
+	}
+
+	function setType(value: string): void {
+		selection.type = value as RecurrenceType;
+	}
+
+	function setOrdinal(value: string): void {
+		selection.monthlyOrdinal = Number(value) as MonthlyOrdinal;
+	}
+
+	function setMonthlyWeekday(value: string): void {
+		selection.monthlyWeekday = value as Weekday;
+	}
 </script>
 
 <div class="flex w-full flex-col gap-2 p-1" transition:slide>
-	<Select bind:value={type} options={typeOptions} />
+	<Select value={selection.type} options={typeOptions()} onchange={setType} />
 
-	{#if type === 'weekly'}
+	{#if selection.type === 'weekly'}
 		<div class="mt-1 flex flex-wrap gap-x-4 gap-y-2">
-			<div class="flex items-center gap-2">
-				<Checkbox
-					isChecked={weeklyMonday}
-					onchange={() => (weeklyMonday = !weeklyMonday)}
-				/>
-				<span class="text-sm">Mon</span>
-			</div>
-			<div class="flex items-center gap-2">
-				<Checkbox
-					isChecked={weeklyTuesday}
-					onchange={() => (weeklyTuesday = !weeklyTuesday)}
-				/>
-				<span class="text-sm">Tue</span>
-			</div>
-			<div class="flex items-center gap-2">
-				<Checkbox
-					isChecked={weeklyWednesday}
-					onchange={() => (weeklyWednesday = !weeklyWednesday)}
-				/>
-				<span class="text-sm">Wed</span>
-			</div>
-			<div class="flex items-center gap-2">
-				<Checkbox
-					isChecked={weeklyThursday}
-					onchange={() => (weeklyThursday = !weeklyThursday)}
-				/>
-				<span class="text-sm">Thu</span>
-			</div>
-			<div class="flex items-center gap-2">
-				<Checkbox
-					isChecked={weeklyFriday}
-					onchange={() => (weeklyFriday = !weeklyFriday)}
-				/>
-				<span class="text-sm">Fri</span>
-			</div>
-			<div class="flex items-center gap-2">
-				<Checkbox
-					isChecked={weeklySaturday}
-					onchange={() => (weeklySaturday = !weeklySaturday)}
-				/>
-				<span class="text-sm">Sat</span>
-			</div>
-			<div class="flex items-center gap-2">
-				<Checkbox
-					isChecked={weeklySunday}
-					onchange={() => (weeklySunday = !weeklySunday)}
-				/>
-				<span class="text-sm">Sun</span>
-			</div>
+			{#each WEEKDAYS as day (day)}
+				<div class="flex items-center gap-2">
+					<Checkbox isChecked={isWeekdayChecked(day)} onchange={() => toggleWeekday(day)} />
+					<span class="text-sm">{ts.get.calendar.weekdays_short[weekdayNumber(day)]}</span>
+				</div>
+			{/each}
 		</div>
 	{/if}
 
-	{#if type === 'monthly_weekday'}
+	{#if selection.type === 'monthly_weekday'}
 		<div class="mt-1 flex items-center gap-2">
-			<span class="text-sm">on the</span>
-			<Select bind:value={monthlyWeekdayFrequency} options={everyXOptions} />
-			<Select bind:value={monthlyWeekdayDay} options={dayOptions} />
+			<span class="text-sm">{ts.get.calendar.recurrence_on_the}</span>
+			<Select value={String(selection.monthlyOrdinal)} options={ordinalOptions()} onchange={setOrdinal} />
+			<Select value={selection.monthlyWeekday} options={weekdayOptions()} onchange={setMonthlyWeekday} />
 		</div>
 	{/if}
 </div>

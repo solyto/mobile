@@ -3,7 +3,7 @@
 	import { getTimeTracking } from '$lib/state/TimeTracking.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { getAuth } from '$lib/state/Auth.svelte';
-	import EntryEdit from '$lib/components/time-tracking/EntryEdit.svelte';
+	import EntryCreate from '$lib/components/time-tracking/EntryCreate.svelte';
 	import Entry from '$lib/components/time-tracking/Entry.svelte';
 	import type { TimeTrackingEntry } from '$lib/types/time_tracking';
 
@@ -31,7 +31,7 @@
 </script>
 
 {#if editingEntry}
-	<EntryEdit entry={editingEntry} onClose={() => (editingEntry = null)} />
+	<EntryCreate entry={editingEntry} onClose={() => (editingEntry = null)} />
 {/if}
 
 {#if groupedEntries.length === 0}

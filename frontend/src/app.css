@@ -1,5 +1,7 @@
 @import 'tailwindcss';
 @custom-variant dark (&:where(.dark, .dark *));
+@custom-variant flat-nav (&:where(.flat-nav, .flat-nav *));
+@custom-variant bottom-nav (&:where(.bottom-nav, .bottom-nav *));
 @import '@fontsource/barlow';
 @import '@fontsource/cinzel';
 @import '@fontsource/cinzel-decorative';

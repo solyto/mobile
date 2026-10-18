@@ -9,7 +9,7 @@
 	import ModalFormRow from '$lib/components/ui/ModalFormRow.svelte';
 	import Select from '$lib/components/forms/Select.svelte';
 	import Checkbox from '$lib/components/forms/Checkbox.svelte';
-	import type { CreatePlantRequest, Plant, UpdatePlantRequest } from '$lib/types/library_plant';
+	import type { CreatePlantRequest, Plant, PlantLocation, PlantSunlight, UpdatePlantRequest } from '$lib/types/library_plant';
 	import CreateModal from '$lib/components/libraries/shared/CreateModal.svelte';
 	import { getPlantLibrary } from '$lib/state/PlantLibrary.svelte';
 	import { resizeImage } from '$lib/services/ImageService';
@@ -112,8 +112,8 @@
 		const request: CreatePlantRequest = {
 			name: nameValue.trim() !== '' ? nameValue : null,
 			latin_name: latinNameValue !== '' ? latinNameValue : null,
-			location: locationValue !== '' ? (locationValue as any) : null,
-			sunlight: sunlightValue !== '' ? (sunlightValue as any) : null,
+			location: locationValue !== '' ? (locationValue as PlantLocation) : null,
+			sunlight: sunlightValue !== '' ? (sunlightValue as PlantSunlight) : null,
 			current_size: currentSizeValue !== '' ? currentSizeValue : null,
 			max_size: maxSizeValue !== '' ? maxSizeValue : null,
 			acquired_at: acquiredAtValue !== '' ? acquiredAtValue : null,
@@ -129,7 +129,7 @@
 		loadingIndicator.stop();
 	}
 
-	function getCoverUpdate(): { cover_path: string | null } | {} {
+	function getCoverUpdate(): { cover_path?: string | null } {
 		if (coverRemoved) return { cover_path: null };
 		if (coverFile === null && coverValue !== '') return { cover_path: coverValue };
 		return {};
@@ -141,8 +141,8 @@
 		const request: UpdatePlantRequest = {
 			name: nameValue.trim() !== '' ? nameValue : null,
 			latin_name: latinNameValue !== '' ? latinNameValue : null,
-			location: locationValue !== '' ? (locationValue as any) : null,
-			sunlight: sunlightValue !== '' ? (sunlightValue as any) : null,
+			location: locationValue !== '' ? (locationValue as PlantLocation) : null,
+			sunlight: sunlightValue !== '' ? (sunlightValue as PlantSunlight) : null,
 			current_size: currentSizeValue !== '' ? currentSizeValue : null,
 			max_size: maxSizeValue !== '' ? maxSizeValue : null,
 			acquired_at: acquiredAtValue !== '' ? acquiredAtValue : null,

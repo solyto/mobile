@@ -3,25 +3,22 @@
 	import { fade } from 'svelte/transition';
 	import { onMount } from 'svelte';
 	import { getTodos } from '$lib/state/Todos.svelte';
-	import Card from '$lib/components/todos/views/Card.svelte';
+	import CompactEntry from '$lib/components/todos/views/CompactEntry.svelte';
 	import type { GroupedTodos, Todo, TodoStatus } from '$lib/types/todo';
 	import { dndzone, type DndEvent } from 'svelte-dnd-action';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
+	import Heading from '$lib/components/ui/Heading.svelte';
 
 	const todos = getTodos();
 	const loadingIndicator = getLoadingIndicator();
 	const flipDurationMs = 200;
 
-	let { handleCheck } = $props<{ handleCheck: (event: Event, todo: Todo) => Promise<void> }>();
-	let groups: GroupedTodos[] = [];
+	let { handleCheck }: { handleCheck: (event: Event, todo: Todo) => Promise<void> } = $props();
+	let groups = $derived<GroupedTodos[]>(todos.groupedTodos);
 	let firstTick = $state<boolean>(true);
 
 	onMount(() => {
 		todos.groupByStatus();
-	});
-
-	$effect(() => {
-		groups = todos.groupedTodos;
 	});
 
 	function getStatusLabel(status: TodoStatus): string {
@@ -88,11 +85,9 @@
 			class="flex w-[24%] flex-col rounded-lg transition-all duration-400"
 			animate:flip={{ duration: flipDurationMs }}
 		>
-			<span
-				class="mb-6 border-b-4 p-4 text-xl font-bold border-{getStatusColor(group.status)}"
-			>
-				{getStatusLabel(group.status)}
-			</span>
+			<div class="mb-6 border-b-4 p-4 border-{getStatusColor(group.status)}">
+				<Heading title={getStatusLabel(group.status)} my={0} />
+			</div>
 			<div
 				class="flex flex-1 flex-col space-y-4 rounded-lg !outline-0 transition-all"
 				data-status={group.status}
@@ -106,7 +101,7 @@
 			>
 				{#each group.todos as item (item.id)}
 					<div animate:flip={{ duration: flipDurationMs }} transition:fade>
-						<Card todo={item} {handleCheck} />
+						<CompactEntry todo={item} {handleCheck} minimal={false} showStatus={false} />
 					</div>
 				{/each}
 			</div>

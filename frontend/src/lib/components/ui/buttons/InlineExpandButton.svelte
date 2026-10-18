@@ -1,9 +1,9 @@
 <script lang="ts">
 	import IconChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
 
-	let { onClick } = $props<{
+	let { onClick }: {
 		onClick: (e: MouseEvent) => void | Promise<void>;
-	}>();
+	} = $props();
 </script>
 
 <div

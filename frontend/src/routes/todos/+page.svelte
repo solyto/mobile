@@ -11,12 +11,15 @@
 	import ViewSwitcher from '$lib/components/todos/views/ViewSwitcher.svelte';
 	import KanbanView from '$lib/components/todos/views/KanbanView.svelte';
 	import ListView from '$lib/components/todos/views/ListView.svelte';
+	import GroupedListView from '$lib/components/todos/views/GroupedListView.svelte';
+	import MobileGroupedListView from '$lib/components/todos/views/MobileGroupedListView.svelte';
 	import CardView from '$lib/components/todos/views/CardView.svelte';
 	import OverviewView from '$lib/components/todos/views/OverviewView.svelte';
 	import Counter from '$lib/components/todos/Counter.svelte';
 	import SortByScore from '$lib/components/todos/actions/SortByScore.svelte';
 	import HideIt from '$lib/components/todos/actions/HideIt.svelte';
 	import TodoNavigation from '$lib/components/todos/TodoNavigation.svelte';
+	import TodoSettingsModal from '$lib/components/todos/TodoSettingsModal.svelte';
 
 	const viewPoint = getViewPoint();
 	const todos = getTodos();
@@ -56,6 +59,9 @@
 
 <div class="flex h-full w-full flex-row">
 	<TodoNavigation />
+	{#if todos.settingsModalVisible}
+		<TodoSettingsModal />
+	{/if}
 	<div class="relative max-h-full w-full overflow-y-auto p-4 lg:p-8">
 		<ViewSwitcher />
 		<TodoCreate />
@@ -69,6 +75,8 @@
 		{#if viewPoint.isDesktop}
 			{#if view === 'list'}
 				<ListView {handleCheck} />
+			{:else if view === 'grouped'}
+				<GroupedListView {handleCheck} />
 			{:else if view === 'kanban'}
 				<KanbanView {handleCheck} />
 			{:else if view === 'overview'}
@@ -79,6 +87,8 @@
 				<OverviewView {handleCheck} />
 			{:else if view === 'card'}
 				<CardView {handleCheck} />
+			{:else if view === 'grouped'}
+				<MobileGroupedListView {handleCheck} />
 			{/if}
 		{/if}
 	</div>

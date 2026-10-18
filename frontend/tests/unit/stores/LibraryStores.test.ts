@@ -264,6 +264,26 @@ describe('BookLibrary', () => {
 		expect(s.ratingFilter).toBeNull();
 	});
 
+	it('moves the shelf back to the first entry whenever the list is refiltered', async () => {
+		api.list.mockResolvedValue({ data: [book()] });
+		const s = new BookLibrary();
+		s.entries = [book({ id: '1' }), book({ id: '2' })];
+		const actions = [
+			() => s.load(),
+			() => s.search(),
+			() => s.filterByGenreAndRating(),
+			() => s.filterByWishlist(),
+			() => s.filterByLent(),
+			() => s.clearFilters()
+		];
+
+		for (const action of actions) {
+			s.shelfIndex = 1;
+			await action();
+			expect(s.shelfIndex).toBe(0);
+		}
+	});
+
 	it('restores the persisted view and switches between views', () => {
 		storage.get.mockReturnValue('list');
 		const s = new BookLibrary();
@@ -312,6 +332,25 @@ describe('MusicLibrary', () => {
 		s.clearFilters();
 		s.filterByWishlist();
 		expect(s.filteredEntries.map((m) => m.id)).toEqual(['2']);
+	});
+
+	it('moves the shelf back to the first entry whenever the list is refiltered', async () => {
+		api.list.mockResolvedValue({ data: [music()] });
+		const s = new MusicLibrary();
+		s.entries = [music({ id: '1' }), music({ id: '2' })];
+		const actions = [
+			() => s.load(),
+			() => s.search(),
+			() => s.filterByGenreAndRating(),
+			() => s.filterByWishlist(),
+			() => s.clearFilters()
+		];
+
+		for (const action of actions) {
+			s.shelfIndex = 1;
+			await action();
+			expect(s.shelfIndex).toBe(0);
+		}
 	});
 
 	it('restores the persisted view', () => {
@@ -498,6 +537,11 @@ describe('RecipeLibrary', () => {
 
 		s.addTypeFilter('dinner' as RecipeType);
 		expect(s.filteredEntries.map((r) => r.id)).toEqual(['1']);
+
+		s.clearFilters();
+		expect(s.filteredEntries).toHaveLength(3);
+		expect(s.ratingFilter).toBeNull();
+		expect(s.typeFilter).toBeNull();
 	});
 
 	it('toggles between list and cards view', () => {
@@ -589,5 +633,20 @@ describe('LinkLibrary', () => {
 		s.filterByFavorite();
 		s.reapplyFilter();
 		expect(s.activeFilter).toBe('favorite');
+	});
+
+	it('resolves the active category id for new entries', () => {
+		const s = new LinkLibrary();
+
+		expect(s.getActiveCategoryId()).toBeNull(); // "All"
+
+		s.filterByCategory(3);
+		expect(s.getActiveCategoryId()).toBe(3);
+
+		s.filterByCategory(0); // uncategorised
+		expect(s.getActiveCategoryId()).toBeNull();
+
+		s.filterByFavorite();
+		expect(s.getActiveCategoryId()).toBeNull();
 	});
 });
