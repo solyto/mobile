@@ -11,8 +11,10 @@ import android.view.ViewGroup;
 import android.webkit.WebView;
 import android.widget.FrameLayout;
 import androidx.core.content.ContextCompat;
+import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.WebViewListener;
@@ -34,6 +36,7 @@ public class MainActivity extends BridgeActivity {
     protected void onCreate(Bundle savedInstanceState) {
         registerPlugin(PullToRefreshPlugin.class);
         super.onCreate(savedInstanceState);
+        applyKeyboardInsets();
         setupPullToRefresh();
         handleShareIntent(getIntent());
         applySystemBarAppearance();
@@ -123,6 +126,32 @@ public class MainActivity extends BridgeActivity {
         // Re-dispatch insets so the WebView gets its edge-to-edge margins in
         // its new parent.
         ViewCompat.requestApplyInsets(swipeRefresh);
+    }
+
+    /**
+     * Replaces Capacitor's edge-to-edge insets listener with one that also
+     * respects the keyboard. Under edge-to-edge (Android 15+) the window is no
+     * longer resized for the keyboard and Capacitor only insets the WebView by
+     * the system bars, so the keyboard covered the WebView and the page never
+     * noticed it (visualViewport did not shrink). Insetting the bottom by the
+     * keyboard height shrinks the WebView, so dvh-sized layouts such as the
+     * bottom sheet end up above the keyboard.
+     */
+    private void applyKeyboardInsets() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) return;
+
+        ViewCompat.setOnApplyWindowInsetsListener(getBridge().getWebView(), (v, windowInsets) -> {
+            Insets bars = windowInsets.getInsets(
+                    WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
+            Insets ime = windowInsets.getInsets(WindowInsetsCompat.Type.ime());
+            ViewGroup.MarginLayoutParams mlp = (ViewGroup.MarginLayoutParams) v.getLayoutParams();
+            mlp.leftMargin = bars.left;
+            mlp.topMargin = bars.top;
+            mlp.rightMargin = bars.right;
+            mlp.bottomMargin = Math.max(bars.bottom, ime.bottom);
+            v.setLayoutParams(mlp);
+            return WindowInsetsCompat.CONSUMED;
+        });
     }
 
     private void finishRefresh() {
