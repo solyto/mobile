@@ -162,7 +162,7 @@
 				<button
 					class="cursor-pointer rounded-lg px-3 py-1.5 text-xs font-medium transition-all"
 					class:bg-c-btn={groupBy === filter.key}
-					class:text-white={groupBy === filter.key}
+					class:text-c-btn-text={groupBy === filter.key}
 					class:bg-c-neutral-1={groupBy !== filter.key}
 					class:dark:bg-s-dark-3={groupBy !== filter.key}
 					onclick={() => (groupBy = filter.key)}

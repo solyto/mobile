@@ -10,10 +10,10 @@
 	const ts = getTranslation();
 	const notifications = getUiNotifications();
 
-	let { release, library } = $props<{
+	let { release, library }: {
 		release: BookRelease;
 		library: BookLibrary;
-	}>();
+	} = $props();
 
 	let adding = $state<boolean>(false);
 	let added = $state<boolean>(false);

@@ -6,12 +6,12 @@
 	import CreateEntry from '$lib/components/settings/CreateEntry.svelte';
 	import type { MusicGenre } from '$lib/types/library_music';
 	import Heading from '$lib/components/ui/Heading.svelte';
-	import type { Library } from '$lib/types/library';
+	import type { GenreLibrary } from '$lib/types/library';
 
 	const loadingIndicator = getLoadingIndicator();
 	const ts = getTranslation();
 
-	let { library } = $props<{ library: Library }>();
+	let { library }: { library: GenreLibrary } = $props();
 
 	async function createGenre(title: string): Promise<void> {
 		loadingIndicator.start();

@@ -16,7 +16,7 @@
 	const notifications = getUiNotifications();
 	const ts = getTranslation();
 
-	let { user } = $props<{ user: ManagedUser }>();
+	let { user }: { user: ManagedUser } = $props();
 
 	const isSuperAdmin = auth.user?.role === 'super_admin';
 	const isCurrentUser = auth.user?.id === user.id;

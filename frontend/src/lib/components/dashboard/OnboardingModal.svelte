@@ -15,7 +15,7 @@
 	const auth = getAuth();
 	const nav = getNavigation();
 
-	let { onComplete } = $props<{ onComplete: () => void }>();
+	let { onComplete }: { onComplete: () => void } = $props();
 
 	let visible = $state(false);
 	let currentStep = $state(0);

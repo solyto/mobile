@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { init } from 'echarts';
-	import type { ECharts } from 'echarts';
-	import { onMount, onDestroy, tick } from 'svelte';
+	import { init } from './echarts';
+	import type { ECharts } from './echarts';
+	import { onMount, onDestroy } from 'svelte';
 
 	let {
 		title,
@@ -12,7 +12,7 @@
 		filled = false,
 		color = '#61d96a',
 		class: extraClass = 'h-96'
-	} = $props<{
+	}: {
 		title?: string;
 		categories?: string[];
 		values?: number[];
@@ -21,11 +21,10 @@
 		filled?: boolean;
 		color?: string;
 		class?: string;
-	}>();
+	} = $props();
 
 	let chartContainer = $state<HTMLDivElement | null>(null);
-	let myChart = $state<ECharts | null>(null);
-	let isInitialized = $state<boolean>(false);
+	let myChart: ECharts | null = null;
 
 	// echarts renders to canvas, so CSS variables like var(--color-c-success) must be
 	// resolved to a concrete color value before being passed to the chart options.
@@ -48,12 +47,12 @@
 	}
 
 	function createChart() {
-		if (!chartContainer || !categories?.length || !values?.length) return;
-
 		if (myChart) {
 			myChart.dispose();
 			myChart = null;
 		}
+
+		if (!chartContainer || !categories?.length || !values?.length) return;
 
 		myChart = init(chartContainer);
 
@@ -67,9 +66,10 @@
 				trigger: 'axis'
 			},
 			grid: {
-				left: '3%',
-				right: '4%',
-				bottom: '10%',
+				top: title ? 60 : 8,
+				left: 0,
+				right: 0,
+				bottom: 0,
 				containLabel: true
 			},
 			xAxis: {
@@ -112,12 +112,9 @@
 		};
 
 		myChart.setOption(options);
-		isInitialized = true;
 	}
 
 	onMount(() => {
-		tick().then(createChart);
-
 		const handleResize = () => {
 			if (myChart) {
 				myChart.resize();
@@ -138,9 +135,8 @@
 		}
 	});
 
-	// Only update when data actually changes, not on every render
 	$effect(() => {
-		if (!isInitialized && chartContainer) {
+		if (chartContainer) {
 			createChart();
 		}
 	});

@@ -8,20 +8,20 @@
 	import IconWeek from '$lib/components/ui/icons/IconWeek.svelte';
 	import IconDay from '$lib/components/ui/icons/IconDay.svelte';
 	import IconList from '$lib/components/ui/icons/IconList.svelte';
-	import NavigationEntry from '$lib/components/calendars/NavigationEntry.svelte';
 	import EditButton from '$lib/components/ui/buttons/EditButton.svelte';
 	import ImportButton from '$lib/components/ui/buttons/ImportButton.svelte';
 	import CloudButton from '$lib/components/ui/buttons/CloudButton.svelte';
-	import Divider from '$lib/components/ui/Divider.svelte';
 	import BottomSheetModal from '$lib/components/ui/BottomSheetModal.svelte';
 	import ManageCalendars from '$lib/components/calendars/ManageCalendars.svelte';
 	import { getCalendars } from '$lib/state/Calendars.svelte';
+	import { getCalendarImport } from '$lib/state/CalendarImport.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { formatDateWithoutYear } from '$lib/helpers/DateHelper';
 	import { page } from '$app/state';
 	import { slide } from 'svelte/transition';
 
 	const calendars = getCalendars();
+	const calendarImport = getCalendarImport();
 	const ts = getTranslation();
 
 	let calendarsExpanded = $state<boolean>(page.url.searchParams.has('invitations'));
@@ -123,7 +123,7 @@
 				}}
 			>
 				<IconChevronDown
-					class="size-4 transition-transform {calendarsExpanded ? 'rotate-180' : ''}"
+					class={['size-4 transition-transform', calendarsExpanded && 'rotate-180']}
 				/>
 			</button>
 		</div>
@@ -142,7 +142,7 @@
 				</div>
 				<div class="flex flex-col items-center gap-2">
 					<ImportButton
-						onClick={() => (calendars.importModal = true)}
+						onClick={() => (calendarImport.importModal = true)}
 						title={ts.get.calendar.import_calendars}
 					/>
 					<span class="text-xs text-c-neutral-4">{ts.get.calendar.import_calendars}</span>

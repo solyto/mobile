@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	import { fly } from 'svelte/transition';
 	import CloseButton from '$lib/components/ui/buttons/CloseButton.svelte';
 	import EditButton from '$lib/components/ui/buttons/EditButton.svelte';
@@ -10,13 +11,13 @@
 		onDelete,
 		children,
 		title = null
-	} = $props<{
+	}: {
 		onClose?: () => void | Promise<void>;
 		onEdit?: () => void | Promise<void>;
 		onDelete?: () => void | Promise<void>;
-		children?: any;
+		children?: Snippet;
 		title?: string | null;
-	}>();
+	} = $props();
 </script>
 
 <div

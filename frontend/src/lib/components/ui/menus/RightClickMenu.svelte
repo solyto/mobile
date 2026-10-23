@@ -5,12 +5,12 @@
 	import { clickOutside } from '$lib/helpers/ClickHelper';
 	import { onMount } from 'svelte';
 
-	let { x, y, close, entries } = $props<{
+	let { x, y, close, entries }: {
 		x: number;
 		y: number;
 		close: () => void;
 		entries: RightClickMenuEntry[];
-	}>();
+	} = $props();
 
 	let visible = $state<boolean>(false);
 

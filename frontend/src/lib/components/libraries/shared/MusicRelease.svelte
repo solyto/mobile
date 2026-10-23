@@ -12,10 +12,10 @@
 	const ts = getTranslation();
 	const notifications = getUiNotifications();
 
-	let { release, library } = $props<{
+	let { release, library }: {
 		release: MusicRelease;
 		library: MusicLibrary;
-	}>();
+	} = $props();
 
 	let sneakPreview = $state<boolean>(false);
 	let adding = $state<boolean>(false);
@@ -62,7 +62,7 @@
 				<p class="text-md text-left">{release.artist}</p>
 				<div class="mt-2 text-sm">
 					<span class="font-bold">{ts.get.libraries.release_date}:</span>
-					{formatDate(release.release_date)}
+					{release.release_date ? formatDate(release.release_date) : '—'}
 				</div>
 			</div>
 			<div class="flex flex-row flex-wrap items-start gap-2">

@@ -2,16 +2,16 @@
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { getAuth } from '$lib/state/Auth.svelte';
 	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
-	import ApiService from '$lib/services/ApiService';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
 	import Toggle from '$lib/components/forms/Toggle.svelte';
 	import { onMount } from 'svelte';
 	import { apiRoutes } from '$lib/config/apiRoutes';
+	import type { ExportStatus } from '$lib/types/export';
 
 	const ts = getTranslation();
 	const auth = getAuth();
 	const uiNotifications = getUiNotifications();
-	const apiService = new ApiService(auth.getToken());
+	const apiService = auth.apiService;
 
 	const FEATURES = [
 		{ key: 'todos', label: 'Todos' },
@@ -35,14 +35,14 @@
 		Object.fromEntries(FEATURES.map((f) => [f.key, true]))
 	);
 	let loading = $state(false);
-	let exportStatus = $state<any>(null);
+	let exportStatus = $state<ExportStatus | null>(null);
 
 	onMount(async () => {
 		await loadStatus();
 	});
 
 	async function loadStatus() {
-		const res: any = await apiService.list(apiRoutes.export.status);
+		const res = await apiService.getRaw<{ success: boolean; data: ExportStatus }>(apiRoutes.export.status);
 		if (res?.success) {
 			exportStatus = res.data;
 		}
@@ -93,15 +93,15 @@
 	}
 
 	async function downloadExport() {
-		const url = apiRoutes.export.download.replace('%s', String(exportStatus.id));
-		const res = await fetch(url, {
-			headers: { Authorization: 'Bearer ' + auth.getToken(), Accept: 'application/zip' }
-		});
-		if (!res.ok) {
-			uiNotifications.error('Download failed.');
+		if (!exportStatus) return;
+		const blob = await apiService.download(
+			apiRoutes.export.download.replace('%s', String(exportStatus.id)),
+			'application/zip'
+		);
+		if (!blob) {
+			uiNotifications.error(ts.get.settings.export_download_failed);
 			return;
 		}
-		const blob = await res.blob();
 		const a = document.createElement('a');
 		a.href = URL.createObjectURL(blob);
 		a.download = 'export_' + exportStatus.id + '.zip';
@@ -110,7 +110,7 @@
 	}
 </script>
 
-<div class="flex flex-col gap-6 md:p-4 md:pt-6">
+<div class="flex flex-col gap-6">
 	<p class="text-c-neutral-5">{ts.get.settings.export_select_features}</p>
 
 	<div class="flex w-full flex-col gap-2">

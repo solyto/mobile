@@ -45,6 +45,11 @@ if (!Element.prototype.animate) {
 	Element.prototype.animate = vi.fn(() => new FakeAnimation()) as never;
 }
 
+// jsdom lacks scrollIntoView, which the autocomplete dropdowns call to keep the selected suggestion visible
+if (!Element.prototype.scrollIntoView) {
+	Element.prototype.scrollIntoView = vi.fn();
+}
+
 // jsdom lacks matchMedia, which ViewPoint and some components use
 if (!window.matchMedia) {
 	window.matchMedia = vi.fn().mockImplementation((query: string) => ({

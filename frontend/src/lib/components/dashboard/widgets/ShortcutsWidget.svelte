@@ -10,9 +10,9 @@
 
 	const shortcuts = getShortcuts();
 
-	let { ts } = $props<{
+	let { ts }: {
 		ts: Translation;
-	}>();
+	} = $props();
 
 	let manageModalOpen = $state(false);
 

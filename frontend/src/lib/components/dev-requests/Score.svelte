@@ -1,12 +1,12 @@
 <script lang="ts">
 	import IconChevronDown from '@lucide/svelte/icons/chevron-down';
 	import IconChevronUp from '@lucide/svelte/icons/chevron-up';
-	import type { DevRequest, DevRequestVote } from '$lib/types/dev_request';
+	import type { DevRequest } from '$lib/types/dev_request';
 	import { getDevRequests } from '$lib/state/DevRequests.svelte';
 
 	const devRequests = getDevRequests();
 
-	let { entry } = $props<{ entry: DevRequest }>();
+	let { entry }: { entry: DevRequest } = $props();
 
 	async function handleUpvote(): Promise<void> {
 		await devRequests.vote(entry, 'up');

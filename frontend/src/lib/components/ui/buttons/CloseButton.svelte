@@ -1,10 +1,10 @@
 <script lang="ts">
 	import IconX from '@lucide/svelte/icons/x';
 
-	let { onClick, inModal = true } = $props<{
+	let { onClick, inModal = true }: {
 		onClick: () => void | Promise<void>;
 		inModal?: boolean;
-	}>();
+	} = $props();
 </script>
 
 <button

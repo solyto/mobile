@@ -34,8 +34,7 @@ The easiest way to get the full stack running locally is via the [solyto workspa
 npm run build       # production build
 npm run preview     # preview the production build locally
 npm run check       # type-check with svelte-check
-npm run lint        # prettier + eslint
-npm run format      # auto-format
+npm run lint        # eslint
 ```
 
 ## Deployment

@@ -3,7 +3,7 @@
 	import { onDestroy, tick } from 'svelte';
 	import { getTodos } from '$lib/state/Todos.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
-	import { getKeyManager } from '$lib/KeyManager.svelte';
+	import { getKeyManager } from '$lib/state/KeyManager.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import Subtask from '$lib/components/todos/props/Subtask.svelte';
 	import TextInput from '$lib/components/forms/TextInput.svelte';
@@ -13,12 +13,16 @@
 	const loadingIndicator = getLoadingIndicator();
 	const keyManager = getKeyManager();
 
-	let { todo, subtasks } = $props<{ todo: Todo; subtasks: TodoSubtask[] }>();
+	let { todo, subtasks, fullWidth = false }: {
+		todo: Todo;
+		subtasks: TodoSubtask[];
+		fullWidth?: boolean;
+	} = $props();
 
 	let addSubtaskVisible = $state<boolean>(false);
 	let subtaskInput = $state<HTMLInputElement | null>(null);
 	let subtaskValue = $state<string>('');
-	let keyHandlers = $state<{ [key: string]: string | null }>({ Enter: null, Escape: null });
+	let keyHandlers: { [key: string]: string | null } = { Enter: null, Escape: null };
 
 	onDestroy(() => keyManager.unregisterAll(keyHandlers));
 
@@ -62,17 +66,18 @@
 	}
 </script>
 
-<div class="mt-2 flex flex-col items-start gap-1">
+<div class="mt-2 flex flex-col gap-1" class:items-start={!fullWidth} class:w-full={fullWidth}>
 	{#each subtasks as subtask (subtask.id)}
 		<Subtask {todo} {subtask} {handleCheckboxClick} />
 	{/each}
 	{#if addSubtaskVisible}
-		<div class="w-32 {todos.view === 'kanban' ? 'px-2 py-1 text-xs' : ''}">
+		<div class="w-full {todos.view === 'kanban' ? 'px-2 py-1 text-xs' : ''}" class:mt-2={subtasks.length > 0}>
 			<TextInput bind:input={subtaskInput} bind:value={subtaskValue} {onblur} />
 		</div>
 	{:else}
 		<button
-			class="cursor-pointer text-xs text-c-neutral-4 transition-all hover:text-c-neutral-7 dark:hover:text-white"
+			class="cursor-pointer text-left text-xs text-c-neutral-4 transition-all hover:text-c-neutral-7 dark:hover:text-white"
+			class:mt-2={subtasks.length > 0}
 			onclick={toggleAddSubtask}>+ {ts.get.todos.add_subtask}</button
 		>
 	{/if}

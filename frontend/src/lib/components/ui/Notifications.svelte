@@ -16,7 +16,7 @@
 <div class="fixed top-5 right-5 z-90 flex flex-col gap-2">
 	{#each queue as notification (notification.id)}
 		<div
-			class="flex h-full w-full flex-row gap-2 bg-c-neutral/60 border-l-3 rounded-md p-4 drop-shadow-lg backdrop-blur-sm 2xl:min-w-60 dark:bg-s-dark/80"
+			class="notification-toast flex h-full w-full flex-row gap-2 bg-c-neutral/60 border-l-3 rounded-md p-4 drop-shadow-lg backdrop-blur-sm 2xl:min-w-60 dark:bg-s-dark/80"
 			class:border-c-success={notification.type === 'success'}
 			class:border-c-danger={notification.type === 'error'}
 			class:border-c-btn-hover={notification.type === 'info'}

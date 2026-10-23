@@ -1,8 +1,8 @@
 import type { DetectionResult, QuickAddContentType } from '$lib/types/quick_add';
 import { getContext, setContext } from 'svelte';
-import { getAuth } from '$lib/state/Auth.svelte';
-import { getTranslation } from '$lib/state/Translation.svelte';
-import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
+import { getAuth, type Auth } from '$lib/state/Auth.svelte';
+import { getTranslation, type Translation } from '$lib/state/Translation.svelte';
+import { getUiNotifications, type UiNotifications } from '$lib/state/UiNotifications.svelte';
 import ApiService from '$lib/services/ApiService';
 import { apiRoutes } from '$lib/config/apiRoutes';
 
@@ -16,13 +16,21 @@ export class QuickAdd {
 	needsConfirmation = $state<boolean>(false);
 	showTypeSelector = $state<boolean>(false);
 	error = $state<string | null>(null);
-	auth = getAuth();
-	ts = getTranslation();
-	notifications = getUiNotifications();
+	auth: Auth;
+	ts: Translation;
+	notifications: UiNotifications;
 	apiService: ApiService;
 
-	constructor() {
-		this.apiService = new ApiService(this.auth.getToken());
+	constructor(
+		auth: Auth = getAuth(),
+		apiService: ApiService = auth.apiService,
+		ts: Translation = getTranslation(),
+		notifications: UiNotifications = getUiNotifications()
+	) {
+		this.auth = auth;
+		this.apiService = apiService;
+		this.ts = ts;
+		this.notifications = notifications;
 	}
 
 	openModal(): void {

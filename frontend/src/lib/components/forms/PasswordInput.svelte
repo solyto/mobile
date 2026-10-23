@@ -11,7 +11,7 @@
 		onblur,
 		oninput,
 		tabindex = null
-	} = $props<{
+	}: {
 		input?: HTMLInputElement | null;
 		value: string;
 		placeholder?: string;
@@ -19,7 +19,7 @@
 		onblur?: () => void;
 		oninput?: () => void;
 		tabindex?: number | null;
-	}>();
+	} = $props();
 
 	const ts = getTranslation();
 

@@ -2,11 +2,11 @@
 	import DeezerIcon from '$lib/assets/services/deezer_icon.svg';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 
-	let { link, artist, title } = $props<{
-		link?: string;
+	let { link, artist, title }: {
+		link?: string | null;
 		artist?: string;
 		title?: string;
-	}>();
+	} = $props();
 
 	const ts = getTranslation();
 

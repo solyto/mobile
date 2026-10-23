@@ -1,15 +1,16 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	let {
 		title = null,
 		hover = true,
 		noShadowOnMobile = false,
 		children
-	} = $props<{
-		title?: string;
+	}: {
+		title?: string | null;
 		hover?: boolean;
 		noShadowOnMobile?: boolean;
-		children?: any;
-	}>();
+		children?: Snippet;
+	} = $props();
 </script>
 
 <div

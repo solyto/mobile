@@ -1,32 +1,33 @@
 <script lang="ts">
 	import { getCalendars } from '$lib/state/Calendars.svelte';
-	import { formatDate, getCalendarWeek, getISODateInfo } from '$lib/helpers/DateHelper';
+	import { formatDate, getCalendarWeek, getISODateInfo, getHoursOfDay } from '$lib/helpers/DateHelper';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import Day from '$lib/components/calendars/views/week/Day.svelte';
+	import CalendarMarks from '$lib/components/calendars/CalendarMarks.svelte';
+	import CalendarDragGhost from '$lib/components/calendars/dnd/CalendarDragGhost.svelte';
 	import { onMount } from 'svelte';
 
 	const calendars = getCalendars();
 	const ts = getTranslation();
-	const hours = Array.from({ length: 24 }, (_, i) => i + 1).map((i) =>
-		(i - 1).toString().padStart(2, '0')
-	);
+	const hours = getHoursOfDay();
+	const rows = '10% repeat(24, calc(100% / 27))';
 
-	let week = $derived(getCalendarWeek(calendars.currentYear, calendars.currentWeek));
+	let week = $derived(getCalendarWeek(calendars.currentWeekYear, calendars.currentWeek));
 
 	onMount(() => {
 		const iso = getISODateInfo(new Date());
-		calendars.currentYear = iso.year;
+		calendars.currentWeekYear = iso.year;
 		calendars.currentWeek = iso.week;
 	});
 </script>
 
-<div class="flex h-full w-full" style="background-color: color-mix(in srgb, var(--color-c-primary) 12%, var(--color-c-bg));">
-	<div class="flex h-full w-8 flex-col pt-8">
-		<div class="flex h-3/30 w-full items-center justify-center">
-			<span class="px-1 text-center text-sm">{ts.get.calendar.is_all_day}</span>
+<div class="calendar-view flex h-full w-full" style="background-color: color-mix(in srgb, var(--color-c-primary) 12%, var(--color-c-bg));">
+	<div class="grid h-full w-8 pt-8" style="grid-template-rows: {rows};">
+		<div class="flex items-center justify-center">
+			
 		</div>
 		{#each hours as hour (hour)}
-			<div class="flex h-1/27 w-full items-center justify-center">
+			<div class="flex items-center justify-center">
 				<span class="text-sm">{hour}</span>
 			</div>
 		{/each}
@@ -35,12 +36,16 @@
 		<div class="flex w-full">
 			<div class="flex h-8 w-full">
 				{#each week as day (day.date)}
-					<div class="flex w-1/7 items-center justify-center">
-						<span class="text-sm"
-							>{ts.get.calendar.weekdays_short[day.weekday]}. {formatDate(
-								day.date
-							)}</span
-						>
+					<div class="flex w-1/7 items-center justify-center relative">
+						<span class="text-sm">
+							{ts.get.calendar.weekdays_short[day.weekday]}. {formatDate(day.date)}
+						</span>
+						<CalendarMarks
+							date={day.date}
+							showJournal={calendars.journalMarksEnabled}
+							showCheckIn={calendars.checkInMarksEnabled}
+							class="absolute right-2"
+						/>
 					</div>
 				{/each}
 			</div>
@@ -55,4 +60,5 @@
 			{/each}
 		</div>
 	</div>
+	<CalendarDragGhost />
 </div>

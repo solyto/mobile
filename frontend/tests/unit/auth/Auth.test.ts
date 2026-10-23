@@ -4,9 +4,10 @@ import type { User, AuthToken, LoginResponse } from '$lib/types/auth';
 
 // The Auth module itself must NOT be mocked — only its service dependencies.
 
-const { api, storage } = vi.hoisted(() => {
+const { api, storage, monitor } = vi.hoisted(() => {
 	const api = {
 		post: vi.fn(),
+		postWithStatus: vi.fn(),
 		postRaw: vi.fn(),
 		get: vi.fn(),
 		put: vi.fn(),
@@ -22,12 +23,26 @@ const { api, storage } = vi.hoisted(() => {
 		get: vi.fn(),
 		set: vi.fn()
 	};
-	return { api, storage };
+	const monitor = {
+		check: null as (() => void) | null,
+		destroy: vi.fn()
+	};
+	return { api, storage, monitor };
 });
+
+vi.mock('$lib/state/SessionMonitor', () => ({
+	SessionMonitor: class FakeSessionMonitor {
+		destroy = monitor.destroy;
+		constructor(check: () => void) {
+			monitor.check = check;
+		}
+	}
+}));
 
 vi.mock('$lib/services/ApiService', () => ({
 	default: class FakeApi {
 		post = api.post;
+		postWithStatus = api.postWithStatus;
 		postRaw = api.postRaw;
 		get = api.get;
 		put = api.put;
@@ -35,6 +50,7 @@ vi.mock('$lib/services/ApiService', () => ({
 		delete = api.delete;
 		postFormData = api.postFormData;
 		updateAuthToken = api.updateAuthToken;
+		setUnauthorizedHandler = vi.fn();
 	}
 }));
 
@@ -61,11 +77,12 @@ function user(overrides: Partial<User> = {}): User {
 			date_format: 'dd.mm.YYYY',
 			time_format: 'H:i',
 			widgets: '',
-			ai_enabled: false,
 			navigation: '',
-			openai_api_key: null,
 			first_visit: true,
-			temperature_unit: 'c'
+			temperature_unit: 'c',
+			journal_enabled: false,
+			journal_calendar_mark: false,
+			check_in_calendar_mark: false
 		},
 		created_at: '2026-01-01T00:00:00',
 		updated_at: '2026-01-01T00:00:00',
@@ -100,6 +117,7 @@ beforeEach(() => {
 	storage.getJson.mockReturnValue(null);
 	storage.destroy.mockReturnValue(undefined);
 	api.post.mockResolvedValue(null);
+	api.postWithStatus.mockResolvedValue({ ok: false, status: 500, data: null });
 	api.postRaw.mockResolvedValue(null);
 	api.get.mockResolvedValue(null);
 	api.put.mockResolvedValue(null);
@@ -149,12 +167,19 @@ describe('Auth store', () => {
 		it('refreshes when the token expires within the 5-day threshold', async () => {
 			const expiresAt = new Date(Date.now() + 1 * 24 * 3600 * 1000).toISOString();
 			storage.getJson.mockReturnValue({ user: user(), authToken: authToken(expiresAt) });
-			api.post.mockResolvedValue({ data: loginResponse({ token: 'refreshed-token' }) });
+			api.postWithStatus.mockResolvedValue({
+				ok: true,
+				status: 200,
+				data: { data: loginResponse({ token: 'refreshed-token' }) }
+			});
 
 			const auth = new Auth();
 			await flushAsync();
 
-			expect(api.post).toHaveBeenCalledWith(expect.stringContaining('/refresh'), {});
+			expect(api.postWithStatus).toHaveBeenCalledWith(
+				expect.stringContaining('/refresh'),
+				{}
+			);
 			expect(auth.getToken()).toBe('refreshed-token');
 			expect(auth.loggedIn).toBe(true);
 		});
@@ -218,22 +243,194 @@ describe('Auth store', () => {
 
 	describe('refresh', () => {
 		it('updates the session from the refresh response', async () => {
-			api.post.mockResolvedValue({ data: loginResponse({ token: 'new-session' }) });
+			api.postWithStatus.mockResolvedValue({
+				ok: true,
+				status: 200,
+				data: { data: loginResponse({ token: 'new-session' }) }
+			});
 
 			const auth = new Auth();
-			const ok = await auth.refresh();
+			const outcome = await auth.refresh();
 
-			expect(ok).toBe(true);
+			expect(outcome).toBe('refreshed');
 			expect(auth.getToken()).toBe('new-session');
 			expect(auth.loggedIn).toBe(true);
 			expect(storage.setJson).toHaveBeenCalled();
 		});
 
-		it('reports failure when the refresh request fails', async () => {
-			api.post.mockResolvedValue(null);
+		it('reports a definitive rejection on 401 without touching the session', async () => {
+			api.postWithStatus.mockResolvedValue({ ok: false, status: 401, data: null });
 
 			const auth = new Auth();
-			await expect(auth.refresh()).resolves.toBe(false);
+			await expect(auth.refresh()).resolves.toBe('rejected');
+		});
+
+		it('reports a transient failure on 5xx', async () => {
+			api.postWithStatus.mockResolvedValue({ ok: false, status: 503, data: null });
+
+			const auth = new Auth();
+			await expect(auth.refresh()).resolves.toBe('transient');
+		});
+	});
+
+	describe('recoverFromUnauthorized', () => {
+		async function loggedInAuth(): Promise<Auth> {
+			const expiresAt = new Date(Date.now() + 6 * 24 * 3600 * 1000).toISOString();
+			storage.getJson.mockReturnValue({ user: user(), authToken: authToken(expiresAt) });
+			const auth = new Auth();
+			await flushAsync();
+			storage.getJson.mockClear();
+			return auth;
+		}
+
+		it('keeps the session when the refresh fails transiently', async () => {
+			const auth = await loggedInAuth();
+			api.postWithStatus.mockResolvedValue({ ok: false, status: 503, data: null });
+			// adoptExternalSession reads storage; return the same session so it declines.
+			storage.getJson.mockReturnValue({
+				user: user(),
+				authToken: authToken(new Date(Date.now() + 6 * 24 * 3600 * 1000).toISOString())
+			});
+
+			await expect(auth.recoverFromUnauthorized()).resolves.toBe(false);
+			expect(auth.loggedIn).toBe(true);
+			expect(storage.destroy).not.toHaveBeenCalled();
+		});
+
+		it('logs out only on a definitive refresh rejection', async () => {
+			const auth = await loggedInAuth();
+			api.postWithStatus.mockResolvedValue({ ok: false, status: 401, data: null });
+			storage.getJson.mockReturnValue(null);
+
+			await expect(auth.recoverFromUnauthorized()).resolves.toBe(false);
+			expect(auth.loggedIn).toBe(false);
+			expect(storage.destroy).toHaveBeenCalledWith('auth');
+		});
+
+		it('keeps the session when the refresh request rejects (offline)', async () => {
+			const auth = await loggedInAuth();
+			api.postWithStatus.mockRejectedValue(new Error('offline'));
+			storage.getJson.mockReturnValue(null);
+
+			await expect(auth.recoverFromUnauthorized()).resolves.toBe(false);
+			expect(auth.loggedIn).toBe(true);
+			expect(storage.destroy).not.toHaveBeenCalled();
+		});
+	});
+
+	describe('validateSession', () => {
+		// Accessing the private resume routine directly to assert it never leaks
+		// a rejected promise when the network drops mid-check.
+		async function callValidateSession(auth: Auth): Promise<void> {
+			await (auth as unknown as { validateSession: () => Promise<void> }).validateSession();
+		}
+
+		it('swallows a rejecting loadAdditionalData while resuming offline', async () => {
+			const expiresAt = new Date(Date.now() + 6 * 24 * 3600 * 1000).toISOString();
+			storage.getJson.mockReturnValue({ user: user(), authToken: authToken(expiresAt) });
+			const auth = new Auth();
+			await flushAsync();
+
+			api.get.mockRejectedValue(new Error('offline'));
+
+			await expect(callValidateSession(auth)).resolves.toBeUndefined();
+			expect(auth.loggedIn).toBe(true);
+		});
+	});
+
+	describe('session expired event', () => {
+		async function loggedInAuth(expiresInMs = 6 * 24 * 3600 * 1000): Promise<Auth> {
+			const expiresAt = new Date(Date.now() + expiresInMs).toISOString();
+			storage.getJson.mockReturnValue({ user: user(), authToken: authToken(expiresAt) });
+			const auth = new Auth();
+			await flushAsync();
+			storage.getJson.mockReturnValue(null);
+			return auth;
+		}
+
+		async function callValidateSession(auth: Auth): Promise<void> {
+			await (auth as unknown as { validateSession: () => Promise<void> }).validateSession();
+		}
+
+		it('fires once when 401 recovery is rejected', async () => {
+			const auth = await loggedInAuth();
+			const handler = vi.fn();
+			auth.setSessionExpiredHandler(handler);
+			api.postWithStatus.mockResolvedValue({ ok: false, status: 401, data: null });
+
+			await auth.recoverFromUnauthorized();
+
+			expect(handler).toHaveBeenCalledTimes(1);
+			expect(auth.loggedIn).toBe(false);
+		});
+
+		it('fires once when the resume check is rejected', async () => {
+			const auth = await loggedInAuth(1000);
+			const handler = vi.fn();
+			auth.setSessionExpiredHandler(handler);
+			api.postWithStatus.mockResolvedValue({ ok: false, status: 403, data: null });
+
+			await callValidateSession(auth);
+
+			expect(handler).toHaveBeenCalledTimes(1);
+			expect(auth.loggedIn).toBe(false);
+		});
+
+		it('does not fire on a transient refresh failure', async () => {
+			const auth = await loggedInAuth(1000);
+			const handler = vi.fn();
+			auth.setSessionExpiredHandler(handler);
+			api.postWithStatus.mockResolvedValue({ ok: false, status: 503, data: null });
+
+			await auth.recoverFromUnauthorized();
+			await callValidateSession(auth);
+
+			expect(handler).not.toHaveBeenCalled();
+		});
+
+		it('does not fire when the refresh request rejects (offline)', async () => {
+			const auth = await loggedInAuth(1000);
+			const handler = vi.fn();
+			auth.setSessionExpiredHandler(handler);
+			api.postWithStatus.mockRejectedValue(new Error('offline'));
+
+			await auth.recoverFromUnauthorized();
+			await callValidateSession(auth);
+
+			expect(handler).not.toHaveBeenCalled();
+		});
+
+		it('does not fire on an explicit logout', async () => {
+			const auth = await loggedInAuth();
+			const handler = vi.fn();
+			auth.setSessionExpiredHandler(handler);
+
+			auth.logout();
+
+			expect(handler).not.toHaveBeenCalled();
+		});
+	});
+
+	describe('session monitor', () => {
+		it('validates the session when the monitor runs its check', async () => {
+			const expiresAt = new Date(Date.now() + 6 * 24 * 3600 * 1000).toISOString();
+			storage.getJson.mockReturnValue({ user: user(), authToken: authToken(expiresAt) });
+			new Auth();
+			await flushAsync();
+			api.get.mockClear();
+
+			monitor.check?.();
+			await flushAsync();
+
+			expect(api.get).toHaveBeenCalledTimes(1);
+		});
+
+		it('destroy() tears the monitor down', () => {
+			const auth = new Auth();
+
+			auth.destroy();
+
+			expect(monitor.destroy).toHaveBeenCalledTimes(1);
 		});
 	});
 
@@ -390,6 +587,66 @@ describe('Auth store', () => {
 			await expect(auth.getPublicProfile('nobody')).resolves.toBeUndefined();
 			await expect(auth.getPublicProfile('nobody')).resolves.toBeUndefined();
 			expect(api.get).toHaveBeenCalledTimes(2);
+		});
+	});
+
+	describe('life mark settings', () => {
+		async function loggedInUser(): Promise<Auth> {
+			const expiresAt = new Date(Date.now() + 6 * 24 * 3600 * 1000).toISOString();
+			storage.getJson.mockReturnValue({ user: user(), authToken: authToken(expiresAt) });
+			const auth = new Auth();
+			await flushAsync();
+			storage.getJson.mockClear();
+			return auth;
+		}
+
+		it('keeps a toggled journal_enabled in the user settings', async () => {
+			api.put.mockResolvedValue(true);
+			const auth = await loggedInUser();
+
+			await auth.updateJournalEnabled(true);
+
+			expect(api.put).toHaveBeenCalledWith(
+				expect.stringContaining('/settings/journal'),
+				{ enabled: true }
+			);
+			expect(auth.user?.settings?.journal_enabled).toBe(true);
+		});
+
+		it('keeps a toggled journal_calendar_mark in the user settings', async () => {
+			api.put.mockResolvedValue(true);
+			const auth = await loggedInUser();
+
+			await auth.updateJournalCalendarMark(true);
+
+			expect(api.put).toHaveBeenCalledWith(
+				expect.stringContaining('/settings/journal-calendar-mark'),
+				{ enabled: true }
+			);
+			expect(auth.user?.settings?.journal_calendar_mark).toBe(true);
+		});
+
+		it('keeps a toggled check_in_calendar_mark in the user settings', async () => {
+			api.put.mockResolvedValue(true);
+			const auth = await loggedInUser();
+
+			await auth.updateCheckInCalendarMark(true);
+
+			expect(api.put).toHaveBeenCalledWith(
+				expect.stringContaining('/settings/check-in-calendar-mark'),
+				{ enabled: true }
+			);
+			expect(auth.user?.settings?.check_in_calendar_mark).toBe(true);
+		});
+
+		it('does not persist the flag when the API rejects the update', async () => {
+			api.put.mockResolvedValue(false);
+			const auth = await loggedInUser();
+
+			const result = await auth.updateJournalEnabled(true);
+
+			expect(result).toBe(false);
+			expect(auth.user?.settings?.journal_enabled).toBe(false);
 		});
 	});
 

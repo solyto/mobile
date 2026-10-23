@@ -1,11 +1,13 @@
 <!--suppress CssUnusedSymbol -->
-<script lang="ts">
-	import MultiSelect from 'svelte-multiselect';
-
-	export interface MultiSelectEntry {
+<script lang="ts" module>
+	export type MultiSelectEntry = {
 		label: string;
 		value: string;
-	}
+	};
+</script>
+
+<script lang="ts">
+	import MultiSelect from 'svelte-multiselect';
 
 	let {
 		value = $bindable(),
@@ -13,62 +15,45 @@
 		allowUserOptions = false,
 		placeholder = '',
 		oncreate
-	} = $props<{
+	}: {
 		value: MultiSelectEntry[];
 		options: MultiSelectEntry[];
 		allowUserOptions?: boolean;
 		placeholder?: string;
 		oncreate?: (data: { option: MultiSelectEntry }) => unknown;
-	}>();
+	} = $props();
 </script>
 
-<div class="w-full">
+<div class="multiselect-field w-full">
 	<MultiSelect
 		bind:selected={value}
 		{options}
 		{allowUserOptions}
 		{placeholder}
 		{oncreate}
-		--sms-active-color="#eaf2fc"
 	/>
 </div>
 
 <style>
-	@media (prefers-color-scheme: dark) {
-		:global(div.multiselect) {
-			background: inherit;
-			color: #ffffff;
-			border: 1px solid #2f3741 !important;
-		}
-
-		:global(div.multiselect > ul > li) {
-			background-color: #36363a !important;
-		}
-
-		:global(div.multiselect > ul > li:hover) {
-			background-color: #2f3741 !important;
-		}
-
-		:global(div.multiselect > ul.selected > li) {
-			background-color: #36363a !important;
-		}
+	.multiselect-field {
+		--sms-border: 1px solid var(--color-c-neutral-2);
+		--sms-active-color: var(--color-d-lightblue);
+		--sms-selected-bg: var(--color-d-lightblue);
+		--sms-options-bg: var(--color-c-bg-surface);
+		--multiselect-focus-ring: var(--color-d-lightblue);
 	}
 
-	@media (prefers-color-scheme: light) {
-		:global(div.multiselect) {
-			background: #ffffff;
-			color: #000000;
-			border: 1px solid #efe7eb !important;
-		}
-
-		:global(div.multiselect > ul.selected > li) {
-			background-color: #eaf2fc !important;
-		}
+	:global(html.dark) .multiselect-field {
+		--sms-border: 1px solid var(--color-s-dark-3);
+		--sms-text-color: var(--color-white);
+		--sms-active-color: var(--color-s-dark-3);
+		--sms-selected-bg: var(--color-s-dark-3);
+		--multiselect-focus-ring: var(--color-c-primary);
 	}
 
 	:global(div.multiselect) {
 		height: 40px;
-		border-radius: 8px !important;
+		border-radius: var(--radius-lg) !important;
 		margin: 0 !important;
 		transition: all 0.1s;
 		box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
@@ -76,7 +61,7 @@
 
 	:global(div.multiselect:has(input:focus)) {
 		outline: none;
-		box-shadow: 0 0 0 2px #eaf2fc;
+		box-shadow: 0 0 0 2px var(--multiselect-focus-ring);
 	}
 
 	:global(div.multiselect > ul.selected),

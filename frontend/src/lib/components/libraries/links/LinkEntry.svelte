@@ -5,14 +5,13 @@
 	import { formatDate } from '$lib/helpers/DateHelper';
 	import { grabFaviconFromUrl } from '$lib/helpers/ImageHelper';
 	import TagFlexList from '$lib/components/tags/TagFlexList.svelte';
-	import DeleteButton from '$lib/components/ui/buttons/DeleteButton.svelte';
 	import StarButton from '$lib/components/ui/buttons/StarButton.svelte';
 	import InlineDeleteButton from '$lib/components/ui/buttons/InlineDeleteButton.svelte';
 
-	let { entry, library } = $props<{
+	let { entry, library }: {
 		entry: Link;
 		library: LinkLibrary;
-	}>();
+	} = $props();
 
 	const loadingIndicator = getLoadingIndicator();
 

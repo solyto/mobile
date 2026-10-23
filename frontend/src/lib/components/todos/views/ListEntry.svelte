@@ -20,10 +20,10 @@
 	import Recurrence from '$lib/components/todos/props/Recurrence.svelte';
 	import { getTodos } from '$lib/state/Todos.svelte';
 
-	let { todo, handleCheck } = $props<{
+	let { todo, handleCheck }: {
 		todo: Todo;
 		handleCheck: (event: Event, todo: Todo) => Promise<void>;
-	}>();
+	} = $props();
 
 	const todos = getTodos();
 
@@ -31,7 +31,11 @@
 </script>
 
 <div
-	class="group relative flex h-auto w-full flex-row flex-wrap items-center rounded-lg border-1 shadow-sm transition-all hover:bg-d-lighterblue dark:hover:bg-s-dark-3 {todos.recentlyCreated === todo.id ? 'border-c-btn-hover' : 'border-d-lightblue dark:border-s-dark'}"
+	class="
+		group relative flex h-auto w-full flex-row flex-wrap items-center rounded-lg border-1 shadow-sm 
+		transition-all hover:bg-d-lighterblue dark:hover:bg-s-dark-3 
+		{todos.recentlyCreated === todo.id ? 'border-c-btn-hover' : 'border-d-lightblue dark:border-s-dark'}
+	"
 	class:bg-c-bg-surface={!todo.is_completed}
 	class:bg-c-neutral-1={todo.is_completed}
 	class:dark:bg-c-bg={todo.is_completed}
@@ -39,19 +43,19 @@
 >
 	<ScoreBar {todo} />
 	<div class="h-full w-14">
-		<Priority {todo} changePriority={true} {expanded} />
+		<Priority {todo} changePriority={true} {expanded} filled />
 	</div>
-	<div class="ml-4 w-[25%] font-bold">
+	<div class="ml-4 w-[25%]">
 		<Title {todo} />
 	</div>
 	<div class="group flex w-1/10 items-center">
 		<Status {todo} changeStatus={true} />
 	</div>
 	<div class="group flex w-1/10 items-center">
-		<Category {todo} />
+		<Category {todo} hoverReveal />
 	</div>
-	<div class="group flex w-1/5 items-center">
-		<Tags {todo} />
+	<div class="group flex w-1/6 items-center">
+		<Tags {todo} hoverReveal />
 	</div>
 	<div class="h-full w-14">
 		<Effort {todo} changeEffort={true} />
@@ -59,20 +63,20 @@
 	<div class="group flex w-1/16 items-center">
 		<Progress {todo} />
 	</div>
-	<div class="group ml-auto w-1/16 justify-end">
-		<DueDate {todo} />
+	<div class="group ml-auto flex w-32 shrink-0 items-center justify-end">
+		<DueDate {todo} withIcon />
 	</div>
 	<div class="ml-auto flex h-full w-auto flex-row items-center gap-2 pr-2 2xl:gap-4 2xl:pr-4">
 		<TodoDelete {todo} />
 		<IconChevronsUpDown
-			class="cursor-pointer text-c-action"
+			class="cursor-pointer text-c-neutral-3 transition-all hover:text-c-action"
 			onclick={() => (expanded = !expanded)}
 		/>
 		<Checkbox isChecked={todo.is_completed} onchange={(e: Event) => handleCheck(e, todo)} />
 	</div>
 	<Flags {todo} />
 	{#if expanded}
-		<div class="w-full p-4" transition:slide>
+		<div class="w-full p-4 pt-0" transition:slide>
 			<Description {todo} />
 			<Link {todo} />
 			<Subtasks {todo} subtasks={todo.subtasks} />

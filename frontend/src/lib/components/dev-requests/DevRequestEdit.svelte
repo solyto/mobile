@@ -22,9 +22,9 @@
 	const notifications = getUiNotifications();
 	const auth = getAuth();
 
-	let { onClose } = $props<{
+	let { onClose }: {
 		onClose: () => void;
-	}>();
+	} = $props();
 
 	const emptyForm: DevRequestForm = {
 		title: '',
@@ -73,7 +73,7 @@
 			priority: parseInt(form.priority) as DevRequestPriority,
 			url: form.url,
 			type: form.type as DevRequestType,
-			created_by_user_id: auth.user?.id ?? null,
+			created_by_user_id: auth.user?.id ?? null
 		});
 		form = { ...emptyForm };
 		if (res) await devRequests.load();

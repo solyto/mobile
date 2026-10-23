@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
-	import { getCalendars } from '$lib/state/Calendars.svelte';
+	import { getCalendarSharing } from '$lib/state/CalendarSharing.svelte';
 	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
 	import type { Calendar } from '$lib/types/calendar.js';
 	import IconCheck from '@lucide/svelte/icons/check';
@@ -9,10 +9,10 @@
 
 	const ts = getTranslation();
 	const loadingIndicator = getLoadingIndicator();
-	const calendars = getCalendars();
+	const calendarSharing = getCalendarSharing();
 	const notifications = getUiNotifications();
 
-	let { calendar } = $props<{ calendar: Calendar }>();
+	let { calendar }: { calendar: Calendar } = $props();
 
 	let processing = $state<boolean>(false);
 
@@ -22,7 +22,7 @@
 		processing = true;
 		loadingIndicator.start();
 
-		const success = await calendars.acceptInvite(calendar.share_token);
+		const success = await calendarSharing.acceptInvite(calendar.share_token);
 
 		if (success) {
 			notifications.add({
@@ -41,7 +41,7 @@
 		processing = true;
 		loadingIndicator.start();
 
-		const success = await calendars.declineInvite(calendar.share_token);
+		const success = await calendarSharing.declineInvite(calendar.share_token);
 
 		if (success) {
 			notifications.add({

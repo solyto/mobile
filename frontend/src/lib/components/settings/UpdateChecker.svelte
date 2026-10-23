@@ -2,21 +2,14 @@
 	import IconRefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import IconDownload from '@lucide/svelte/icons/download';
 
-	type UpdaterStatus =
-		| { type: 'idle' }
-		| { type: 'checking' }
-		| { type: 'up-to-date' }
-		| { type: 'available'; version: string }
-		| { type: 'downloading'; percent: number }
-		| { type: 'ready' }
-		| { type: 'error' };
+	import type { UpdaterStatus } from '$lib/types/platform';
 
-	const electronAPI = (window as any).electronAPI;
+	const electronAPI = window.electronAPI;
 
 	let status: UpdaterStatus = $state({ type: 'idle' });
 
 	$effect(() => {
-		return electronAPI.onUpdaterStatus((s: UpdaterStatus) => {
+		return electronAPI?.onUpdaterStatus((s) => {
 			status = s;
 		});
 	});
@@ -24,7 +17,7 @@
 	async function check() {
 		status = { type: 'checking' };
 		try {
-			await electronAPI.checkForUpdates();
+			await electronAPI?.checkForUpdates();
 		} catch {
 			status = { type: 'error' };
 		}
@@ -44,7 +37,7 @@
 		{#if status.type === 'ready'}
 			<button
 				class="flex cursor-pointer items-center gap-2 rounded-lg bg-c-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-c-primary/80"
-				onclick={() => electronAPI.installUpdate()}
+				onclick={() => electronAPI?.installUpdate()}
 			>
 				<IconDownload size={14} />
 				Install & Restart

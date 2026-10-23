@@ -1,6 +1,7 @@
 import type {
 	AuthToken,
 	User,
+	UserSettings,
 	LoginRequest,
 	LoginResponse,
 	RegisterRequest,
@@ -17,7 +18,8 @@ import { setContext, getContext } from 'svelte';
 import { apiRoutes } from '$lib/config/apiRoutes';
 import ApiService from '$lib/services/ApiService';
 import LocalStorageService from '$lib/services/LocalStorageService';
-import { SvelteDate, SvelteMap } from 'svelte/reactivity';
+import { SessionMonitor } from '$lib/state/SessionMonitor';
+import { SvelteMap } from 'svelte/reactivity';
 import {
 	formatDate,
 	formatDateTime,
@@ -26,6 +28,8 @@ import {
 	formatTime,
 	formatTimeWithSeconds
 } from '$lib/helpers/DateHelper';
+
+type RefreshOutcome = 'refreshed' | 'transient' | 'rejected';
 
 export class Auth {
 	static readonly LS_AUTH_KEY: string = 'auth';
@@ -36,10 +40,16 @@ export class Auth {
 	apiService: ApiService;
 	localStorage = new LocalStorageService();
 	profileCache = new SvelteMap<string, User>();
+	private refreshInFlight: Promise<RefreshOutcome> | null = null;
+	private recoveryInFlight: Promise<boolean> | null = null;
+	private sessionMonitor: SessionMonitor;
+	private sessionExpiredHandler: (() => void) | null = null;
 
 	constructor() {
 		this.apiService = new ApiService(null);
+		this.apiService.setUnauthorizedHandler(() => this.recoverFromUnauthorized());
 		this.load().then();
+		this.sessionMonitor = new SessionMonitor(() => this.validateSession());
 	}
 
 	private async load(): Promise<void> {
@@ -47,11 +57,11 @@ export class Auth {
 
 		if (!savedAuth) return;
 
-		const { user, authToken } = savedAuth as { user: User; authToken: AuthToken }
+		const { user, authToken } = savedAuth as { user: User; authToken: AuthToken };
 
 		if (!authToken || !user) return;
 
-		const expiresAt = new SvelteDate(authToken.expires_at).getTime();
+		const expiresAt = new Date(authToken.expires_at as string).getTime();
 
 		if (expiresAt > Date.now()) {
 			this.user = user;
@@ -90,6 +100,7 @@ export class Auth {
 		this.user = null;
 		this.authToken = null;
 		this.loggedIn = false;
+		this.apiService.updateAuthToken(null);
 	}
 
 	async login(email: string, password: string): Promise<boolean> {
@@ -119,12 +130,25 @@ export class Auth {
 		return expiresAt < Date.now() + thresholdDays * 24 * 60 * 60 * 1000;
 	}
 
-	async refresh(): Promise<boolean> {
-		this.apiService.updateAuthToken(this.getToken()!);
-		const res = await this.apiService.post(apiRoutes.auth.refresh, {});
+	async refresh(): Promise<RefreshOutcome> {
+		if (this.refreshInFlight) return this.refreshInFlight;
 
-		if (!res) return Promise.resolve(false);
-		const refresh = res.data as LoginResponse;
+		this.refreshInFlight = this.performRefresh().finally(() => {
+			this.refreshInFlight = null;
+		});
+
+		return this.refreshInFlight;
+	}
+
+	private async performRefresh(): Promise<RefreshOutcome> {
+		this.apiService.updateAuthToken(this.getToken());
+		const res = await this.apiService.postWithStatus(apiRoutes.auth.refresh, {});
+
+		if (!res.ok) {
+			return res.status === 401 || res.status === 403 ? 'rejected' : 'transient';
+		}
+
+		const refresh = res.data.data as LoginResponse;
 
 		this.user = refresh.user;
 		this.authToken = {
@@ -133,14 +157,95 @@ export class Auth {
 			expires_at: refresh.token_expires_at
 		};
 		this.loggedIn = true;
+		this.apiService.updateAuthToken(this.getToken());
 
 		this.save();
 
-		return Promise.resolve(true);
+		return 'refreshed';
 	}
 
 	logout(): void {
 		this.clear();
+	}
+
+	setSessionExpiredHandler(handler: () => void): void {
+		this.sessionExpiredHandler = handler;
+	}
+
+	private expireSession(): void {
+		this.logout();
+		this.sessionExpiredHandler?.();
+	}
+
+	destroy(): void {
+		this.sessionMonitor.destroy();
+	}
+
+	async recoverFromUnauthorized(): Promise<boolean> {
+		if (this.recoveryInFlight) return this.recoveryInFlight;
+
+		this.recoveryInFlight = this.performRecovery().finally(() => {
+			this.recoveryInFlight = null;
+		});
+
+		return this.recoveryInFlight;
+	}
+
+	private async performRecovery(): Promise<boolean> {
+		if (this.adoptExternalSession()) return true;
+
+		const outcome = await this.refreshOrTransient();
+		if (outcome === 'rejected') this.expireSession();
+
+		return outcome === 'refreshed';
+	}
+
+	private async refreshOrTransient(): Promise<RefreshOutcome> {
+		try {
+			return await this.refresh();
+		} catch {
+			return 'transient';
+		}
+	}
+
+	private adoptExternalSession(): boolean {
+		const savedAuth = this.localStorage.getJson(Auth.LS_AUTH_KEY) as
+			| { user: User; authToken: AuthToken }
+			| null;
+
+		if (!savedAuth?.authToken?.token || !savedAuth.user) return false;
+		if (savedAuth.authToken.token === this.getToken()) return false;
+		if (new Date(savedAuth.authToken.expires_at as string).getTime() <= Date.now()) return false;
+
+		this.user = savedAuth.user;
+		this.authToken = savedAuth.authToken;
+		this.loggedIn = true;
+		this.apiService.updateAuthToken(savedAuth.authToken.token);
+
+		return true;
+	}
+
+	private async validateSession(): Promise<void> {
+		if (!this.loggedIn || !this.authToken) return;
+
+		try {
+			const expiresAt = new Date(this.authToken.expires_at as string).getTime();
+
+			if (expiresAt <= Date.now() || this.shouldRefresh(expiresAt)) {
+				const outcome = await this.refresh();
+
+				if (outcome === 'rejected') {
+					this.expireSession();
+					return;
+				}
+
+				if (outcome === 'transient') return;
+			}
+
+			await this.loadAdditionalData();
+		} catch {
+			// Offline is transient and must never log out; the `online` event re-checks.
+		}
 	}
 
 	isAdmin(): boolean {
@@ -166,6 +271,17 @@ export class Auth {
 			password,
 			password_confirmation: passwordConfirmation
 		});
+	}
+
+	async changePassword(currentPassword: string, newPassword: string, newPasswordConfirmation: string): Promise<AuthActionResponse> {
+		const res = await this.apiService.putRaw<AuthActionResponse>(apiRoutes.users.changePassword, {
+			current_password: currentPassword,
+			new_password: newPassword,
+			new_password_confirmation: newPasswordConfirmation
+		});
+		// The API revokes every token on success, including the one that made this request.
+		if (res.success) this.logout();
+		return res;
 	}
 
 	async passkeyAuthenticationOptions(): Promise<PasskeyAuthenticationOptions | null> {
@@ -248,6 +364,43 @@ export class Auth {
 		return Promise.resolve(res);
 	}
 
+	private async updateBooleanSetting(
+		endpoint: string,
+		enabled: boolean,
+		apply: (settings: UserSettings) => void
+	): Promise<boolean> {
+		const res = await this.apiService.put(endpoint, { enabled });
+		if (res && this.user?.settings) {
+			apply(this.user.settings);
+			this.save();
+		}
+		return Promise.resolve(res);
+	}
+
+	async updateJournalEnabled(enabled: boolean): Promise<boolean> {
+		return this.updateBooleanSetting(
+			apiRoutes.users.settings.updateJournal,
+			enabled,
+			(settings) => (settings.journal_enabled = enabled)
+		);
+	}
+
+	async updateJournalCalendarMark(enabled: boolean): Promise<boolean> {
+		return this.updateBooleanSetting(
+			apiRoutes.users.settings.updateJournalCalendarMark,
+			enabled,
+			(settings) => (settings.journal_calendar_mark = enabled)
+		);
+	}
+
+	async updateCheckInCalendarMark(enabled: boolean): Promise<boolean> {
+		return this.updateBooleanSetting(
+			apiRoutes.users.settings.updateCheckInCalendarMark,
+			enabled,
+			(settings) => (settings.check_in_calendar_mark = enabled)
+		);
+	}
+
 	async updateLanguage(language: string): Promise<boolean> {
 		const res = await this.apiService.put(apiRoutes.users.settings.updateLanguage, {
 			language
@@ -262,12 +415,6 @@ export class Auth {
 			this.user.settings.first_visit = false;
 			this.save();
 		}
-		return Promise.resolve(res);
-	}
-
-	async setOpenaiApiKey(key: string | null): Promise<boolean> {
-		const res = await this.apiService.put(apiRoutes.users.settings.updateOpenaiApiKey, { key });
-		await this.loadAdditionalData();
 		return Promise.resolve(res);
 	}
 

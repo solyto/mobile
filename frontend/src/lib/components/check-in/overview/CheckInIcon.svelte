@@ -23,10 +23,10 @@
 	import type { CheckInType } from '$lib/types/check_in';
 	import { SPORT_BY_ID } from '$lib/types/check_in';
 
-	let { type, value } = $props<{
+	let { type, value }: {
 		type: CheckInType;
 		value: number | null;
-	}>();
+	} = $props();
 
 	const sportId = $derived(type === 'sports' && value !== null ? SPORT_BY_ID[value] : undefined);
 

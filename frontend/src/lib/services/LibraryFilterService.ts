@@ -5,45 +5,45 @@ import type { Quote } from '$lib/types/library_quote';
 import type { Link } from '$lib/types/library_link';
 import type { Recipe, RecipeType } from '$lib/types/library_recipe';
 import type { Movie, MovieGenre } from '$lib/types/library_movie';
-import type { Game } from '$lib/types/library_game';
+import type { Game, GameGenre } from '$lib/types/library_game';
 import type { Plant, PlantLocation } from '$lib/types/library_plant';
 
 export default class LibraryFilterService {
 	search<T extends Music | Book | Quote | Link | Recipe | Movie | Game | Plant>(
 		entries: T[],
 		searchTerm: string,
-		fields: string[]
+		fields: (keyof T & string)[]
 	): T[] {
 		if (searchTerm.length === 0) return entries;
 
 		return entries.filter((entry) => {
 			return fields.some((field) => {
-				return String((entry as any)[field]).toLowerCase().includes(searchTerm.toLowerCase());
+				return String(entry[field]).toLowerCase().includes(searchTerm.toLowerCase());
 			});
 		});
 	}
 
-	byRating<T extends Music | Book | Recipe | Movie>(entries: T[], rating: number | null): T[] {
+	byRating<T extends Music | Book | Recipe | Movie | Game>(entries: T[], rating: number | null): T[] {
 		if (rating === null) return entries;
 
 		return entries.filter((entry) => entry.rating === rating);
 	}
 
-	byGenre<T extends Music | Book | Movie>(
+	byGenre<T extends Music | Book | Movie | Game>(
 		entries: T[],
-		genre: MusicGenre | BookGenre | MovieGenre | null
+		genre: MusicGenre | BookGenre | MovieGenre | GameGenre | null
 	): T[] {
 		if (genre === null) return entries;
 
 		return entries.filter((entry) => entry.genres.some((g) => g.id === genre.id));
 	}
 
-	byGenreAndRating<T extends Music | Book | Movie | Game | Plant>(
+	byGenreAndRating<T extends Music | Book | Movie | Game>(
 		entries: T[],
-		genre: MusicGenre | BookGenre | null,
+		genre: MusicGenre | BookGenre | MovieGenre | GameGenre | null,
 		rating: number | null
 	): T[] {
-		return this.byGenre(this.byRating(entries as any, rating), genre as any) as T[];
+		return this.byGenre(this.byRating(entries, rating), genre);
 	}
 
 	byType<T extends Recipe>(entries: T[], type: RecipeType | null): T[] {

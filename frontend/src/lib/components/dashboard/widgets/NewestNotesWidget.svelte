@@ -1,14 +1,16 @@
 <script lang="ts">
+	import { urls } from '$lib/config/urls';
+	import { resolve } from '$app/paths';
 	import { blur } from 'svelte/transition';
 	import { formatDate } from '$lib/helpers/DateHelper';
 	import IconNotebookPen from '@lucide/svelte/icons/notebook-pen';
 	import type { Note } from '$lib/types/note';
 	import type { Translation } from '$lib/state/Translation.svelte';
 
-	let { newestNotes, ts } = $props<{
+	let { newestNotes, ts }: {
 		newestNotes: Note[];
 		ts: Translation;
-	}>();
+	} = $props();
 </script>
 
 <div in:blur>
@@ -21,7 +23,7 @@
 	<div class="flex flex-col gap-1">
 		{#each newestNotes as note (note.id)}
 			<a
-				href="/notes/{note.id}"
+				href={resolve(urls.note, { id: note.id })}
 				class="group flex items-center gap-2 py-0.5 transition-colors"
 			>
 				<span class="truncate text-sm text-c-neutral-7 transition-colors group-hover:text-c-primary dark:text-c-neutral-3">

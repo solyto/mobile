@@ -4,10 +4,10 @@
 	import type { Translation } from '$lib/state/Translation.svelte';
 	import type { CalendarEvent } from '$lib/types/calendar';
 
-	let { todayEvents, ts } = $props<{
+	let { todayEvents, ts }: {
 		todayEvents: CalendarEvent[];
 		ts: Translation
-	}>();
+	} = $props();
 </script>
 
 <div>

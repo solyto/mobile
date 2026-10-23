@@ -15,8 +15,11 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import type { MovieLibrary } from '$lib/state/MovieLibrary.svelte';
+	import type { MusicRelease as MusicReleaseEntry } from '$lib/types/library_music';
+	import type { BookRelease as BookReleaseEntry } from '$lib/types/library_book';
+	import type { MovieRelease as MovieReleaseEntry } from '$lib/types/library_movie';
 
-	let { library } = $props<{ library: MusicLibrary | BookLibrary | MovieLibrary }>();
+	let { library }: { library: MusicLibrary | BookLibrary | MovieLibrary } = $props();
 
 	const ts = getTranslation();
 	const loadingIndicator = getLoadingIndicator();
@@ -58,11 +61,11 @@
 			{:else}
 				{#each library.releases as release (release.id)}
 					{#if library.config.type === 'music'}
-						<MusicRelease {release} {library} />
+						<MusicRelease release={release as MusicReleaseEntry} library={library as MusicLibrary} />
 					{:else if library.config.type === 'books'}
-						<BookRelease {release} {library} />
+						<BookRelease release={release as BookReleaseEntry} library={library as BookLibrary} />
 					{:else if library.config.type === 'movies'}
-						<MovieRelease {release} {library} />
+						<MovieRelease release={release as MovieReleaseEntry} library={library as MovieLibrary} />
 					{/if}
 				{/each}
 				{#if library.releases.length === 0}

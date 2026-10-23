@@ -6,7 +6,7 @@
 	import IconTrash from '@lucide/svelte/icons/trash-2';
 	import IconPen from '@lucide/svelte/icons/pen';
 
-	let { icon, size } = $props<{ icon: MenuIcon; size: number }>();
+	let { icon, size }: { icon: MenuIcon; size: number } = $props();
 </script>
 
 {#if icon === 'new'}

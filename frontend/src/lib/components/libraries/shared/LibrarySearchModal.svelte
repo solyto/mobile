@@ -1,14 +1,5 @@
-<script lang="ts">
-	import { slide } from 'svelte/transition';
-	import ContentModal from '$lib/components/ui/ContentModal.svelte';
-	import TextInput from '$lib/components/forms/TextInput.svelte';
-	import IconButton from '$lib/components/ui/buttons/IconButton.svelte';
-	import IconSearch from '@lucide/svelte/icons/search';
-	import IconLoaderCircle from '@lucide/svelte/icons/loader-circle';
-	import { getKeyManager } from '$lib/KeyManager.svelte';
-	import { getTranslation } from '$lib/state/Translation.svelte';
-	import { onDestroy, onMount, tick } from 'svelte';
-	import type { Component, Snippet } from 'svelte';
+<script lang="ts" module>
+	import type { Component } from 'svelte';
 
 	export interface NormalizedSearchResult {
 		id: string | number;
@@ -24,6 +15,20 @@
 		search: (query: string) => Promise<NormalizedSearchResult[] | null>;
 		onSelect: (result: NormalizedSearchResult) => Promise<void>;
 	}
+</script>
+
+<script lang="ts">
+	import { slide } from 'svelte/transition';
+	import ContentModal from '$lib/components/ui/ContentModal.svelte';
+	import TextInput from '$lib/components/forms/TextInput.svelte';
+	import IconButton from '$lib/components/ui/buttons/IconButton.svelte';
+	import LibrarySearchResult from '$lib/components/libraries/shared/LibrarySearchResult.svelte';
+	import IconSearch from '@lucide/svelte/icons/search';
+	import IconLoaderCircle from '@lucide/svelte/icons/loader-circle';
+	import { getKeyManager } from '$lib/state/KeyManager.svelte';
+	import { getTranslation } from '$lib/state/Translation.svelte';
+	import { onDestroy, onMount, tick } from 'svelte';
+	import type { Snippet } from 'svelte';
 
 	const ts = getTranslation();
 	const keyManager = getKeyManager();
@@ -33,12 +38,12 @@
 		onClose,
 		placeholder,
 		resultRow
-	} = $props<{
+	}: {
 		sources: SearchSource[];
 		onClose: () => void;
 		placeholder: string;
 		resultRow?: Snippet<[NormalizedSearchResult, boolean, () => Promise<void>]>;
-	}>();
+	} = $props();
 
 	let query = $state('');
 	let queryInput = $state<HTMLInputElement | null>(null);
@@ -46,7 +51,7 @@
 	let results = $state<(NormalizedSearchResult[] | null)[]>([]);
 	let searched = $state(false);
 	let importingId = $state<string | null>(null);
-	let keyHandlers = $state<{ Enter: string | null; Escape: string | null }>({ Enter: null, Escape: null });
+	let keyHandlers: { Enter: string | null; Escape: string | null } = { Enter: null, Escape: null };
 
 	onMount(async () => {
 		await tick();
@@ -68,8 +73,12 @@
 		loading = false;
 	}
 
+	function resultId(source: SearchSource, result: NormalizedSearchResult): string {
+		return `${source.label}-${result.id}`;
+	}
+
 	async function select(source: SearchSource, result: NormalizedSearchResult): Promise<void> {
-		importingId = `${source.label}-${result.id}`;
+		importingId = resultId(source, result);
 		await source.onSelect(result);
 		importingId = null;
 	}
@@ -103,40 +112,18 @@
 										{#if typeof source.icon === 'string'}
 											<img src={source.icon} alt={source.label} class="size-4" />
 										{:else}
-											{@const Icon = source.icon}
-											<Icon class="size-4" />
+											<source.icon class="size-4" />
 										{/if}
 										<span class="text-xs font-bold uppercase tracking-widest text-c-neutral-5 dark:text-c-neutral-4">{source.label}</span>
 									</div>
 									{#each results[i]! as result (result.id)}
-										{@const id = `${source.label}-${result.id}`}
-										{@const isImporting = importingId === id}
-										{@const onSelect = () => select(source, result)}
-										{#if resultRow}
-											{@render resultRow(result, isImporting, onSelect)}
-										{:else}
-											<button
-												onclick={onSelect}
-												disabled={importingId !== null}
-												class="flex items-center gap-3 rounded-lg p-2 text-left hover:bg-c-neutral-1 disabled:opacity-50 dark:hover:bg-s-dark-3 cursor-pointer"
-											>
-												{#if isImporting}
-													<div class="flex size-10 shrink-0 items-center justify-center rounded">
-														<IconLoaderCircle class="size-5 animate-spin text-c-neutral-5" />
-													</div>
-												{:else if result.image}
-													<img src={result.image} alt={result.title} class="size-10 shrink-0 rounded object-cover" />
-												{:else}
-													<div class="size-10 shrink-0 rounded bg-c-neutral-2 dark:bg-s-dark-3"></div>
-												{/if}
-												<div class="min-w-0">
-													<p class="truncate text-sm font-bold dark:text-white">{result.title}</p>
-													{#if result.subtitle}
-														<p class="truncate text-xs text-c-neutral-5 dark:text-c-neutral-4">{result.subtitle}</p>
-													{/if}
-												</div>
-											</button>
-										{/if}
+										<LibrarySearchResult
+											{result}
+											importing={importingId === resultId(source, result)}
+											disabled={importingId !== null}
+											onSelect={() => select(source, result)}
+											{resultRow}
+										/>
 									{/each}
 								</div>
 							{/if}

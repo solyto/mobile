@@ -15,7 +15,7 @@
 	let instructionsShown = $state<boolean>(false);
 
 	onMount(() => {
-		if (notes.notes.length === 0) {
+		if (notes.getVisibleNotes().length === 0) {
 			setTimeout(() => (instructionsShown = true), 1200);
 		}
 	});
@@ -35,7 +35,7 @@
 		{#if lastUpdated.length > 0}
 			<OverviewEntries entries={lastUpdated} title={ts.get.notes.last_updated} />
 		{/if}
-		{#if notes.notes.length === 0}
+		{#if notes.getVisibleNotes().length === 0}
 			<div class="flex h-full w-full flex-col items-center justify-center px-8">
 				<Typewriter>
 					<h1 class="text-2xl">{ts.get.notes.welcome}</h1>

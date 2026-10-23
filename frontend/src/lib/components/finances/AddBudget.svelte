@@ -3,10 +3,10 @@
 	import { onDestroy, tick } from 'svelte';
 	import { getFinances } from '$lib/state/Finances.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
-	import { getKeyManager } from '$lib/KeyManager.svelte';
+	import { getKeyManager } from '$lib/state/KeyManager.svelte';
 	import TextInput from '$lib/components/forms/TextInput.svelte';
 	import type { BudgetType, CreateBudgetRequest } from '$lib/types/finance';
-	import IconPlus from '@lucide/svelte/icons/plus';
+	import AddButton from '$lib/components/ui/buttons/AddButton.svelte';
 	import { getViewPoint } from '$lib/state/Viewpoint.svelte';
 	import BottomSheetConfirmationModal from '../ui/BottomSheetConfirmationModal.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
@@ -17,14 +17,14 @@
 	const finances = getFinances();
 	const viewPoint = getViewPoint();
 
-	let { type } = $props<{ type: BudgetType }>();
+	let { type }: { type: BudgetType } = $props();
 
 	let formOpen = $state<boolean>(false);
 	let titleInput = $state<HTMLInputElement | null>(null);
 	let titleValue = $state<string>('');
 	let valueInput = $state<HTMLInputElement | null>(null);
 	let valueValue = $state<number | null>(null);
-	let keyHandlers = $state<{ [key: string]: string | null }>({ Enter: null, Escape: null });
+	let keyHandlers: { [key: string]: string | null } = { Enter: null, Escape: null };
 
 	async function toggleForm() {
 		formOpen = !formOpen;
@@ -95,13 +95,10 @@
 		{/if}
 	{/if}
 	{#if viewPoint.isMobile || !formOpen}
-		<button
-			class="cursor-pointer rounded-lg p-2 transition-all hover:text-white"
-			class:hover:bg-c-success={type === 'income'}
-			class:hover:bg-c-danger={type === 'expense'}
-			onclick={toggleForm}
-		>
-			<IconPlus />
-		</button>
+		<AddButton
+			colorOnHover={true}
+			hoverColor={type === 'income' ? 'success' : 'danger'}
+			onClick={toggleForm}
+		/>
 	{/if}
 </div>

@@ -43,15 +43,17 @@ export const navItems: Record<string, NavItem> = {
 	'time-tracking': { slug: 'time-tracking', href: urls.timeTracking, iconType: 'timer',        translationKey: 'timeTracking', featureFlag: 'timeTracking', dataTour: 'timeTracking' },
 	'feeds':         { slug: 'feeds',         href: urls.feeds,        iconType: 'feeds',        translationKey: 'feeds',        featureFlag: 'feeds',        dataTour: 'feeds' },
 	'clipboard':     { slug: 'clipboard',     href: urls.clipboard,    iconType: 'clipboard',    translationKey: 'clipboard',    featureFlag: 'clipboard',    dataTour: 'clipboard' },
-	'dev-requests':  { slug: 'dev-requests',  href: urls.devRequests,  iconType: 'dev_requests', translationKey: 'dev_requests', featureFlag: 'dev_requests', dataTour: 'dev_requests' },
+	'dev-requests':  { slug: 'dev-requests',  href: urls.devRequests,  iconType: 'dev_requests', translationKey: 'dev_requests', featureFlag: 'dev_requests', dataTour: 'dev_requests' }
 };
 
 export const desktopOrder: string[] = [
-	'home', 'calendar', 'todos', 'notes', 'libraries', 'contacts', 'check-in', 'finances', 'time-tracking', 'feeds', 'clipboard',
+	'home', 'calendar', 'todos', 'notes', 'libraries', 'contacts', 'check-in', 'finances', 'time-tracking', 'feeds', 'clipboard'
 ];
 
 export const mobileDefaultOrder: string[] = [
-	'home', 'todos', 'calendar', 'check-in', 'libraries', 'notes', 'contacts', 'finances', 'time-tracking', 'feeds', 'clipboard', 'dev-requests',
+	'home', 'todos', 'calendar', 'check-in', 'libraries', 'notes', 'contacts', 'finances', 'time-tracking', 'feeds', 'clipboard', 'dev-requests'
 ];
 
 export const mobileVisibleCount = 5;
+
+export const pinnedNavItem = 'home';

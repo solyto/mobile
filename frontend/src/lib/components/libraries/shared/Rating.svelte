@@ -1,10 +1,10 @@
 <script lang="ts">
 	import IconStar from '@lucide/svelte/icons/star';
 
-	let { startRating = 0, onchange } = $props<{
+	let { startRating = 0, onchange }: {
 		startRating?: number;
 		onchange?: (rating: number) => void | Promise<void>;
-	}>();
+	} = $props();
 
 	let rating = $state<number>(startRating);
 

@@ -65,4 +65,11 @@ html.dark {
 	--color-c-nav-active-text: #00ff41;
 	--color-c-neutral: #0f2a0f;
 }
+
+.notification-toast {
+	background-color: var(--color-c-neutral);
+	-webkit-backdrop-filter: none;
+	backdrop-filter: none;
+}
+
 .logo { filter: grayscale(1) sepia(1) hue-rotate(90deg) saturate(8) brightness(0.8); }

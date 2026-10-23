@@ -114,7 +114,7 @@ export function findRelativeMinor(majorKey: string): string {
 	try {
 		const scale = getMajorScaleByKey(majorKey);
 		return scale[5]; // 6th degree of the major scale
-	} catch (error) {
+	} catch {
 		// Fallback method in case getMajorScaleByKey fails
 		// The relative minor is always 3 semitones (minor third) below the major
 		const majorKeyIndex = noteToSemitone(majorKey);

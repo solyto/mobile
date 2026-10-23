@@ -4,12 +4,12 @@
 	import { getLinkLibrary } from '$lib/state/LinkLibrary.svelte';
 	import type { FeedItem } from '$lib/types/feed';
 	import { getFeeds } from '$lib/state/Feeds.svelte';
-	import { scale, blur } from 'svelte/transition';
+	import { scale } from 'svelte/transition';
 	import type { CreateLinkRequest } from '$lib/types/library_link';
 
-	let { item } = $props<{
+	let { item }: {
 		item: FeedItem;
-	}>();
+	} = $props();
 
 	const linkLibrary = getLinkLibrary();
 	const feeds = getFeeds();
@@ -36,6 +36,6 @@
 	{#if feeds.isInLibrary(item.id)}
 		<div in:scale><IconBookmarkCheck class="p-1 text-c-primary" /></div>
 	{:else}
-		<div in:scale><IconBookmarkPlus class="p-1 text-c-btn-hover" /></div>
+		<div in:scale><IconBookmarkPlus class="p-1 text-c-neutral-5 hover:text-c-btn-hover dark:text-c-neutral-4" /></div>
 	{/if}
 </button>

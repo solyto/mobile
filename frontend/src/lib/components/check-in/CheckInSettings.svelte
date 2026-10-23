@@ -16,8 +16,10 @@
 	import IconFootprints from '@lucide/svelte/icons/footprints';
 	import IconYoga from '$lib/components/ui/icons/IconYoga.svelte';
 	import HelpTooltip from '$lib/components/ui/HelpTooltip.svelte';
+	import SelectedSportButton from '$lib/components/check-in/SelectedSportButton.svelte';
+	import ReplacementSportButton from '$lib/components/check-in/ReplacementSportButton.svelte';
 
-	let { onClose } = $props<{ onClose: () => void }>();
+	let { onClose }: { onClose: () => void } = $props();
 
 	const ts = getTranslation();
 	const checkInData = getCheckInData();
@@ -47,7 +49,7 @@
 		loadingIndicator.stop();
 	}
 
-	function onScoredToggle(tracker: CheckInType): void {
+	function onScoredToggle(): void {
 		const scored = ALL_CHECK_IN_TRACKERS.filter((t) => scoredMap[t]);
 		checkInData.saveScoredTrackers(scored);
 	}
@@ -75,6 +77,11 @@
 		loadingIndicator.start();
 		await checkInData.saveSettings({ enabledTrackers: ALL_CHECK_IN_TRACKERS.filter((t) => enabledMap[t]), selectedSports });
 		loadingIndicator.stop();
+	}
+
+	function sportLabel(sportId: SportId): string {
+		const sport = AVAILABLE_SPORTS.find((s) => s.id === sportId)!;
+		return ts.get.checkIn[sport.labelKey];
 	}
 
 	function close(): void {
@@ -117,7 +124,7 @@
 								isChecked={scoredMap[tracker]}
 								onchange={() => {
 									scoredMap[tracker] = !scoredMap[tracker];
-									onScoredToggle(tracker);
+									onScoredToggle();
 								}}
 							/>
 						</div>
@@ -134,18 +141,13 @@
 				<p class="mb-2 text-sm font-semibold text-c-neutral-5 dark:text-c-neutral-4">{ts.get.checkIn.sports}</p>
 				<div class="flex gap-2">
 					{#each selectedSports as sportId, i (sportId)}
-						{@const sport = AVAILABLE_SPORTS.find((s) => s.id === sportId)!}
-						{@const isReplacing = sportToReplace === sportId}
-						{@const SportIcon = sportIcons[sportId]}
-						<button
-							type="button"
-							class="group relative size-14 cursor-pointer rounded-lg border-3 p-3 shadow-xs transition-all {isReplacing ? 'border-c-action bg-c-action/10' : 'border-c-neutral-1 bg-c-neutral hover:bg-c-neutral-1 dark:border-s-dark dark:bg-s-dark-3 dark:hover:bg-s-dark'}"
-							onclick={() => onSportClick(sportId)}
-							title={ts.get.checkIn[sport.labelKey]}
-						>
-							<span class="absolute top-0.5 right-1 text-xs font-bold {isReplacing ? 'text-c-action' : 'text-c-neutral-4 dark:text-c-neutral-5'}">{i + 1}</span>
-							<SportIcon class="size-full" />
-						</button>
+						<SelectedSportButton
+							title={sportLabel(sportId)}
+							position={i + 1}
+							replacing={sportToReplace === sportId}
+							icon={sportIcons[sportId]}
+							onClick={() => onSportClick(sportId)}
+						/>
 					{/each}
 				</div>
 			</div>
@@ -169,15 +171,11 @@
 			<p class="mb-3 text-sm font-semibold text-c-neutral-5 dark:text-c-neutral-4">{ts.get.checkIn.sport_replace_with}</p>
 			<div class="flex gap-2">
 				{#each AVAILABLE_SPORTS.filter((s) => !selectedSports.includes(s.id)) as sport (sport.id)}
-					{@const SportIcon = sportIcons[sport.id]}
-					<button
-						type="button"
-						class="group size-14 cursor-pointer rounded-lg border-3 border-c-neutral-1 p-3 shadow-xs transition-all hover:bg-c-neutral dark:border-s-dark dark:hover:bg-s-dark-3"
-						onclick={() => onSportClick(sport.id)}
+					<ReplacementSportButton
 						title={ts.get.checkIn[sport.labelKey]}
-					>
-						<SportIcon class="size-full" />
-					</button>
+						icon={sportIcons[sport.id]}
+						onClick={() => onSportClick(sport.id)}
+					/>
 				{/each}
 			</div>
 		</div>

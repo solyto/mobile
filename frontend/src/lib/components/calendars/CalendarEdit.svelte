@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { getCalendars } from '$lib/state/Calendars.svelte';
+	import { getCalendarSharing } from '$lib/state/CalendarSharing.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
 	import ColorPicker from 'svelte-awesome-color-picker';
@@ -12,16 +13,14 @@
 	import IconEyeOff from '@lucide/svelte/icons/eye-off';
 
 	const calendars = getCalendars();
+	const calendarSharing = getCalendarSharing();
 	const loadingIndicator = getLoadingIndicator();
 	const ts = getTranslation();
 	const notifications = getUiNotifications();
 
-	let { calendar } = $props<{ calendar: Calendar }>();
+	let { calendar }: { calendar: Calendar } = $props();
 
 	let hex = $state<string>(calendar.color !== null ? calendar.color : 'var(--color-c-neutral-2)');
-
-	const isOwned = $derived(!calendar.is_shared && calendar.invite_status === null);
-	let hidden = $derived(calendars.isCalendarHidden(calendar.id));
 
 	async function onColorChange(): Promise<void> {
 		if (hex === calendar.color) return;
@@ -39,12 +38,12 @@
 	}
 
 	function onShare(): void {
-		calendars.openShareModal(calendar);
+		calendarSharing.openShareModal(calendar);
 	}
 
 	async function onUnsubscribe(): Promise<void> {
 		loadingIndicator.start();
-		const success = await calendars.unsubscribeFromCalendar(calendar.id);
+		const success = await calendarSharing.unsubscribeFromCalendar(calendar.id);
 		if (success) {
 			notifications.add({
 				type: 'success',
@@ -78,7 +77,7 @@
 			class="text-c-neutral-4"
 			onclick={() => calendars.toggleCalendar(calendar.id)}
 		>
-			{#if hidden}
+			{#if calendars.isCalendarHidden(calendar.id)}
 				<IconEyeOff class="size-4" />
 			{:else}
 				<IconEye class="size-4" />
@@ -86,7 +85,7 @@
 		</button>
 	</div>
 	<div class="flex items-center">
-		{#if isOwned}
+		{#if !calendar.is_shared && calendar.invite_status === null}
 			<button
 				class="cursor-pointer rounded-full p-2 text-c-neutral-4 transition-colors hover:bg-c-neutral-1 hover:text-c-primary dark:hover:bg-s-dark-3"
 				onclick={onShare}

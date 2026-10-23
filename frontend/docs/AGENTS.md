@@ -49,13 +49,20 @@ The client for [solyto.app](https://solyto.app): a free, private, all-in-one per
 - `tests/` — Vitest unit tests for pure helpers/services only (no component or integration tests); run in node env with `TZ=UTC` and `$lib` aliased to `src/lib`.
 - Data flow: component → state store → `ApiService` → REST API. There is no server-side rendering of app data.
 
+## Coding policies
+`docs/STANDARDS.md` is the single coding standard for this repository and is binding for every change, human or AI. Read it before writing code. Every rule in it comes from a real case in this repo and has a bad/good example and, where possible, a check. Start with "The recurring themes" at the top.
+
+Related files:
+- `docs/backlog/*.md` — known violations of the standard, as manigot backlog entries (one job brief each). Do not fix items from them unless asked; do not add new violations.
+- `docs/STANDARDS_WORKFLOW.md` — how the standard is extended (the owner brings an example, the agent investigates and writes the rule). Only relevant when asked to continue that work.
+- `docs/TESTING.md` — test setup and recipes ("test logic and contracts, not markup, not third-party internals").
+
 ## Commands
 - `npm run dev` — start the Vite dev server on port 5173 (expects the API at `http://localhost:8000`)
 - `npm run build` — production build via `vite build` (adapter-node, output in `build/`)
 - `npm run preview` — preview the production build locally
 - `npm run check` — type-check with `svelte-check` (a11y warnings selectively ignored)
-- `npm run lint` — `prettier --check .` + `eslint .`
-- `npm run format` — auto-format with `prettier --write .`
+- `npm run lint` — `eslint .` (there is no formatter; formatting follows `docs/STANDARDS.md` section 1)
 - `npm test` / `npm run test:watch` — run Vitest unit tests / watch mode
 - `make deploy` / `make audit` — Ansible deploy (external `deployment/` repo) / `npm audit` + `npm outdated`
 

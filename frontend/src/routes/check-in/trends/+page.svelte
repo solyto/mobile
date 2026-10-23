@@ -2,10 +2,9 @@
 	import { getCheckInData } from '$lib/state/CheckInData.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
-	import SmoothLineChart from '$lib/components/charts/SmoothLineChart.svelte';
+	import TrendChart from '$lib/components/check-in/stats/TrendChart.svelte';
 	import type { CheckIn, CheckInType } from '$lib/types/check_in';
 	import { onMount } from 'svelte';
-	import { SvelteDate } from 'svelte/reactivity';
 	import { getUrlFormat } from '$lib/helpers/DateHelper';
 	import { getAuth } from '$lib/state/Auth.svelte';
 	import IconSmile from '@lucide/svelte/icons/smile';
@@ -30,10 +29,10 @@
 	let selectedRange = $state<Range>('30d');
 
 	const ranges: { label: string; value: Range }[] = [
-		{ label: '30 Days', value: '30d' },
-		{ label: '3 Months', value: '3m' },
-		{ label: '6 Months', value: '6m' },
-		{ label: 'All', value: 'all' }
+		{ label: ts.get.checkIn.range_30_days, value: '30d' },
+		{ label: ts.get.checkIn.range_3_months, value: '3m' },
+		{ label: ts.get.checkIn.range_6_months, value: '6m' },
+		{ label: ts.get.checkIn.range_all, value: 'all' }
 	];
 
 	const trackers = $derived(checkInData.activeTrackers.filter((t) => t !== 'sports'));
@@ -42,7 +41,7 @@
 		if (selectedRange === 'all') return checkInData.data;
 
 		const days = selectedRange === '30d' ? 30 : selectedRange === '3m' ? 90 : 180;
-		const cutoff = new SvelteDate();
+		const cutoff = new Date();
 		cutoff.setDate(cutoff.getDate() - days);
 		const cutoffStr = getUrlFormat(cutoff);
 
@@ -102,32 +101,9 @@
 
 	<div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
 		{#each trackers as type (type)}
-			{@const chartData = getChartData(type)}
-			{@const IconComponent = getIcon(type)}
-			{#if chartData.categories.length >= 2}
-				<div>
-					<div class="mb-2 flex items-center gap-3 px-1">
-						{#if IconComponent}
-							<IconComponent class="size-5 text-c-neutral-6 dark:text-c-neutral-4" />
-						{/if}
-						<p class="text-xl font-semibold text-c-heading dark:text-c-primary">
-							{ts.get.checkIn[type]}
-						</p>
-					</div>
-					{#key selectedRange}
-						<div class="rounded-xl bg-c-bg-surface p-4 shadow-sm">
-							<SmoothLineChart
-								categories={chartData.categories}
-								values={chartData.values}
-								min={1}
-								max={5}
-								filled={true}
-								class="h-56"
-							/>
-						</div>
-					{/key}
-				</div>
-			{/if}
+			{#key selectedRange}
+				<TrendChart label={ts.get.checkIn[type]} icon={getIcon(type)} {...getChartData(type)} />
+			{/key}
 		{/each}
 	</div>
 </div>

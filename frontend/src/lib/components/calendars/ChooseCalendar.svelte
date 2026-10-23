@@ -2,22 +2,15 @@
 	import type { Calendar } from '$lib/types/calendar';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 
-	let { calendar = $bindable(), availableCalendars } = $props<{
+	let { calendar = $bindable(), availableCalendars }: {
 		calendar: number;
 		availableCalendars: Calendar[];
-		preSelect?: Calendar;
-	}>();
+	} = $props();
 
 	const ts = getTranslation();
 
 	let menuOpen = $state<boolean>(false);
-	let selectedCalendar = $derived(
-		getSelected(calendar) ?? (Number(calendar) ? null : availableCalendars[0])
-	);
-
-	$effect(() => {
-		if (selectedCalendar) calendar = selectedCalendar.id;
-	});
+	let selectedCalendar = $derived(getSelected(calendar));
 
 	function getSelected(id: number): Calendar | null {
 		const normalizedId = Number(id);

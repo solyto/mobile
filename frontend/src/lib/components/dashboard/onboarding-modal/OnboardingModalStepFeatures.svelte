@@ -61,7 +61,7 @@
 	</p>
 
 	<div class="grid grid-cols-2 gap-3">
-		{#each featureConfig as feature}
+		{#each featureConfig as feature (feature.key)}
 			<button
 				class="flex cursor-pointer items-start gap-3 rounded-xl border-2 p-3 text-left transition-all
 					{nav.features[feature.key]

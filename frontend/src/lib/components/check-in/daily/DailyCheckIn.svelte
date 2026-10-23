@@ -3,19 +3,15 @@
 	import { DEFAULT_SPORTS, SPORT_ID, SPORT_BY_ID } from '$lib/types/check_in';
 	import DailyCheckInIcon from './DailyCheckInIcon.svelte';
 
-	let { type, label, currentValue, onChange, selectedSports = DEFAULT_SPORTS } = $props<{
+	let { type, label, currentValue, onChange, selectedSports = DEFAULT_SPORTS }: {
 		type: CheckInType;
 		label: string;
 		currentValue?: number | null;
-		onChange: (type: CheckInType, value: number) => Promise<void>;
+		onChange: (type: CheckInType, value: number | null) => Promise<void>;
 		selectedSports?: SportId[];
-	}>();
+	} = $props();
 
-	let selected = $state<number | null>(currentValue ?? null);
-
-	$effect(() => {
-		selected = currentValue ?? null;
-	});
+	let selected = $derived<number | null>(currentValue ?? null);
 
 	const displaySports = $derived.by((): SportId[] => {
 		if (type !== 'sports' || currentValue == null) return selectedSports;
@@ -48,7 +44,7 @@
 	<div class="w-full pl-5 text-left text-xl font-bold md:w-48 md:pl-0">{label}</div>
 	<div class="flex w-full flex-row items-center justify-between gap-0 md:w-auto lg:gap-4">
 		{#if type === 'sports'}
-			{#each displaySports as _, i}
+			{#each displaySports as sport, i (sport)}
 				<DailyCheckInIcon {type} index={i + 1} {onSelect} {isHighlighted} selectedSports={displaySports} />
 			{/each}
 		{:else}

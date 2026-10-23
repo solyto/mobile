@@ -1,17 +1,18 @@
 import type { ClipboardEntry, CreateClipboardEntryRequest } from '$lib/types/clipboard';
 import { getContext, setContext } from 'svelte';
-import { getAuth } from '$lib/state/Auth.svelte';
+import { getAuth, type Auth } from '$lib/state/Auth.svelte';
 import ApiService from '$lib/services/ApiService';
 import { apiRoutes } from '$lib/config/apiRoutes';
 
 export class Clipboard {
 	loaded = $state<boolean>(false);
 	entries = $state<ClipboardEntry[]>([]);
-	auth = getAuth();
+	auth: Auth;
 	apiService: ApiService;
 
-	constructor() {
-		this.apiService = new ApiService(this.auth.getToken());
+	constructor(auth: Auth = getAuth(), apiService: ApiService = auth.apiService) {
+		this.auth = auth;
+		this.apiService = apiService;
 	}
 
 	async load(): Promise<void> {
@@ -28,12 +29,20 @@ export class Clipboard {
 		return Promise.resolve(res !== null);
 	}
 
-	async createImage(file: File): Promise<boolean> {
+	async createImage(file: File): Promise<'ok' | 'too_large' | 'error'> {
 		const formData = new FormData();
 		formData.append('image', file);
-		const res = await this.apiService.postFormData(apiRoutes.clipboard.createImage, formData);
-		if (res) await this.load();
-		return res;
+		try {
+			const res = await this.apiService.postWithStatus(apiRoutes.clipboard.createImage, formData);
+			if (res.ok) {
+				await this.load();
+				return 'ok';
+			}
+			return res.status === 413 ? 'too_large' : 'error';
+		} catch {
+			// A server aborting an oversized upload can surface as a network error.
+			return 'too_large';
+		}
 	}
 
 	async delete(entry: ClipboardEntry): Promise<boolean> {

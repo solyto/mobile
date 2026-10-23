@@ -6,7 +6,7 @@
 
 	const todos = getTodos();
 
-	let { handleCheck } = $props<{ handleCheck: (event: Event, todo: Todo) => Promise<void> }>();
+	let { handleCheck }: { handleCheck: (event: Event, todo: Todo) => Promise<void> } = $props();
 </script>
 
 <div class="flex flex-col items-center justify-between space-y-2">

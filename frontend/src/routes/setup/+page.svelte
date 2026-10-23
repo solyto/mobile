@@ -31,10 +31,13 @@
 		const baseUrl = customApiUrl.replace(/\/+$/, '');
 
 		try {
+			// No X-Client-Version here: servers up to 1.0.15 reject it in their CORS
+			// preflight. An outdated server is announced once the app has loaded.
 			const res = await fetch(`${baseUrl}/api/v1/health`);
 			if (!res.ok) throw new Error();
 			const data = await res.json();
-			if (data?.app !== 'solyto' || !data?.version) throw new Error();
+			const health = data?.data ?? data;
+			if (health?.app !== 'solyto' || !health?.version) throw new Error();
 			setCustomApiUrl(baseUrl);
 			window.location.href = resolve(urls.login);
 		} catch {

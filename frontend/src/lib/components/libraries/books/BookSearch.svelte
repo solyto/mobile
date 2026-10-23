@@ -5,11 +5,11 @@
 	import type { BookRelease, BookSearchResult } from '$lib/types/library_book';
 	import IconHardcover from '$lib/components/ui/icons/IconHardcover.svelte';
 
-	let { library, ts, onSelect } = $props<{
+	let { library, ts, onSelect }: {
 		library: BookLibrary;
 		ts: Translation;
 		onSelect: (entry: BookRelease) => void;
-	}>();
+	} = $props();
 
 	const searchSources: SearchSource[] = [
 		{

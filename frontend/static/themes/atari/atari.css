@@ -89,4 +89,19 @@ html.dark {
 
 html { font-size: 12px; }
 
+.notification-toast {
+	background-color: var(--color-c-neutral);
+	-webkit-backdrop-filter: none;
+	backdrop-filter: none;
+}
+
+/* rounded-full and rounded compile to fixed values, so the radius tokens alone leave them round */
+*, *::before, *::after { border-radius: 0 !important; }
+
+/* Tailwind compiles shadow values into the utilities, so the --shadow-* tokens are applied here */
+.shadow-xs, .hover\:shadow-xs:hover { --tw-shadow: var(--shadow-xs); }
+.shadow-sm, .hover\:shadow-sm:hover { --tw-shadow: var(--shadow-sm); }
+.shadow-md, .hover\:shadow-md:hover { --tw-shadow: var(--shadow-md); }
+.shadow-lg, .hover\:shadow-lg:hover { --tw-shadow: var(--shadow-lg); }
+
 .logo { filter: grayscale(1) sepia(1) hue-rotate(0deg) saturate(8) brightness(1.2); }

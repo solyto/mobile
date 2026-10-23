@@ -1,13 +1,13 @@
 <script lang="ts">
-	import type { Library } from '$lib/types/library.js';
+	import type { GenreLibrary } from '$lib/types/library';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import type { MusicGenre } from '$lib/types/library_music';
 	import type { BookGenre } from '$lib/types/library_book';
 
-	let { library, toggleMenu } = $props<{
-		library: Library;
+	let { library, toggleMenu }: {
+		library: GenreLibrary;
 		toggleMenu: () => void;
-	}>();
+	} = $props();
 
 	const ts = getTranslation();
 

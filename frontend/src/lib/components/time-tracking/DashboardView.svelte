@@ -2,14 +2,18 @@
 	import { getTimeTracking } from '$lib/state/TimeTracking.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import Entry from '$lib/components/time-tracking/Entry.svelte';
+	import EntryCreate from '$lib/components/time-tracking/EntryCreate.svelte';
 	import TimerWidget from '$lib/components/time-tracking/TimerWidget.svelte';
-	import PomodoroWidget from '$lib/components/time-tracking/PomodoroWidget.svelte';
 	import TimeBreakdownWidget from '$lib/components/time-tracking/TimeBreakdownWidget.svelte';
-	import StatisticsView from '$lib/components/time-tracking/StatisticsView.svelte';
 	import Heading from '$lib/components/ui/Heading.svelte';
+	import TimeTrackingGroupingService from '$lib/services/TimeTrackingGroupingService';
+	import type { TimeTrackingEntry } from '$lib/types/time_tracking';
 
 	const tt = getTimeTracking();
 	const ts = getTranslation();
+	const groupingService = new TimeTrackingGroupingService();
+
+	let editingEntry = $state<TimeTrackingEntry | null>(null);
 
 	let recentEntries = $derived(
 		tt.entries
@@ -17,30 +21,7 @@
 			.slice(0, 10)
 	);
 
-	interface ProjectBreakdown {
-		title: string;
-		color: string;
-		minutes: number;
-	}
-
-	function groupByProject(
-		entries: { project: { id: string } | null; duration_minutes: number }[]
-	): ProjectBreakdown[] {
-		const map = new Map<string, { color: string; minutes: number }>();
-		for (const e of entries) {
-			const project = e.project ? tt.projects.find((p) => p.id === e.project!.id) : null;
-			const key = project?.title ?? ts.get.timeTracking.uncategorized;
-			const color = project?.categories?.[0]?.color ?? '#9ca3af';
-			const existing = map.get(key) ?? { color, minutes: 0 };
-			existing.minutes += e.duration_minutes;
-			map.set(key, existing);
-		}
-		return [...map.entries()]
-			.map(([title, { color, minutes }]) => ({ title, color, minutes }))
-			.sort((a, b) => b.minutes - a.minutes);
-	}
-
-	let weekBreakdown = $derived(() => {
+	let weekBreakdown = $derived.by(() => {
 		const now = new Date();
 		const startOfWeek = new Date(now);
 		startOfWeek.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1));
@@ -48,40 +29,35 @@
 		const filtered = tt.entries.filter(
 			(e) => e.stopped_at !== null && new Date(e.started_at) >= startOfWeek
 		);
-		return groupByProject(filtered);
+		return groupingService.groupByProject(filtered, tt.projects);
 	});
 
-	let weekTotal = $derived(() => weekBreakdown().reduce((s, c) => s + c.minutes, 0));
-
-	let todayBreakdown = $derived(() => {
+	let todayBreakdown = $derived.by(() => {
 		const now = new Date();
 		const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 		const filtered = tt.entries.filter(
 			(e) => e.stopped_at !== null && new Date(e.started_at) >= startOfToday
 		);
-		return groupByProject(filtered);
+		return groupingService.groupByProject(filtered, tt.projects);
 	});
-
-	let todayTotal = $derived(() => todayBreakdown().reduce((s, c) => s + c.minutes, 0));
 </script>
 
 <div class="flex flex-col gap-8">
+	<Heading title={ts.get.timeTracking.dashboard} my={0} />
+
 	<div class="grid grid-cols-1 items-start gap-4 md:grid-cols-2 lg:grid-cols-4">
 		<div class="lg:col-span-1">
 			<TimerWidget />
 		</div>
-		<div class="lg:col-span-1">
-			<PomodoroWidget />
-		</div>
 		<TimeBreakdownWidget
 			title={ts.get.timeTracking.today}
-			breakdown={todayBreakdown()}
-			total={todayTotal()}
+			breakdown={todayBreakdown}
+			total={todayBreakdown.reduce((s, c) => s + c.minutes, 0)}
 		/>
 		<TimeBreakdownWidget
 			title={ts.get.timeTracking.this_week}
-			breakdown={weekBreakdown()}
-			total={weekTotal()}
+			breakdown={weekBreakdown}
+			total={weekBreakdown.reduce((s, c) => s + c.minutes, 0)}
 		/>
 	</div>
 
@@ -89,10 +65,12 @@
 		<div class="flex flex-col gap-2">
 			<Heading title={ts.get.timeTracking.recent_entries} my={0} />
 			{#each recentEntries as entry (entry.id)}
-				<Entry {entry} showProject showDate />
+				<Entry {entry} showProject showDate showEdit onEdit={(e) => (editingEntry = e)} />
 			{/each}
 		</div>
 	{/if}
-
-	<StatisticsView />
 </div>
+
+{#if editingEntry}
+	<EntryCreate entry={editingEntry} onClose={() => (editingEntry = null)} />
+{/if}

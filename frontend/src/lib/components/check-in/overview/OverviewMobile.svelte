@@ -8,10 +8,10 @@
 	import { resolve } from '$app/paths';
 	import { getAuth } from '$lib/state/Auth.svelte';
 
-	let { dates, trackers } = $props<{
+	let { dates, trackers }: {
 		dates: Date[];
 		trackers: CheckInType[];
-	}>();
+	} = $props();
 
 	const checkInData = getCheckInData();
 	const auth = getAuth();

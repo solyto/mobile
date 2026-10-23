@@ -18,7 +18,7 @@
 	});
 </script>
 
-<div class="flex h-full w-full flex-col gap-6 overflow-auto bg-c-neutral p-8 dark:bg-s-dark">
+<div class="flex h-full w-full flex-col gap-6 overflow-auto p-8">
 	<div class="flex items-center gap-3">
 		<div class="rounded-lg bg-c-btn/10 p-2 dark:bg-c-btn/20">
 			<IconUsers class="h-6 w-6 text-c-btn" />

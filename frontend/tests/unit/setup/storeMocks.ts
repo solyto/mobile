@@ -8,6 +8,7 @@ export const api = {
 	update: vi.fn(),
 	delete: vi.fn(),
 	post: vi.fn(),
+	postWithStatus: vi.fn(),
 	postRaw: vi.fn(),
 	put: vi.fn(),
 	postFormData: vi.fn(),
@@ -29,6 +30,8 @@ export const storage = {
 
 export const auth = {
 	getToken: vi.fn(() => 'test-token'),
+	// Stores share Auth's ApiService instance instead of snapshotting a token.
+	apiService: api,
 	user: { settings: {} },
 	getPublicProfile: vi.fn(),
 	updateNavigation: vi.fn(),
@@ -71,6 +74,7 @@ vi.mock('$lib/services/ApiService', () => ({
 		update = api.update;
 		delete = api.delete;
 		post = api.post;
+		postWithStatus = api.postWithStatus;
 		postRaw = api.postRaw;
 		put = api.put;
 		postFormData = api.postFormData;

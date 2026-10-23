@@ -1,27 +1,26 @@
 <script lang="ts">
+	import TextInput from '$lib/components/forms/TextInput.svelte';
+	import { getTranslation } from '$lib/state/Translation.svelte';
 	import IconCardSim from '@lucide/svelte/icons/card-sim';
 	import IconHouse from '@lucide/svelte/icons/house';
 	import IconMail from '@lucide/svelte/icons/mail';
 	import IconBriefcaseBusiness from '@lucide/svelte/icons/briefcase-business';
 
-	let { value = $bindable(), type = $bindable() } = $props<{
+	let { value = $bindable(), type = $bindable() }: {
 		value: string;
 		type: string;
-	}>();
+	} = $props();
+
+	const ts = getTranslation();
 
 	let menuOpen = $state<boolean>(false);
 </script>
 
-<div class="relative flex items-center">
-	<input
-		bind:value
-		type="text"
-		class="w-full rounded-l-lg border-1 border-c-neutral-2 text-sm shadow-xs transition-all focus:ring-2 focus:ring-d-lightblue focus:outline-none dark:border-s-dark-2 dark:bg-s-dark-3 dark:text-white dark:focus:ring-c-primary"
-		placeholder="Email"
-	/>
+<div class="relative flex items-center gap-1">
+	<TextInput bind:value placeholder={ts.get.contacts.email_placeholder} />
 	<button
 		type="button"
-		class="flex h-full cursor-pointer items-center rounded-r-lg border-1 border-l-0 border-c-neutral-2 p-2 shadow-xs hover:bg-c-neutral dark:border-s-dark-2 dark:hover:bg-s-dark-2"
+		class="flex h-full cursor-pointer items-center rounded-lg border-1 border-c-neutral-2 p-2 shadow-xs hover:bg-c-neutral dark:border-s-dark-2 dark:hover:bg-s-dark-2"
 		onclick={() => (menuOpen = !menuOpen)}
 	>
 		{#if type === 'cell'}

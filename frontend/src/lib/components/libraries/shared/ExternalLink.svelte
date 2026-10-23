@@ -5,17 +5,15 @@
 	import GoodreadsIcon from '$lib/assets/services/goodreads_icon.png';
 	import ImdbIcon from '$lib/assets/services/imdb_icon.svg';
 	import IconChefkoch from '$lib/components/ui/icons/IconChefkoch.svelte';
-	import type { Book } from '$lib/types/library_book.js';
-	import type { Music } from '$lib/types/library_music.js';
-	import type { Recipe } from '$lib/types/library_recipe.js';
-	import type { Movie } from '$lib/types/library_movie.js';
+	import type { LibraryEntry } from '$lib/types/library';
+	import type { Quote } from '$lib/types/library_quote';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { grabFaviconFromUrl } from '$lib/helpers/ImageHelper';
 	import ExternalSearchLink from '$lib/components/libraries/shared/ExternalSearchLink.svelte';
 
-	let { entry } = $props<{
-		entry: Book | Music | Recipe | Movie;
-	}>();
+	let { entry }: {
+		entry: Exclude<LibraryEntry, Quote>;
+	} = $props();
 
 	const ts = getTranslation();
 </script>

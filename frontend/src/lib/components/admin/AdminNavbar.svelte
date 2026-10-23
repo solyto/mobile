@@ -11,15 +11,14 @@
 
 	let active = $derived(page.url.pathname);
 
-	function select(slug: string): void {}
 </script>
 
-<div class="h-full bg-c-bg p-1" out:slide>
+<div class="nav-desktop-container h-full bg-c-bg p-1" out:slide>
 	<div
-		class="flex h-full w-16 flex-col rounded-md p-1 text-c-neutral-8 drop-shadow-xl not-dark:bg-gradient-to-b not-dark:from-c-btn not-dark:to-c-success dark:bg-s-dark-3 dark:text-c-neutral-2"
+		class="nav-desktop gradient-down flex h-full w-16 flex-col rounded-md p-1 text-c-neutral-8 drop-shadow-xl dark:text-c-neutral-2"
 	>
 		<div class="mb-auto flex flex-col items-center">
-			<img src={logo} alt="logo" />
+			<img src={logo} class="logo" alt="logo" />
 		</div>
 
 		<div class="flex flex-1 flex-col items-center justify-center">
@@ -28,14 +27,14 @@
 				href={urls.admin.home}
 				title="Dashboard"
 				active={active === urls.admin.home}
-				onSelect={select}><IconHouse /></NavEntry
+				><IconHouse /></NavEntry
 			>
 			<NavEntry
 				slug="admin.users"
 				href={urls.admin.users}
 				title="Users"
 				active={active === urls.admin.users}
-				onSelect={select}><IconUsers /></NavEntry
+				><IconUsers /></NavEntry
 			>
 		</div>
 
@@ -45,7 +44,7 @@
 				href={urls.home}
 				title="Back to App"
 				active={false}
-				onSelect={select}><IconArrowBigLeft /></NavEntry
+				><IconArrowBigLeft /></NavEntry
 			>
 		</div>
 	</div>

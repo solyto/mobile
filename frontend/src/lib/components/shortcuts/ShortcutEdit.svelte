@@ -1,6 +1,4 @@
 <script lang="ts">
-	import DeleteButton from '$lib/components/ui/buttons/DeleteButton.svelte';
-	import EditButton from '$lib/components/ui/buttons/EditButton.svelte';
 	import type { Shortcut, UpdateShortcutRequest } from '$lib/types/shortcut.js';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import { getShortcuts } from '$lib/state/Shortcuts.svelte';
@@ -9,7 +7,7 @@
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import InlineDeleteButton from '$lib/components/ui/buttons/InlineDeleteButton.svelte';
 	import InlineEditButton from '$lib/components/ui/buttons/InlineEditButton.svelte';
-	import { getKeyManager } from '$lib/KeyManager.svelte';
+	import { getKeyManager } from '$lib/state/KeyManager.svelte';
 	import { onDestroy, tick } from 'svelte';
 
 	const ts = getTranslation();
@@ -17,13 +15,13 @@
 	const shortcuts = getShortcuts();
 	const keyManager = getKeyManager();
 
-	let { shortcut } = $props<{ shortcut: Shortcut }>();
+	let { shortcut }: { shortcut: Shortcut } = $props();
 
 	let edit = $state<boolean>(false);
 	let titleValue = $state<string>(shortcut.title);
 	let urlValue = $state<string>(shortcut.url);
 	let titleInput = $state<HTMLInputElement | null>(null);
-	let keyHandlers = $state<{ Enter: string | null; Escape: string | null }>({ Enter: null, Escape: null });
+	let keyHandlers: { Enter: string | null; Escape: string | null } = { Enter: null, Escape: null };
 
 	onDestroy(() => keyManager.unregisterAll(keyHandlers));
 

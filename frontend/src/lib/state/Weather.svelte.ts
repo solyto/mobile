@@ -1,6 +1,6 @@
 import type { Forecast, UpdateWeatherCityRequest, UpdateWeatherTemperatureUnitRequest, WeatherResponse } from '$lib/types/weather';
 import { getContext, setContext } from 'svelte';
-import { getAuth } from '$lib/state/Auth.svelte';
+import { getAuth, type Auth } from '$lib/state/Auth.svelte';
 import ApiService from '$lib/services/ApiService';
 import { apiRoutes } from '$lib/config/apiRoutes';
 
@@ -9,11 +9,12 @@ export class Weather {
 	configured = $state<boolean>(false);
 	city = $state<string | null>(null);
 	forecast = $state<Forecast | null>(null);
-	auth = getAuth();
+	auth: Auth;
 	apiService: ApiService;
 
-	constructor() {
-		this.apiService = new ApiService(this.auth.getToken());
+	constructor(auth: Auth = getAuth(), apiService: ApiService = auth.apiService) {
+		this.auth = auth;
+		this.apiService = apiService;
 	}
 
 	async load(): Promise<void> {

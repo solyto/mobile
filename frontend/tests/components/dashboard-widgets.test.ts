@@ -9,7 +9,6 @@ import UpcomingEventsWidget from '$lib/components/dashboard/widgets/UpcomingEven
 import NewestNotesWidget from '$lib/components/dashboard/widgets/NewestNotesWidget.svelte';
 import NewestLinksWidget from '$lib/components/dashboard/widgets/NewestLinksWidget.svelte';
 import BookReleasesWidget from '$lib/components/dashboard/widgets/BookReleasesWidget.svelte';
-import MovieReleasesWidget from '$lib/components/dashboard/widgets/MovieReleasesWidget.svelte';
 import MusicReleasesWidget from '$lib/components/dashboard/widgets/MusicReleasesWidget.svelte';
 import QuoteWidget from '$lib/components/dashboard/widgets/QuoteWidget.svelte';
 import { todo } from '../unit/helpers/factories';
@@ -17,7 +16,6 @@ import type { CalendarEvent } from '$lib/types/calendar';
 import type { Note } from '$lib/types/note';
 import type { Link } from '$lib/types/library_link';
 import type { BookRelease } from '$lib/types/library_book';
-import type { MovieRelease } from '$lib/types/library_movie';
 import type { MusicRelease } from '$lib/types/library_music';
 import type { Quote } from '$lib/types/library_quote';
 import type { TodoPriority } from '$lib/types/todo';
@@ -367,53 +365,6 @@ describe('BookReleasesWidget', () => {
 			'src',
 			'https://example.com/cover.jpg'
 		);
-	});
-});
-
-describe('MovieReleasesWidget', () => {
-	function movieRelease(overrides: Partial<MovieRelease> = {}): MovieRelease {
-		return {
-			id: 'mr1',
-			type: 'movie',
-			title: 'Dune 3',
-			description: null,
-			url: 'https://example.com/movie',
-			cover: null,
-			provider: 'tmdb',
-			release_year: 2027,
-			runtime: null,
-			genres: [],
-			...overrides
-		} as MovieRelease;
-	}
-
-	it('renders the release title with its type label', () => {
-		renderWithContext(
-			MovieReleasesWidget,
-			{},
-			{
-				prepare: (stores) => ({
-					movieReleases: [movieRelease({ type: 'movie', title: 'Dune 3' })],
-					ts: stores.ts
-				})
-			}
-		);
-		expect(screen.getByText('Dune 3')).toBeInTheDocument();
-		expect(screen.getByText(/^Movie/)).toBeInTheDocument();
-	});
-
-	it('labels tv releases as Series', () => {
-		renderWithContext(
-			MovieReleasesWidget,
-			{},
-			{
-				prepare: (stores) => ({
-					movieReleases: [movieRelease({ type: 'tv', title: 'Silo' })],
-					ts: stores.ts
-				})
-			}
-		);
-		expect(screen.getByText(/^Series/)).toBeInTheDocument();
 	});
 });
 

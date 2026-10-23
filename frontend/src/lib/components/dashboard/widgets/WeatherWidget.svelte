@@ -11,12 +11,12 @@
 
 	const weather = getWeather();
 
-	let { ts, auth } = $props<{
+	let { ts, auth }: {
 		ts: Translation;
 		auth: Auth;
-	}>();
+	} = $props();
 
-	let date = new SvelteDate();
+	let date = new Date();
 	let time = new SvelteDate();
 	let forecast = $derived(weather.forecast);
 	let temperatureUnit = $derived(auth?.user?.settings?.temperature_unit);
@@ -44,7 +44,7 @@
 	});
 
 	async function toggleTemperatureUnit(unit: 'c' | 'f'): Promise<void> {
-		if (unit === temperatureUnit) return;
+		if (!auth.user || unit === temperatureUnit) return;
 		auth.user.settings.temperature_unit = unit;
 		await weather.updateTemperatureUnit(unit);
 	}
@@ -96,7 +96,7 @@
 						class="ml-auto shrink-0 cursor-pointer rounded-md bg-c-neutral-1 px-2 py-1 text-xs font-medium text-c-neutral-5 transition-colors hover:bg-c-neutral-2 hover:text-c-neutral-7 dark:bg-s-dark-3 dark:text-c-neutral-4 dark:hover:bg-s-dark-2 dark:hover:text-c-neutral-2"
 						onclick={() => toggleTemperatureUnit(temperatureUnit === 'c' ? 'f' : 'c')}
 					>
-						{temperatureUnit.toUpperCase()}°
+						{temperatureUnit?.toUpperCase()}°
 					</button>
 				</div>
 			{:else if weather.loaded}

@@ -30,6 +30,8 @@ export interface NoteCategory {
 	title: string;
 	parent_id: number | null;
 	sort_order: number;
+	is_system: boolean;
+	is_hidden: boolean;
 	created_at: string;
 	updated_at: string;
 	children: NoteCategory[];

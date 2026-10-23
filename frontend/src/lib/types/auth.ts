@@ -16,11 +16,12 @@ export interface UserSettings {
 	date_format: string;
 	time_format: string;
 	widgets: string;
-	ai_enabled: boolean;
 	navigation: string;
-	openai_api_key: string | null;
 	first_visit: boolean;
 	temperature_unit: 'c' | 'f';
+	journal_enabled: boolean;
+	journal_calendar_mark: boolean;
+	check_in_calendar_mark: boolean;
 }
 
 export interface User {

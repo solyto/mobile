@@ -16,6 +16,7 @@
 			class="w-44 cursor-pointer max-sm:w-full"
 			onclick={() => {
 				setActiveLibrary(item.type);
+				// eslint-disable-next-line svelte/no-navigation-without-resolve -- route from the navigation list, resolve() rejects a plain string
 				goto(item.url);
 			}}
 		>

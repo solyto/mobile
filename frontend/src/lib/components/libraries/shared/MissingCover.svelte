@@ -4,9 +4,9 @@
 	import IconCookingPot from '@lucide/svelte/icons/cooking-pot';
 	import IconClapperboard from '@lucide/svelte/icons/clapperboard';
 	import IconLeaf from '@lucide/svelte/icons/leaf';
-	import type { Library } from '$lib/types/library';
+	import type { LibraryConfig } from '$lib/types/library';
 
-	let { library } = $props<{ library: Library }>();
+	let { library }: { library: { config: LibraryConfig } } = $props();
 </script>
 
 <div class="absolute inset-0 flex items-center justify-center rounded-sm">

@@ -74,7 +74,7 @@
 			ts.loadLanguage();
 			notifications.success(ts.get.auth.login_success);
 			await goto(resolve(urls.home));
-		} catch (e) {
+		} catch {
 			notifications.error(ts.get.auth.passkey_error);
 		} finally {
 			loadingIndicator.stop();
@@ -94,7 +94,7 @@
 
 {#if PLATFORM !== 'web'}
 	<a
-		href={urls.setup}
+		href={resolve(urls.setup)}
 		class="fixed top-10 right-4 flex items-center gap-2 text-c-neutral-5 transition-colors hover:text-c-btn dark:text-c-neutral-4 dark:hover:text-c-btn"
 	>
 		<span class="text-xs">{getApiLabel()}</span>
@@ -121,7 +121,7 @@
 			<div class="label-text mb-2 flex items-center justify-between">
 				<span class="text-sm font-bold dark:text-white">{ts.get.auth.password}</span>
 				<a
-					href={urls.forgotPassword}
+					href={resolve(urls.forgotPassword)}
 					class="text-xs text-c-neutral-5 transition-colors hover:text-c-btn dark:text-c-neutral-4 dark:hover:text-c-btn"
 				>
 					{ts.get.auth.forgot_password}
@@ -151,7 +151,7 @@
 	<div class="flex items-center gap-2 text-sm text-c-neutral-5 dark:text-c-neutral-4">
 		<span>{ts.get.auth.no_account}</span>
 		<a
-			href={urls.register}
+			href={resolve(urls.register)}
 			class="font-medium text-c-btn transition-colors hover:underline"
 		>
 			{ts.get.auth.register_link}

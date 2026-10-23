@@ -6,9 +6,9 @@
 	const ts = getTranslation();
 	const library = getPlantLibrary();
 
-	let { toggleMenu } = $props<{
+	let { toggleMenu }: {
 		toggleMenu: () => void;
-	}>();
+	} = $props();
 
 	let submenuVisible = $state<boolean>(false);
 

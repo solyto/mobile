@@ -1,10 +1,10 @@
 <script lang="ts">
 	import IconCloud from '@lucide/svelte/icons/cloud';
 
-	let { onClick, title } = $props<{
-		onClick: Function;
+	let { onClick, title }: {
+		onClick: () => void;
 		title: string;
-	}>();
+	} = $props();
 </script>
 
 <button

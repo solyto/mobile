@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	let {
 		onclick = () => {},
 		type = 'btn',
@@ -6,14 +7,14 @@
 		pulse = false,
 		class: customClass = '',
 		children
-	} = $props<{
+	}: {
 		onclick?: () => void;
 		type?: 'btn' | 'action' | 'danger' | 'success' | 'primary' | 'warning' | 'plain' | 'slight';
 		disabled?: boolean;
 		pulse?: boolean;
 		class?: string;
-		children: any;
-	}>();
+		children: Snippet;
+	} = $props();
 </script>
 
 <button

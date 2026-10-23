@@ -3,39 +3,54 @@
 	import { getCalendars } from '$lib/state/Calendars.svelte';
 	import Entry from '$lib/components/calendars/views/month/Entry.svelte';
 	import { formatDate, isDateToday } from '$lib/helpers/DateHelper';
-	import type { CalendarDay } from '$lib/types/calendar';
+	import { getCalendarEventKey } from '$lib/helpers/CalendarEventHelper';
+	import type { CalendarDay, OutOfScopeCalendarDay } from '$lib/types/calendar';
 	import TodoEntry from '$lib/components/calendars/TodoEntry.svelte';
-	import CalendarDragGhost from '$lib/components/calendars/dnd/CalendarDragGhost.svelte';
-	import { calendarDrag } from '$lib/components/calendars/dnd/CalendarDragState.svelte';
+	import { getCalendarDrag } from '$lib/state/CalendarDrag.svelte';
+	import CalendarMarks from '$lib/components/calendars/CalendarMarks.svelte';
 
 	const calendars = getCalendars();
+	const drag = getCalendarDrag();
 
-	let { day } = $props<{ day: CalendarDay }>();
+	let { day }: { day: CalendarDay | OutOfScopeCalendarDay } = $props();
 
 	const dateSlug = $derived(formatDate(day.date));
 	const isDropTargetCell = $derived(
-		calendarDrag.active && calendarDrag.target !== null
-			? formatDate(calendarDrag.target.date) === dateSlug
+		drag.active && drag.target !== null
+			? formatDate(drag.target.date) === dateSlug
 			: false
 	);
+
+	async function onCellDoubleClick(event: MouseEvent): Promise<void> {
+		if ((event.target as HTMLElement).closest('button, a')) return;
+		await calendars.showSidebar(day.date);
+	}
 </script>
 
 <div
-	class="group relative flex w-1/7 flex-col overflow-y-auto border-1 border-c-neutral-1 dark:border-s-dark"
+	class="group relative flex w-1/7 flex-col overflow-y-auto border-1 border-c-neutral-1 select-none dark:border-s-dark"
 	class:bg-c-neutral={day.is_grayed_out}
 	class:bg-c-bg-surface={!day.is_grayed_out}
 	class:dark:bg-s-dark={day.is_grayed_out}
 	data-calendar-day={dateSlug}
 	data-grayed={day.is_grayed_out ? 'true' : 'false'}
+	ondblclick={onCellDoubleClick}
 >
 	<div class="flex w-full flex-col items-start justify-start">
 		<div class="flex w-full items-start justify-between">
-			<div
-				class="flex w-8 justify-center rounded-br-lg border-r-1 border-b-1 border-c-neutral-1 bg-c-neutral px-2 py-1 text-sm font-bold max-md:text-xs dark:border-s-dark dark:bg-s-dark-3"
-				class:!bg-c-primary={isDateToday(day.date)}
-				class:text-white={isDateToday(day.date)}
-			>
-				{day.number}
+			<div class="flex items-center gap-2">
+				<div
+					class="flex w-8 justify-center rounded-br-lg border-r-1 border-b-1 border-c-neutral-1 bg-c-neutral px-2 py-1 text-sm font-bold max-md:text-xs dark:border-s-dark dark:bg-s-dark-3"
+					class:!bg-c-primary={isDateToday(day.date)}
+					class:text-white={isDateToday(day.date)}
+				>
+					{day.number}
+				</div>
+				<CalendarMarks 
+					date={day.date} 
+					showJournal={calendars.journalMarksEnabled} 
+					showCheckIn={calendars.checkInMarksEnabled} 
+				/>
 			</div>
 			<button
 				onclick={async () => {
@@ -51,10 +66,10 @@
 			{#each calendars.getTodosForDate(day.date) as todo (todo.id)}
 				<TodoEntry {todo} />
 			{/each}
-			{#each calendars.getAllDayEventsForDate(day.date) as item (item.uri + '-' + (item.original_start_date ?? item.start_date)?.getTime())}
+			{#each calendars.getAllDayEventsForDate(day.date) as item (getCalendarEventKey(item))}
 				<Entry {item} date={day.date} />
 			{/each}
-			{#each calendars.getNonAllDayEventsForDate(day.date) as item (item.uri + '-' + (item.original_start_date ?? item.start_date)?.getTime())}
+			{#each calendars.getNonAllDayEventsForDate(day.date) as item (getCalendarEventKey(item))}
 				<Entry {item} date={day.date} />
 			{/each}
 		</div>
@@ -64,5 +79,4 @@
 			class="pointer-events-none absolute inset-0 z-30 border-2 border-dashed border-c-action bg-d-lightblue/60"
 		></div>
 	{/if}
-	<CalendarDragGhost sourceDateSlug={dateSlug} />
 </div>

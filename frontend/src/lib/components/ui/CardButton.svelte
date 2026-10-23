@@ -1,14 +1,14 @@
 <script lang="ts">
+	import type { Component, Snippet } from 'svelte';
 	let {
 		label = null,
-		icon = null,
+		icon: Icon = null,
 		children
-	} = $props<{
-		label?: string;
-		icon?: any;
-		hover?: boolean;
-		children?: any;
-	}>();
+	}: {
+		label?: string | null;
+		icon?: Component<{ class?: string }> | null;
+		children?: Snippet;
+	} = $props();
 </script>
 
 <div
@@ -17,14 +17,14 @@
 	{#if label !== null}
 		<div
 			class="flex flex-row items-center justify-between w-full gap-4 pb-2 text-xl leading-loose tracking-wide text-c-heading dark:text-c-primary"
-			class:gap-2={!icon}
-			class:mt-[-10px]={!icon}
+			class:gap-2={!Icon}
+			class:mt-[-10px]={!Icon}
 			class:mb-2={children !== undefined}
 			class:pb-2={children !== undefined}
 		>
 			<span>{label}</span>
-			{#if icon !== null}
-				{@render icon({ class: 'w-6 h-6' })}
+			{#if Icon !== null}
+				<Icon class="w-6 h-6" />
 			{/if}
 		</div>
 	{/if}

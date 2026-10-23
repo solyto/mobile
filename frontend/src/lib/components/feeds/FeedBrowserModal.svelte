@@ -62,7 +62,7 @@
 		if (debounceTimer) clearTimeout(debounceTimer);
 
 		if (query.length < 2) {
-			isSearching = false;
+			if (isSearching) showBrowseList();
 			return;
 		}
 
@@ -73,16 +73,15 @@
 		}, 300);
 	}
 
-	$effect(() => {
-		if (query.length < 2 && isSearching) {
-			isSearching = false;
-			results = [];
-			offset = 0;
-			hasMore = true;
-			initialLoading = true;
-			loadPage().then(() => (initialLoading = false));
-		}
-	});
+	async function showBrowseList(): Promise<void> {
+		isSearching = false;
+		results = [];
+		offset = 0;
+		hasMore = true;
+		initialLoading = true;
+		await loadPage();
+		initialLoading = false;
+	}
 
 	async function subscribe(feed: Feed | FriendFeed): Promise<void> {
 		loadingIndicator.start();

@@ -19,15 +19,11 @@
 	--radius-4xl: 0px;
 	--radius-full: 0px;
 
-	.rounded-full {
-		border-radius: 0;
-	}
-
 	/* Shadows — subtle amber glow */
-	--shadow-xs: none;
-	--shadow-sm: none;
-	--shadow-md: none;
-	--shadow-lg: none;
+	--shadow-xs: 0 0 #0000;
+	--shadow-sm: 0 0 #0000;
+	--shadow-md: 0 0 #0000;
+	--shadow-lg: 0 0 #0000;
 	--drop-shadow-sm: none;
 	--drop-shadow-md: none;
 
@@ -141,6 +137,15 @@ body {
 		background-color: rgba(14, 14, 18, 0.9);
 	}
 }
+
+/* rounded-full and rounded compile to fixed values, so the radius tokens alone leave them round */
+*, *::before, *::after { border-radius: 0 !important; }
+
+/* Tailwind compiles shadow values into the utilities, so the --shadow-* tokens are applied here */
+.shadow-xs, .hover\:shadow-xs:hover { --tw-shadow: var(--shadow-xs); }
+.shadow-sm, .hover\:shadow-sm:hover { --tw-shadow: var(--shadow-sm); }
+.shadow-md, .hover\:shadow-md:hover { --tw-shadow: var(--shadow-md); }
+.shadow-lg, .hover\:shadow-lg:hover { --tw-shadow: var(--shadow-lg); }
 
 .logo {
 	filter: grayscale(0.7) sepia(0.5) brightness(0.85);

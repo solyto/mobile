@@ -200,6 +200,27 @@ describe('CheckInData store', () => {
 		});
 	});
 
+	describe('save', () => {
+		it('reloads and returns true when the API accepts the check-in', async () => {
+			api.create.mockResolvedValue({ data: { id: 1 } });
+			api.list.mockResolvedValue({ data: [checkIn()] });
+
+			const s = new CheckInData();
+			await expect(s.save({ date: '2026-08-14', mood: 4 })).resolves.toBe(true);
+
+			expect(s.data).toEqual([checkIn()]);
+		});
+
+		it('returns false and does not reload when the API rejects the check-in', async () => {
+			api.create.mockResolvedValue(null);
+
+			const s = new CheckInData();
+			await expect(s.save({ date: '2026-08-14', mood: 4 })).resolves.toBe(false);
+
+			expect(api.list).not.toHaveBeenCalled();
+		});
+	});
+
 	describe('saveSettings', () => {
 		it('persists the settings via the API and updates the local state', async () => {
 			api.put.mockResolvedValue(true);

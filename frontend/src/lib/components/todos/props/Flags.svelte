@@ -3,14 +3,15 @@
 	import IconStickyNote from '@lucide/svelte/icons/sticky-note';
 	import IconListTodo from '@lucide/svelte/icons/list-todo';
 	import IconLink from '@lucide/svelte/icons/link';
+	import IconRepeat from '@lucide/svelte/icons/repeat';
 
-	let { todo } = $props<{
+	let { todo }: {
 		todo: Todo;
-	}>();
+	} = $props();
 </script>
 
-{#if todo.description !== null || todo.subtasks.length > 0 || todo.link !== null}
-	<div class="absolute top-[-12px] right-0 flex gap-1">
+{#if todo.description !== null || todo.subtasks.length > 0 || todo.link !== null || todo.recurrence_frequency !== null}
+	<div class="absolute top-[-12px] right-0 z-30 flex gap-2">
 		{#if todo.description !== null}
 			<div
 				class="flex size-6 items-center justify-center rounded-full bg-c-neutral-1 p-[5px] shadow-sm dark:bg-s-dark-3"
@@ -30,6 +31,13 @@
 				class="flex size-6 items-center justify-center rounded-full bg-c-neutral-1 p-[5px] shadow-sm dark:bg-s-dark-3"
 			>
 				<IconLink size="14" />
+			</div>
+		{/if}
+		{#if todo.recurrence_frequency !== null}
+			<div
+				class="flex size-6 items-center justify-center rounded-full bg-c-neutral-1 p-[5px] shadow-sm dark:bg-s-dark-3"
+			>
+				<IconRepeat size="14" />
 			</div>
 		{/if}
 	</div>

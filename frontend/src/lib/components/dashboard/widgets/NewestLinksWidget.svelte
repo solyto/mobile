@@ -5,10 +5,10 @@
 	import IconExternalLink from '@lucide/svelte/icons/external-link';
 	import type { Translation } from '$lib/state/Translation.svelte';
 
-	let { newestLinks, ts } = $props<{
+	let { newestLinks, ts }: {
 		newestLinks: Link[];
 		ts: Translation;
-	}>();
+	} = $props();
 </script>
 
 <div in:blur>

@@ -1,5 +1,4 @@
-import prettier from 'eslint-config-prettier';
-import { includeIgnoreFile } from '@eslint/compat';
+import { includeIgnoreFile } from 'eslint/config';
 import js from '@eslint/js';
 import svelte from 'eslint-plugin-svelte';
 import globals from 'globals';
@@ -11,11 +10,10 @@ const gitignorePath = fileURLToPath(new URL('./.gitignore', import.meta.url));
 
 export default ts.config(
 	includeIgnoreFile(gitignorePath),
+	{ ignores: ['.claude/**', 'docs/**'] },
 	js.configs.recommended,
 	...ts.configs.recommended,
 	...svelte.configs.recommended,
-	prettier,
-	...svelte.configs.prettier,
 	{
 		languageOptions: {
 			globals: { ...globals.browser, ...globals.node }
@@ -23,7 +21,14 @@ export default ts.config(
 		rules: {
 			// typescript-eslint strongly recommend that you do not use the no-undef lint rule on TypeScript projects.
 			// see: https://typescript-eslint.io/troubleshooting/faqs/eslint/#i-get-errors-from-the-no-undef-rule-about-global-variables-not-being-defined-even-though-there-are-no-typescript-errors
-			'no-undef': 'off'
+			'no-undef': 'off',
+			'@typescript-eslint/no-unused-vars': ['error', { args: 'none', ignoreRestSiblings: true }],
+			'svelte/no-navigation-without-resolve': ['error', { ignoreLinks: true }],
+			// Flags every `new Date/Map/Set/URL` in .svelte files, including throwaway locals.
+			// STANDARDS.md 14.1 governs: SvelteDate only where a setter is called on a rendered value.
+			'svelte/prefer-svelte-reactivity': 'off',
+			'comma-dangle': ['error', 'never'],
+			semi: ['error', 'always']
 		}
 	},
 	{

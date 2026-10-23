@@ -22,7 +22,7 @@
 	import AddButton from '$lib/components/ui/buttons/AddButton.svelte';
 	import InlineDeleteButton from '$lib/components/ui/buttons/InlineDeleteButton.svelte';
 	import ChefkochIcon from '$lib/assets/services/chefkoch_icon.png';
-	import { fade, scale, slide } from 'svelte/transition';
+	import { fade } from 'svelte/transition';
 
 	const ts = getTranslation();
 	const library = getRecipeLibrary();

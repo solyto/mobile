@@ -12,7 +12,11 @@ const SUPPORTED: Language[] = ['en', 'de', 'fr', 'es'];
 export class Translation {
 	locale = $state<string>('en');
 	get = $state<LanguageFile>(en);
-	auth: Auth = getAuth();
+	auth: Auth;
+
+	constructor(auth: Auth = getAuth()) {
+		this.auth = auth;
+	}
 
 	loadLanguage(): void {
 		const stored = this.auth?.user?.settings?.language;

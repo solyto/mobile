@@ -7,21 +7,22 @@
 	import IconLibrary from '@lucide/svelte/icons/library';
 	import IconSquare from '@lucide/svelte/icons/square';
 	import IconRectangleHorizontal from '@lucide/svelte/icons/rectangle-horizontal';
+	import IconListTree from '@lucide/svelte/icons/list-tree';
 
 	let {
 		views,
 		currentlySelected,
 		onChange,
 		class: className = ''
-	} = $props<{
+	}: {
 		views: Array<{
-			type: 'compact' | 'comfortable' | 'card' | 'list' | 'kanban' | 'overview' | 'shelf' | 'cards' | 'spine';
+			type: 'compact' | 'comfortable' | 'card' | 'list' | 'kanban' | 'overview' | 'grouped' | 'shelf' | 'cards' | 'spine';
 			title: string;
 		}>;
 		currentlySelected: string;
 		onChange: (type: string) => void;
 		class?: string;
-	}>();
+	} = $props();
 </script>
 
 <div class="flex items-center gap-1 {className}">
@@ -47,6 +48,8 @@
 				<IconSquare class="size-4" />
 			{:else if view.type === 'overview'}
 				<IconLayoutGrid class="size-4" />
+			{:else if view.type === 'grouped'}
+				<IconListTree class="size-4" />
 			{:else if view.type === 'shelf'}
 				<IconGalleryHorizontal class="size-4" />
 			{:else if view.type === 'spine'}

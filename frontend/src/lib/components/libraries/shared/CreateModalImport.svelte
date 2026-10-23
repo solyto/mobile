@@ -6,7 +6,7 @@
 	import { Translation } from '$lib/state/Translation.svelte';
 	import type { Component } from 'svelte';
 
-	let { options, ts, loading, open = $bindable() } = $props<{
+	let { options, ts, loading, open = $bindable() }: {
 		options: {
 			label: string;
 			icon: string | Component;
@@ -15,7 +15,7 @@
 		ts: Translation;
 		loading: boolean;
 		open: boolean;
-	}>();
+	} = $props();
 </script>
 
 <div class="relative">
@@ -40,8 +40,7 @@
 						{#if typeof entry.icon === 'string'}
 							<img src={entry.icon} alt={entry.label} class="size-4" />
 						{:else}
-							{@const Icon = entry.icon}
-							<Icon class="size-4" />
+							<entry.icon class="size-4" />
 						{/if}
 					</div>
 					<span>{entry.label}</span>

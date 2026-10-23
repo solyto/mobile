@@ -1,30 +1,27 @@
 <script lang="ts">
 	import { getTranslation } from '$lib/state/Translation.svelte';
 
+	/* eslint-disable no-useless-assignment -- the $bindable fallbacks are read by the parent through bind: */
 	let {
 		label,
 		value = $bindable(''),
 		input = $bindable<HTMLInputElement | null>(null),
 		filename = $bindable('')
-	} = $props<{
+	}: {
 		label?: string;
 		value?: string;
 		input?: HTMLInputElement | null;
 		filename?: string;
-	}>();
+	} = $props();
+	/* eslint-enable no-useless-assignment */
 
 	const ts = getTranslation();
 
-	let fileInput = $state<HTMLInputElement | null>(null);
 	let selectedFile = $state<File | null>(null);
 	let isUploading = $state(false);
 	let uploadProgress = $state(0);
 	let uploadError = $state<string | null>(null);
 	let uploadSuccess = $state(false);
-
-	$effect(() => {
-		input = fileInput;
-	});
 
 	async function handleFileChange(event: Event) {
 		const inputElement = event.target as HTMLInputElement;
@@ -93,7 +90,7 @@
 		<input
 			id="file-upload"
 			type="file"
-			bind:this={fileInput}
+			bind:this={input}
 			onchange={handleFileChange}
 			class="block w-full text-sm text-c-neutral-5
              file:mr-4 file:rounded-md file:border-0

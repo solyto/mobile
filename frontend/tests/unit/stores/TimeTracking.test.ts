@@ -50,6 +50,17 @@ describe('TimeTracking store', () => {
 		expect(api.list).toHaveBeenCalled();
 	});
 
+	it('sends selected statistics categories as one comma-separated parameter', async () => {
+		api.list.mockResolvedValue({ data: {} });
+
+		const t = new TimeTracking();
+		await t.loadStatistics('2026-09-16', '2026-10-16', [3, 7]);
+		await t.loadStatistics('2026-09-16', '2026-10-16');
+
+		expect(api.list.mock.calls[0][0]).toMatch(/\?from=2026-09-16&to=2026-10-16&category_ids=3,7$/);
+		expect(api.list.mock.calls[1][0]).toMatch(/\?from=2026-09-16&to=2026-10-16$/);
+	});
+
 	describe('formatDuration', () => {
 		it('formats minutes only below an hour', () => {
 			expect(new TimeTracking().formatDuration(0)).toBe('0m');

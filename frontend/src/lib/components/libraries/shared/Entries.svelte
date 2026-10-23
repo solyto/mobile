@@ -12,13 +12,28 @@
 	import PlantEntry from '$lib/components/libraries/plants/PlantEntry.svelte';
 	import MissingCover from '$lib/components/libraries/shared/MissingCover.svelte';
 	import CoverImage from '$lib/components/libraries/shared/CoverImage.svelte';
-	import type { Library } from '$lib/types/library';
+	import type { Library, LibraryEntry } from '$lib/types/library';
+	import type { Music } from '$lib/types/library_music';
+	import type { Book } from '$lib/types/library_book';
+	import type { Link } from '$lib/types/library_link';
+	import type { Quote } from '$lib/types/library_quote';
+	import type { Recipe } from '$lib/types/library_recipe';
+	import type { Movie } from '$lib/types/library_movie';
+	import type { Game } from '$lib/types/library_game';
+	import type { Plant } from '$lib/types/library_plant';
+	import type { MusicLibrary } from '$lib/state/MusicLibrary.svelte';
+	import type { BookLibrary } from '$lib/state/BookLibrary.svelte';
+	import type { LinkLibrary } from '$lib/state/LinkLibrary.svelte';
+	import type { QuoteLibrary } from '$lib/state/QuoteLibrary.svelte';
+	import type { RecipeLibrary } from '$lib/state/RecipeLibrary.svelte';
+	import type { MovieLibrary } from '$lib/state/MovieLibrary.svelte';
+	import type { GameLibrary } from '$lib/state/GameLibrary.svelte';
 	import { API_USER_STORAGE_URL } from '$lib/config/apiRoutes';
 	import { getAuth } from '$lib/state/Auth.svelte';
 
 	const auth = getAuth();
 
-	let { library } = $props<{ library: Library }>();
+	let { library }: { library: Library } = $props();
 
 	let view = $derived(library.view);
 
@@ -29,7 +44,7 @@
 </script>
 
 {#if view === 'shelf'}
-	<ShelfView {library} />
+	<ShelfView library={library as MusicLibrary | BookLibrary} />
 {:else if view === 'spine'}
 	<SpineView {library} />
 {/if}
@@ -47,7 +62,7 @@
 	{#each library.filteredEntries as entry (entry.id)}
 		<button
 			onclick={() => {
-				if (library.config.type !== 'links') library.openDetailModal(entry);
+				if (library.config.type !== 'links') (library as { openDetailModal(entry: LibraryEntry): void }).openDetailModal(entry as LibraryEntry);
 			}}
 			class="max-w-full cursor-pointer max-md:w-full"
 		>
@@ -86,7 +101,7 @@
 							class:size-16={library.view === 'list'}
 						>
 							<MissingCover {library} />
-							{#if entry.cover}
+							{#if 'cover' in entry && entry.cover}
 								<CoverImage
 									src={`${API_USER_STORAGE_URL}/${auth.user?.id}/${library.config.type}/${previewFilename(entry.cover)}`}
 									alt=""
@@ -112,21 +127,21 @@
 					class:md:items-center={view === 'list'}
 				>
 					{#if library.config.type === 'music'}
-						<MusicEntry {entry} {library} />
+						<MusicEntry entry={entry as Music} library={library as MusicLibrary} />
 					{:else if library.config.type === 'books'}
-						<BookEntry {entry} {library} />
+						<BookEntry entry={entry as Book} library={library as BookLibrary} />
 					{:else if library.config.type === 'links'}
-						<LinkEntry {entry} {library} />
+						<LinkEntry entry={entry as Link} library={library as LinkLibrary} />
 					{:else if library.config.type === 'quotes'}
-						<QuoteEntry {entry} {library} />
+						<QuoteEntry entry={entry as Quote} library={library as QuoteLibrary} />
 					{:else if library.config.type === 'recipes'}
-						<RecipeEntry {entry} {library} />
+						<RecipeEntry entry={entry as Recipe} library={library as RecipeLibrary} />
 					{:else if library.config.type === 'movies'}
-						<MovieEntry {entry} {library} />
+						<MovieEntry entry={entry as Movie} library={library as MovieLibrary} />
 					{:else if library.config.type === 'games'}
-						<GameEntry {entry} {library} />
+						<GameEntry entry={entry as Game} library={library as GameLibrary} />
 					{:else if library.config.type === 'plants'}
-						<PlantEntry {entry} {library} />
+						<PlantEntry entry={entry as Plant} />
 					{/if}
 				</div>
 			</div>

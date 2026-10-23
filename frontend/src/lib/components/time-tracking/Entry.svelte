@@ -4,6 +4,7 @@
 	import { getAuth } from '$lib/state/Auth.svelte';
 	import InlineEditButton from '$lib/components/ui/buttons/InlineEditButton.svelte';
 	import InlineDeleteButton from '$lib/components/ui/buttons/InlineDeleteButton.svelte';
+	import ConfirmationModal from '$lib/components/ui/ConfirmationModal.svelte';
 	import type { TimeTrackingEntry } from '$lib/types/time_tracking';
 
 	let {
@@ -25,6 +26,8 @@
 	const tt = getTimeTracking();
 	const ts = getTranslation();
 	const auth = getAuth();
+
+	let confirmingDelete = $state<boolean>(false);
 
 	let showDescriptionFallback = $derived(showEdit || showDelete);
 </script>
@@ -59,10 +62,29 @@
 			{tt.formatDuration(entry.duration_minutes)}
 		</span>
 		{#if showEdit}
-			<InlineEditButton onClick={() => onEdit?.(entry)} />
+			<InlineEditButton
+				label={ts.get.timeTracking.edit_entry}
+				onClick={() => onEdit?.(entry)}
+			/>
 		{/if}
 		{#if showDelete}
-			<InlineDeleteButton onClick={() => { tt.deleteEntry(entry.id); }} />
+			<InlineDeleteButton
+				label={ts.get.timeTracking.entry_deletion_title}
+				onClick={() => { confirmingDelete = true; }}
+			/>
 		{/if}
 	</div>
 </div>
+
+{#if confirmingDelete}
+	<ConfirmationModal
+		title={ts.get.timeTracking.entry_deletion_title}
+		description={ts.get.timeTracking.entry_deletion_description}
+		type="confirm-delete"
+		onConfirm={async () => {
+			await tt.deleteEntry(entry.id);
+			confirmingDelete = false;
+		}}
+		onCancel={() => (confirmingDelete = false)}
+	/>
+{/if}

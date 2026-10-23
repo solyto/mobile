@@ -3,17 +3,16 @@
 	import IconSearch from '@lucide/svelte/icons/search';
 	import IconCircleX from '@lucide/svelte/icons/circle-x';
 	import { onDestroy, onMount, tick } from 'svelte';
-	import { getKeyManager } from '$lib/KeyManager.svelte';
+	import { getKeyManager } from '$lib/state/KeyManager.svelte';
 	import type { Library } from '$lib/types/library';
 
 	const keyManager = getKeyManager();
 
-	let { library } = $props<{ library: Library }>();
+	let { library }: { library: Library } = $props();
 
 	let inputExpanded = $state<boolean>(false);
 	let searchInput = $state<HTMLInputElement | null>(null);
-	let searchTerm = $state<string>('');
-	let keyHandlers = $state<{ [key: string]: string | null }>({ f: null, Escape: null });
+	let keyHandlers: { [key: string]: string | null } = { f: null, Escape: null };
 
 	onMount(
 		() =>
@@ -43,14 +42,13 @@
 		inputExpanded = false;
 		setTimeout(() => {
 			library.searchVisible = false;
-			searchTerm = '';
-			library.search('');
+			library.search();
 		}, 200);
 
 		keyManager.unregisterKeyDown(keyHandlers.Escape);
 	}
 
-	const oninput = () => library.search(searchTerm);
+	const oninput = () => library.search();
 </script>
 
 <button class="cursor-pointer" onclick={openSearch}>
@@ -58,10 +56,10 @@
 </button>
 
 {#if library.searchVisible}
-	<div class="absolute z-30 flex w-full justify-center">
+	<div class="pointer-events-none absolute z-30 flex w-full justify-center">
 		<input
 			type="text"
-			class="w-0 rounded-xl border-1 border-c-neutral-2 !bg-c-neutral/60 text-xl backdrop-blur-sm transition-all duration-300 dark:!bg-s-dark/80"
+			class="pointer-events-auto w-0 rounded-xl border-1 border-c-neutral-2 !bg-c-neutral/60 text-xl backdrop-blur-sm transition-all duration-300 dark:!bg-s-dark/80"
 			class:w-72={inputExpanded}
 			class:md:w-96={inputExpanded}
 			in:fade
@@ -70,7 +68,7 @@
 			{oninput}
 		/>
 		<button
-			class="z-20 ml-[-30px] cursor-pointer text-c-neutral-3 hover:text-c-neutral-5"
+			class="pointer-events-auto z-20 ml-[-30px] cursor-pointer text-c-neutral-3 hover:text-c-neutral-5"
 			onclick={closeSearch}
 		>
 			<IconCircleX />

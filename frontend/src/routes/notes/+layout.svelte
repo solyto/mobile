@@ -74,15 +74,15 @@
 		loadingIndicator.stop();
 	});
 
+	// The store closes the modal on success only; on failure it stays open
+	// (with the user's input) and reports the error via a notification.
 	async function createNote(): Promise<void> {
-		notes.closeModal();
 		loadingIndicator.start();
 		await notes.create();
 		loadingIndicator.stop();
 	}
 
 	async function createCategory(): Promise<void> {
-		notes.closeModal();
 		loadingIndicator.start();
 		await notes.createCategory(edit);
 		loadingIndicator.stop();

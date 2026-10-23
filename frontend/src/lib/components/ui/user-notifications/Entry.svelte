@@ -1,19 +1,17 @@
 <script lang="ts">
 	import type { UserNotification } from '$lib/types/user_notification';
-	import { getUserNotifications } from '$lib/state/UserNotifications.svelte';
 	import { formatDate } from '$lib/helpers/DateHelper';
 
-	const userNotifications = getUserNotifications();
 
 	let {
 		notification,
 		onClose = () => {},
 		variant = 'row'
-	} = $props<{
+	}: {
 		notification: UserNotification;
 		onClose?: () => void;
 		variant?: 'row' | 'card';
-	}>();
+	} = $props();
 
 	function goTo(): void {
 		onClose();

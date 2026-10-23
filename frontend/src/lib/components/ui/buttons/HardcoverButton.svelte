@@ -2,11 +2,11 @@
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import IconHardcover from '$lib/components/ui/icons/IconHardcover.svelte';
 
-	let { link, author, title } = $props<{
-		link?: string;
+	let { link, author, title }: {
+		link?: string | null;
 		author?: string;
 		title?: string;
-	}>();
+	} = $props();
 
 	const ts = getTranslation();
 

@@ -1,18 +1,21 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
+	import SubHeading from '$lib/components/ui/SubHeading.svelte';
+
 	let {
 		label,
 		children,
 		headerAction = null
-	} = $props<{
+	}: {
 		label: string;
-		children?: any;
-		headerAction?: any;
-	}>();
+		children?: Snippet;
+		headerAction?: Snippet | null;
+	} = $props();
 </script>
 
 <div class="w-full">
 	<div class="mb-4 flex items-center justify-between">
-		<span class="text-2xl leading-loose tracking-wide font-bold text-c-heading dark:text-c-primary">{label}</span>
+		<SubHeading title={label} my={0} />
 		{#if headerAction !== null}
 			{@render headerAction()}
 		{/if}

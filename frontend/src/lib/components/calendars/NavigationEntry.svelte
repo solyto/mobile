@@ -3,21 +3,22 @@
 	import { getCalendars } from '$lib/state/Calendars.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import IconUsers from '@lucide/svelte/icons/users';
+	import { getEventBackgroundColor, getEventBorderColor } from '$lib/helpers/ColorHelper';
 
 	const calendars = getCalendars();
 	const ts = getTranslation();
 
-	let { calendar } = $props<{ calendar: Calendar }>();
+	let { calendar }: { calendar: Calendar } = $props();
 	let hidden = $derived(calendars.isCalendarHidden(calendar.id));
 
 	function getBorderColor(): string {
 		if (hidden || !calendar.color) return 'var(--color-c-neutral-2)';
-		return calendar.color ?? 'var(--color-c-neutral-2)';
+		return getEventBorderColor(calendar.color);
 	}
 
 	function getBgColor(): string {
 		if (hidden || !calendar.color) return 'transparent';
-		return calendar.color ? `color-mix(in srgb, ${calendar.color} 25%, var(--color-c-bg-elevated))` : '';
+		return getEventBackgroundColor(calendar.color);
 	}
 
 	function getTitle(): string {

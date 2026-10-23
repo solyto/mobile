@@ -1,7 +1,7 @@
 <script lang="ts">
 	import IconFunnel from '@lucide/svelte/icons/funnel';
 	import { getTranslation } from '$lib/state/Translation.svelte';
-	import type { Library } from '$lib/types/library';
+	import type { FilterLibrary, GenreLibrary, RatingLibrary } from '$lib/types/library';
 	import { clickOutside } from '$lib/helpers/ClickHelper';
 	import RecipeFilter from '$lib/components/libraries/filters/RecipeFilter.svelte';
 	import RatingFilter from '$lib/components/libraries/filters/RatingFilter.svelte';
@@ -11,7 +11,7 @@
 
 	const ts = getTranslation();
 
-	let { library } = $props<{ library: Library }>();
+	let { library }: { library: FilterLibrary } = $props();
 
 	let visibility = $state<{
 		menu: boolean;
@@ -40,9 +40,21 @@
 
 	function filterByWishlist() {
 		toggleMenu();
-		library.genreFilter = null;
-		library.ratingFilter = null;
-		library.filterByWishlist();
+		const wishlistLibrary = library as GenreLibrary;
+		wishlistLibrary.genreFilter = null;
+		wishlistLibrary.ratingFilter = null;
+		wishlistLibrary.filterByWishlist();
+	}
+
+	function hasActiveFilter(): boolean {
+		const filters = library as {
+			genreFilter?: unknown;
+			ratingFilter?: unknown;
+			wishlistFilter?: boolean;
+			locationFilter?: unknown;
+			unidentifiedFilter?: boolean;
+		};
+		return !!(filters.genreFilter || filters.ratingFilter || filters.wishlistFilter || filters.locationFilter || filters.unidentifiedFilter);
 	}
 
 	function clearFilters() {
@@ -54,7 +66,7 @@
 <div class="relative">
 	<button
 		class="flex cursor-pointer items-center justify-center rounded-lg p-2"
-		class:bg-c-neutral={library.genreFilter || library.ratingFilter || library.wishlistFilter || library.locationFilter || library.unidentifiedFilter}
+		class:bg-c-neutral={hasActiveFilter()}
 		onclick={toggleMenu}
 	>
 		<IconFunnel />
@@ -69,7 +81,7 @@
 			{#if library.config.hasGenres}
 				<button
 					class="flex cursor-pointer p-1 hover:bg-c-neutral dark:hover:bg-s-dark-3"
-					class:bg-c-neutral-1={library.genreFilter}
+					class:bg-c-neutral-1={(library as GenreLibrary).genreFilter}
 					onclick={toggleGenreMenu}
 				>
 					{ts.get.libraries.genres}
@@ -78,7 +90,7 @@
 			{#if library.config.hasRatings}
 				<button
 					class="flex cursor-pointer p-1 hover:bg-c-neutral dark:hover:bg-s-dark-3"
-					class:bg-c-neutral-1={library.ratingFilter}
+					class:bg-c-neutral-1={(library as RatingLibrary).ratingFilter}
 					onclick={toggleRatingMenu}
 				>
 					{ts.get.libraries.rating}
@@ -87,7 +99,7 @@
 			{#if library.config.hasWishlist}
 				<button
 					class="flex cursor-pointer p-1 hover:bg-c-neutral dark:hover:bg-s-dark-3"
-					class:bg-c-neutral-1={library.wishlistFilter}
+					class:bg-c-neutral-1={(library as GenreLibrary).wishlistFilter}
 					onclick={filterByWishlist}
 				>
 					{ts.get.libraries.wishlist}
@@ -109,10 +121,10 @@
 				{ts.get.libraries.clear_all_filters}
 			</button>
 			{#if visibility.genreMenu}
-				<GenreFilter {library} {toggleMenu} />
+				<GenreFilter library={library as GenreLibrary} {toggleMenu} />
 			{/if}
 			{#if visibility.ratingMenu}
-				<RatingFilter {library} {toggleMenu} />
+				<RatingFilter library={library as RatingLibrary} {toggleMenu} />
 			{/if}
 		</div>
 	{/if}

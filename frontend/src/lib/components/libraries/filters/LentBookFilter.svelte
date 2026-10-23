@@ -5,9 +5,9 @@
 	const ts = getTranslation();
 	const library = getBookLibrary();
 
-	let { toggleMenu } = $props<{
+	let { toggleMenu }: {
 		toggleMenu: () => void;
-	}>();
+	} = $props();
 
 	function filterByLent() {
 		toggleMenu();

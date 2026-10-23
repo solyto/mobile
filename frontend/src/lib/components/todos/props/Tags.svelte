@@ -5,7 +5,7 @@
 	import { getTodos } from '$lib/state/Todos.svelte';
 	import { getTags } from '$lib/state/Tags.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
-	import { getKeyManager } from '$lib/KeyManager.svelte';
+	import { getKeyManager } from '$lib/state/KeyManager.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import { onDestroy, tick } from 'svelte';
 	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
@@ -18,15 +18,17 @@
 	const loadingIndicator = getLoadingIndicator();
 	const notifications = getUiNotifications();
 
-	let { todo } = $props<{
+	let { todo, readonly = false, hoverReveal = false }: {
 		todo: Todo;
-	}>();
+		readonly?: boolean;
+		hoverReveal?: boolean;
+	} = $props();
 
 	let addTagVisible = $state<boolean>(false);
 	let addTagInput = $state<HTMLInputElement | null>(null);
 	let addTagName = $state<string>('');
 	let autocompleteOpen = $state<boolean>(false);
-	let keyHandlers = $state<{ [key: string]: string | null }>({ Enter: null, Escape: null });
+	let keyHandlers: { [key: string]: string | null } = { Enter: null, Escape: null };
 
 	async function toggleAddTags(): Promise<void> {
 		addTagVisible = !addTagVisible;
@@ -93,7 +95,7 @@
 	}
 </script>
 
-{#if addTagVisible}
+{#if addTagVisible && !readonly}
 	<div class="w-32 {todos.view === 'kanban' ? 'px-2 py-1 text-xs' : ''}">
 		<InputAutocomplete
 			bind:input={addTagInput}
@@ -105,12 +107,15 @@
 		/>
 	</div>
 {:else}
-	<TagFlexList tags={todo.tags} onRemove={onRemoveTag} />
-	<button
-		class="cursor-pointer text-xs text-c-neutral-4 transition-all hover:text-c-neutral-7 dark:hover:text-white"
-		class:ml-2={todos.view === 'list'}
-		class:opacity-0={todos.view === 'list'}
-		class:group-hover:opacity-100={todos.view === 'list'}
-		onclick={toggleAddTags}>+ {ts.get.todos.add_tag}</button
-	>
+	<div class="flex flex-row flex-wrap items-center gap-2">
+		<TagFlexList tags={todo.tags} onRemove={readonly ? undefined : onRemoveTag} />
+		{#if !readonly}
+			<button
+				class="cursor-pointer text-xs text-c-neutral-4 transition-all hover:text-c-neutral-7 dark:hover:text-white"
+				class:opacity-0={hoverReveal}
+				class:group-hover:opacity-100={hoverReveal}
+				onclick={toggleAddTags}>+ {ts.get.todos.tag}</button
+			>
+		{/if}
+	</div>
 {/if}

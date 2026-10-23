@@ -8,7 +8,7 @@
 	import { goto } from '$app/navigation';
 	import { urls } from '$lib/config/urls';
 	import { resolve } from '$app/paths';
-	import { getKeyManager, setKeyManager } from '$lib/KeyManager.svelte';
+	import { getKeyManager, setKeyManager } from '$lib/state/KeyManager.svelte';
 	import { setLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import { setUiNotifications } from '$lib/state/UiNotifications.svelte';
 	import { setStatistics } from '$lib/state/Statistics.svelte';
@@ -54,7 +54,7 @@
 	<div class="h-full">
 		<AdminNavbar />
 	</div>
-	<div class="h-full w-full grow overflow-auto bg-c-bg">
+	<div class="h-full w-full grow overflow-auto">
 		{@render children?.()}
 	</div>
 </div>

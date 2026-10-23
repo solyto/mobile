@@ -20,9 +20,11 @@
 	import MovieSearch from '$lib/components/libraries/movies/MovieSearch.svelte';
 	import ImdbIcon from '$lib/assets/services/imdb_icon.svg';
 	import TmdbIcon from '$lib/assets/services/tmdb_icon.svg';
+	import { getIntegrations } from '$lib/state/Integrations.svelte';
 
 	const ts = getTranslation();
 	const notifications = getUiNotifications();
+	const integrations = getIntegrations();
 	const library = getMovieLibrary();
 	const tags = getTags();
 	const auth = getAuth();
@@ -49,10 +51,9 @@
 	let importLoading = $state<boolean>(false);
 	let importDropdownOpen = $state<boolean>(false);
 
-	const importOptions = [
-		{ label: 'IMDb', icon: ImdbIcon, onClick: () => importFrom('imdb', 'imdb.com', ts.get.libraries.movies.imdb_import_validation_error) },
-		{ label: 'TMDB', icon: TmdbIcon, onClick: () => importFrom('tmdb', 'themoviedb.org', ts.get.libraries.movies.tmdb_import_validation_error) }
-	];
+	const imdbImport = { label: 'IMDb', icon: ImdbIcon, onClick: () => importFrom('imdb', 'imdb.com', ts.get.libraries.movies.imdb_import_validation_error) };
+	const tmdbImport = { label: 'TMDB', icon: TmdbIcon, onClick: () => importFrom('tmdb', 'themoviedb.org', ts.get.libraries.movies.tmdb_import_validation_error) };
+	const importOptions = integrations.isConfigured('tmdb') ? [imdbImport, tmdbImport] : [imdbImport];
 
 	let genreOptions: { label: string; value: string }[] = $derived(
 		library.genres.map((genre) => ({ label: genre.title, value: genre.id.toString() }))
@@ -242,7 +243,9 @@
 	</ModalFormRow>
 	<div class="mt-8 flex w-full flex-row items-center justify-end gap-3">
 		{#if !activeEntry}
-			<CreateModalSearchButton {library} {ts} />
+			{#if integrations.isConfigured('tmdb')}
+				<CreateModalSearchButton {library} {ts} />
+			{/if}
 			<CreateModalImport options={importOptions} {ts} loading={importLoading} bind:open={importDropdownOpen} />
 		{/if}
 		<TextButton title={ts.get.layout.save} onclick={onsubmit} />

@@ -28,5 +28,4 @@ export interface StatisticsOverview {
 	wealth_entries: number;
 	ui_notifications: number;
 	check_in_entries: number;
-	ai_tokens: number;
 }
