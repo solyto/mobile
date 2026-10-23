@@ -23,7 +23,8 @@ import java.util.Map;
  * with the active theme, through a JavascriptInterface. Wallpaper themes have
  * no solid background; their bars get the colours of the wallpaper's top and
  * bottom edges, measured once from the theme's wallpaper on a phone-sized
- * viewport. Without either, MainActivity falls back to its defaults.
+ * viewport and blended with any translucent layer the theme draws over that
+ * edge. Without either, MainActivity falls back to its defaults.
  *
  * This is a Capacitor plugin only so that the JavascriptInterface is added
  * during bridge setup, before the first page is loaded (interfaces added later
@@ -48,7 +49,10 @@ public class SystemBarsPlugin extends Plugin {
     static {
         WALLPAPER_BAR_COLORS.put("aero", new int[] { 0xFF123970, 0xFF185595 });
         WALLPAPER_BAR_COLORS.put("xp", new int[] { 0xFF167DD2, 0xFF455D0C });
-        WALLPAPER_BAR_COLORS.put("skyrim", new int[] { 0xFFBCD2D8, 0xFF10100C });
+        // Skyrim has no window margin: the bars border the content area
+        // (rgba(14, 14, 18, 0.9) over the wallpaper edge #BCD2D8) and the
+        // mobile navbar (rgba(14, 14, 18, 0.3) over #10100C).
+        WALLPAPER_BAR_COLORS.put("skyrim", new int[] { 0xFF1F2226, 0xFF0F0F0E });
     }
 
     private static final String SCRIPT = "(function () {"

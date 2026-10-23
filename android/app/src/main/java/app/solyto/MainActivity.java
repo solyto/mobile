@@ -250,6 +250,12 @@ public class MainActivity extends BridgeActivity {
                             ? navigationBarColor : Color.BLACK);
         }
 
+        // The page sets no html/body background and sizes its container to
+        // the whole-pixel window.innerHeight, so a sub-pixel strip of the
+        // WebView's own (white) background shows below the page. Paint it
+        // in the navigation bar colour instead.
+        getBridge().getWebView().setBackgroundColor(navigationBarColor);
+
         // Without this, the 3-button navigation bar gets a translucent scrim
         // over the colour.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
