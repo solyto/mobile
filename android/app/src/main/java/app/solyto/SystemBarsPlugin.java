@@ -1,0 +1,144 @@
+package app.solyto;
+
+import android.graphics.Color;
+import android.webkit.JavascriptInterface;
+import android.webkit.WebView;
+import com.getcapacitor.Plugin;
+import com.getcapacitor.WebViewListener;
+import com.getcapacitor.annotation.CapacitorPlugin;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Colours the system bars with the page's background colour.
+ *
+ * The app's theme and light/dark appearance are web settings (independent of
+ * the system's dark mode), and themes bring their own background colours. A
+ * small script injected into each page reads the computed background of the
+ * page container whenever the theme can have changed and reports it, together
+ * with the active theme, through a JavascriptInterface. Wallpaper themes have
+ * no solid background; their bars get the colours of the wallpaper's top and
+ * bottom edges, measured once from the theme's wallpaper on a phone-sized
+ * viewport. Without either, MainActivity falls back to its defaults.
+ *
+ * This is a Capacitor plugin only so that the JavascriptInterface is added
+ * during bridge setup, before the first page is loaded (interfaces added later
+ * only show up after the next page load).
+ */
+@CapacitorPlugin(name = "SystemBars")
+public class SystemBarsPlugin extends Plugin {
+
+    static final String JS_INTERFACE = "SolytoSystemBars";
+
+    // Reported by the script when the page has no solid background colour.
+    private static final int NO_COLOR = -1;
+
+    // Theme id -> { status bar colour, navigation bar colour }.
+    private static final Map<String, int[]> WALLPAPER_BAR_COLORS = new HashMap<>();
+
+    static {
+        WALLPAPER_BAR_COLORS.put("aero", new int[] { 0xFF123970, 0xFF185595 });
+        WALLPAPER_BAR_COLORS.put("xp", new int[] { 0xFF167DD2, 0xFF455D0C });
+        WALLPAPER_BAR_COLORS.put("skyrim", new int[] { 0xFFBCD2D8, 0xFF10100C });
+    }
+
+    private static final String SCRIPT = "(function () {"
+            + "  var bridge = window." + JS_INTERFACE + ";"
+            + "  if (!bridge || window.__solytoSystemBars) return;"
+            + "  window.__solytoSystemBars = true;"
+            + "  var SETTLE_MS = 400;"
+            + "  var canvas = document.createElement('canvas');"
+            + "  canvas.width = canvas.height = 1;"
+            + "  var ctx = canvas.getContext('2d', { willReadFrequently: true });"
+            // Computed colours can be in any colour space (e.g. oklch); the
+            // canvas converts them to sRGB.
+            + "  function backgroundColor() {"
+            + "    var el = document.querySelector('.page-container');"
+            + "    if (!el) return " + NO_COLOR + ";"
+            + "    ctx.clearRect(0, 0, 1, 1);"
+            + "    ctx.fillStyle = getComputedStyle(el).backgroundColor;"
+            + "    ctx.fillRect(0, 0, 1, 1);"
+            + "    var d = ctx.getImageData(0, 0, 1, 1).data;"
+            + "    return d[3] === 255 ? (d[0] << 16) | (d[1] << 8) | d[2] : " + NO_COLOR + ";"
+            + "  }"
+            // Theme stylesheets are loaded from /themes/{id}/{id}.css.
+            + "  function themeId() {"
+            + "    var link = document.querySelector('link[href^=\"/themes/\"]');"
+            + "    return link ? link.getAttribute('href').split('/')[2] : '';"
+            + "  }"
+            + "  var last = null;"
+            + "  function report() {"
+            + "    var color = backgroundColor();"
+            + "    var theme = themeId();"
+            + "    var key = color + ' ' + theme;"
+            + "    if (key === last) return;"
+            + "    last = key;"
+            + "    bridge.setBackground(color, theme);"
+            + "  }"
+            // Report right away and once more after colour transitions and
+            // theme stylesheets have settled.
+            + "  var timer = null;"
+            + "  function schedule() {"
+            + "    requestAnimationFrame(report);"
+            + "    clearTimeout(timer);"
+            + "    timer = setTimeout(report, SETTLE_MS);"
+            + "  }"
+            // Theme and appearance are applied as classes/styles on <html>
+            // and as theme stylesheets added to <head>.
+            + "  new MutationObserver(schedule).observe(document.documentElement,"
+            + "      { attributes: true, attributeFilter: ['class', 'style'] });"
+            + "  new MutationObserver(function (mutations) {"
+            + "    mutations.forEach(function (m) {"
+            + "      m.addedNodes.forEach(function (n) {"
+            + "        if (n.tagName === 'LINK') n.addEventListener('load', schedule);"
+            + "      });"
+            + "    });"
+            + "    schedule();"
+            + "  }).observe(document.head, { childList: true });"
+            // The page container may not be rendered yet when this runs.
+            + "  if (!document.querySelector('.page-container')) {"
+            + "    var mount = new MutationObserver(function () {"
+            + "      if (!document.querySelector('.page-container')) return;"
+            + "      mount.disconnect();"
+            + "      schedule();"
+            + "    });"
+            + "    mount.observe(document.body, { childList: true, subtree: true });"
+            + "  }"
+            + "  schedule();"
+            + "})();";
+
+    @Override
+    public void load() {
+        WebView webView = getBridge().getWebView();
+        webView.addJavascriptInterface(new JsInterface(), JS_INTERFACE);
+        getBridge().addWebViewListener(new WebViewListener() {
+            @Override
+            public void onPageLoaded(WebView view) {
+                view.evaluateJavascript(SCRIPT, null);
+            }
+        });
+    }
+
+    private class JsInterface {
+        @JavascriptInterface
+        public void setBackground(int rgb, String theme) {
+            Integer top = null;
+            Integer bottom = null;
+            if (rgb != NO_COLOR) {
+                top = bottom = Color.rgb(Color.red(rgb), Color.green(rgb), Color.blue(rgb));
+            } else if (WALLPAPER_BAR_COLORS.containsKey(theme)) {
+                int[] colors = WALLPAPER_BAR_COLORS.get(theme);
+                top = colors[0];
+                bottom = colors[1];
+            }
+
+            Integer statusBarColor = top;
+            Integer navigationBarColor = bottom;
+            getActivity().runOnUiThread(() -> {
+                if (getActivity() instanceof MainActivity) {
+                    ((MainActivity) getActivity()).setPageBarColors(statusBarColor, navigationBarColor);
+                }
+            });
+        }
+    }
+}

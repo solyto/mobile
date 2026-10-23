@@ -2,15 +2,19 @@ package app.solyto;
 
 import android.content.Intent;
 import android.content.res.Configuration;
-import android.graphics.drawable.ColorDrawable;
+import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowManager;
 import android.webkit.WebView;
 import android.widget.FrameLayout;
 import androidx.core.content.ContextCompat;
+import androidx.core.graphics.ColorUtils;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
@@ -31,10 +35,14 @@ public class MainActivity extends BridgeActivity {
 
     private PullToRefreshLayout swipeRefresh;
     private int appliedIndicatorTop = 0;
+    // Bar colours matching the page, reported by SystemBarsPlugin.
+    private Integer pageStatusBarColor = null;
+    private Integer pageNavigationBarColor = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         registerPlugin(PullToRefreshPlugin.class);
+        registerPlugin(SystemBarsPlugin.class);
         super.onCreate(savedInstanceState);
         applyKeyboardInsets();
         setupPullToRefresh();
@@ -203,26 +211,60 @@ public class MainActivity extends BridgeActivity {
         );
     }
 
-    private void applySystemBarAppearance() {
-        // Edge-to-edge is only enforced on Android 15+ (API 35). On older
-        // versions the system bars are opaque and drawn by the framework.
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) {
-            return;
-        }
+    /** Called by SystemBarsPlugin; null when the page has no matching colours. */
+    void setPageBarColors(Integer statusBarColor, Integer navigationBarColor) {
+        pageStatusBarColor = statusBarColor;
+        pageNavigationBarColor = navigationBarColor;
+        applySystemBarAppearance();
+    }
 
+    /**
+     * Gives the system bars the colours reported by the page, falling back to
+     * the default light/dark background (following the system's dark mode)
+     * until the page reports them or when it has none.
+     */
+    private void applySystemBarAppearance() {
         boolean darkMode = (getResources().getConfiguration().uiMode
                 & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
+        int defaultColor = ContextCompat.getColor(
+                this, darkMode ? R.color.solyto_bg_dark : R.color.solyto_bg_light);
+        int statusBarColor = pageStatusBarColor != null ? pageStatusBarColor : defaultColor;
+        int navigationBarColor = pageNavigationBarColor != null ? pageNavigationBarColor : defaultColor;
+        boolean lightStatusBar = isLightColor(statusBarColor);
+        boolean lightNavigationBar = isLightColor(navigationBarColor);
+        Window window = getWindow();
 
-        // The WebView is inset by the system bar insets, so the area behind the
-        // transparent bars shows the window background. Match the web app's
-        // background color so there is no visible strip.
-        getWindow().setBackgroundDrawable(new ColorDrawable(ContextCompat.getColor(
-                this, darkMode ? R.color.solyto_bg_dark : R.color.solyto_bg_light)));
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            // Edge-to-edge (Android 15+): the WebView is inset by the system
+            // bar insets, so the area behind the transparent bars shows the
+            // window background. Its middle is covered by the WebView.
+            window.setBackgroundDrawable(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
+                    new int[] { statusBarColor, statusBarColor, navigationBarColor, navigationBarColor }));
+        } else {
+            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+            window.setStatusBarColor(statusBarColor);
+            // Dark navigation bar icons need Android 8; keep the bar black
+            // below that rather than showing light icons on a light colour.
+            window.setNavigationBarColor(
+                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.O || !lightNavigationBar
+                            ? navigationBarColor : Color.BLACK);
+        }
 
-        // Use dark bar icons on a light background and light icons on a dark one.
+        // Without this, the 3-button navigation bar gets a translucent scrim
+        // over the colour.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.setNavigationBarContrastEnforced(false);
+        }
+
         WindowInsetsControllerCompat controller =
-                WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
-        controller.setAppearanceLightStatusBars(!darkMode);
-        controller.setAppearanceLightNavigationBars(!darkMode);
+                WindowCompat.getInsetsController(window, window.getDecorView());
+        controller.setAppearanceLightStatusBars(lightStatusBar);
+        controller.setAppearanceLightNavigationBars(lightNavigationBar);
+    }
+
+    /** Whether dark icons contrast better than light ones on this colour. */
+    private static boolean isLightColor(int color) {
+        return ColorUtils.calculateContrast(Color.BLACK, color)
+                > ColorUtils.calculateContrast(Color.WHITE, color);
     }
 }
