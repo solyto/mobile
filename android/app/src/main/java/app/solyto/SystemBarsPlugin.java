@@ -3,9 +3,13 @@ package app.solyto;
 import android.graphics.Color;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
+import androidx.webkit.WebViewCompat;
+import androidx.webkit.WebViewFeature;
+import com.getcapacitor.Logger;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.WebViewListener;
 import com.getcapacitor.annotation.CapacitorPlugin;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -24,6 +28,11 @@ import java.util.Map;
  * This is a Capacitor plugin only so that the JavascriptInterface is added
  * during bridge setup, before the first page is loaded (interfaces added later
  * only show up after the next page load).
+ *
+ * The script is registered as a document-start script, so the WebView runs it
+ * on every page load by itself. Capacitor's onPageLoaded is only a fallback
+ * for WebViews without that feature: Capacitor skips it whenever
+ * onPageFinished arrives before the progress reaches 100.
  */
 @CapacitorPlugin(name = "SystemBars")
 public class SystemBarsPlugin extends Plugin {
@@ -44,7 +53,9 @@ public class SystemBarsPlugin extends Plugin {
 
     private static final String SCRIPT = "(function () {"
             + "  var bridge = window." + JS_INTERFACE + ";"
-            + "  if (!bridge || window.__solytoSystemBars) return;"
+            // Document-start scripts also run in same-origin iframes, which
+            // have no page container and would reset the bars.
+            + "  if (!bridge || window !== window.top || window.__solytoSystemBars) return;"
             + "  window.__solytoSystemBars = true;"
             + "  var SETTLE_MS = 400;"
             + "  var canvas = document.createElement('canvas');"
@@ -83,34 +94,51 @@ public class SystemBarsPlugin extends Plugin {
             + "    clearTimeout(timer);"
             + "    timer = setTimeout(report, SETTLE_MS);"
             + "  }"
+            + "  function start() {"
             // Theme and appearance are applied as classes/styles on <html>
             // and as theme stylesheets added to <head>.
-            + "  new MutationObserver(schedule).observe(document.documentElement,"
-            + "      { attributes: true, attributeFilter: ['class', 'style'] });"
-            + "  new MutationObserver(function (mutations) {"
-            + "    mutations.forEach(function (m) {"
-            + "      m.addedNodes.forEach(function (n) {"
-            + "        if (n.tagName === 'LINK') n.addEventListener('load', schedule);"
+            + "    new MutationObserver(schedule).observe(document.documentElement,"
+            + "        { attributes: true, attributeFilter: ['class', 'style'] });"
+            + "    new MutationObserver(function (mutations) {"
+            + "      mutations.forEach(function (m) {"
+            + "        m.addedNodes.forEach(function (n) {"
+            + "          if (n.tagName === 'LINK') n.addEventListener('load', schedule);"
+            + "        });"
             + "      });"
-            + "    });"
-            + "    schedule();"
-            + "  }).observe(document.head, { childList: true });"
-            // The page container may not be rendered yet when this runs.
-            + "  if (!document.querySelector('.page-container')) {"
-            + "    var mount = new MutationObserver(function () {"
-            + "      if (!document.querySelector('.page-container')) return;"
-            + "      mount.disconnect();"
             + "      schedule();"
-            + "    });"
-            + "    mount.observe(document.body, { childList: true, subtree: true });"
+            + "    }).observe(document.head, { childList: true });"
+            // The page container may not be rendered yet when this runs.
+            + "    if (!document.querySelector('.page-container')) {"
+            + "      var mount = new MutationObserver(function () {"
+            + "        if (!document.querySelector('.page-container')) return;"
+            + "        mount.disconnect();"
+            + "        schedule();"
+            + "      });"
+            + "      mount.observe(document.body, { childList: true, subtree: true });"
+            + "    }"
+            + "    schedule();"
             + "  }"
-            + "  schedule();"
+            // As a document-start script this runs before <head> and <body>
+            // exist.
+            + "  if (document.readyState === 'loading') {"
+            + "    document.addEventListener('DOMContentLoaded', start);"
+            + "  } else {"
+            + "    start();"
+            + "  }"
             + "})();";
 
     @Override
     public void load() {
         WebView webView = getBridge().getWebView();
         webView.addJavascriptInterface(new JsInterface(), JS_INTERFACE);
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
+            try {
+                WebViewCompat.addDocumentStartJavaScript(webView, SCRIPT,
+                        Collections.singleton(getBridge().getLocalUrl()));
+            } catch (IllegalArgumentException e) {
+                Logger.error("SystemBars: document-start script not added", e);
+            }
+        }
         getBridge().addWebViewListener(new WebViewListener() {
             @Override
             public void onPageLoaded(WebView view) {

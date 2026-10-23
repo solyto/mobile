@@ -3,9 +3,13 @@ package app.solyto;
 import android.os.SystemClock;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
+import androidx.webkit.WebViewCompat;
+import androidx.webkit.WebViewFeature;
+import com.getcapacitor.Logger;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.WebViewListener;
 import com.getcapacitor.annotation.CapacitorPlugin;
+import java.util.Collections;
 
 /**
  * Decides whether a pull-down gesture may start a refresh.
@@ -19,6 +23,11 @@ import com.getcapacitor.annotation.CapacitorPlugin;
  * This is a Capacitor plugin only so that the JavascriptInterface is added
  * during bridge setup, before the first page is loaded (interfaces added later
  * only show up after the next page load).
+ *
+ * The script is registered as a document-start script, so the WebView runs it
+ * on every page load by itself. Capacitor's onPageLoaded is only a fallback
+ * for WebViews without that feature: Capacitor skips it whenever
+ * onPageFinished arrives before the progress reaches 100.
  */
 @CapacitorPlugin(name = "PullToRefresh")
 public class PullToRefreshPlugin extends Plugin {
@@ -69,6 +78,9 @@ public class PullToRefreshPlugin extends Plugin {
             + "  bridge.ready();"
             + "})();";
 
+    // Set once in load(), before the first page is loaded.
+    private boolean documentStartScript = false;
+
     // Written from the JavaBridge thread, read on the main thread.
     private volatile boolean scriptReady = false;
     private volatile boolean answered = false;
@@ -81,10 +93,22 @@ public class PullToRefreshPlugin extends Plugin {
     public void load() {
         WebView webView = getBridge().getWebView();
         webView.addJavascriptInterface(new JsInterface(), JS_INTERFACE);
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
+            try {
+                WebViewCompat.addDocumentStartJavaScript(webView, SCRIPT,
+                        Collections.singleton(getBridge().getLocalUrl()));
+                documentStartScript = true;
+            } catch (IllegalArgumentException e) {
+                Logger.error("PullToRefresh: document-start script not added", e);
+            }
+        }
         getBridge().addWebViewListener(new WebViewListener() {
             @Override
             public void onPageStarted(WebView view) {
-                scriptReady = false;
+                // A document-start script may already have called ready() for
+                // the new page before this callback arrives, so only reset when
+                // the script is injected after load.
+                if (!documentStartScript) scriptReady = false;
             }
 
             @Override
