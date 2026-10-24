@@ -1,0 +1,6 @@
+The keyboard no longer covers the content.
+Delete your account yourself under Settings → Account & Security.
+Clearer empty states in Notes, Todos, Contacts, Feeds, Libraries, Time Tracking and the Dashboard.
+The system bars now match your theme.
+Theme fixes for readable accent colours, XP, Aero and Skyrim.
+For self-hosters: please update your server first.
