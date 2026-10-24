@@ -25,7 +25,7 @@
 
 {#if open}
 	<div
-		class="secondary-nav-mobile-container fixed inset-0 z-50 flex flex-col bg-c-bg lg:hidden dark:bg-s-dark-1"
+		class="secondary-nav-mobile-container fixed inset-x-0 top-0 bottom-16 z-50 flex flex-col bg-c-bg lg:hidden dark:bg-s-dark-1"
 		transition:fly={{ x: -400, duration: 200 }}
 	>
 		<div
