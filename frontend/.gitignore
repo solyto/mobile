@@ -1,0 +1,40 @@
+node_modules
+
+# Output
+.output
+.vercel
+.netlify
+.wrangler
+/.svelte-kit
+/build
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.*
+!.env.example
+!.env.test
+
+# Vite
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# Test coverage
+/coverage
+
+# Manigot
+.manigot
+.mcp.json
+CLAUDE.md
+AGENTS.md
+
+# manigot job transcripts and token accounting
+docs/jobs/**/session.log
+docs/jobs/**/tokens.json
+
+# Temporary screenshots
+docs/screenshots/

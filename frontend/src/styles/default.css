@@ -1,0 +1,27 @@
+/* Default theme — only defines what Tailwind cannot express natively.       */
+/* Colors, radius, shadows, fonts etc. are covered by tokens.css + Tailwind. */
+/* Other themes override Tailwind's own CSS variables directly                */
+/* (--radius-md, --color-s-teal, --shadow-sm, --font-sans etc.)              */
+/* plus these extras for textures and decorative elements.                    */
+
+:root {
+	/* Fonts — overrides the base html font-family per theme */
+	--t-font-body: 'Barlow', sans-serif;
+	--t-font-heading: 'Barlow', sans-serif;
+
+	/* Gradient colors — direction is defined per usage site */
+	--t-gradient-colors: var(--color-s-lightblue), var(--color-s-green);
+}
+
+/* Dark mode — background levels flip to dark palette */
+html.dark {
+	--color-c-bg: var(--color-s-dark);
+	--color-c-bg-surface: var(--color-s-dark-2);
+	--color-c-bg-elevated: var(--color-s-dark-3);
+	--color-c-bg-modal: var(--color-s-dark-2);
+	--color-c-nav-hover: var(--color-s-dark-2);
+	--color-c-nav-active: var(--color-c-btn);
+	--color-c-nav-active-text: var(--color-gray-200);
+	--color-c-neutral: var(--color-s-dark-3);
+	--color-c-border: var(--color-s-dark-3);
+}

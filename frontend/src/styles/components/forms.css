@@ -1,0 +1,10 @@
+/* Override @tailwindcss/forms default white background with theme-aware tokens.  */
+/* Excludes checkbox, radio, range, file, and button types which manage their     */
+/* own appearance.                                                                 */
+
+input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='submit']):not([type='button']):not([type='reset']),
+textarea,
+select {
+	background-color: var(--color-c-bg-elevated);
+	color: inherit;
+}

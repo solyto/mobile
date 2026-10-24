@@ -1,0 +1,38 @@
+.markdown h1 {
+	@apply text-3xl;
+}
+
+.markdown h2 {
+	@apply text-2xl;
+}
+
+.markdown h3 {
+	@apply text-xl;
+}
+
+.markdown a {
+	color: var(--color-c-btn);
+	@apply underline;
+}
+
+.markdown a:hover {
+	@apply no-underline;
+}
+
+.markdown ol {
+	@apply flex;
+	@apply flex-col;
+	@apply gap-2;
+	@apply list-decimal;
+	@apply ml-4;
+	@apply h-auto;
+}
+
+.markdown ul {
+	@apply flex;
+	@apply flex-col;
+	@apply gap-2;
+	@apply list-disc;
+	@apply ml-4;
+	@apply h-auto;
+}

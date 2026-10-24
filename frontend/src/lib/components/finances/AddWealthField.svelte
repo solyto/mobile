@@ -1,0 +1,84 @@
+<script lang="ts">
+	import { onDestroy, tick } from 'svelte';
+	import { getFinances } from '$lib/state/Finances.svelte';
+	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
+	import { getKeyManager } from '$lib/state/KeyManager.svelte';
+	import TextInput from '$lib/components/forms/TextInput.svelte';
+	import type { CreateWealthFieldRequest } from '$lib/types/finance';
+	import AddButton from '$lib/components/ui/buttons/AddButton.svelte';
+	import { getViewPoint } from '$lib/state/Viewpoint.svelte';
+	import BottomSheetModal from '$lib/components/ui/BottomSheetModal.svelte';
+	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
+	import { getTranslation } from '$lib/state/Translation.svelte';
+
+	const loadingIndicator = getLoadingIndicator();
+	const keyManager = getKeyManager();
+	const finances = getFinances();
+	const viewPoint = getViewPoint();
+	const ts = getTranslation();
+
+	let formOpen = $state<boolean>(false);
+	let titleInput = $state<HTMLInputElement | null>(null);
+	let titleValue = $state<string>('');
+	let keyHandlers: { [key: string]: string | null } = { Enter: null, Escape: null };
+
+	async function toggleForm() {
+		formOpen = !formOpen;
+
+		if (formOpen) {
+			await tick();
+			titleInput?.focus();
+
+			keyHandlers.Enter = keyManager.registerKeyDown('Enter', handleEnter);
+			keyHandlers.Escape = keyManager.registerKeyDown('Escape', handleEscape);
+		}
+	}
+
+	onDestroy(() => keyManager.unregisterAll(keyHandlers));
+
+	function onblur(): void {
+		formOpen = false;
+		keyManager.unregisterAll(keyHandlers);
+	}
+
+	async function onSubmit(): Promise<void> {
+		loadingIndicator.start();
+
+		if (titleValue.trim() !== '') {
+			const request: CreateWealthFieldRequest = {
+				title: titleValue.trim()
+			};
+			const res = await finances.addWealthField(request);
+			if (res) {
+				titleValue = '';
+				await toggleForm();
+				loadingIndicator.stop();
+				keyManager.unregisterKeyDown(keyHandlers.Enter);
+			}
+		}
+	}
+
+	async function handleEnter(event: KeyboardEvent): Promise<void> {
+		await onSubmit();
+	}
+
+	function handleEscape(event: KeyboardEvent): void {
+		onblur();
+	}
+</script>
+
+<div class="flex justify-start">
+	{#if formOpen}
+		{#if viewPoint.isDesktop}
+			<TextInput placeholder="Title" bind:input={titleInput} bind:value={titleValue} />
+		{:else}
+			<BottomSheetModal title={ts.get.finances.add_entry} onClose={onblur}>
+				<TextInput placeholder="Title" bind:input={titleInput} bind:value={titleValue} />
+				<TextButton title={ts.get.layout.modal_confirm} type="action" onclick={onSubmit} class="mt-8 w-full" />
+			</BottomSheetModal>
+		{/if}
+	{/if}
+	{#if viewPoint.isMobile || !formOpen}
+		<AddButton colorOnHover={true} onClick={toggleForm} />
+	{/if}
+</div>

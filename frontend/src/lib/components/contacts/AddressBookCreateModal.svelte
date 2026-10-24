@@ -1,0 +1,28 @@
+<script lang="ts">
+	import ConfirmationModal from '$lib/components/ui/ConfirmationModal.svelte';
+	import TextInput from '$lib/components/forms/TextInput.svelte';
+	import { getContacts } from '$lib/state/Contacts.svelte';
+
+	const contacts = getContacts();
+
+	let input = $state<HTMLInputElement | null>(null);
+	let value = $state<string>('');
+
+	async function onCreate() {
+		await contacts.createAddressBook({ name: value });
+		value = '';
+		contacts.createModal = false;
+	}
+</script>
+
+{#if contacts.createModal}
+	<ConfirmationModal
+		onConfirm={onCreate}
+		onCancel={() => {
+			contacts.createModal = false;
+		}}
+		title="Create Address Book"
+	>
+		<TextInput bind:input bind:value placeholder="Enter address book name" onblur={() => {}} />
+	</ConfirmationModal>
+{/if}
