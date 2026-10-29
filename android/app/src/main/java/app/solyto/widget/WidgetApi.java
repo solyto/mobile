@@ -31,6 +31,7 @@ final class WidgetApi {
     }
 
     private static final String YOUR_DAY_PATH = "/api/v1/widgets/your-day";
+    private static final String ACTIONS_PATH = "/api/v1/widgets/actions/";
     private static final int TIMEOUT_MS = 15_000;
     private static final int MAX_BODY_BYTES = 1024 * 1024;
 
@@ -39,22 +40,11 @@ final class WidgetApi {
     static Result fetchYourDay(Context context, String apiUrl, String token) {
         HttpURLConnection connection = null;
         try {
-            connection = (HttpURLConnection) new URL(apiUrl + YOUR_DAY_PATH).openConnection();
-            connection.setRequestMethod("GET");
-            connection.setConnectTimeout(TIMEOUT_MS);
-            connection.setReadTimeout(TIMEOUT_MS);
-            connection.setUseCaches(false);
-            // A redirect could carry the token to another host.
-            connection.setInstanceFollowRedirects(false);
-            connection.setRequestProperty("Authorization", "Bearer " + token);
-            connection.setRequestProperty("Accept", "application/json");
-            connection.setRequestProperty("X-Client-Version", appVersion(context));
+            connection = open(context, apiUrl + YOUR_DAY_PATH, "GET", token);
 
             int status = connection.getResponseCode();
-            if (status == 401) return new Result(Outcome.UNAUTHORIZED, null);
             if (status == 404) return new Result(Outcome.NOT_FOUND, null);
-            if (status == 426) return new Result(Outcome.UPGRADE_REQUIRED, null);
-            if (status != 200) return new Result(Outcome.TEMPORARY_FAILURE, null);
+            if (status != 200) return new Result(outcome(status), null);
 
             JSONObject envelope = new JSONObject(readBody(connection.getInputStream()));
             JSONObject data = envelope.optJSONObject("data");
@@ -67,6 +57,54 @@ final class WidgetApi {
         } finally {
             if (connection != null) connection.disconnect();
         }
+    }
+
+    /**
+     * Runs a row action: {@code POST /widgets/actions/{key}/{id}} without a
+     * body. 403 counts as {@link Outcome#NOT_FOUND}: the row is not the user's.
+     */
+    static Outcome postAction(Context context, String apiUrl, String token, String key, String id) {
+        if (!YourDayPayload.isValidActionKey(key) || !YourDayPayload.isValidRowId(id)) {
+            return Outcome.NOT_FOUND;
+        }
+        HttpURLConnection connection = null;
+        try {
+            connection = open(context, apiUrl + ACTIONS_PATH + key + "/" + id, "POST", token);
+            connection.setDoOutput(true);
+            connection.setFixedLengthStreamingMode(0);
+            connection.getOutputStream().close();
+
+            int status = connection.getResponseCode();
+            if (status == 200) return Outcome.OK;
+            if (status == 403 || status == 404) return Outcome.NOT_FOUND;
+            return outcome(status);
+        } catch (IOException | RuntimeException e) {
+            return Outcome.TEMPORARY_FAILURE;
+        } finally {
+            if (connection != null) connection.disconnect();
+        }
+    }
+
+    private static HttpURLConnection open(Context context, String url, String method, String token)
+            throws IOException {
+        HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+        connection.setRequestMethod(method);
+        connection.setConnectTimeout(TIMEOUT_MS);
+        connection.setReadTimeout(TIMEOUT_MS);
+        connection.setUseCaches(false);
+        // A redirect could carry the token to another host.
+        connection.setInstanceFollowRedirects(false);
+        connection.setRequestProperty("Authorization", "Bearer " + token);
+        connection.setRequestProperty("Accept", "application/json");
+        connection.setRequestProperty("X-Client-Version", appVersion(context));
+        return connection;
+    }
+
+    /** The outcome of a status other than 200, 403 and 404. */
+    private static Outcome outcome(int status) {
+        if (status == 401) return Outcome.UNAUTHORIZED;
+        if (status == 426) return Outcome.UPGRADE_REQUIRED;
+        return Outcome.TEMPORARY_FAILURE;
     }
 
     private static String readBody(InputStream stream) throws IOException {

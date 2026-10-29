@@ -9,6 +9,16 @@
     android:paddingTop="4dp"
     android:paddingBottom="4dp">
 
+    <!-- Below API 31: a tappable icon; layout-v31 has a real CheckBox. -->
+    <ImageView
+        android:id="@+id/widget_row_check"
+        android:layout_width="34dp"
+        android:layout_height="34dp"
+        android:layout_marginStart="-8dp"
+        android:layout_marginEnd="2dp"
+        android:padding="8dp"
+        android:visibility="gone" />
+
     <ImageView
         android:id="@+id/widget_row_icon"
         android:layout_width="18dp"

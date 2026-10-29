@@ -18,7 +18,7 @@ import java.util.Date;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-/** The read-only "Your Day" list widget. Renders from {@link WidgetCache}. */
+/** The "Your Day" list widget. Renders from {@link WidgetCache}. */
 public class YourDayWidgetProvider extends AppWidgetProvider {
 
     private static final int REQUEST_HEADER = 1;
@@ -136,6 +136,11 @@ public class YourDayWidgetProvider extends AppWidgetProvider {
             views.setViewVisibility(R.id.widget_updated, View.GONE);
             return;
         }
+        if (WidgetCache.hasActionError(context)) {
+            views.setTextViewText(R.id.widget_updated, context.getString(R.string.widget_action_failed));
+            views.setViewVisibility(R.id.widget_updated, View.VISIBLE);
+            return;
+        }
         String time = DateFormat.getTimeFormat(context).format(new Date(fetchedAt));
         views.setTextViewText(R.id.widget_updated, context.getString(
                 WidgetCache.isOutdated(context) ? R.string.widget_outdated_at : R.string.widget_updated_at, time));
@@ -155,9 +160,15 @@ public class YourDayWidgetProvider extends AppWidgetProvider {
         setOptionalText(row, R.id.widget_row_time, item.timeLabel);
 
         int icon = iconResource(item.icon);
-        if (icon != 0) {
-            row.setImageViewResource(R.id.widget_row_icon, icon);
-            row.setViewVisibility(R.id.widget_row_icon, View.VISIBLE);
+        if (item.actionType != null) {
+            bindCheck(context, row, item);
+            row.setViewVisibility(R.id.widget_row_icon, View.GONE);
+        } else {
+            row.setViewVisibility(R.id.widget_row_check, View.GONE);
+            if (icon != 0) {
+                row.setImageViewResource(R.id.widget_row_icon, icon);
+                row.setViewVisibility(R.id.widget_row_icon, View.VISIBLE);
+            }
         }
 
         if (item.routeKey != null) {
@@ -166,6 +177,34 @@ public class YourDayWidgetProvider extends AppWidgetProvider {
             row.setOnClickFillInIntent(R.id.widget_row, fillIn);
         }
         return row;
+    }
+
+    /**
+     * The row's checkbox: checked when the server says so or a local action
+     * is active. On API 31+ the launcher toggles the CheckBox itself, so every
+     * render sets its state explicitly; a reverted row is unchecked again.
+     * The fill-in is always set, so a recycled list view never keeps another
+     * row's; the receiver ignores taps on checked and active rows.
+     */
+    private static void bindCheck(Context context, RemoteViews row, YourDayPayload.Item item) {
+        boolean checked = item.actionChecked || WidgetCache.isActionActive(context, item.id);
+        Intent fillIn = new Intent()
+                .putExtra(WidgetActionReceiver.EXTRA_ACTION_TYPE, item.actionType)
+                .putExtra(WidgetActionReceiver.EXTRA_ACTION_KEY, item.actionKey)
+                .putExtra(WidgetActionReceiver.EXTRA_ACTION_ID, item.id);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            row.setCompoundButtonChecked(R.id.widget_row_check, checked);
+            row.setBoolean(R.id.widget_row_check, "setEnabled", !checked);
+            row.setOnCheckedChangeResponse(R.id.widget_row_check,
+                    RemoteViews.RemoteResponse.fromFillInIntent(fillIn));
+        } else {
+            row.setImageViewResource(R.id.widget_row_check,
+                    checked ? R.drawable.ic_widget_check_on : R.drawable.ic_widget_todo);
+            row.setOnClickFillInIntent(R.id.widget_row_check, fillIn);
+        }
+        row.setContentDescription(R.id.widget_row_check, context.getString(R.string.widget_action_check));
+        row.setViewVisibility(R.id.widget_row_check, View.VISIBLE);
     }
 
     private static void setOptionalText(RemoteViews views, int viewId, String text) {
@@ -188,11 +227,15 @@ public class YourDayWidgetProvider extends AppWidgetProvider {
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
     }
 
-    /** Collection rows need a mutable template; each row fills in its route. */
+    /**
+     * Collection rows need a mutable template; each row fills in its route or
+     * action. All row taps go to {@link WidgetActionReceiver}, which opens routes itself.
+     */
     private static PendingIntent rowTemplateIntent(Context context) {
-        Intent intent = new Intent(context, MainActivity.class).setAction(MainActivity.ACTION_WIDGET_ROUTE);
+        Intent intent = new Intent(context, WidgetActionReceiver.class)
+                .setAction(WidgetActionReceiver.ACTION_ROW_TAP);
         int mutable = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ? PendingIntent.FLAG_MUTABLE : 0;
-        return PendingIntent.getActivity(context, REQUEST_ROW_TEMPLATE, intent,
+        return PendingIntent.getBroadcast(context, REQUEST_ROW_TEMPLATE, intent,
                 PendingIntent.FLAG_UPDATE_CURRENT | mutable);
     }
 }

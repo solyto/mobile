@@ -9,4 +9,6 @@
     <string name="widget_not_supported">Non pris en charge sur cet appareil</string>
     <string name="widget_updated_at">Mis à jour à %1$s</string>
     <string name="widget_outdated_at">Obsolète · %1$s</string>
+    <string name="widget_action_failed">Impossible de terminer</string>
+    <string name="widget_action_check">Marquer comme terminé</string>
 </resources>

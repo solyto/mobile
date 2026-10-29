@@ -1,24 +1,29 @@
 package app.solyto.widget;
 
 import android.content.Context;
+import android.os.Build;
 import androidx.work.BackoffPolicy;
+import androidx.work.Data;
 import androidx.work.ExistingPeriodicWorkPolicy;
 import androidx.work.ExistingWorkPolicy;
 import androidx.work.OneTimeWorkRequest;
+import androidx.work.OutOfQuotaPolicy;
 import androidx.work.PeriodicWorkRequest;
 import androidx.work.WorkManager;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Schedules widget fetches. Work only exists while a widget is placed. No
- * input data is passed: WorkManager stores it unencrypted, so the worker reads
- * the token from {@link WidgetTokenStore}.
+ * Schedules widget fetches and row actions. Work only exists while a widget
+ * is placed. WorkManager stores input data unencrypted, so it never holds the
+ * token: workers read it from {@link WidgetTokenStore}.
  */
 public final class WidgetWork {
 
     private static final String PERIODIC = "widget-fetch-periodic";
     private static final String NOW = "widget-fetch-now";
     private static final String AT_REFRESH = "widget-fetch-at-refresh";
+    private static final String ACTION_TAG = "widget-action";
+    private static final String ACTION_PREFIX = "widget-action-";
 
     private static final long PERIOD_MINUTES = 60;
     private static final long BACKOFF_MINUTES = 5;
@@ -54,11 +59,28 @@ public final class WidgetWork {
                 AT_REFRESH, ExistingWorkPolicy.REPLACE, oneTime(delay));
     }
 
+    /** Runs a row action once; while one is enqueued or running for this row, further requests are ignored. */
+    static void runAction(Context context, String key, String id) {
+        OneTimeWorkRequest.Builder builder = new OneTimeWorkRequest.Builder(WidgetActionWorker.class)
+                .addTag(ACTION_TAG)
+                .setInputData(new Data.Builder()
+                        .putString(WidgetActionWorker.INPUT_KEY, key)
+                        .putString(WidgetActionWorker.INPUT_ID, id)
+                        .build());
+        // Below API 31, expedited work runs as a foreground service with a notification.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            builder.setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST);
+        }
+        WorkManager.getInstance(context).enqueueUniqueWork(
+                ACTION_PREFIX + id, ExistingWorkPolicy.KEEP, builder.build());
+    }
+
     static void cancelAll(Context context) {
         WorkManager workManager = WorkManager.getInstance(context);
         workManager.cancelUniqueWork(PERIODIC);
         workManager.cancelUniqueWork(NOW);
         workManager.cancelUniqueWork(AT_REFRESH);
+        workManager.cancelAllWorkByTag(ACTION_TAG);
     }
 
     private static OneTimeWorkRequest oneTime(long delayMillis) {

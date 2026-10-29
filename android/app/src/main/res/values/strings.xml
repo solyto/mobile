@@ -15,4 +15,6 @@
     <string name="widget_not_supported">Not supported on this device</string>
     <string name="widget_updated_at">Updated %1$s</string>
     <string name="widget_outdated_at">Outdated · %1$s</string>
+    <string name="widget_action_failed">Couldn\'t complete</string>
+    <string name="widget_action_check">Mark as done</string>
 </resources>

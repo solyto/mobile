@@ -51,6 +51,10 @@
                 android:resource="@xml/your_day_widget_info" />
         </receiver>
 
+        <receiver
+            android:name=".widget.WidgetActionReceiver"
+            android:exported="false" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

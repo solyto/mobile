@@ -9,4 +9,6 @@
     <string name="widget_not_supported">No compatible con este dispositivo</string>
     <string name="widget_updated_at">Actualizado a las %1$s</string>
     <string name="widget_outdated_at">Desactualizado · %1$s</string>
+    <string name="widget_action_failed">No se pudo completar</string>
+    <string name="widget_action_check">Marcar como hecho</string>
 </resources>

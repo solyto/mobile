@@ -2,6 +2,11 @@ package app.solyto.widget;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 /**
  * The last widget payload and the state the widgets show, in private
@@ -19,6 +24,13 @@ public final class WidgetCache {
     private static final String KEY_FETCHED_AT = "fetched_at";
     private static final String KEY_OUTDATED = "outdated";
     private static final String KEY_DEVICE_UNSUPPORTED = "device_unsupported";
+    private static final String KEY_ACTION_ROWS = "action_rows";
+    private static final String KEY_ACTION_ERROR = "action_error";
+
+    // Row ids with an action call running (value: start time), or done and waiting
+    // for the re-fetch (value: minus the finish time).
+    // Drops entries that are never resolved, e.g. when their work was cancelled or the re-fetch fails.
+    private static final long ACTION_TTL_MS = 5 * 60_000;
 
     private WidgetCache() {}
 
@@ -51,13 +63,72 @@ public final class WidgetCache {
         return prefs(context).getBoolean(KEY_DEVICE_UNSUPPORTED, false);
     }
 
-    static void saveData(Context context, String payload, long fetchedAt) {
+    /**
+     * Stores fresh data. Rows whose action finished now show the server's
+     * state; rows with a call still running stay shown as done.
+     */
+    static synchronized void saveData(Context context, String payload, long fetchedAt) {
+        JSONObject rows = actionRows(context);
+        for (String id : keys(rows)) {
+            if (rows.optLong(id) < 0) rows.remove(id);
+        }
         prefs(context).edit()
                 .putString(KEY_STATE, State.OK.name())
                 .putString(KEY_PAYLOAD, payload)
                 .putLong(KEY_FETCHED_AT, fetchedAt)
                 .putBoolean(KEY_OUTDATED, false)
+                .putString(KEY_ACTION_ROWS, rows.toString())
+                .putBoolean(KEY_ACTION_ERROR, false)
                 .commit();
+    }
+
+    /** Whether the row is shown as done locally: its action is running or waiting for the re-fetch. */
+    static synchronized boolean isActionActive(Context context, String id) {
+        return actionRows(context).has(id);
+    }
+
+    /**
+     * Marks the row's action as running and clears the error state. Returns
+     * false when an action for this row is already active.
+     */
+    static synchronized boolean startAction(Context context, String id) {
+        JSONObject rows = actionRows(context);
+        if (rows.has(id)) return false;
+        try {
+            rows.put(id, System.currentTimeMillis());
+        } catch (JSONException e) {
+            return false;
+        }
+        prefs(context).edit()
+                .putString(KEY_ACTION_ROWS, rows.toString())
+                .putBoolean(KEY_ACTION_ERROR, false)
+                .commit();
+        return true;
+    }
+
+    /** The action succeeded: the row stays shown as done until the next saved fetch. */
+    static synchronized void finishAction(Context context, String id) {
+        JSONObject rows = actionRows(context);
+        if (!rows.has(id)) return;
+        try {
+            rows.put(id, -System.currentTimeMillis());
+        } catch (JSONException e) {
+            return;
+        }
+        prefs(context).edit().putString(KEY_ACTION_ROWS, rows.toString()).commit();
+    }
+
+    /** The action did not happen: the row shows its server state again, optionally with the error state. */
+    static synchronized void revertAction(Context context, String id, boolean showError) {
+        JSONObject rows = actionRows(context);
+        rows.remove(id);
+        SharedPreferences.Editor editor = prefs(context).edit().putString(KEY_ACTION_ROWS, rows.toString());
+        if (showError) editor.putBoolean(KEY_ACTION_ERROR, true);
+        editor.commit();
+    }
+
+    static boolean hasActionError(Context context) {
+        return prefs(context).getBoolean(KEY_ACTION_ERROR, false);
     }
 
     public static void setState(Context context, State state) {
@@ -76,13 +147,38 @@ public final class WidgetCache {
     }
 
     /** Deletes the cached data; the widgets show the signed-out state. */
-    public static void clear(Context context) {
+    public static synchronized void clear(Context context) {
         prefs(context).edit()
                 .remove(KEY_PAYLOAD)
                 .remove(KEY_FETCHED_AT)
                 .remove(KEY_OUTDATED)
+                .remove(KEY_ACTION_ROWS)
+                .remove(KEY_ACTION_ERROR)
                 .putString(KEY_STATE, State.SIGNED_OUT.name())
                 .commit();
+    }
+
+    /** The active action rows, without entries older than {@link #ACTION_TTL_MS}. */
+    private static JSONObject actionRows(Context context) {
+        JSONObject rows;
+        try {
+            rows = new JSONObject(prefs(context).getString(KEY_ACTION_ROWS, "{}"));
+        } catch (JSONException e) {
+            return new JSONObject();
+        }
+        long now = System.currentTimeMillis();
+        for (String id : keys(rows)) {
+            long at = Math.abs(rows.optLong(id));
+            if (now - at > ACTION_TTL_MS || at > now) rows.remove(id);
+        }
+        return rows;
+    }
+
+    private static List<String> keys(JSONObject object) {
+        List<String> keys = new ArrayList<>();
+        Iterator<String> it = object.keys();
+        while (it.hasNext()) keys.add(it.next());
+        return keys;
     }
 
     private static SharedPreferences prefs(Context context) {

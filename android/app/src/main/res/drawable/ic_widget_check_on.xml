@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lucide "circle-check" (ISC licence), filled. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="@color/widget_accent"
+        android:pathData="M12,2a10,10 0,1 0,0 20a10,10 0,1 0,0 -20z" />
+    <path
+        android:pathData="M8,12l3,3l5,-6"
+        android:strokeWidth="2"
+        android:strokeColor="@color/widget_background"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+</vector>
