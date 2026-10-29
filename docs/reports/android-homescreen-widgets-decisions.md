@@ -364,3 +364,28 @@ The second widget, from the dev request "Home widgets and NFC activation"
 | 8 | `../app` | `widget-refresh-on-time-tracking-changes`: refresh after time tracking changes, route keys | — |
 | 9 | this repo | `android-widget-foundation-multiple-kinds` | — |
 | 10 | this repo | `android-widget-time-tracking` (vendor `../app` with job 8 first, by hand) | 7, 8, 9 |
+
+## 7. Check-in widget (2026-10-29)
+
+- **Content:** today's check-in, one row per enabled tracker in the app's
+  order (8 by default, up to 12; the list scrolls). Each row shows its
+  tappable values; the selected one is highlighted.
+- **Tapping** a value saves it for today; tapping the selected value clears
+  it, as in the app. The widget always sends the explicit target value
+  (or `null`), never a toggle, so retries are safe.
+- **Sports** is a choice of sport (1 gym … 6 yoga), not a rating: the user's
+  5 selected sports, plus today's stored sport if it is no longer selected.
+- **Resets at local midnight** via `refresh_at`.
+- **Format additions**, backwards compatible: action type `scale`
+  (`value`, `options` with `value`, `icon`, `color`); actions may carry a
+  JSON body `{ "value" }`; new action status 422 (invalid value). Option
+  colors come from the server; native has no color logic. Row ids may
+  contain `_`.
+- **Not now:** choosing trackers per widget (it would need the first setup
+  screen, D4), fill-level icons, other days than today.
+
+| # | Repo | Job | Needs |
+|---|---|---|---|
+| 11 | `../api` | `widget-check-in`: endpoint, set-value action | — |
+| 12 | `../app` | `widget-refresh-on-check-in-changes`: refresh after check-ins and settings, route key | — |
+| 13 | this repo | `android-widget-check-in` (vendor `../app` with job 12 first, by hand) | 11, 12 |
