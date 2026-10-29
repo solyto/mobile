@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="widget_background">@color/solyto_surface_dark</color>
+    <color name="widget_text">#F2F2F2</color>
+    <color name="widget_text_secondary">#A6A6A6</color>
+    <color name="widget_divider">#333333</color>
+</resources>

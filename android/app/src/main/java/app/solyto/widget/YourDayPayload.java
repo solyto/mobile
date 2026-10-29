@@ -1,0 +1,131 @@
+package app.solyto.widget;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+/**
+ * The Your Day widget data (`kind: your-day`, schema version 1), flattened
+ * into section headers and rows. Unknown sections, icons and fields are
+ * ignored and malformed rows skipped. All text is display-ready from the server.
+ */
+final class YourDayPayload {
+
+    static final String KIND = "your-day";
+    static final int SCHEMA_VERSION = 1;
+
+    private static final Set<String> SECTION_KEYS = new HashSet<>(Arrays.asList("today", "due", "upcoming"));
+    private static final Set<String> ICONS = new HashSet<>(Arrays.asList("event", "todo"));
+    private static final int MAX_ROWS_PER_SECTION = 20;
+    private static final int MAX_TEXT_LENGTH = 500;
+
+    static final class Item {
+        final boolean isHeader;
+        final String title;
+        final String subtitle;
+        final String timeLabel;
+        /** "event", "todo" or null. */
+        final String icon;
+        final String routeKey;
+        final String routeId;
+
+        Item(boolean isHeader, String title, String subtitle, String timeLabel, String icon,
+                String routeKey, String routeId) {
+            this.isHeader = isHeader;
+            this.title = title;
+            this.subtitle = subtitle;
+            this.timeLabel = timeLabel;
+            this.icon = icon;
+            this.routeKey = routeKey;
+            this.routeId = routeId;
+        }
+    }
+
+    final String title;
+    final String emptyLabel;
+    final List<Item> items;
+    /** Epoch millis when the data goes stale, or -1. */
+    final long refreshAt;
+
+    private YourDayPayload(String title, String emptyLabel, List<Item> items, long refreshAt) {
+        this.title = title;
+        this.emptyLabel = emptyLabel;
+        this.items = items;
+        this.refreshAt = refreshAt;
+    }
+
+    static boolean isNewerSchema(JSONObject data) {
+        return data.optInt("schema_version", SCHEMA_VERSION) > SCHEMA_VERSION;
+    }
+
+    /** Null when the data is not a Your Day payload this version can read. */
+    static YourDayPayload parse(JSONObject data) {
+        if (data == null || !KIND.equals(data.optString("kind")) || isNewerSchema(data)) return null;
+
+        JSONObject labels = data.optJSONObject("labels");
+        String title = labels != null ? text(labels, "title") : null;
+        String emptyLabel = labels != null ? text(labels, "empty") : null;
+
+        List<Item> items = new ArrayList<>();
+        JSONArray sections = data.optJSONArray("sections");
+        if (sections != null) {
+            for (int i = 0; i < sections.length(); i++) {
+                JSONObject section = sections.optJSONObject(i);
+                if (section == null || !SECTION_KEYS.contains(section.optString("key"))) continue;
+                addSection(items, section);
+            }
+        }
+
+        return new YourDayPayload(title, emptyLabel, Collections.unmodifiableList(items),
+                IsoTime.parse(data.optString("refresh_at", null)));
+    }
+
+    private static void addSection(List<Item> items, JSONObject section) {
+        JSONArray rows = section.optJSONArray("rows");
+        if (rows == null) return;
+
+        List<Item> sectionRows = new ArrayList<>();
+        for (int i = 0; i < rows.length() && sectionRows.size() < MAX_ROWS_PER_SECTION; i++) {
+            Item row = parseRow(rows.optJSONObject(i));
+            if (row != null) sectionRows.add(row);
+        }
+        if (sectionRows.isEmpty()) return;
+
+        String sectionTitle = text(section, "title");
+        if (sectionTitle != null) items.add(new Item(true, sectionTitle, null, null, null, null, null));
+        items.addAll(sectionRows);
+    }
+
+    private static Item parseRow(JSONObject row) {
+        if (row == null) return null;
+        String title = text(row, "title");
+        if (title == null) return null;
+
+        String icon = row.optString("icon", null);
+        if (!ICONS.contains(icon)) icon = null;
+
+        String routeKey = null;
+        String routeId = null;
+        JSONObject route = row.optJSONObject("route");
+        if (route != null) {
+            routeKey = text(route, "key");
+            routeId = text(route, "id");
+        }
+
+        return new Item(false, title, text(row, "subtitle"), text(row, "time_label"), icon, routeKey, routeId);
+    }
+
+    /** A non-empty string field, cut to a sane length, or null. */
+    private static String text(JSONObject object, String name) {
+        Object value = object.opt(name);
+        if (!(value instanceof String)) return null;
+        String s = ((String) value).trim();
+        if (s.isEmpty()) return null;
+        return s.length() > MAX_TEXT_LENGTH ? s.substring(0, MAX_TEXT_LENGTH) : s;
+    }
+}

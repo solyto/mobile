@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Widget picker preview before Android 12 (no screenshot asset exists). -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:drawable="@drawable/widget_background"
+        android:width="250dp"
+        android:height="200dp" />
+    <item
+        android:drawable="@drawable/widget_placeholder_bar"
+        android:gravity="top|start"
+        android:width="90dp"
+        android:height="12dp"
+        android:left="16dp"
+        android:top="18dp" />
+    <item
+        android:drawable="@drawable/ic_widget_event"
+        android:gravity="top|start"
+        android:width="18dp"
+        android:height="18dp"
+        android:left="16dp"
+        android:top="48dp" />
+    <item
+        android:drawable="@drawable/widget_placeholder_bar"
+        android:gravity="top|start"
+        android:width="150dp"
+        android:height="10dp"
+        android:left="44dp"
+        android:top="52dp" />
+    <item
+        android:drawable="@drawable/ic_widget_event"
+        android:gravity="top|start"
+        android:width="18dp"
+        android:height="18dp"
+        android:left="16dp"
+        android:top="84dp" />
+    <item
+        android:drawable="@drawable/widget_placeholder_bar"
+        android:gravity="top|start"
+        android:width="110dp"
+        android:height="10dp"
+        android:left="44dp"
+        android:top="88dp" />
+    <item
+        android:drawable="@drawable/ic_widget_todo"
+        android:gravity="top|start"
+        android:width="18dp"
+        android:height="18dp"
+        android:left="16dp"
+        android:top="120dp" />
+    <item
+        android:drawable="@drawable/widget_placeholder_bar"
+        android:gravity="top|start"
+        android:width="130dp"
+        android:height="10dp"
+        android:left="44dp"
+        android:top="124dp" />
+    <item
+        android:drawable="@drawable/ic_widget_todo"
+        android:gravity="top|start"
+        android:width="18dp"
+        android:height="18dp"
+        android:left="16dp"
+        android:top="156dp" />
+    <item
+        android:drawable="@drawable/widget_placeholder_bar"
+        android:gravity="top|start"
+        android:width="90dp"
+        android:height="10dp"
+        android:left="44dp"
+        android:top="160dp" />
+</layer-list>

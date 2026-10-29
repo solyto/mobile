@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12 and higher. Keeps the widget token and widget data out of backups and device transfers. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="sharedpref" path="widget_token.xml" />
+        <exclude domain="sharedpref" path="widget_cache.xml" />
+        <exclude domain="sharedpref" path="androidx.core.widget.prefs.RemoteViewsCompat.xml" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="sharedpref" path="widget_token.xml" />
+        <exclude domain="sharedpref" path="widget_cache.xml" />
+        <exclude domain="sharedpref" path="androidx.core.widget.prefs.RemoteViewsCompat.xml" />
+    </device-transfer>
+</data-extraction-rules>

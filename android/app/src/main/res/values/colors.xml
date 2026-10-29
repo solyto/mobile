@@ -7,4 +7,10 @@
     <color name="solyto_surface_dark">#222222</color>
     <color name="solyto_lightblue">#14A5CD</color>
     <color name="solyto_green">#61D96A</color>
+    <!-- Home-screen widgets; dark variants in values-night. -->
+    <color name="widget_background">@color/solyto_bg_light</color>
+    <color name="widget_text">#1F1F1F</color>
+    <color name="widget_text_secondary">#6B6B6B</color>
+    <color name="widget_divider">#E6E6E6</color>
+    <color name="widget_accent">@color/solyto_lightblue</color>
 </resources>

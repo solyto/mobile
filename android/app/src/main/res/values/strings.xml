@@ -4,4 +4,15 @@
     <string name="title_activity_main">solyto</string>
     <string name="package_name">app.solyto</string>
     <string name="custom_url_scheme">app.solyto</string>
+
+    <!-- Home-screen widgets: picker text and states. Widget content comes from the server. -->
+    <string name="widget_your_day_name">Your Day</string>
+    <string name="widget_your_day_description">Today\'s events, due todos and what\'s coming up</string>
+    <string name="widget_loading">Loading…</string>
+    <string name="widget_signed_out">Open solyto to sign in</string>
+    <string name="widget_unsupported_server">Your server doesn\'t support widgets yet</string>
+    <string name="widget_update_app">Please update the app</string>
+    <string name="widget_not_supported">Not supported on this device</string>
+    <string name="widget_updated_at">Updated %1$s</string>
+    <string name="widget_outdated_at">Outdated · %1$s</string>
 </resources>

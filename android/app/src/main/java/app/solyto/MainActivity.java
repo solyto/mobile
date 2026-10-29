@@ -21,9 +21,21 @@ import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 import com.getcapacitor.BridgeActivity;
+import com.getcapacitor.PluginHandle;
 import com.getcapacitor.WebViewListener;
+import java.util.regex.Pattern;
 
 public class MainActivity extends BridgeActivity {
+
+    /** Widget row taps: the row's route is filled in as extras (see YourDayWidgetProvider). */
+    public static final String ACTION_WIDGET_ROUTE = "app.solyto.action.WIDGET_ROUTE";
+    public static final String EXTRA_WIDGET_ROUTE_KEY = "app.solyto.extra.WIDGET_ROUTE_KEY";
+    public static final String EXTRA_WIDGET_ROUTE_ID = "app.solyto.extra.WIDGET_ROUTE_ID";
+
+    // Only the format is checked here; the app maps keys to pages and validates ids.
+    private static final Pattern ROUTE_KEY = Pattern.compile("[a-z][a-z0-9_.-]*");
+    private static final int MAX_ROUTE_KEY_LENGTH = 64;
+    private static final int MAX_ROUTE_ID_LENGTH = 128;
 
     // Safety net: hide the spinner even if no page-load callback arrives.
     private static final long REFRESH_TIMEOUT_MS = 15000;
@@ -43,10 +55,12 @@ public class MainActivity extends BridgeActivity {
     protected void onCreate(Bundle savedInstanceState) {
         registerPlugin(PullToRefreshPlugin.class);
         registerPlugin(SystemBarsPlugin.class);
+        registerPlugin(WidgetBridgePlugin.class);
         super.onCreate(savedInstanceState);
         applyKeyboardInsets();
         setupPullToRefresh();
         handleShareIntent(getIntent());
+        if (savedInstanceState == null) handleWidgetIntent(getIntent());
         applySystemBarAppearance();
         styleRefreshIndicator();
     }
@@ -55,6 +69,7 @@ public class MainActivity extends BridgeActivity {
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         handleShareIntent(intent);
+        handleWidgetIntent(intent);
     }
 
     @Override
@@ -209,6 +224,35 @@ public class MainActivity extends BridgeActivity {
         getBridge().getWebView().post(() ->
             getBridge().getWebView().loadUrl("https://my.solyto.app/share?q=" + encoded)
         );
+    }
+
+    /**
+     * MainActivity is exported, so the extras are untrusted: anything that is
+     * not a well-formed route is ignored, and the worst a forged intent can do
+     * is open a page the app knows.
+     */
+    private void handleWidgetIntent(Intent intent) {
+        if (intent == null || !ACTION_WIDGET_ROUTE.equals(intent.getAction())) return;
+        if ((intent.getFlags() & Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0) return;
+
+        String key;
+        String id;
+        try {
+            key = intent.getStringExtra(EXTRA_WIDGET_ROUTE_KEY);
+            id = intent.getStringExtra(EXTRA_WIDGET_ROUTE_ID);
+            intent.removeExtra(EXTRA_WIDGET_ROUTE_KEY);
+            intent.removeExtra(EXTRA_WIDGET_ROUTE_ID);
+        } catch (RuntimeException e) {
+            // Malformed extras bundle.
+            return;
+        }
+
+        if (key == null || key.length() > MAX_ROUTE_KEY_LENGTH || !ROUTE_KEY.matcher(key).matches()) return;
+        if (id != null && (id.isEmpty() || id.length() > MAX_ROUTE_ID_LENGTH)) return;
+
+        PluginHandle handle = getBridge().getPlugin("WidgetBridge");
+        if (handle == null) return;
+        ((WidgetBridgePlugin) handle.getInstance()).openRoute(key, id);
     }
 
     /** Called by SystemBarsPlugin; null when the page has no matching colours. */

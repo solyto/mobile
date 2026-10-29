@@ -10,6 +10,8 @@ ext {
     coreSplashScreenVersion = '1.2.0'
     androidxWebkitVersion = '1.14.0'
     androidxSwipeRefreshLayoutVersion = '1.1.0'
+    androidxCoreRemoteViewsVersion = '1.1.0'
+    androidxWorkVersion = '2.11.2'
     junitVersion = '4.13.2'
     androidxJunitVersion = '1.3.0'
     androidxEspressoCoreVersion = '3.7.0'

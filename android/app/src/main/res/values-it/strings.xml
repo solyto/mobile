@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="widget_your_day_name">La tua giornata</string>
+    <string name="widget_your_day_description">Eventi di oggi, attività in scadenza e prossimi impegni</string>
+    <string name="widget_loading">Caricamento…</string>
+    <string name="widget_signed_out">Apri solyto per accedere</string>
+    <string name="widget_unsupported_server">Il tuo server non supporta ancora i widget</string>
+    <string name="widget_update_app">Aggiorna l\'app</string>
+    <string name="widget_not_supported">Non supportato su questo dispositivo</string>
+    <string name="widget_updated_at">Aggiornato alle %1$s</string>
+    <string name="widget_outdated_at">Non aggiornato · %1$s</string>
+</resources>
