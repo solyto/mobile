@@ -1,4 +1,7 @@
-.PHONY: build build-fdroid sync open run release rerelease clean
+.PHONY: build build-fdroid sync open run local-api release rerelease clean
+
+# adb from PATH, else the copy Android Studio installs with the SDK.
+ADB ?= $(shell command -v adb 2>/dev/null || echo $(HOME)/Android/Sdk/platform-tools/adb)
 
 build:
 	bash scripts/build.sh
@@ -14,6 +17,11 @@ open:
 
 run:
 	npx cap run android
+
+# Debug builds: lets the app on the emulator/device reach the local API as
+# http://localhost:8000. Repeat after the emulator restarts.
+local-api:
+	$(ADB) reverse tcp:8000 tcp:8000
 
 release:
 	bash scripts/release.sh
