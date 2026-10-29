@@ -229,6 +229,8 @@ for `evaluateJavascript`.
   - `clear`: logout. Native deletes the token and cached widget data and
     shows the signed-out state.
   - `refresh`: data a widget shows has changed (debounced in JS).
+  - `unsupported`: the app's server has no widget routes (D12). Native drops
+    any token and cached data and shows "server doesn't support widgets".
 - Messages from native: `navigate { key, id? }`.
 - When the app requests a widget token: after `ready` when native replies
   `needsToken`, after login, and **after every successful token refresh**
@@ -294,7 +296,10 @@ rotates with every app token refresh.
 ### D12: self-hosted and outdated servers
 
 - The app treats a 404 from `POST /auth/widget-token` as "this server
-  doesn't support widgets" and does not retry on every start.
+  doesn't support widgets" and does not retry on every start. It sends
+  `unsupported` to native, on the 404 and whenever it skips the request for
+  that reason: without a token, native never fetches and could not find out
+  itself (it would show "sign in" instead).
 - Native uses exactly the API URL the app hands over in `setToken`, under
   the same network security rules as the WebView.
 
