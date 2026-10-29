@@ -189,6 +189,23 @@ describe('WidgetBridge', () => {
 			await bridge.issueToken();
 
 			expect(api.postWithStatus).toHaveBeenCalledTimes(1);
+		});
+
+		it('tells native the server has no widgets, on the 404 and on later triggers', async () => {
+			api.postWithStatus.mockResolvedValue({ ok: false, status: 404, data: null });
+			const bridge = createBridge();
+
+			await bridge.issueToken();
+			await bridge.issueToken();
+
+			expect(sent()).toEqual([{ type: 'unsupported' }, { type: 'unsupported' }]);
+		});
+
+		it('does not report unsupported for other failures', async () => {
+			api.postWithStatus.mockResolvedValue({ ok: false, status: 500, data: null });
+
+			await createBridge().issueToken();
+
 			expect(native.postMessage).not.toHaveBeenCalled();
 		});
 

@@ -27,7 +27,8 @@ export type WidgetAppMessage =
 	| { type: 'ready' }
 	| { type: 'setToken'; token: string; expiresAt: string; apiUrl: string }
 	| { type: 'clear' }
-	| { type: 'refresh' };
+	| { type: 'refresh' }
+	| { type: 'unsupported' };
 
 export type WidgetNativeMessage =
 	| { type: 'status'; needsToken: boolean }

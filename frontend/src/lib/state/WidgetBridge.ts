@@ -46,13 +46,22 @@ export class WidgetBridge {
 	}
 
 	async issueToken(): Promise<void> {
-		if (!this.bridge() || this.serverHasNoWidgets()) return;
+		if (!this.bridge()) return;
+
+		// Native only learns this from us: without a token it never fetches itself.
+		if (this.serverHasNoWidgets()) {
+			this.post({ type: 'unsupported' });
+			return;
+		}
 
 		try {
 			const res = await this.apiService.postWithStatus(apiRoutes.auth.widgetToken, {});
 
 			if (!res.ok) {
-				if (res.status === 404) this.rememberServerHasNoWidgets();
+				if (res.status === 404) {
+					this.rememberServerHasNoWidgets();
+					this.post({ type: 'unsupported' });
+				}
 				return;
 			}
 
