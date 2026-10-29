@@ -2,6 +2,7 @@ package app.solyto.widget;
 
 import android.content.Context;
 import androidx.annotation.NonNull;
+import androidx.work.Data;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
@@ -14,6 +15,10 @@ public class WidgetActionWorker extends Worker {
     static final String INPUT_KIND = "kind";
     static final String INPUT_KEY = "key";
     static final String INPUT_ID = "id";
+    /** Whether the action sends a value; work enqueued by older builds has none and sends no body. */
+    static final String INPUT_HAS_VALUE = "has_value";
+    /** The value to send; absent with {@link #INPUT_HAS_VALUE} means an explicit null. */
+    static final String INPUT_VALUE = "value";
 
     public WidgetActionWorker(@NonNull Context context, @NonNull WorkerParameters params) {
         super(context, params);
@@ -40,7 +45,15 @@ public class WidgetActionWorker extends Worker {
             return Result.success();
         }
 
-        WidgetApi.Outcome outcome = WidgetApi.postAction(context, apiUrl, token, key, id);
+        Data input = getInputData();
+        WidgetApi.Outcome outcome;
+        if (input.getBoolean(INPUT_HAS_VALUE, false)) {
+            Integer value = input.hasKeyWithValueOfType(INPUT_VALUE, Integer.class)
+                    ? input.getInt(INPUT_VALUE, 0) : null;
+            outcome = WidgetApi.postAction(context, apiUrl, token, key, id, value);
+        } else {
+            outcome = WidgetApi.postAction(context, apiUrl, token, key, id);
+        }
 
         // A logout or a new token arrived during the request; its own handling wins.
         if (!token.equals(WidgetTokenStore.readToken(context))) {

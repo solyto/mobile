@@ -5,6 +5,7 @@ import android.content.pm.PackageManager;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -64,6 +65,20 @@ final class WidgetApi {
      * body. 403 counts as {@link Outcome#NOT_FOUND}: the row is not the user's.
      */
     static Outcome postAction(Context context, String apiUrl, String token, String key, String id) {
+        return postAction(context, apiUrl, token, key, id, false, null);
+    }
+
+    /**
+     * Runs a row action with the body {@code {"value": <value>}}; a null value
+     * is sent as an explicit {@code null} (clear), never as a toggle.
+     */
+    static Outcome postAction(Context context, String apiUrl, String token, String key, String id,
+            Integer value) {
+        return postAction(context, apiUrl, token, key, id, true, value);
+    }
+
+    private static Outcome postAction(Context context, String apiUrl, String token, String key, String id,
+            boolean withBody, Integer value) {
         if (!WidgetPayload.isValidActionKey(key) || !WidgetPayload.isValidRowId(id)) {
             return Outcome.NOT_FOUND;
         }
@@ -71,8 +86,18 @@ final class WidgetApi {
         try {
             connection = open(context, apiUrl + ACTIONS_PATH + key + "/" + id, "POST", token);
             connection.setDoOutput(true);
-            connection.setFixedLengthStreamingMode(0);
-            connection.getOutputStream().close();
+            if (withBody) {
+                byte[] body = ("{\"value\":" + (value != null ? value.toString() : "null") + "}")
+                        .getBytes(StandardCharsets.UTF_8);
+                connection.setRequestProperty("Content-Type", "application/json");
+                connection.setFixedLengthStreamingMode(body.length);
+                try (OutputStream out = connection.getOutputStream()) {
+                    out.write(body);
+                }
+            } else {
+                connection.setFixedLengthStreamingMode(0);
+                connection.getOutputStream().close();
+            }
 
             int status = connection.getResponseCode();
             if (status == 200) return Outcome.OK;

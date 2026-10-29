@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The app's IconYoga. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="256"
+    android:viewportHeight="256">
+    <path
+        android:pathData="M128,24a24,24 0 1,0 0,48a24,24 0 1,0 0,-48z"
+        android:strokeWidth="16"
+        android:strokeColor="@color/widget_accent"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M40,104L216,104"
+        android:strokeWidth="16"
+        android:strokeColor="@color/widget_accent"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M128,104L128,144L48,216"
+        android:strokeWidth="16"
+        android:strokeColor="@color/widget_accent"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M128,144L184,168L184,216"
+        android:strokeWidth="16"
+        android:strokeColor="@color/widget_accent"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+</vector>

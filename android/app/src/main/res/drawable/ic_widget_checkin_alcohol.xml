@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lucide "wine" (ISC licence). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:pathData="M8,22 h8"
+        android:strokeWidth="2"
+        android:strokeColor="@color/widget_accent"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M7,10 h10"
+        android:strokeWidth="2"
+        android:strokeColor="@color/widget_accent"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M12,15 v7"
+        android:strokeWidth="2"
+        android:strokeColor="@color/widget_accent"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M12,15 a5,5 0 0,0 5,-5 c0,-2,-0.5,-4,-2,-8 H9 c-1.5,4,-2,6,-2,8 a5,5 0 0,0 5,5 Z"
+        android:strokeWidth="2"
+        android:strokeColor="@color/widget_accent"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+</vector>

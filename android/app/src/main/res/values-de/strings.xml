@@ -17,4 +17,8 @@
     <string name="widget_time_tracking_failed">Aktualisieren fehlgeschlagen</string>
     <string name="widget_action_start">Starten</string>
     <string name="widget_action_stop">Stoppen</string>
+    <string name="widget_check_in_name">Check-in</string>
+    <string name="widget_check_in_description">Check-in für heute vom Startbildschirm</string>
+    <string name="widget_check_in_option">%1$s: %2$d von %3$d</string>
+    <string name="widget_check_in_option_selected">%1$s: %2$d von %3$d, ausgewählt</string>
 </resources>

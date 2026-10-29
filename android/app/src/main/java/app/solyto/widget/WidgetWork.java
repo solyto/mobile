@@ -61,13 +61,27 @@ public final class WidgetWork {
 
     /** Runs a row action once; while one is enqueued or running for this row, further requests are ignored. */
     static void runAction(Context context, WidgetKind kind, String key, String id) {
+        enqueueAction(context, kind, id, actionInput(kind, key, id));
+    }
+
+    /** Like {@link #runAction(Context, WidgetKind, String, String)}, sending the target value (null clears). */
+    static void runAction(Context context, WidgetKind kind, String key, String id, Integer value) {
+        Data.Builder input = actionInput(kind, key, id).putBoolean(WidgetActionWorker.INPUT_HAS_VALUE, true);
+        if (value != null) input.putInt(WidgetActionWorker.INPUT_VALUE, value);
+        enqueueAction(context, kind, id, input);
+    }
+
+    private static Data.Builder actionInput(WidgetKind kind, String key, String id) {
+        return new Data.Builder()
+                .putString(WidgetActionWorker.INPUT_KIND, kind.id)
+                .putString(WidgetActionWorker.INPUT_KEY, key)
+                .putString(WidgetActionWorker.INPUT_ID, id);
+    }
+
+    private static void enqueueAction(Context context, WidgetKind kind, String id, Data.Builder input) {
         OneTimeWorkRequest.Builder builder = new OneTimeWorkRequest.Builder(WidgetActionWorker.class)
                 .addTag(ACTION_TAG)
-                .setInputData(new Data.Builder()
-                        .putString(WidgetActionWorker.INPUT_KIND, kind.id)
-                        .putString(WidgetActionWorker.INPUT_KEY, key)
-                        .putString(WidgetActionWorker.INPUT_ID, id)
-                        .build());
+                .setInputData(input.build());
         // Below API 31, expedited work runs as a foreground service with a notification.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             builder.setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST);

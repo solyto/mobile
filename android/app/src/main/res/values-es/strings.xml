@@ -17,4 +17,8 @@
     <string name="widget_time_tracking_failed">No se pudo actualizar</string>
     <string name="widget_action_start">Iniciar</string>
     <string name="widget_action_stop">Detener</string>
+    <string name="widget_check_in_name">Check-in</string>
+    <string name="widget_check_in_description">Tu check-in de hoy desde la pantalla de inicio</string>
+    <string name="widget_check_in_option">%1$s: %2$d de %3$d</string>
+    <string name="widget_check_in_option_selected">%1$s: %2$d de %3$d, seleccionado</string>
 </resources>

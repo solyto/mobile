@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lucide "pizza" (ISC licence) (the app's IconPlate draws it). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:pathData="m12,14 -1,1"
+        android:strokeWidth="2"
+        android:strokeColor="@color/widget_accent"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="m13.75,18.25 -1.25,1.42"
+        android:strokeWidth="2"
+        android:strokeColor="@color/widget_accent"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M17.775,5.654 a15.68,15.68 0 0,0 -12.121,12.12"
+        android:strokeWidth="2"
+        android:strokeColor="@color/widget_accent"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M18.8,9.3 a1,1 0 0,0 2.1,7.7"
+        android:strokeWidth="2"
+        android:strokeColor="@color/widget_accent"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M21.964,20.732 a1,1 0 0,1 -1.232,1.232 l-18,-5 a1,1 0 0,1 -0.695,-1.232 A19.68,19.68 0 0,1 15.732,2.037 a1,1 0 0,1 1.232,0.695 z"
+        android:strokeWidth="2"
+        android:strokeColor="@color/widget_accent"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+</vector>

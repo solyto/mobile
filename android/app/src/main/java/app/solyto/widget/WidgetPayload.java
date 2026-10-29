@@ -21,6 +21,12 @@ final class WidgetPayload {
 
     private static final Set<String> ICONS = new HashSet<>(Arrays.asList("event", "todo", "timer"));
     private static final Set<String> BUTTON_ICONS = new HashSet<>(Arrays.asList("play", "stop"));
+    static final Set<String> OPTION_ICONS = new HashSet<>(Arrays.asList(
+            "mood_1", "mood_2", "mood_3", "mood_4", "mood_5",
+            "sport_dumbbell", "sport_bike", "sport_mountain", "sport_footprints", "sport_waves_ladder",
+            "sport_yoga", "sleep", "dreams", "food_quality", "food_amount", "water", "work",
+            "menstruation", "alcohol", "smoking", "social_life"));
+    static final int MAX_OPTIONS = 6;
     private static final Pattern COLOR = Pattern.compile("#[0-9A-Fa-f]{6}");
     private static final int MAX_ROWS_PER_SECTION = 20;
     private static final int MAX_TEXT_LENGTH = 500;
@@ -28,11 +34,27 @@ final class WidgetPayload {
     /** Row action UI types native can render; rows with other types get no control. */
     static final String ACTION_CHECK = "check";
     static final String ACTION_BUTTON = "button";
+    static final String ACTION_SCALE = "scale";
     static final int NO_COLOR = 0;
     private static final Pattern ACTION_KEY = Pattern.compile("[a-z][a-z0-9_.-]*");
     private static final int MAX_ACTION_KEY_LENGTH = 64;
-    // Path-segment safe and covers the UUIDs the server sends.
-    private static final Pattern ROW_ID = Pattern.compile("[A-Za-z0-9-]{1,64}");
+    // Path-segment safe; covers the UUIDs and tracker keys (e.g. food_quality) the server sends.
+    private static final Pattern ROW_ID = Pattern.compile("[A-Za-z0-9_-]{1,64}");
+
+    /** One value of a scale action. */
+    static final class Option {
+        final int value;
+        /** One of {@link #OPTION_ICONS}. */
+        final String icon;
+        /** Opaque ARGB. */
+        final int color;
+
+        Option(int value, String icon, int color) {
+            this.value = value;
+            this.icon = icon;
+            this.color = color;
+        }
+    }
 
     static final class Item {
         final boolean isHeader;
@@ -51,18 +73,31 @@ final class WidgetPayload {
         final String routeId;
         /** The row id; only set together with an action. */
         final String id;
-        /** A known action type ({@link #ACTION_CHECK}, {@link #ACTION_BUTTON}) or null when the row has no action. */
+        /** A known action type ({@link #ACTION_CHECK}, {@link #ACTION_BUTTON}, {@link #ACTION_SCALE}) or null when the row has no action. */
         final String actionType;
         final String actionKey;
         final boolean actionChecked;
         /** "play" or "stop" for button actions, else null. */
         final String actionIcon;
+        /** The selected value of a scale action, or null. */
+        final Integer actionValue;
+        /** The valid options of a scale action (1 to {@link #MAX_OPTIONS}), else empty. */
+        final List<Option> options;
         /** The key of the section this header or row belongs to. */
         final String section;
 
+        /** Whether the value is one of this row's scale options. */
+        boolean hasOption(int value) {
+            for (Option option : options) {
+                if (option.value == value) return true;
+            }
+            return false;
+        }
+
         Item(boolean isHeader, String title, String subtitle, String timeLabel, String icon,
                 boolean liveElapsed, long at, int color, String routeKey, String routeId, String id,
-                String actionType, String actionKey, boolean actionChecked, String actionIcon, String section) {
+                String actionType, String actionKey, boolean actionChecked, String actionIcon,
+                Integer actionValue, List<Option> options, String section) {
             this.isHeader = isHeader;
             this.title = title;
             this.subtitle = subtitle;
@@ -78,6 +113,8 @@ final class WidgetPayload {
             this.actionKey = actionKey;
             this.actionChecked = actionChecked;
             this.actionIcon = actionIcon;
+            this.actionValue = actionValue;
+            this.options = options;
             this.section = section;
         }
     }
@@ -154,7 +191,7 @@ final class WidgetPayload {
 
         String sectionTitle = text(section, "title");
         if (sectionTitle != null) items.add(new Item(true, sectionTitle, null, null, null, false, -1, NO_COLOR,
-                null, null, null, null, null, false, null, sectionKey));
+                null, null, null, null, null, false, null, null, Collections.<Option>emptyList(), sectionKey));
         items.addAll(sectionRows);
     }
 
@@ -179,6 +216,8 @@ final class WidgetPayload {
         String actionKey = null;
         boolean actionChecked = false;
         String actionIcon = null;
+        Integer actionValue = null;
+        List<Option> options = Collections.emptyList();
         JSONObject action = row.optJSONObject("action");
         String rowId = text(row, "id");
         if (action != null && isValidRowId(rowId)) {
@@ -195,12 +234,47 @@ final class WidgetPayload {
                 actionType = type;
                 actionKey = key;
                 actionIcon = text(action, "icon");
+            } else if (ACTION_SCALE.equals(type) && isValidActionKey(key)) {
+                List<Option> scale = options(action.optJSONArray("options"));
+                if (!scale.isEmpty()) {
+                    id = rowId;
+                    actionType = type;
+                    actionKey = key;
+                    actionValue = integer(action.opt("value"));
+                    options = scale;
+                }
             }
         }
 
         return new Item(false, title, text(row, "subtitle"), text(row, "time_label"), icon,
                 "elapsed".equals(text(row, "live")), IsoTime.parse(text(row, "at")), color(text(row, "color")),
-                routeKey, routeId, id, actionType, actionKey, actionChecked, actionIcon, sectionKey);
+                routeKey, routeId, id, actionType, actionKey, actionChecked, actionIcon, actionValue, options, sectionKey);
+    }
+
+    /** The valid options, at most {@link #MAX_OPTIONS}; options with an unknown icon or invalid color or value are skipped. */
+    private static List<Option> options(JSONArray array) {
+        if (array == null) return Collections.emptyList();
+        List<Option> options = new ArrayList<>();
+        for (int i = 0; i < array.length() && options.size() < MAX_OPTIONS; i++) {
+            JSONObject option = array.optJSONObject(i);
+            if (option == null) continue;
+            Integer value = integer(option.opt("value"));
+            String icon = text(option, "icon");
+            int color = color(text(option, "color"));
+            if (value == null || !OPTION_ICONS.contains(icon) || color == NO_COLOR) continue;
+            options.add(new Option(value, icon, color));
+        }
+        return Collections.unmodifiableList(options);
+    }
+
+    /** A JSON integer that fits an int, else null. */
+    private static Integer integer(Object value) {
+        if (value instanceof Integer) return (Integer) value;
+        if (value instanceof Long) {
+            long l = (Long) value;
+            if (l >= Integer.MIN_VALUE && l <= Integer.MAX_VALUE) return (int) l;
+        }
+        return null;
     }
 
     /** A strict {@code #RRGGBB} as opaque ARGB, else {@link #NO_COLOR}. */

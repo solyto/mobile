@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Widget picker preview on Android 12+. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background"
+    android:orientation="vertical"
+    android:padding="12dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingBottom="6dp"
+        android:singleLine="true"
+        android:text="@string/widget_check_in_name"
+        android:textColor="@color/widget_text"
+        android:textSize="16sp"
+        android:textStyle="bold" />
+
+    <FrameLayout
+        android:layout_width="60dp"
+        android:layout_height="10dp"
+        android:layout_marginStart="4dp"
+        android:layout_marginTop="6dp"
+        android:layout_marginBottom="4dp"
+        android:background="@drawable/widget_placeholder_bar" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="4dp"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_marginHorizontal="2dp"
+            android:layout_weight="1"
+            android:padding="6dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_widget_checkin_mood_1"
+            android:tint="#EF4444" />
+
+        <ImageView
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_marginHorizontal="2dp"
+            android:layout_weight="1"
+            android:padding="6dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_widget_checkin_mood_2"
+            android:tint="#F97316" />
+
+        <ImageView
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_marginHorizontal="2dp"
+            android:layout_weight="1"
+            android:padding="6dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_widget_checkin_mood_3"
+            android:tint="#3B82F6" />
+
+        <ImageView
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_marginHorizontal="2dp"
+            android:layout_weight="1"
+            android:padding="6dp"
+            android:importantForAccessibility="no"
+            android:background="@drawable/widget_check_in_option_selected"
+            android:src="@drawable/ic_widget_checkin_mood_4"
+            android:tint="#86EFAC" />
+
+        <ImageView
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_marginHorizontal="2dp"
+            android:layout_weight="1"
+            android:padding="6dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_widget_checkin_mood_5"
+            android:tint="#22C55E" />
+    </LinearLayout>
+
+    <FrameLayout
+        android:layout_width="80dp"
+        android:layout_height="10dp"
+        android:layout_marginStart="4dp"
+        android:layout_marginTop="6dp"
+        android:layout_marginBottom="4dp"
+        android:background="@drawable/widget_placeholder_bar" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="4dp"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_marginHorizontal="2dp"
+            android:layout_weight="1"
+            android:padding="6dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_widget_checkin_sport_dumbbell"
+            android:tint="@color/widget_accent" />
+
+        <ImageView
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_marginHorizontal="2dp"
+            android:layout_weight="1"
+            android:padding="6dp"
+            android:importantForAccessibility="no"
+            android:background="@drawable/widget_check_in_option_selected"
+            android:src="@drawable/ic_widget_checkin_sport_bike"
+            android:tint="@color/widget_accent" />
+
+        <ImageView
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_marginHorizontal="2dp"
+            android:layout_weight="1"
+            android:padding="6dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_widget_checkin_sport_mountain"
+            android:tint="@color/widget_accent" />
+
+        <ImageView
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_marginHorizontal="2dp"
+            android:layout_weight="1"
+            android:padding="6dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_widget_checkin_sport_footprints"
+            android:tint="@color/widget_accent" />
+
+        <ImageView
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_marginHorizontal="2dp"
+            android:layout_weight="1"
+            android:padding="6dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_widget_checkin_sport_waves_ladder"
+            android:tint="@color/widget_accent" />
+
+        <ImageView
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_marginHorizontal="2dp"
+            android:layout_weight="1"
+            android:padding="6dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_widget_checkin_sport_yoga"
+            android:tint="@color/widget_accent" />
+    </LinearLayout>
+
+    <FrameLayout
+        android:layout_width="50dp"
+        android:layout_height="10dp"
+        android:layout_marginStart="4dp"
+        android:layout_marginTop="6dp"
+        android:layout_marginBottom="4dp"
+        android:background="@drawable/widget_placeholder_bar" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="4dp"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_marginHorizontal="2dp"
+            android:layout_weight="1"
+            android:padding="6dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_widget_checkin_water"
+            android:tint="#EF4444" />
+
+        <ImageView
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_marginHorizontal="2dp"
+            android:layout_weight="1"
+            android:padding="6dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_widget_checkin_water"
+            android:tint="#F97316" />
+
+        <ImageView
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_marginHorizontal="2dp"
+            android:layout_weight="1"
+            android:padding="6dp"
+            android:importantForAccessibility="no"
+            android:background="@drawable/widget_check_in_option_selected"
+            android:src="@drawable/ic_widget_checkin_water"
+            android:tint="#3B82F6" />
+
+        <ImageView
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_marginHorizontal="2dp"
+            android:layout_weight="1"
+            android:padding="6dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_widget_checkin_water"
+            android:tint="#86EFAC" />
+
+        <ImageView
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_marginHorizontal="2dp"
+            android:layout_weight="1"
+            android:padding="6dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_widget_checkin_water"
+            android:tint="#22C55E" />
+    </LinearLayout>
+</LinearLayout>

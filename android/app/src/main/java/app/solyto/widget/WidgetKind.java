@@ -18,7 +18,8 @@ public enum WidgetKind {
     YOUR_DAY("your-day", YourDayWidgetProvider.class, YourDayWidgetProvider::updateAll,
             "today", "due", "upcoming"),
     TIME_TRACKING("time-tracking", TimeTrackingWidgetProvider.class, TimeTrackingWidgetProvider::updateAll,
-            "running", "projects");
+            "running", "projects"),
+    CHECK_IN("check-in", CheckInWidgetProvider.class, CheckInWidgetProvider::updateAll, "today");
 
     private static final String PATH_PREFIX = "/api/v1/widgets/";
 

@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Widget picker preview before Android 12 (no screenshot asset exists). -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:drawable="@drawable/widget_background"
+        android:width="250dp"
+        android:height="180dp" />
+    <item
+        android:drawable="@drawable/widget_placeholder_bar"
+        android:gravity="top|start"
+        android:width="100dp"
+        android:height="12dp"
+        android:left="16dp"
+        android:top="18dp" />
+    <item
+        android:drawable="@drawable/widget_placeholder_bar"
+        android:gravity="top|start"
+        android:width="60dp"
+        android:height="10dp"
+        android:left="16dp"
+        android:top="42dp" />
+    <item
+        android:drawable="@drawable/ic_widget_checkin_mood_1"
+        android:gravity="top|start"
+        android:width="22dp"
+        android:height="22dp"
+        android:left="18dp"
+        android:top="58dp" />
+    <item
+        android:drawable="@drawable/ic_widget_checkin_mood_2"
+        android:gravity="top|start"
+        android:width="22dp"
+        android:height="22dp"
+        android:left="56dp"
+        android:top="58dp" />
+    <item
+        android:drawable="@drawable/ic_widget_checkin_mood_3"
+        android:gravity="top|start"
+        android:width="22dp"
+        android:height="22dp"
+        android:left="94dp"
+        android:top="58dp" />
+    <item
+        android:drawable="@drawable/ic_widget_checkin_mood_4"
+        android:gravity="top|start"
+        android:width="22dp"
+        android:height="22dp"
+        android:left="132dp"
+        android:top="58dp" />
+    <item
+        android:drawable="@drawable/ic_widget_checkin_mood_5"
+        android:gravity="top|start"
+        android:width="22dp"
+        android:height="22dp"
+        android:left="170dp"
+        android:top="58dp" />
+    <item
+        android:drawable="@drawable/widget_placeholder_bar"
+        android:gravity="top|start"
+        android:width="80dp"
+        android:height="10dp"
+        android:left="16dp"
+        android:top="86dp" />
+    <item
+        android:drawable="@drawable/ic_widget_checkin_sport_dumbbell"
+        android:gravity="top|start"
+        android:width="22dp"
+        android:height="22dp"
+        android:left="18dp"
+        android:top="102dp" />
+    <item
+        android:drawable="@drawable/ic_widget_checkin_sport_bike"
+        android:gravity="top|start"
+        android:width="22dp"
+        android:height="22dp"
+        android:left="56dp"
+        android:top="102dp" />
+    <item
+        android:drawable="@drawable/ic_widget_checkin_sport_mountain"
+        android:gravity="top|start"
+        android:width="22dp"
+        android:height="22dp"
+        android:left="94dp"
+        android:top="102dp" />
+    <item
+        android:drawable="@drawable/ic_widget_checkin_sport_footprints"
+        android:gravity="top|start"
+        android:width="22dp"
+        android:height="22dp"
+        android:left="132dp"
+        android:top="102dp" />
+    <item
+        android:drawable="@drawable/ic_widget_checkin_sport_waves_ladder"
+        android:gravity="top|start"
+        android:width="22dp"
+        android:height="22dp"
+        android:left="170dp"
+        android:top="102dp" />
+    <item
+        android:drawable="@drawable/ic_widget_checkin_sport_yoga"
+        android:gravity="top|start"
+        android:width="22dp"
+        android:height="22dp"
+        android:left="208dp"
+        android:top="102dp" />
+    <item
+        android:drawable="@drawable/widget_placeholder_bar"
+        android:gravity="top|start"
+        android:width="50dp"
+        android:height="10dp"
+        android:left="16dp"
+        android:top="130dp" />
+    <item
+        android:drawable="@drawable/ic_widget_checkin_water"
+        android:gravity="top|start"
+        android:width="22dp"
+        android:height="22dp"
+        android:left="18dp"
+        android:top="146dp" />
+    <item
+        android:drawable="@drawable/ic_widget_checkin_water"
+        android:gravity="top|start"
+        android:width="22dp"
+        android:height="22dp"
+        android:left="56dp"
+        android:top="146dp" />
+    <item
+        android:drawable="@drawable/ic_widget_checkin_water"
+        android:gravity="top|start"
+        android:width="22dp"
+        android:height="22dp"
+        android:left="94dp"
+        android:top="146dp" />
+    <item
+        android:drawable="@drawable/ic_widget_checkin_water"
+        android:gravity="top|start"
+        android:width="22dp"
+        android:height="22dp"
+        android:left="132dp"
+        android:top="146dp" />
+    <item
+        android:drawable="@drawable/ic_widget_checkin_water"
+        android:gravity="top|start"
+        android:width="22dp"
+        android:height="22dp"
+        android:left="170dp"
+        android:top="146dp" />
+</layer-list>
