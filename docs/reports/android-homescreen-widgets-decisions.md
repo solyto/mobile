@@ -1,86 +1,158 @@
 # Decisions: Android home-screen widgets
 
-date: 2026-10-29
+date: 2026-10-29 (revised the same day, see §1)
 builds on: `docs/reports/android-homescreen-widgets.md` (2026-10-15)
 scope: architecture decisions for the widget foundation. No code was
 changed. The first widget is "Your Day", but these decisions are meant to
 carry many more widgets, including interactive ones (tap-to-complete,
-start/stop timer).
+start/stop timer). The goal is a solid foundation: no choice here should
+need revisiting when the next widget or the next interaction arrives.
 
 ## 1. Summary
 
 The report recommended a "web app pushes a snapshot" design, because it
 avoided both the token problem and backend changes. Two facts change that:
-interactive widgets are a real long-term goal, and the backend can change.
-The foundation is therefore:
+interactive widgets are a real goal, and the backend can change.
 
-| # | Decision | Replaces in the report |
-|---|---|---|
-| D1 | Native fetches widget data itself, with its **own scoped widget token** issued by the backend | §4 option 3.1 (snapshot push) and 3.2 (reuse the WebView token) |
-| D2 | The **backend builds widget data** in one generic row format | snapshot building in `../app` (§4 3.1) |
-| D3 | Native code is **Java + `AppWidgetProvider`/`RemoteViews`** | confirms §3.1; Glance rejected |
-| D4 | Widgets **show details**; no privacy mode | §4 "Shoulder-surfing" / open question 6 |
-| D5 | **No Capacitor upgrade** is needed for widgets | open question 8 |
-| D6 | Widget taps open routes via a **navigation hook** in `../app`, with `loadUrl` as the cold-start fallback | §6 (`loadUrl` only) |
+A second pass checked the first version of this document against the code
+in `api/`, `app/` and `android/` and with tap-to-complete in scope from the
+start. It changed D1, D2, D6, D7, D8 and D9, dropped D10 (token rotation) and
+added D11–D13.
 
-## 2. Decisions
+| # | Decision |
+|---|---|
+| D1 | Native fetches widget data with its **own widget token**, bound to the session token that issued it and only valid on widget routes |
+| D2 | The **backend builds widget data** in one generic, display-ready section/row format |
+| D3 | Native code is **Java + `AppWidgetProvider`/`RemoteViews`**; Glance rejected |
+| D4 | Widgets **show details**; no privacy mode |
+| D5 | **No Capacitor upgrade** is needed for widgets |
+| D6 | Widget taps open routes through the bridge (D7); route keys are mapped to paths in `../app` |
+| D7 | The JS ↔ native bridge uses **`addWebMessageListener`**, restricted to the app's origin |
+| D8 | **Tap-to-complete is part of the foundation**: generic action plumbing, first used by Your Day |
+| D9 | Freshness: periodic fetch, server-given `refresh_at`, refresh after changes in the app |
+| D10 | *(dropped: token lifetime and rotation now follow from D1)* |
+| D11 | One fixed **error contract** between widget routes and native |
+| D12 | **Self-hosted and outdated servers** are handled explicitly |
+| D13 | **Prerequisite:** logout in `../app` revokes the token on the server |
 
-### D1: native fetch with a scoped widget token
+## 2. Findings that shaped the revision
 
-- After login, the web app requests a separate token (for example
-  `POST /auth/widget-token`) and hands it to native through the bridge (D7).
-- The token is accepted **only by widget endpoints** (D2) and can be revoked
-  on its own. Ideally it appears in the user's session/device list.
-- Native **never sees or refreshes the WebView's token**. This removes the
-  refresh conflict from report §4 3.2, and with it open question 4 ("does
-  `/auth/refresh` invalidate the old token?").
-- At rest: an AES-GCM key in the **AndroidKeyStore** encrypts the token, and
-  the ciphertext and IV go into private `SharedPreferences`. Exclude those
-  prefs from backup (`fullBackupContent` ≤ API 30, `dataExtractionRules`
-  API 31+). That is a manifest change, so flag it in review.
-  `androidx.security:security-crypto` is deprecated; do not use it.
-- Logout in the web app clears the native copy (D7) and revokes the token on
-  the server.
+These were checked in the code on 2026-10-29.
 
-**Why:** interactive widgets need server writes from outside the app.
-Reusing the WebView token would put the main credential in two places and
-make the two copies fight over refreshes. A scoped token limits what a leak
-can do and keeps the WebView session independent.
+- **Logout never revokes the token on the server.** `Auth.logout()`
+  (`app/src/lib/state/Auth.svelte.ts`) only clears localStorage, and no code
+  calls `POST /auth/logout`. A logged-out token stays valid until it expires
+  (up to 90 days), on every platform. See D13.
+- **`addJavascriptInterface` is visible to every frame**, third-party ones
+  included. The app embeds a Deezer iframe (`DeezerSneakPreview.svelte`).
+  See D7.
+- **Sanctum abilities are not checked anywhere.** Every protected route is
+  behind plain `auth:sanctum` (`api/routes/api.php`), which accepts any valid
+  token. A token with only a `widget` ability would still reach every
+  endpoint. See D1.
+- **The app refreshes its token by itself**: on start, once the token is
+  within 14 days of expiry on native (`shouldRefresh`). The refresh deletes
+  the old token (`AuthService::refreshToken`). See D1.
+- **Mobile users can set their own API URL** (`getCustomApiUrl`), so the
+  server may be older than the app. See D12.
+- **Todo due dates are dates, not timestamps** (`Todo::$casts`,
+  `due_at => date`), and so are all-day events. See D2.
+- **Completing a recurring todo creates the next occurrence**
+  (`TodoService::update`). See D8.
 
-### D2: the backend builds widget data
+## 3. Decisions
 
-- One endpoint per widget, for example `GET /widgets/your-day`, returning
-  data that is already filtered, in the user's timezone and in the user's
-  language. The server already has the user's settings, and
-  `calendars/events/widget` is a precedent.
-- One **generic row format** shared by all widgets, roughly:
+### D1: a widget token bound to its session
+
+- **Issuing:** `POST /auth/widget-token`, called by the web app with its
+  normal token. It creates a Sanctum token named `widget-token` with the
+  ability `widget` and returns it with its expiry. The route must **not** be
+  named `widgets.*` (see the gate below).
+- **Bound to the parent:** a new nullable column `parent_token_id` on
+  `personal_access_tokens`, a foreign key to the issuing token with
+  `ON DELETE CASCADE`, and a **unique** index. Issuing replaces any existing
+  widget token of the same parent in one transaction. So:
+  - there is at most one widget token per session, enforced by the database;
+  - whatever ends a session (logout, revoking it in the session list,
+    `logout-all`, a password change, account deletion, a token refresh)
+    deletes its widget token too, with no extra code paths;
+  - a lost phone is handled by revoking that phone's session, which the user
+    would do anyway.
+- **Lifetime:** the widget token's `expires_at` is the parent's. A widget
+  token can never outlive its session. There is no separate rotation
+  endpoint: every app token refresh deletes the old widget token (cascade),
+  and the app issues a new one right after (D7). The widget secret therefore
+  rotates with the session.
+- **Scope: one central gate, deny by default.** In
+  `Sanctum::authenticateAccessTokensUsing`, a token without the `*` ability
+  is valid only on routes named `widgets.*`. Routes added later anywhere are
+  closed to widget tokens automatically. Normal tokens (`*`) may call widget
+  routes too.
+- **Session list:** `GET /auth/tokens` does not list widget tokens. They
+  belong to their session, and revoking the session covers them. The app's
+  session UI does not change.
+- **At rest on the device:** an AES-GCM key in the **AndroidKeyStore**
+  encrypts the token. The ciphertext, IV, expiry and API URL go into private
+  `SharedPreferences`, excluded from backup (`fullBackupContent` ≤ API 30,
+  `dataExtractionRules` API 31+). That is a manifest change, so flag it in
+  review. `androidx.security:security-crypto` is deprecated; do not use it.
+- Native **never sees the WebView's token**, and never returns the widget
+  token to JS.
+
+**Why:** interactive widgets need server writes from outside the app. A
+separate token keeps the main credential in one place. Binding it to the
+session makes revocation impossible to forget or skip, without new revoke
+endpoints or client-side bookkeeping.
+
+### D2: the backend builds display-ready widget data
+
+- One endpoint per widget. The first is `GET /widgets/your-day`, used only
+  by the widget for now. The app's own dashboard Your Day does not change.
+- Your Day content, in this order: **today's events**, **due and overdue
+  todos**, **upcoming events** (the 3-day range `listWidgetEvents` already
+  uses). The "scored todos" part of the dashboard stays out: its scoring
+  only exists in TypeScript.
+- One **generic format** shared by all widgets:
 
   ```
   {
     kind, schema_version, generated_at,
-    labels: { ... },                       // pre-translated UI strings
-    rows: [{ id, title, subtitle?, at?, until?, icon?, route, action? }]
+    refresh_at,                         // when this data goes stale (next local midnight)
+    labels: { ... },                    // pre-translated UI strings (title, empty state, ...)
+    sections: [{
+      key, title?,
+      rows: [{
+        id, title, subtitle?, time_label?,  // display-ready text
+        at?, until?, all_day,               // raw values: ISO timestamps, or dates when all_day
+        icon?,                              // key from a fixed icon set, never a URL
+        route: { key, id? },                // mapped to a path by ../app (D6)
+        action?: { type, key, checked? }    // D8
+      }]
+    }]
   }
   ```
 
-  - `at` / `until` are **raw timestamps**, not formatted strings. Native
-    uses them to handle the midnight rollover ("today" vs "overdue")
-    without a fetch.
-  - `action` describes an optional interaction (D8).
-  - `schema_version` lets native recognize a format it doesn't know yet.
-- One native list renderer can then serve Your Day, upcoming events, newest
-  notes, and so on. A new widget is mostly a backend endpoint plus a native
-  layout, with no logic rewritten in Java.
+  - The server knows the user's timezone, language, 12/24-hour and date
+    format, so it produces the text. Native only renders it and cannot end
+    up inconsistent with the app.
+  - Raw values stay for ordering and future use. Dates are never sent as
+    UTC timestamps.
+  - `refresh_at` tells native when to fetch again, so native needs no
+    timezone logic.
+  - **Versioning:** additive changes keep `schema_version`. Native ignores
+    fields, section types and action types it does not know. A higher
+    major version than native supports shows "update the app".
+  - The server caps rows per section; the job sets the number.
+- A new widget is mostly a backend endpoint plus a native layout, with no
+  logic rewritten in Java.
 
-**Why:** the API is meant to serve every kind of client. Building the data
-on the server removes the main weakness of native fetching (business logic
-duplicated in Java), and the WebView, the widgets and any future client all
-read the same data.
+**Why:** the API serves every kind of client. Building the data on the
+server keeps business logic out of Java, and the WebView, the widgets and
+any future client can read the same data.
 
 **Note (optional, not part of this work):** the "today/overdue" logic then
 exists both in `TodoFilterService` (TypeScript) and on the server. The
-dashboard's `YourDay.svelte` could later read the same endpoint so that only
-one implementation remains.
+dashboard's `YourDay.svelte` could later read the same endpoint.
 
 ### D3: Java + `RemoteViews`
 
@@ -88,21 +160,22 @@ one implementation remains.
   factor. What is left favours the platform API:
   - **No new build tooling.** Glance would bring Kotlin, the Compose compiler
     and Glance itself, whose versions must stay compatible with each other
-    and with AGP. Each upgrade is a chance for build errors in a language the
-    maintainer does not read.
-  - **No abstraction layer.** `RemoteViews` is what the launcher actually
-    renders, so a widget that looks wrong is debugged directly.
-  - **No F-Droid risk** and no APK growth. Release builds run with
-    `minifyEnabled false`, so the Kotlin/Compose runtime would not be
-    stripped.
+    and with AGP.
+  - **No abstraction layer.** `RemoteViews` is what the launcher renders.
+  - **No F-Droid risk** and no APK growth (release builds run with
+    `minifyEnabled false`).
   - **One language** in `android/`, matching `MainActivity` and the plugins.
-- The interaction plumbing (`PendingIntent` → receiver → background API call
-  → widget update) is verbose. It is built **once** in the foundation and
-  reused by every interactive widget.
 - Allowed new dependencies, all Apache-2.0, from Google Maven, with no GMS:
   `androidx.core:core-remoteviews` (list widgets on minSdk 24) and
-  `androidx.work:work-runtime` (D9). Networking uses the platform
-  (`HttpURLConnection` + `org.json`), with no OkHttp/Retrofit.
+  `androidx.work:work-runtime` (D9). `androidx.webkit` is already present
+  (D7). Networking uses the platform (`HttpURLConnection` + `org.json`), with
+  no OkHttp/Retrofit.
+- **Intents:** row clicks in collection widgets need a **mutable** template
+  `PendingIntent` (with an explicit component) for the per-row fill-in
+  intents; Android requires this on API 31+. All other widget
+  `PendingIntent`s are explicit and `FLAG_IMMUTABLE`, with a distinct request
+  code or data URI each. Receivers treat fill-in extras as untrusted and
+  validate the key and id format.
 - API levels: checkboxes (`setCompoundButtonChecked`) need API 31. On
   24–30, fall back to a tappable icon (report §3.1).
 
@@ -110,106 +183,148 @@ one implementation remains.
 
 Placing a widget on the home screen is the user's own choice, and so is what
 it shows. No "hide details" mode and no setup screen for now. A setup screen
-can be added later when a widget needs per-widget options (such as "which
-calendar").
+can be added later when a widget needs per-widget options.
 
 ### D5: no Capacitor upgrade for widgets
 
 Nothing here depends on a Capacitor plugin. The bridge is our own (D7), and
-widgets use platform APIs. A move to Capacitor 8 is a separate decision on its
-own merits.
+widgets use platform APIs.
 
-### D6: navigation hook for widget taps
+### D6: widget taps open routes through the bridge
 
-- `../app` exposes a small `IS_MOBILE`-gated function, for example
-  `window.solytoNavigate(path)`, that calls SvelteKit's `goto()`, the same
-  client-side navigation an in-app link uses. Once the app is running, it
-  also tells native that it is **ready** (D7).
-- `MainActivity` handles widget intents in `onCreate` and `onNewIntent`:
-  - **app ready** (warm start) → `evaluateJavascript` calls the hook: an
-    instant switch, with app state kept;
-  - **not ready** (cold start) → `loadUrl("https://my.solyto.app" + path)`,
-    which the app has to boot for anyway.
-- **Route allowlist:** `MainActivity` is `exported="true"`, so map a fixed
-  set of route keys to paths and never navigate to a string taken directly
-  from an intent extra (report §6). Widget `PendingIntent`s are explicit,
-  `FLAG_IMMUTABLE`, and use a distinct request code or data URI per route.
-- Moving share (`handleShareIntent`) to the hook is possible later but is out
-  of scope.
+- Rows carry `route: { key, id? }`, for example `{ key: "todo", id: "…" }`.
+  **`../app` owns the mapping** from keys to paths and validates the id
+  format. Native keeps no list of paths.
+- `MainActivity` handles widget intents in `onCreate` and `onNewIntent` and
+  only checks the key's format:
+  - **app ready** (warm start): native sends `navigate { key, id? }` over the
+    bridge, and the app calls SvelteKit's `goto()`. An instant switch, with
+    app state kept.
+  - **not ready** (cold start): native keeps the pending route and sends it
+    when the app reports `ready`.
+- The app ignores unknown keys and invalid ids. If the user is not logged
+  in, the normal login redirect applies.
+- `MainActivity` is `exported="true"`, so any app can send it an intent. The
+  worst a forged intent can do is open a known page.
+- Moving share (`handleShareIntent`) to the bridge is possible later but is
+  out of scope.
 
-**Why:** a full `loadUrl` throws away the running app on every tap (a blank
-moment, a refetch, lost in-memory state). The report only proposed it first
-because the shortcut widget needed no `../app` change. Your Day changes
-`../app` anyway for the bridge.
-
-## 3. Follow-on design choices (proposed defaults)
-
-These follow from D1–D6. They are written down so the implementation does
-not have to rediscover them; change them during implementation if needed.
+**Why:** a full `loadUrl` throws away the running app on every tap. One
+channel for everything avoids a global JS function and building JS strings
+for `evaluateJavascript`.
 
 ### D7: the JS ↔ native bridge
 
-- Mechanism: **`addJavascriptInterface`**, the pattern `PullToRefreshPlugin`
-  already uses. It needs no `@capacitor/core` in `../app` and avoids the
-  unverified `window.Capacitor.Plugins` assumption (report open question 9).
-- Calls: `setWidgetToken(token, expiresAt, apiUrl)` after login,
-  `clearWidgets()` on logout, `refreshWidgets()` after the user changes data
-  that a widget shows (debounced in JS), and `ready()` for D6.
-- The bridge only accepts data from JS. **Native never returns the token to
-  JS.**
-- In `../app`, all bridge calls go through one `IS_MOBILE`-gated module that
+- Mechanism: **`WebViewCompat.addWebMessageListener`** with the allowed
+  origin `https://my.solyto.app`. Only that origin's frames get the object,
+  each message carries its source origin and whether it came from the main
+  frame (native accepts main-frame messages only), and native can reply on
+  the same channel. If the WebView lacks the feature, widgets show "not
+  supported on this device" and the app carries on.
+- Messages from the app:
+  - `ready`: the app is running. Native replies `{ needsToken }` (true when
+    it has no token or the stored one has expired) and delivers a pending
+    route (D6).
+  - `setToken { token, expiresAt, apiUrl }`
+  - `clear`: logout. Native deletes the token and cached widget data and
+    shows the signed-out state.
+  - `refresh`: data a widget shows has changed (debounced in JS).
+- Messages from native: `navigate { key, id? }`.
+- When the app requests a widget token: after `ready` when native replies
+  `needsToken`, after login, and **after every successful token refresh**
+  (D1).
+- Logout order: `clear` first, then `POST /auth/logout` (D13).
+- In `../app`, all bridge use goes through one `IS_MOBILE`-gated module that
   checks whether the bridge object exists, so web and desktop are
   unaffected.
 
-### D8: interactions
+### D8: interactions (part of the foundation)
 
-- Tap on a row action → explicit broadcast to a widget action receiver →
-  WorkManager job calls the widget action endpoint (for example "complete
-  todo X") → re-fetch → update the widget.
-- Backend: action endpoints are accepted by the widget token, and only for
-  the actions widgets offer.
-- **Offline or failed:** show an error state on the widget and do not queue
-  anything. A retry queue can come later if it is needed.
+- A row action is `{ type, key, checked? }`. Native knows only the UI
+  **types** (`check` for now). The **key** names the server action, for
+  example `todo.complete`. Native validates the key format and posts to
+  `POST /widgets/actions/{key}/{id}`.
+- Backend: an **explicit route per action key**, never a generic
+  dispatcher. Each checks ownership the same way the normal endpoints do
+  and goes through the same service (for todos `TodoService::update`, so
+  recurrence keeps working).
+- Actions are **idempotent**: completing an already completed todo succeeds
+  and changes nothing. There is no "uncomplete" from the widget.
+- Native flow: tap → explicit, non-exported receiver → the widget shows the
+  new state at once → WorkManager job calls the action → re-fetch all placed
+  widgets. On failure it reverts and shows an error state. Nothing is queued
+  offline; a retry queue can come later if needed.
+- A new action is then mostly backend work, as long as its UI type exists.
 
 ### D9: freshness
 
-- A WorkManager periodic fetch every 30–60 minutes, **plus** a one-off update
-  scheduled just after local midnight, **plus** `refreshWidgets()` from the
-  app after changes. Set `updatePeriodMillis` to `0`.
-- The widget shows when it was last updated, and tapping it opens the app.
+- WorkManager periodic fetch every 60 minutes, **plus** a one-off fetch at
+  the server's `refresh_at`, **plus** `refresh` from the app after changes.
+  `updatePeriodMillis` is `0`.
+- Work is scheduled in `onEnabled` and cancelled in `onDisabled`: no
+  background work while no widget is placed.
+- **The token never goes into WorkManager input data** (stored unencrypted
+  in WorkManager's database). Workers read it from the token store.
+- The last payload is cached for rendering, excluded from backup, and
+  deleted on `clear`.
+- The widget shows when it was last updated, and tapping its header opens
+  the app.
 
-### D10: widget token lifetime
+### D10: dropped
 
-- Proposed: a long-lived token (backend chooses the exact duration) that
-  native **rotates itself** through a widget-token refresh endpoint. That
-  rotation never touches the WebView token.
-- If the token is rejected: the widget shows "Open solyto to sign in", and
-  the web app issues a fresh widget token on its next start.
+The first version proposed a long-lived token that native rotates itself.
+D1 replaces it: the widget token lives exactly as long as its session and
+rotates with every app token refresh.
 
-## 4. Work split for "Your Day"
+### D11: error contract
 
-1. **Backend:** issue, rotate and revoke the widget token (scoped), and
-   `GET /widgets/your-day` in the row format (D2).
-2. **`../app`:** bridge module (D7), hook plus ready signal (D6),
-   widget-token request after login and app start, clear on logout. Then
-   vendor it with `scripts/vendor.sh`.
-3. **This repo (`android/`):** the bridge interface, Keystore token store plus
-   backup rules, the fetch worker and midnight update, the Your Day list
-   widget (`res/` layouts, `appwidget-provider` XML with preview,
-   `values-night`, `values-de/fr/es` strings for picker text and empty and
-   error states), and the widget intent handler with the route allowlist.
-4. **Later:** action endpoints and tap-to-complete on the D8 plumbing, then
-   more widgets on the same foundation.
+| Response | Native does |
+|---|---|
+| 401 | Delete the local token, show "Open solyto to sign in". The next `ready` asks for a new token. |
+| 404 on a widget route | Show "Your server doesn't support widgets yet" (D12). |
+| 404 on an action | The item is gone: re-fetch. |
+| 426 | Show "Please update the app" (`RecordClientVersion`). |
+| 429 / 5xx / offline | Keep the last data, mark it as outdated, back off. |
 
-Steps 1 and 2 are in other repos, and each is better written as its own job
-brief.
+- Native sends `X-Client-Version` on every request, so the existing
+  minimum-version check covers widgets too.
+- The backend gets a `widgets` rate limiter per token and throttles
+  `POST /auth/widget-token`, so a stuck worker cannot flood the server.
+
+### D12: self-hosted and outdated servers
+
+- The app treats a 404 from `POST /auth/widget-token` as "this server
+  doesn't support widgets" and does not retry on every start.
+- Native uses exactly the API URL the app hands over in `setToken`, under
+  the same network security rules as the WebView.
+
+### D13: prerequisite — logout revokes the token on the server
+
+`Auth.logout()` in `../app` calls `POST /auth/logout` before clearing local
+state. If the call fails (offline), local state is cleared anyway. This
+fixes an existing gap on every platform and is what makes D1's cascade take
+effect on logout. It is its own job and comes first.
+
+## 4. Jobs
+
+| # | Repo | Job | Needs |
+|---|---|---|---|
+| 1 | `../app` | Logout revokes the token on the server (D13) | — |
+| 2 | `../api` | Widget token: issuing, parent binding with cascade, central gate, hidden from the session list (D1) | — |
+| 3 | `../api` | `GET /widgets/your-day`, `todo.complete` action, rate limits, translations (D2, D8, D11) | 2 |
+| 4 | `../app` | Widget bridge module, token requests after `ready`/login/refresh, `clear` on logout, `refresh` after todo/event changes, `navigate` handling, old-server tolerance (D6, D7, D12) | 1, 2 |
+| 5 | this repo | Vendor `../app`; widget foundation and read-only Your Day: message listener, Keystore token store and backup rules, workers, list widget (`res/` layouts, `appwidget-provider` XML with preview, `values-night`, `values-de/fr/es/it` strings for picker text and states), intent handling, error states (D3, D6, D7, D9, D11) | 3, 4 |
+| 6 | this repo | Tap-to-complete on Your Day on the D8 plumbing | 5 |
+
+1 and 2 can run in parallel, then 3 and 4, then 5, then 6. Each job gets its
+own backlog entry in its repo.
 
 ## 5. Still open
 
-- The backend's concrete token design: lifetime, rotation endpoint, whether
-  the token shows in the session list, and which actions it may call.
 - Whether to also ship static app shortcuts (`shortcuts.xml`) next to the
-  widgets (report open question 7). They are cheap and can use the same route
-  allowlist.
-- Testing: manual checks per report §7.6. Android test tooling in CI remains a
-  separate decision.
+  widgets (report open question 7). They are cheap and can use the same
+  route keys.
+- Testing: manual checks per report §7.6. Android test tooling in CI remains
+  a separate decision.
+- Not part of this work: no `sanctum:prune-expired` is scheduled, so expired
+  tokens are never deleted. Worth its own `../api` backlog entry.
