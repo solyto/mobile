@@ -20,6 +20,94 @@ Users want their day at a glance without opening the app. Every later widget
 reuses what this job builds: the bridge, the token store, fetching, the list
 renderer, routing and the error states.
 
+## Contract with the API and the app
+
+The API and app jobs live in other repos and are not visible from here. This
+section is the complete contract this job relies on. Build against it
+exactly; do not guess anything beyond it.
+
+### Bridge messages (`../app`, vendored into `frontend/`)
+
+The app looks for `window.SolytoWidgets` (from `addWebMessageListener`).
+Messages are JSON strings. The app sends with `SolytoWidgets.postMessage(...)`;
+native replies and native-initiated messages go through the `JsReplyProxy`
+and arrive in the app on `SolytoWidgets.onmessage`.
+
+App → native:
+
+| Message | When |
+|---|---|
+| `{ "type": "ready" }` | Once per app start, after auth has loaded and the router is ready |
+| `{ "type": "setToken", "token": "…", "expiresAt": "<ISO 8601>", "apiUrl": "https://…" }` | After the app issued a widget token (after `status` with `needsToken: true`, after login, after every app token refresh) |
+| `{ "type": "clear" }` | On any logout, before the app clears its own state |
+| `{ "type": "refresh" }` | After todo or calendar data changed (already debounced by the app) |
+
+Native → app:
+
+| Message | Meaning |
+|---|---|
+| `{ "type": "status", "needsToken": true \| false }` | Reply to `ready`. `true` when native has no token or the stored one has expired |
+| `{ "type": "navigate", "key": "…", "id": "…" }` | A widget row tap. `id` is optional. Keys used now: `todo` (with a todo UUID) and `calendar` (no id). The app maps keys to pages and ignores unknown ones |
+
+The widget token is never sent back to the app.
+
+### API: `GET {apiUrl}/widgets/your-day`
+
+`apiUrl` is the value from `setToken`, already including the version prefix
+(for example `https://api.solyto.app/v1`). Request headers:
+`Authorization: Bearer <widget token>`, `Accept: application/json`,
+`X-Client-Version: <app version>`.
+
+Success: 200, inside the standard envelope
+`{ "success": true, "message": "…", "data": { … }, "timestamp": "…" }`.
+`data`:
+
+```
+{
+  "kind": "your-day",
+  "schema_version": 1,
+  "generated_at": "<ISO 8601>",
+  "refresh_at": "<ISO 8601 with offset>",    // next local midnight in the user's timezone
+  "labels": { "title": "…", "empty": "…" },  // translated
+  "sections": [{
+    "key": "today" | "due" | "upcoming",
+    "title": "…",                            // translated
+    "rows": [{
+      "id": "…",
+      "title": "…",
+      "subtitle": "…",                       // optional, e.g. "Overdue · 27 Oct"
+      "time_label": "…",                     // optional, e.g. "14:00 – 15:00", "All day"
+      "at": "…", "until": "…",               // optional; ISO timestamps, or Y-m-d dates when all_day
+      "all_day": true | false,
+      "icon": "event" | "todo",              // optional
+      "route": { "key": "todo" | "calendar", "id": "…" },   // id only for todo
+      "action": { "type": "check", "key": "todo.complete", "checked": false }  // optional, todo rows
+    }]
+  }]
+}
+```
+
+- All display text is ready to show (user's language, timezone, time and
+  date format). Native formats nothing.
+- Empty sections are left out; no sections at all means show `labels.empty`.
+  At most 20 rows per section.
+- Additive changes keep `schema_version` 1: ignore unknown fields, section
+  keys, icons and action types. A `schema_version` above 1 means "update the
+  app".
+- `action` is rendered only in [[android-widget-tap-to-complete]]; this job
+  ignores it.
+
+### API status codes
+
+| Status | Meaning | Native does |
+|---|---|---|
+| 200 | Data | Render, cache, schedule `refresh_at` |
+| 401 | Widget token invalid or expired (also after logout or session revocation) | Delete the local token, show "Open solyto to sign in" |
+| 404 | The server has no widget routes (old self-hosted server) | Show "Your server doesn't support widgets yet" |
+| 426 | App below the server's minimum version | Show "Please update the app" |
+| 429 | Rate-limited | Keep the last data, mark it as outdated, back off |
+| 5xx / no response | Server or network problem | Same as 429 |
+
 ## Steps
 
 1. **Vendor** the app with `scripts/vendor.sh`, so `frontend/` contains the
