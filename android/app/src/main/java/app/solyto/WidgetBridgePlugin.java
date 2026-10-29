@@ -28,7 +28,7 @@ import org.json.JSONObject;
  * {@code window.SolytoWidgets} object, offered only to the app's own origin
  * through addWebMessageListener and accepting main-frame messages only.
  *
- * App → native: ready, setToken, clear, refresh. Native → app: status (reply
+ * App → native: ready, setToken, clear, refresh, unsupported. Native → app: status (reply
  * to ready) and navigate (widget row taps). The widget token is never sent back.
  *
  * A Capacitor plugin only so the listener is added during bridge setup,
@@ -123,6 +123,17 @@ public class WidgetBridgePlugin extends Plugin {
                 break;
             case "refresh":
                 storage.execute(() -> WidgetWork.fetchNow(context));
+                break;
+            case "unsupported":
+                // The app's server has no widget routes. Without a token native
+                // never fetches, so it only learns this from the app. A token
+                // from an earlier server would show that server's data: drop it.
+                storage.execute(() -> {
+                    WidgetTokenStore.clear(context);
+                    WidgetCache.clear(context);
+                    WidgetCache.setState(context, WidgetCache.State.UNSUPPORTED_SERVER);
+                    YourDayWidgetProvider.updateAll(context);
+                });
                 break;
             default:
                 break;
