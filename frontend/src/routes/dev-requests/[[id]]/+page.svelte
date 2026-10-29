@@ -35,7 +35,7 @@
 			onclick={() => (createOpen = true)}
 		/>
 	</div>
-	<div class="flex flex-col gap-2 px-4">
+	<div class="flex flex-col gap-4 px-4 md:gap-2">
 		{#each devRequests.entries.filter((e) => e.status !== 'completed' && e.status !== 'cancelled') as entry (entry.id)}
 			<DevRequestEntry {entry} active={openedEntry === entry.id} />
 		{/each}
@@ -44,7 +44,7 @@
 	<h2 class="pl-4 pb-2 text-2xl font-normal text-c-neutral-7 dark:text-c-neutral-3">
 		{ts.get.dev.requests.resolved_requests}
 	</h2>
-	<div class="flex flex-col gap-2 px-4">
+	<div class="flex flex-col gap-4 px-4 md:gap-2">
 		{#each devRequests.entries.filter((e) => e.status === 'completed' || e.status === 'cancelled') as entry (entry.id)}
 			<DevRequestEntry {entry} />
 		{/each}

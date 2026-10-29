@@ -153,7 +153,7 @@ const home: HomeRecords = {
 	greeting_evening: 'Bonsoir',
 	events: 'Événements',
 	all_day: 'toute la journée',
-	due_today: 'Échéance aujourd\'hui',
+	due_today: 'Pour aujourd\'hui',
 	relevant: 'Pertinent',
 	nothing_today: 'Rien de prévu pour aujourd\'hui.',
 	new_music: 'Nouvelle musique',

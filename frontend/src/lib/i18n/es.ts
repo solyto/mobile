@@ -153,7 +153,7 @@ const home: HomeRecords = {
 	greeting_evening: 'Buenas noches',
 	events: 'Eventos',
 	all_day: 'todo el día',
-	due_today: 'Vence hoy',
+	due_today: 'Para hoy',
 	relevant: 'Relevante',
 	nothing_today: 'No hay nada pendiente para hoy.',
 	new_music: 'Nueva música',
@@ -320,7 +320,7 @@ const todos: TodoRecords = {
 	due_today: 'Hoy',
 	due_tomorrow: 'Mañana',
 	due_week: 'Esta semana',
-	due_overdue: 'Atrasado',
+	due_overdue: 'Atrasadas',
 	add_due_at: 'Fecha',
 	status: 'Estado',
 	status_pending: 'Pendiente',
@@ -455,7 +455,7 @@ const widgets: WidgetRecords = {
 	no_cities_found: 'No se encontraron ciudades',
 	select_city_prompt: 'Selecciona tu ciudad para ver el pronóstico del tiempo.',
 	loading: 'Cargando',
-	coming_up: 'Próximamente'
+	coming_up: 'Próximos'
 };
 
 const notes: NoteRecords = {
