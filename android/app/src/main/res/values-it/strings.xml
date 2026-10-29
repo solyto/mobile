@@ -12,4 +12,9 @@
     <string name="widget_outdated_at">Non aggiornato · %1$s</string>
     <string name="widget_action_failed">Impossibile completare</string>
     <string name="widget_action_check">Segna come fatto</string>
+    <string name="widget_time_tracking_name">Monitoraggio del tempo</string>
+    <string name="widget_time_tracking_description">Avvia e ferma i timer dei tuoi progetti</string>
+    <string name="widget_time_tracking_failed">Impossibile aggiornare</string>
+    <string name="widget_action_start">Avvia</string>
+    <string name="widget_action_stop">Ferma</string>
 </resources>

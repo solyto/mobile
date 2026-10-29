@@ -164,7 +164,7 @@ public class YourDayWidgetProvider extends AppWidgetProvider {
         setOptionalText(row, R.id.widget_row_time, item.timeLabel);
 
         int icon = iconResource(item.icon);
-        if (item.actionType != null) {
+        if (WidgetPayload.ACTION_CHECK.equals(item.actionType)) {
             bindCheck(context, row, item);
             row.setViewVisibility(R.id.widget_row_icon, View.GONE);
         } else {

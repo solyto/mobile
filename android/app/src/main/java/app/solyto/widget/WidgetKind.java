@@ -16,7 +16,9 @@ import java.util.function.Consumer;
 public enum WidgetKind {
 
     YOUR_DAY("your-day", YourDayWidgetProvider.class, YourDayWidgetProvider::updateAll,
-            "today", "due", "upcoming");
+            "today", "due", "upcoming"),
+    TIME_TRACKING("time-tracking", TimeTrackingWidgetProvider.class, TimeTrackingWidgetProvider::updateAll,
+            "running", "projects");
 
     private static final String PATH_PREFIX = "/api/v1/widgets/";
 

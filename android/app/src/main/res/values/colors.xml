@@ -13,4 +13,5 @@
     <color name="widget_text_secondary">#6B6B6B</color>
     <color name="widget_divider">#E6E6E6</color>
     <color name="widget_accent">@color/solyto_lightblue</color>
+    <color name="widget_running">#2414A5CD</color>
 </resources>

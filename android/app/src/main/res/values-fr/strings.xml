@@ -12,4 +12,9 @@
     <string name="widget_outdated_at">Obsolète · %1$s</string>
     <string name="widget_action_failed">Impossible de terminer</string>
     <string name="widget_action_check">Marquer comme terminé</string>
+    <string name="widget_time_tracking_name">Suivi du temps</string>
+    <string name="widget_time_tracking_description">Démarrer et arrêter les minuteurs de vos projets</string>
+    <string name="widget_time_tracking_failed">Impossible de mettre à jour</string>
+    <string name="widget_action_start">Démarrer</string>
+    <string name="widget_action_stop">Arrêter</string>
 </resources>

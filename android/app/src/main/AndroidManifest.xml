@@ -52,6 +52,18 @@
         </receiver>
 
         <receiver
+            android:name=".widget.TimeTrackingWidgetProvider"
+            android:exported="false"
+            android:label="@string/widget_time_tracking_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/time_tracking_widget_info" />
+        </receiver>
+
+        <receiver
             android:name=".widget.WidgetActionReceiver"
             android:exported="false" />
 

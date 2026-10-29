@@ -12,4 +12,9 @@
     <string name="widget_outdated_at">Desactualizado · %1$s</string>
     <string name="widget_action_failed">No se pudo completar</string>
     <string name="widget_action_check">Marcar como hecho</string>
+    <string name="widget_time_tracking_name">Control de tiempo</string>
+    <string name="widget_time_tracking_description">Inicia y detén los temporizadores de tus proyectos</string>
+    <string name="widget_time_tracking_failed">No se pudo actualizar</string>
+    <string name="widget_action_start">Iniciar</string>
+    <string name="widget_action_stop">Detener</string>
 </resources>

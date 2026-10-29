@@ -12,4 +12,9 @@
     <string name="widget_outdated_at">Veraltet · %1$s</string>
     <string name="widget_action_failed">Abhaken fehlgeschlagen</string>
     <string name="widget_action_check">Als erledigt markieren</string>
+    <string name="widget_time_tracking_name">Zeiterfassung</string>
+    <string name="widget_time_tracking_description">Timer für deine Projekte starten und stoppen</string>
+    <string name="widget_time_tracking_failed">Aktualisieren fehlgeschlagen</string>
+    <string name="widget_action_start">Starten</string>
+    <string name="widget_action_stop">Stoppen</string>
 </resources>

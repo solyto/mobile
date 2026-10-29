@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Widget picker preview before Android 12 (no screenshot asset exists). -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:drawable="@drawable/widget_background"
+        android:width="250dp"
+        android:height="150dp" />
+    <item
+        android:drawable="@drawable/widget_placeholder_bar"
+        android:gravity="top|start"
+        android:width="100dp"
+        android:height="12dp"
+        android:left="16dp"
+        android:top="18dp" />
+    <item
+        android:drawable="@drawable/widget_running_background"
+        android:gravity="top|start"
+        android:width="226dp"
+        android:height="36dp"
+        android:left="12dp"
+        android:top="40dp" />
+    <item
+        android:drawable="@drawable/widget_placeholder_bar"
+        android:gravity="top|start"
+        android:width="120dp"
+        android:height="10dp"
+        android:left="22dp"
+        android:top="53dp" />
+    <item
+        android:drawable="@drawable/ic_widget_stop"
+        android:gravity="top|start"
+        android:width="24dp"
+        android:height="24dp"
+        android:left="206dp"
+        android:top="46dp" />
+    <item
+        android:drawable="@drawable/widget_placeholder_bar"
+        android:gravity="top|start"
+        android:width="140dp"
+        android:height="10dp"
+        android:left="22dp"
+        android:top="89dp" />
+    <item
+        android:drawable="@drawable/ic_widget_play"
+        android:gravity="top|start"
+        android:width="24dp"
+        android:height="24dp"
+        android:left="206dp"
+        android:top="82dp" />
+    <item
+        android:drawable="@drawable/widget_placeholder_bar"
+        android:gravity="top|start"
+        android:width="90dp"
+        android:height="10dp"
+        android:left="22dp"
+        android:top="121dp" />
+    <item
+        android:drawable="@drawable/ic_widget_play"
+        android:gravity="top|start"
+        android:width="24dp"
+        android:height="24dp"
+        android:left="206dp"
+        android:top="114dp" />
+</layer-list>

@@ -9,7 +9,7 @@ import org.json.JSONObject;
 
 /**
  * Receives every tap on a widget list row: a list has a single click
- * template, so row taps (open a route) and checkbox taps (run an action) both
+ * template, so row taps (open a route) and checkbox or button taps (run an action) both
  * arrive here. Fill-in extras come from the launcher and are untrusted.
  */
 public class WidgetActionReceiver extends BroadcastReceiver {
@@ -51,14 +51,15 @@ public class WidgetActionReceiver extends BroadcastReceiver {
     }
 
     private static boolean runAction(Context context, WidgetKind kind, String type, String key, String id) {
-        if (kind == null || !WidgetPayload.ACTION_CHECK.equals(type)) return false;
+        boolean check = WidgetPayload.ACTION_CHECK.equals(type);
+        if (kind == null || !(check || WidgetPayload.ACTION_BUTTON.equals(type))) return false;
         if (!WidgetPayload.isValidActionKey(key) || !WidgetPayload.isValidRowId(id)) return false;
 
         // Only rows the widget currently shows with this action, and not already done.
         if (WidgetCache.state(context) != WidgetCache.State.OK) return false;
         WidgetPayload payload = cachedPayload(context, kind);
         WidgetPayload.Item row = payload != null ? payload.findAction(type, key, id) : null;
-        if (row == null || row.actionChecked) return false;
+        if (row == null || (check && row.actionChecked)) return false;
 
         // Repeated taps while a call is running are ignored.
         if (!WidgetCache.startAction(context, kind, id)) return false;
