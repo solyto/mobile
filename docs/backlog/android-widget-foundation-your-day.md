@@ -51,10 +51,13 @@ Native → app:
 
 The widget token is never sent back to the app.
 
-### API: `GET {apiUrl}/widgets/your-day`
+### API: `GET {apiUrl}/api/v1/widgets/your-day`
 
-`apiUrl` is the value from `setToken`, already including the version prefix
-(for example `https://api.solyto.app/v1`). Request headers:
+`apiUrl` is the value from `setToken`: the bare server URL the user
+configured, without a path and without a trailing slash (for example
+`https://api.solyto.app`, or a self-hosted server's URL). Native appends the
+API path itself: `/api/v1/widgets/...`. This matches the app, whose API base is
+`${apiUrl}/api/v1`. Request headers:
 `Authorization: Bearer <widget token>`, `Accept: application/json`,
 `X-Client-Version: <app version>`.
 
@@ -110,9 +113,11 @@ Success: 200, inside the standard envelope
 
 ## Steps
 
-1. **Vendor** the app with `scripts/vendor.sh`, so `frontend/` contains the
-   widget bridge module (and the Italian translation added since the last
-   vendor run). Commit it separately.
+1. **Already vendored:** `frontend/` already contains the app with the widget
+   bridge (`frontend/src/lib/state/WidgetBridge.ts`) and the Italian
+   translation. Do **not** run `scripts/vendor.sh` (`../app` is not available
+   here). Just confirm the file exists; it is the JS side of the contract
+   above.
 2. **Bridge:** a Capacitor plugin (registered in `MainActivity` like
    `PullToRefreshPlugin`, so it is set up before the first page loads) that
    calls `WebViewCompat.addWebMessageListener` with the name `SolytoWidgets`

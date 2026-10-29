@@ -28,8 +28,8 @@ general status codes are in [[android-widget-foundation-your-day]].
 Rows that can be acted on carry, for example:
 `"action": { "type": "check", "key": "todo.complete", "checked": false }`.
 
-Request: `POST {apiUrl}/widgets/actions/{key}/{id}`, for example
-`POST {apiUrl}/widgets/actions/todo.complete/<todo uuid>`, with the same
+Request: `POST {apiUrl}/api/v1/widgets/actions/{key}/{id}`, for example
+`POST {apiUrl}/api/v1/widgets/actions/todo.complete/<todo uuid>`, with the same
 headers as the widget fetch (`Authorization: Bearer <widget token>`,
 `Accept: application/json`, `X-Client-Version`) and no body.
 
