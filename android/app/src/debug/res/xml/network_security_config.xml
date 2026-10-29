@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Debug builds only. Allows plain http to a local API reached through
+    `adb reverse tcp:8000 tcp:8000` (server URL http://localhost:8000).
+    Everything else keeps the platform default (no cleartext).
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">localhost</domain>
+        <domain includeSubdomains="false">127.0.0.1</domain>
+    </domain-config>
+</network-security-config>
