@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">sodevto</string>
-    <string name="title_activity_main">sodevto</string>
-    <string name="package_name">app.sodevto</string>
-    <string name="custom_url_scheme">app.sodevto</string>
-</resources>

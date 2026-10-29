@@ -42,7 +42,14 @@ rsync -a --delete \
 echo "→ Renaming to sodevto..."
 grep -q "$PROD_APP_ID" "$GRADLE" || { echo "✗ $PROD_APP_ID not found in build.gradle"; exit 1; }
 sed -i "s/$PROD_APP_ID/$DEV_APP_ID/" "$GRADLE"
-cp "$DEV_DIR/strings.xml" "$PROJECT/app/src/main/res/values/strings.xml"
+# Only the name strings: the file also holds the widget strings.
+STRINGS="$PROJECT/app/src/main/res/values/strings.xml"
+for entry in app_name:sodevto title_activity_main:sodevto package_name:app.sodevto custom_url_scheme:app.sodevto; do
+  name="${entry%%:*}"
+  value="${entry#*:}"
+  grep -q "<string name=\"$name\">[^<]*</string>" "$STRINGS" || { echo "✗ string $name not found in strings.xml"; exit 1; }
+  sed -i "s|<string name=\"$name\">[^<]*</string>|<string name=\"$name\">$value</string>|" "$STRINGS"
+done
 
 echo "→ Syncing to Capacitor..."
 cp "$ROOT/package.json" "$ROOT/package-lock.json" "$DEV_DIR/capacitor.config.json" "$BUILD/"
