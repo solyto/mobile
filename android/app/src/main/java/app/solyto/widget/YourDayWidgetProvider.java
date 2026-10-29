@@ -168,6 +168,8 @@ public class YourDayWidgetProvider extends AppWidgetProvider {
             if (icon != 0) {
                 row.setImageViewResource(R.id.widget_row_icon, icon);
                 row.setViewVisibility(R.id.widget_row_icon, View.VISIBLE);
+            } else {
+                row.setViewVisibility(R.id.widget_row_icon, View.GONE);
             }
         }
 
@@ -207,8 +209,13 @@ public class YourDayWidgetProvider extends AppWidgetProvider {
         row.setViewVisibility(R.id.widget_row_check, View.VISIBLE);
     }
 
+    // Always sets visibility: the list reapplies row views to recycled views,
+    // so a row without this text would otherwise keep a previous row's.
     private static void setOptionalText(RemoteViews views, int viewId, String text) {
-        if (text == null) return;
+        if (text == null) {
+            views.setViewVisibility(viewId, View.GONE);
+            return;
+        }
         views.setTextViewText(viewId, text);
         views.setViewVisibility(viewId, View.VISIBLE);
     }

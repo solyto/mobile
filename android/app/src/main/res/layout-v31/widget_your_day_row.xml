@@ -13,8 +13,9 @@
         android:id="@+id/widget_row_check"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="-6dp"
-        android:buttonTint="@color/widget_accent"
+        android:layout_marginEnd="8dp"
+        android:background="@null"
+        android:button="@drawable/widget_check_button"
         android:minWidth="0dp"
         android:minHeight="0dp"
         android:visibility="gone" />

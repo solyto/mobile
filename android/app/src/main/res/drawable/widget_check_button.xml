@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Button drawable for the API 31+ widget CheckBox. Our own icons instead of
+    the platform checkbox, whose look depends on the launcher's theme and did
+    not render at all. Same icons as the API 24–30 fallback.
+-->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/ic_widget_check_on" android:state_checked="true" />
+    <item android:drawable="@drawable/ic_widget_todo" />
+</selector>
