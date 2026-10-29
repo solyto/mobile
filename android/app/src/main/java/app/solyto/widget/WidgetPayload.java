@@ -57,10 +57,12 @@ final class WidgetPayload {
         final boolean actionChecked;
         /** "play" or "stop" for button actions, else null. */
         final String actionIcon;
+        /** The key of the section this header or row belongs to. */
+        final String section;
 
         Item(boolean isHeader, String title, String subtitle, String timeLabel, String icon,
                 boolean liveElapsed, long at, int color, String routeKey, String routeId, String id,
-                String actionType, String actionKey, boolean actionChecked, String actionIcon) {
+                String actionType, String actionKey, boolean actionChecked, String actionIcon, String section) {
             this.isHeader = isHeader;
             this.title = title;
             this.subtitle = subtitle;
@@ -76,6 +78,7 @@ final class WidgetPayload {
             this.actionKey = actionKey;
             this.actionChecked = actionChecked;
             this.actionIcon = actionIcon;
+            this.section = section;
         }
     }
 
@@ -140,21 +143,22 @@ final class WidgetPayload {
     private static void addSection(List<Item> items, JSONObject section) {
         JSONArray rows = section.optJSONArray("rows");
         if (rows == null) return;
+        String sectionKey = section.optString("key");
 
         List<Item> sectionRows = new ArrayList<>();
         for (int i = 0; i < rows.length() && sectionRows.size() < MAX_ROWS_PER_SECTION; i++) {
-            Item row = parseRow(rows.optJSONObject(i));
+            Item row = parseRow(rows.optJSONObject(i), sectionKey);
             if (row != null) sectionRows.add(row);
         }
         if (sectionRows.isEmpty()) return;
 
         String sectionTitle = text(section, "title");
         if (sectionTitle != null) items.add(new Item(true, sectionTitle, null, null, null, false, -1, NO_COLOR,
-                null, null, null, null, null, false, null));
+                null, null, null, null, null, false, null, sectionKey));
         items.addAll(sectionRows);
     }
 
-    private static Item parseRow(JSONObject row) {
+    private static Item parseRow(JSONObject row, String sectionKey) {
         if (row == null) return null;
         String title = text(row, "title");
         if (title == null) return null;
@@ -196,7 +200,7 @@ final class WidgetPayload {
 
         return new Item(false, title, text(row, "subtitle"), text(row, "time_label"), icon,
                 "elapsed".equals(text(row, "live")), IsoTime.parse(text(row, "at")), color(text(row, "color")),
-                routeKey, routeId, id, actionType, actionKey, actionChecked, actionIcon);
+                routeKey, routeId, id, actionType, actionKey, actionChecked, actionIcon, sectionKey);
     }
 
     /** A strict {@code #RRGGBB} as opaque ARGB, else {@link #NO_COLOR}. */

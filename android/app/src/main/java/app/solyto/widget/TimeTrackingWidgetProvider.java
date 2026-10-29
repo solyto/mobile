@@ -26,6 +26,9 @@ public class TimeTrackingWidgetProvider extends AppWidgetProvider {
     // Distinct from Your Day's, so the kinds' PendingIntents don't replace each other.
     private static final int REQUEST_HEADER = 3;
     private static final int REQUEST_ROW_TEMPLATE = 4;
+    private static final int REQUEST_RUNNING_ROUTE = 5;
+    private static final int REQUEST_RUNNING_STOP = 6;
+    private static final String SECTION_RUNNING = "running";
     private static final int BUSY_ALPHA = 90;
 
     @Override
@@ -96,20 +99,29 @@ public class TimeTrackingWidgetProvider extends AppWidgetProvider {
                 ? payload.title : context.getString(R.string.widget_time_tracking_name));
         renderUpdatedAt(context, views, payload != null);
 
+        // The running section goes into the fixed area above the list (see the layout).
+        WidgetPayload.Item running = null;
         RemoteViewsCompat.RemoteCollectionItems.Builder items =
                 new RemoteViewsCompat.RemoteCollectionItems.Builder()
                         .setHasStableIds(false)
                         .setViewTypeCount(2);
-        boolean hasRows = payload != null && !payload.items.isEmpty();
-        if (hasRows) {
-            for (int i = 0; i < payload.items.size(); i++) {
-                items.addItem(i, itemView(context, payload.items.get(i)));
+        int rowCount = 0;
+        if (payload != null) {
+            for (WidgetPayload.Item item : payload.items) {
+                if (SECTION_RUNNING.equals(item.section)) {
+                    if (running == null && !item.isHeader && item.liveElapsed && item.at > 0) running = item;
+                    continue;
+                }
+                items.addItem(rowCount++, itemView(context, item));
             }
         }
         RemoteViewsCompat.setRemoteAdapter(context, views, appWidgetId, R.id.widget_list, items.build());
+        renderRunning(context, views, running);
 
+        boolean hasRows = rowCount > 0;
         views.setViewVisibility(R.id.widget_list, hasRows ? View.VISIBLE : View.GONE);
-        views.setViewVisibility(R.id.widget_message, hasRows ? View.GONE : View.VISIBLE);
+        // With only a running timer (its project is the only one), neither list nor message shows.
+        views.setViewVisibility(R.id.widget_message, hasRows || running != null ? View.GONE : View.VISIBLE);
         views.setTextViewText(R.id.widget_message, message);
 
         manager.updateAppWidget(appWidgetId, views);
@@ -152,6 +164,63 @@ public class TimeTrackingWidgetProvider extends AppWidgetProvider {
         int label = WidgetCache.isOutdated(context, KIND) ? R.string.widget_outdated_at : R.string.widget_updated_at;
         views.setTextViewText(R.id.widget_updated, context.getString(label, time));
         views.setViewVisibility(R.id.widget_updated, View.VISIBLE);
+    }
+
+    /**
+     * The running timer, outside the list so its Chronometer ticks. Not a list
+     * row, so its taps use their own immutable PendingIntents instead of the
+     * row template: the route goes to MainActivity (which validates it again),
+     * the stop button to {@link WidgetActionReceiver} like a row button.
+     */
+    private static void renderRunning(Context context, RemoteViews views, WidgetPayload.Item item) {
+        if (item == null) {
+            views.setChronometer(R.id.widget_running_elapsed, SystemClock.elapsedRealtime(), null, false);
+            views.setViewVisibility(R.id.widget_running, View.GONE);
+            return;
+        }
+
+        views.setTextViewText(R.id.widget_running_title, item.title);
+        if (item.subtitle != null) {
+            views.setTextViewText(R.id.widget_running_subtitle, item.subtitle);
+            views.setViewVisibility(R.id.widget_running_subtitle, View.VISIBLE);
+        } else {
+            views.setViewVisibility(R.id.widget_running_subtitle, View.GONE);
+        }
+        views.setInt(R.id.widget_running_dot, "setColorFilter",
+                item.color != WidgetPayload.NO_COLOR ? item.color : context.getColor(R.color.widget_accent));
+
+        long elapsed = Math.max(0, System.currentTimeMillis() - item.at);
+        views.setChronometer(R.id.widget_running_elapsed, SystemClock.elapsedRealtime() - elapsed, null, true);
+
+        if (item.routeKey != null) {
+            Intent open = new Intent(context, MainActivity.class)
+                    .setAction(MainActivity.ACTION_WIDGET_ROUTE)
+                    .putExtra(MainActivity.EXTRA_WIDGET_ROUTE_KEY, item.routeKey)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            if (item.routeId != null) open.putExtra(MainActivity.EXTRA_WIDGET_ROUTE_ID, item.routeId);
+            views.setOnClickPendingIntent(R.id.widget_running, PendingIntent.getActivity(context,
+                    REQUEST_RUNNING_ROUTE, open, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
+        }
+
+        if (WidgetPayload.ACTION_BUTTON.equals(item.actionType)) {
+            boolean busy = WidgetCache.isActionActive(context, KIND, item.id);
+            Intent stop = new Intent(context, WidgetActionReceiver.class)
+                    .setAction(WidgetActionReceiver.ACTION_ROW_TAP)
+                    .putExtra(WidgetActionReceiver.EXTRA_ACTION_KIND, KIND.id)
+                    .putExtra(WidgetActionReceiver.EXTRA_ACTION_TYPE, item.actionType)
+                    .putExtra(WidgetActionReceiver.EXTRA_ACTION_KEY, item.actionKey)
+                    .putExtra(WidgetActionReceiver.EXTRA_ACTION_ID, item.id);
+            views.setOnClickPendingIntent(R.id.widget_running_button, PendingIntent.getBroadcast(context,
+                    REQUEST_RUNNING_STOP, stop, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
+            views.setContentDescription(R.id.widget_running_button, context.getString(R.string.widget_action_stop));
+            views.setInt(R.id.widget_running_button, "setImageAlpha", busy ? BUSY_ALPHA : 255);
+            views.setBoolean(R.id.widget_running_button, "setEnabled", !busy);
+            views.setViewVisibility(R.id.widget_running_button, View.VISIBLE);
+        } else {
+            views.setViewVisibility(R.id.widget_running_button, View.GONE);
+        }
+
+        views.setViewVisibility(R.id.widget_running, View.VISIBLE);
     }
 
     // The list reapplies row views to recycled views, so every view state is set
