@@ -8,6 +8,7 @@
 	import { getKeyManager } from '$lib/state/KeyManager.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import DeleteButton from '$lib/components/ui/buttons/DeleteButton.svelte';
+	import ConfirmationModal from '$lib/components/ui/ConfirmationModal.svelte';
 	import TextInput from '$lib/components/forms/TextInput.svelte';
 
 	const todos = getTodos();
@@ -18,11 +19,21 @@
 	let { category }: { category: TodoCategory } = $props();
 
 	let editing = $state<boolean>(false);
+	let deleteModalOpen = $state<boolean>(false);
 	let title = $state<string>('');
 	let input = $state<HTMLInputElement | null>(null);
 	let keyHandlers: Record<string, string | null> = { Enter: null, Escape: null };
 
-	async function onDelete(category: TodoCategory): Promise<void> {
+	function openDeleteModal(): void {
+		deleteModalOpen = true;
+	}
+
+	function closeDeleteModal(): void {
+		deleteModalOpen = false;
+	}
+
+	async function onDelete(): Promise<void> {
+		deleteModalOpen = false;
 		loadingIndicator.start();
 		await todos.deleteCategory(category);
 		loadingIndicator.stop();
@@ -81,7 +92,17 @@
 			>
 				<IconPen class="size-5 md:size-4" />
 			</button>
-			<DeleteButton onClick={() => onDelete(category)} inModal={false} buttonStyle="minimal" iconClass="size-5 md:size-4" />
+			<DeleteButton onClick={openDeleteModal} inModal={false} buttonStyle="minimal" iconClass="size-5 md:size-4" />
 		</div>
 	{/if}
 </div>
+
+{#if deleteModalOpen}
+	<ConfirmationModal
+		title={ts.get.todos.category_deletion_title}
+		description={ts.get.todos.category_deletion_description}
+		type="confirm-delete"
+		onConfirm={onDelete}
+		onCancel={closeDeleteModal}
+	/>
+{/if}

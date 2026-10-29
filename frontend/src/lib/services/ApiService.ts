@@ -11,9 +11,11 @@ import LocalStorageService from '$lib/services/LocalStorageService';
 const AUTH_ENDPOINTS: string[] = [
 	apiRoutes.auth.login,
 	apiRoutes.auth.refresh,
+	apiRoutes.auth.logout,
 	apiRoutes.auth.register,
 	apiRoutes.auth.verify,
 	apiRoutes.auth.forgotPassword,
+	apiRoutes.auth.resendVerification,
 	apiRoutes.auth.resetPassword,
 	apiRoutes.auth.confirmAccountDeletion,
 	apiRoutes.auth.passkeys.authenticateOptions,
@@ -27,6 +29,20 @@ export class NetworkError extends Error {
 	constructor(cause: unknown) {
 		super(cause instanceof Error ? cause.message : 'Network request failed', { cause });
 		this.name = 'NetworkError';
+	}
+}
+
+// A 429 from the API. Thrown instead of returning the response so no caller can
+// mistake it for a failed login or an invalid link; the root layout reports it.
+export class RateLimitedError extends Error {
+	readonly retryAfter: number | null;
+	readonly code: string | null;
+
+	constructor(retryAfter: number | null, code: string | null) {
+		super('Too many requests');
+		this.name = 'RateLimitedError';
+		this.retryAfter = retryAfter;
+		this.code = code;
 	}
 }
 
@@ -102,7 +118,7 @@ export default class ApiService {
 		}
 	}
 
-	private storedServerVersion(): string | null {
+	storedServerVersion(): string | null {
 		const stored = this.localStorage.getJson(ApiService.LS_SERVER_VERSION_KEY) as Partial<StoredServerVersion> | null;
 		if (!stored || stored.apiUrl !== getApiUrl() || typeof stored.version !== 'string') return null;
 
@@ -125,6 +141,10 @@ export default class ApiService {
 		if (res.status === 426) {
 			await this.reportUpgradeRequired(res);
 			return res;
+		}
+
+		if (res.status === 429) {
+			throw await this.readRateLimitedError(res);
 		}
 
 		if (res.status !== 401 || !this.unauthorizedHandler || this.isAuthEndpoint(endpoint)) {
@@ -163,6 +183,20 @@ export default class ApiService {
 			return typeof minVersion === 'string' ? minVersion : null;
 		} catch {
 			return null;
+		}
+	}
+
+	private async readRateLimitedError(res: Response): Promise<RateLimitedError> {
+		try {
+			const body = await res.clone().json();
+			const retryAfter = body?.meta?.retry_after ?? body?.retry_after;
+			const code = body?.errors?.[0];
+			return new RateLimitedError(
+				typeof retryAfter === 'number' ? retryAfter : null,
+				typeof code === 'string' ? code : null
+			);
+		} catch {
+			return new RateLimitedError(null, null);
 		}
 	}
 
@@ -238,14 +272,15 @@ export default class ApiService {
 
 	async postWithStatus(
 		endpoint: string,
-		body: FormData | object
+		body: FormData | object,
+		signal?: AbortSignal
 	): Promise<
 		{ ok: true; status: number; data: PostResponse } | { ok: false; status: number; data: null }
 	> {
 		const isFormData = body instanceof FormData;
 		const res = await this.fetchWithRecovery(
 			endpoint,
-			{ method: 'POST', body: isFormData ? body : JSON.stringify(body) },
+			{ method: 'POST', body: isFormData ? body : JSON.stringify(body), signal },
 			() => (isFormData ? this.getApiHeader() : this.getApiHeaderWithBody())
 		);
 

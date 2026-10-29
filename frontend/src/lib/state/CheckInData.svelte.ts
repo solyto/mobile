@@ -4,7 +4,6 @@ import { setContext, getContext } from 'svelte';
 import { getAuth, type Auth } from '$lib/state/Auth.svelte';
 import ApiService from '$lib/services/ApiService';
 import { apiRoutes } from '$lib/config/apiRoutes';
-import { getUrlFormat } from '$lib/helpers/DateHelper';
 import { page } from '$app/state';
 import LocalStorageService from '$lib/services/LocalStorageService';
 
@@ -100,11 +99,7 @@ export class CheckInData {
 	}
 
 	getDayData(day?: string): CheckIn | null {
-		if (!day)
-			return (
-				this.data.find((t) => t.date === getUrlFormat(new Date(this.selectedDate as string))) ??
-				null
-			);
+		if (!day) return this.data.find((t) => t.date === this.selectedDate) ?? null;
 
 		return this.data.find((t) => t.date === day) ?? null;
 	}

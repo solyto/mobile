@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Todos } from '$lib/state/Todos.svelte';
-import { api, storage, pageState, resetStoreMocks } from '../setup/storeMocks';
+import { api, auth, storage, pageState, resetStoreMocks } from '../setup/storeMocks';
 import { todo, category } from '../helpers/factories';
 
 beforeEach(() => {
@@ -191,6 +191,43 @@ describe('Todos store', () => {
 			t.todos = [todo()];
 			t.checkUrlForFilter();
 			expect(t.activeFilters).toEqual([]);
+		});
+	});
+
+	describe('openFromUrl', () => {
+		it('opens the todo named by a valid ?todo= id', () => {
+			const id = '3f2b8c1e-4d5a-4b6c-8e7f-9a0b1c2d3e4f';
+			pageState.searchParams = new URLSearchParams({ todo: id });
+			const t = new Todos();
+
+			t.openFromUrl();
+
+			expect(t.editingTodoId).toBe(id);
+		});
+
+		it('ignores a missing or invalid id', () => {
+			const t = new Todos();
+			t.openFromUrl();
+
+			pageState.searchParams = new URLSearchParams({ todo: 'not-a-uuid' });
+			t.openFromUrl();
+
+			expect(t.editingTodoId).toBeNull();
+		});
+	});
+
+	describe('widget refresh', () => {
+		it('notifies the widgets after a successful change only', async () => {
+			api.list.mockResolvedValue({ data: [] });
+			const t = new Todos();
+
+			api.update.mockResolvedValueOnce(false);
+			await t.changeCompleted(todo({ id: '1' }), true);
+			expect(auth.widgetBridge.notifyChanged).not.toHaveBeenCalled();
+
+			api.update.mockResolvedValueOnce(true);
+			await t.changeCompleted(todo({ id: '1' }), true);
+			expect(auth.widgetBridge.notifyChanged).toHaveBeenCalledTimes(1);
 		});
 	});
 

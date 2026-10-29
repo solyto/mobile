@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { CheckIn, CheckInType } from '$lib/types/check_in';
 	import { getCheckInData } from '$lib/state/CheckInData.svelte';
-	import { getUrlFormat, getISODateInfo } from '$lib/helpers/DateHelper';
+	import { getUrlFormat, getStartOfWeek, getDateMinusDays } from '$lib/helpers/DateHelper';
 	import { buildDaySummary, buildPeriodSummary, getDayLabel } from '$lib/helpers/CheckInSummaryHelper';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { getAuth } from '$lib/state/Auth.svelte';
@@ -54,19 +54,15 @@
 		const today = new Date();
 		const rows: SummaryRow[] = [];
 
-		const thisWeek = getISODateInfo(today);
-		const lastWeekDate = new Date(today);
-		lastWeekDate.setDate(today.getDate() - 7);
-		const lastWeek = getISODateInfo(lastWeekDate);
+		const weekStart = auth.getWeekStart();
+		const thisWeek = getUrlFormat(getStartOfWeek(today, weekStart));
+		const lastWeek = getUrlFormat(getStartOfWeek(getDateMinusDays(today, 7), weekStart));
 
-		for (const { info, label } of [
-			{ info: thisWeek, label: p.period_this_week },
-			{ info: lastWeek, label: p.period_last_week }
+		for (const { start, label } of [
+			{ start: thisWeek, label: p.period_this_week },
+			{ start: lastWeek, label: p.period_last_week }
 		]) {
-			const weekDates = dates.filter((d: Date) => {
-				const i = getISODateInfo(d);
-				return i.week === info.week && i.year === info.year;
-			});
+			const weekDates = dates.filter((d: Date) => getUrlFormat(getStartOfWeek(d, weekStart)) === start);
 			const checkIns = getCheckInsForDates(weekDates);
 			if (checkIns.length < 2) continue;
 			const text = buildPeriodSummary(checkIns, trackers, p);

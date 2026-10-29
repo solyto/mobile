@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import TodoFilterService from '$lib/services/TodoFilterService';
 import type { Todo, TodoCategory, TodoWorkspace } from '$lib/types/todo';
 import type { Tag } from '$lib/types/tag';
@@ -111,19 +111,19 @@ describe('filterByDueDate', () => {
 			todo({ due_at: '2099-01-01' }),
 			todo({ due_at: '' })
 		];
-		const result = service.filterByDueDate('today', todos);
+		const result = service.filterByDueDate('today', todos, 'monday');
 		expect(result).toHaveLength(1);
 		expect(result[0].due_at).toBe(todayStr);
 	});
 
 	it('filters by tomorrow', () => {
 		const todos = [todo({ due_at: tomorrowStr }), todo({ due_at: todayStr })];
-		expect(service.filterByDueDate('tomorrow', todos)).toHaveLength(1);
+		expect(service.filterByDueDate('tomorrow', todos, 'monday')).toHaveLength(1);
 	});
 
 	it('filters overdue (past dates only)', () => {
 		const todos = [todo({ due_at: '2000-01-01' }), todo({ due_at: '2099-01-01' })];
-		expect(service.filterByDueDate('overdue', todos)).toHaveLength(1);
+		expect(service.filterByDueDate('overdue', todos, 'monday')).toHaveLength(1);
 	});
 
 	it('filters today-overdue (today and past combined)', () => {
@@ -132,11 +132,11 @@ describe('filterByDueDate', () => {
 			todo({ due_at: '2000-01-01' }),
 			todo({ due_at: '2099-01-01' })
 		];
-		expect(service.filterByDueDate('today-overdue', todos)).toHaveLength(2);
+		expect(service.filterByDueDate('today-overdue', todos, 'monday')).toHaveLength(2);
 	});
 
 	it('excludes todos with an empty due date', () => {
-		expect(service.filterByDueDate('today', [todo({ due_at: '' })])).toHaveLength(0);
+		expect(service.filterByDueDate('today', [todo({ due_at: '' })], 'monday')).toHaveLength(0);
 	});
 });
 
@@ -208,46 +208,52 @@ describe('filterByHideIt', () => {
 describe('filter (dispatch)', () => {
 	it('routes priority filter correctly', () => {
 		const todos = [todo({ priority: 'high' }), todo({ priority: 'low' })];
-		expect(service.filter({ type: 'priority', value: 'high' }, todos)).toHaveLength(1);
+		expect(service.filter({ type: 'priority', value: 'high' }, todos, 'monday')).toHaveLength(1);
 	});
 
 	it('routes status filter correctly', () => {
 		const todos = [todo({ status: 'pending' }), todo({ status: 'backlog' })];
-		expect(service.filter({ type: 'status', value: 'pending' }, todos)).toHaveLength(1);
+		expect(service.filter({ type: 'status', value: 'pending' }, todos, 'monday')).toHaveLength(1);
 	});
 
 	it('returns all todos for unknown filter type', () => {
 		// @ts-expect-error testing fallback path
-		expect(service.filter({ type: 'unknown', value: '' }, [todo(), todo()])).toHaveLength(2);
+		expect(service.filter({ type: 'unknown', value: '' }, [todo(), todo()], 'monday')).toHaveLength(2);
 	});
 });
 
 describe('filterByDueDate (week)', () => {
-	it('keeps only todos due within the current week', () => {
-		// isDateThisWeek uses a Sunday-start week: today - getDay() to +6 days
-		const now = new Date();
-		const startOfWeek = new Date(now);
-		startOfWeek.setDate(now.getDate() - now.getDay());
-		const endOfWeek = new Date(now);
-		endOfWeek.setDate(startOfWeek.getDate() + 6);
+	beforeEach(() => {
+		vi.useFakeTimers();
+		vi.setSystemTime(new Date(2025, 7, 13, 12, 0)); // Wednesday
+	});
+	afterEach(() => vi.useRealTimers());
 
-		const todos = [
-			todo({ due_at: startOfWeek.toISOString().split('T')[0] }),
-			todo({ due_at: endOfWeek.toISOString().split('T')[0] }),
-			todo({ due_at: '2099-01-01' }),
-			todo({ due_at: '' })
-		];
+	const dueOn = (...days: string[]) => days.map((due_at) => todo({ due_at }));
 
-		expect(service.filterByDueDate('week', todos)).toHaveLength(2);
+	it('keeps only todos due from Monday to Sunday when the week starts on Monday', () => {
+		const todos = dueOn('2025-08-10', '2025-08-11', '2025-08-17', '2025-08-18', '2099-01-01', '');
+		const due = service.filterByDueDate('week', todos, 'monday').map((t) => t.due_at);
+		expect(due).toEqual(['2025-08-11', '2025-08-17']);
 	});
 
-	it('routes the week filter through the dispatch method', () => {
-		const now = new Date();
-		const todos = [
-			todo({ due_at: now.toISOString().split('T')[0] }),
-			todo({ due_at: '2099-01-01' })
-		];
-		expect(service.filter({ type: 'due', value: 'week' }, todos)).toHaveLength(1);
+	it('keeps only todos due from Sunday to Saturday when the week starts on Sunday', () => {
+		const todos = dueOn('2025-08-09', '2025-08-10', '2025-08-16', '2025-08-17', '2099-01-01', '');
+		const due = service.filterByDueDate('week', todos, 'sunday').map((t) => t.due_at);
+		expect(due).toEqual(['2025-08-10', '2025-08-16']);
+	});
+
+	it('treats a Sunday as the end or the start of the week', () => {
+		vi.setSystemTime(new Date(2025, 7, 17, 12, 0)); // Sunday
+		const todos = dueOn('2025-08-11', '2025-08-23');
+		expect(service.filterByDueDate('week', todos, 'monday').map((t) => t.due_at)).toEqual(['2025-08-11']);
+		expect(service.filterByDueDate('week', todos, 'sunday').map((t) => t.due_at)).toEqual(['2025-08-23']);
+	});
+
+	it('routes the week filter and the week start through the dispatch method', () => {
+		const todos = dueOn('2025-08-10', '2025-08-13', '2099-01-01');
+		expect(service.filter({ type: 'due', value: 'week' }, todos, 'monday')).toHaveLength(1);
+		expect(service.filter({ type: 'due', value: 'week' }, todos, 'sunday')).toHaveLength(2);
 	});
 });
 

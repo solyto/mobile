@@ -1,8 +1,10 @@
 <script lang="ts">
 	import LibraryNavigation from '$lib/components/libraries/LibraryNavigation.svelte';
 	import { setLibraryNavigation } from '$lib/state/LibraryNavigation.svelte';
+	import { setLoadedCovers } from '$lib/state/LoadedCovers.svelte';
 
 	setLibraryNavigation();
+	setLoadedCovers();
 
 	let { children } = $props();
 </script>

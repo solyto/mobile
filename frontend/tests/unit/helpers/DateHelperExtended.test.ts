@@ -8,6 +8,7 @@ import {
 	getDaysInMonth,
 	getLast30Days,
 	getNextXDays,
+	getStartOfWeek,
 	isDateThisWeek,
 	isDateLast7Days,
 	dateFromTimestamp,
@@ -17,7 +18,8 @@ import {
 	getCalendarMonth,
 	getCalendarWeek,
 	getISOWeek,
-	getISOWeeksInYear
+	getWeekNumberOfWeek,
+	getWeekdayOrder
 } from '$lib/helpers/DateHelper';
 
 // Aug 15 2025, 14:30 — TZ=UTC so no timezone surprises
@@ -98,6 +100,48 @@ describe('getNextXDays', () => {
 	});
 });
 
+describe('getStartOfWeek', () => {
+	const ymd = (date: Date) => getUrlFormat(date);
+
+	it.each([
+		['2025-08-10', '2025-08-04', '2025-08-10'],
+		['2025-08-11', '2025-08-11', '2025-08-10'],
+		['2025-08-12', '2025-08-11', '2025-08-10'],
+		['2025-08-13', '2025-08-11', '2025-08-10'],
+		['2025-08-14', '2025-08-11', '2025-08-10'],
+		['2025-08-15', '2025-08-11', '2025-08-10'],
+		['2025-08-16', '2025-08-11', '2025-08-10'],
+		['2025-08-17', '2025-08-11', '2025-08-17']
+	])('%s starts its week on %s (Monday) or %s (Sunday)', (day, monday, sunday) => {
+		const date = new Date(`${day}T15:45:00`);
+		expect(ymd(getStartOfWeek(date, 'monday'))).toBe(monday);
+		expect(ymd(getStartOfWeek(date, 'sunday'))).toBe(sunday);
+	});
+
+	it('returns local midnight', () => {
+		const start = getStartOfWeek(AUG_15, 'sunday');
+		expect([start.getHours(), start.getMinutes(), start.getSeconds(), start.getMilliseconds()]).toEqual([0, 0, 0, 0]);
+	});
+
+	it('does not change the date it is given', () => {
+		const date = new Date(AUG_15);
+		getStartOfWeek(date, 'monday');
+		expect(date).toEqual(AUG_15);
+	});
+
+	it('crosses month boundaries', () => {
+		expect(ymd(getStartOfWeek(new Date(2025, 9, 1), 'monday'))).toBe('2025-09-29');
+		expect(ymd(getStartOfWeek(new Date(2025, 9, 1), 'sunday'))).toBe('2025-09-28');
+	});
+
+	it('crosses year boundaries', () => {
+		expect(ymd(getStartOfWeek(new Date(2026, 0, 1), 'monday'))).toBe('2025-12-29');
+		expect(ymd(getStartOfWeek(new Date(2026, 0, 1), 'sunday'))).toBe('2025-12-28');
+		expect(ymd(getStartOfWeek(new Date(2028, 0, 1), 'monday'))).toBe('2027-12-27');
+		expect(ymd(getStartOfWeek(new Date(2028, 0, 1), 'sunday'))).toBe('2027-12-26');
+	});
+});
+
 describe('isDateThisWeek / isDateLast7Days', () => {
 	beforeEach(() => {
 		vi.useFakeTimers();
@@ -112,9 +156,36 @@ describe('isDateThisWeek / isDateLast7Days', () => {
 	};
 
 	it('detects dates within the current week', () => {
-		expect(isDateThisWeek(AUG_15)).toBe(true);
-		expect(isDateThisWeek(plusDays(8))).toBe(false);
-		expect(isDateThisWeek(plusDays(-8))).toBe(false);
+		expect(isDateThisWeek(AUG_15, 'monday')).toBe(true);
+		expect(isDateThisWeek(plusDays(8), 'monday')).toBe(false);
+		expect(isDateThisWeek(plusDays(-8), 'monday')).toBe(false);
+	});
+
+	it('runs the week from Monday to Sunday when it starts on Monday', () => {
+		expect(isDateThisWeek(new Date(2025, 7, 10, 23, 59), 'monday')).toBe(false);
+		expect(isDateThisWeek(new Date(2025, 7, 11, 0, 0), 'monday')).toBe(true);
+		expect(isDateThisWeek(new Date(2025, 7, 17, 23, 59), 'monday')).toBe(true);
+		expect(isDateThisWeek(new Date(2025, 7, 18, 0, 0), 'monday')).toBe(false);
+	});
+
+	it('runs the week from Sunday to Saturday when it starts on Sunday', () => {
+		expect(isDateThisWeek(new Date(2025, 7, 9, 23, 59), 'sunday')).toBe(false);
+		expect(isDateThisWeek(new Date(2025, 7, 10, 0, 0), 'sunday')).toBe(true);
+		expect(isDateThisWeek(new Date(2025, 7, 16, 23, 59), 'sunday')).toBe(true);
+		expect(isDateThisWeek(new Date(2025, 7, 17, 0, 0), 'sunday')).toBe(false);
+	});
+
+	it('includes the coming Sunday only when the week starts on Monday', () => {
+		vi.setSystemTime(new Date(2025, 7, 16, 12, 0));
+		expect(isDateThisWeek(new Date(2025, 7, 17, 9, 0), 'monday')).toBe(true);
+		expect(isDateThisWeek(new Date(2025, 7, 17, 9, 0), 'sunday')).toBe(false);
+	});
+
+	it('starts a new Sunday week on Sunday itself', () => {
+		vi.setSystemTime(new Date(2025, 7, 17, 12, 0));
+		expect(isDateThisWeek(new Date(2025, 7, 11, 9, 0), 'monday')).toBe(true);
+		expect(isDateThisWeek(new Date(2025, 7, 11, 9, 0), 'sunday')).toBe(false);
+		expect(isDateThisWeek(new Date(2025, 7, 23, 9, 0), 'sunday')).toBe(true);
 	});
 
 	it('detects dates within the last 7 days', () => {
@@ -177,43 +248,107 @@ describe('getCalendarMonth', () => {
 		const days = getCalendarMonth(2025, 7);
 		expect(days.filter((d) => !d.is_grayed_out)).toHaveLength(31);
 	});
+
+	it('starts on Monday by default', () => {
+		expect(getCalendarMonth(2025, 7)).toEqual(getCalendarMonth(2025, 7, 'monday'));
+	});
+
+	it('pads the start to Sunday when the week starts on Sunday', () => {
+		const days = getCalendarMonth(2025, 7, 'sunday');
+		expect(getUrlFormat(days[0].date)).toBe('2025-07-27');
+		expect(days[0].weekday).toBe(7);
+		expect(days[5].number).toBe(1);
+		expect(days[5].is_grayed_out).toBe(false);
+		expect(days.filter((d) => !d.is_grayed_out)).toHaveLength(31);
+	});
+
+	it.each(['monday', 'sunday'] as const)('starts every row on the first day of the week (%s)', (weekStart) => {
+		const days = getCalendarMonth(2025, 7, weekStart);
+		const first = getWeekdayOrder(weekStart)[0];
+		for (let row = 0; row < 6; row++) {
+			expect(days[row * 7].weekday).toBe(first);
+		}
+	});
+
+	it('does not pad when the month begins on the first day of the week', () => {
+		expect(getUrlFormat(getCalendarMonth(2025, 8, 'monday')[0].date)).toBe('2025-09-01');
+		expect(getUrlFormat(getCalendarMonth(2025, 5, 'sunday')[0].date)).toBe('2025-06-01');
+	});
+
+	it('crosses the year boundary into January', () => {
+		expect(getUrlFormat(getCalendarMonth(2026, 0, 'monday')[0].date)).toBe('2025-12-29');
+		expect(getUrlFormat(getCalendarMonth(2026, 0, 'sunday')[0].date)).toBe('2025-12-28');
+	});
+
+	it('crosses the year boundary out of December', () => {
+		expect(getUrlFormat(getCalendarMonth(2025, 11, 'monday')[41].date)).toBe('2026-01-11');
+		expect(getUrlFormat(getCalendarMonth(2025, 11, 'sunday')[41].date)).toBe('2026-01-10');
+	});
 });
 
 describe('getCalendarWeek', () => {
-	it('returns a 7-day week starting on Monday', () => {
-		const days = getCalendarWeek(2025, 33);
+	it('returns seven consecutive days from a Monday', () => {
+		const days = getCalendarWeek(new Date(2025, 7, 11));
 		expect(days).toHaveLength(7);
-		expect(days[0].weekday).toBe(1);
-		expect(days[0].date.getDate()).toBe(11); // ISO week 33 of 2025 = Aug 11-17
+		expect(days.map((d) => d.weekday)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+		expect(days[0].date.getDate()).toBe(11);
 		expect(days[6].date.getDate()).toBe(17);
 	});
 
-	const ymd = (date: Date) =>
-		`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-
-	it.each([
-		[2021, 1, '2021-01-04'], // Jan 1 is a Friday
-		[2025, 1, '2024-12-30'], // Jan 1 is a Wednesday
-		[2026, 1, '2025-12-29'], // Jan 1 is a Thursday
-		[2027, 1, '2027-01-04'], // Jan 1 is a Friday
-		[2027, 10, '2027-03-08'],
-		[2028, 1, '2028-01-03'], // Jan 1 is a Saturday
-		[2023, 1, '2023-01-02'], // Jan 1 is a Sunday
-		[2020, 53, '2020-12-28'],
-		[2026, 53, '2026-12-28']
-	])('starts ISO week %i/%i on %s', (year, week, monday) => {
-		expect(ymd(getCalendarWeek(year, week)[0].date)).toBe(monday);
+	it('returns seven consecutive days from a Sunday', () => {
+		const days = getCalendarWeek(new Date(2025, 7, 10));
+		expect(days.map((d) => d.weekday)).toEqual([7, 1, 2, 3, 4, 5, 6]);
+		expect(days[0].date.getDate()).toBe(10);
+		expect(days[6].date.getDate()).toBe(16);
 	});
 
-	it('matches getISOWeek for every week from 2000 to 2100', () => {
-		for (let year = 2000; year <= 2100; year++) {
-			for (let week = 1; week <= getISOWeeksInYear(year); week++) {
-				const days = getCalendarWeek(year, week);
-				for (const day of days) {
-					expect(getISOWeek(day.date)).toEqual({ week, year });
-				}
-				expect(days[0].weekday).toBe(1);
+	it('crosses the year boundary', () => {
+		const days = getCalendarWeek(new Date(2025, 11, 28));
+		expect(days.map((d) => getUrlFormat(d.date))).toEqual([
+			'2025-12-28',
+			'2025-12-29',
+			'2025-12-30',
+			'2025-12-31',
+			'2026-01-01',
+			'2026-01-02',
+			'2026-01-03'
+		]);
+		expect(days.every((d) => !d.is_grayed_out)).toBe(true);
+	});
+});
+
+describe('getWeekNumberOfWeek', () => {
+	it.each([
+		['2025-08-11', 33], // Monday week
+		['2025-08-10', 33], // Sunday week, Monday is Aug 11
+		['2025-12-29', 1], // Monday week in ISO 2026-W01
+		['2025-12-28', 1], // Sunday week, Monday is Dec 29
+		['2026-12-28', 53],
+		['2026-12-27', 53],
+		['2027-01-03', 1] // Sunday week, Monday is Jan 4 2027
+	])('labels the week starting %s as CW %i', (start, week) => {
+		expect(getWeekNumberOfWeek(new Date(`${start}T00:00:00`))).toBe(week);
+	});
+
+	it('matches the ISO week of the Monday inside every week from 2000 to 2100', () => {
+		for (const weekStart of ['monday', 'sunday'] as const) {
+			let start = getStartOfWeek(new Date(2000, 0, 1), weekStart);
+			while (start.getFullYear() <= 2100) {
+				const lastDay = getCalendarWeek(start)[6].date;
+				const monday = getStartOfWeek(lastDay, 'monday');
+				expect(getWeekNumberOfWeek(start)).toBe(getISOWeek(monday).week);
+				start = getNextDay(lastDay);
 			}
 		}
+	});
+});
+
+describe('getWeekdayOrder', () => {
+	it('lists ISO weekdays from Monday to Sunday', () => {
+		expect(getWeekdayOrder('monday')).toEqual([1, 2, 3, 4, 5, 6, 7]);
+	});
+
+	it('lists ISO weekdays from Sunday to Saturday', () => {
+		expect(getWeekdayOrder('sunday')).toEqual([7, 1, 2, 3, 4, 5, 6]);
 	});
 });

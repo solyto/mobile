@@ -7,12 +7,6 @@
 	const ts = getTranslation();
 </script>
 
-<button
-	class="w-24 rounded-full px-4 py-1 text-sm text-white md:py-2 md:text-base text-center"
-	class:bg-c-primary={entry.type === 'feature'}
-	class:bg-c-danger-hover={entry.type === 'bug'}
->
-	{entry.type === 'feature'
-		? ts.get.dev.requests.feature.toUpperCase()
-		: ts.get.dev.requests.bug.toUpperCase()}
-</button>
+<span class="bg-c-neutral-1 px-2 py-1 text-xs dark:bg-c-neutral-7 dark:text-white">
+	{entry.type === 'feature' ? ts.get.dev.requests.feature : ts.get.dev.requests.bug}
+</span>

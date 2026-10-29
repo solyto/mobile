@@ -1,4 +1,5 @@
 import type { CalendarDay } from '$lib/types/calendar';
+import type { WeekStart } from '$lib/types/auth';
 
 export function formatDateTime(
 	input: string | Date,
@@ -32,6 +33,17 @@ export function parseDateSlug(slug: string): Date | null {
 	const day = parseInt(parts[0], 10);
 	const month = parseInt(parts[1], 10);
 	const year = parseInt(parts[2], 10);
+	if (!day || !month || !year) return null;
+	return new Date(year, month - 1, day);
+}
+
+/** Parses a "YYYY-mm-dd" value (see getUrlFormat) into a local date. `new Date()` would read it as UTC midnight. */
+export function parseUrlFormat(value: string): Date | null {
+	const parts = value.split('-');
+	if (parts.length !== 3) return null;
+	const year = parseInt(parts[0], 10);
+	const month = parseInt(parts[1], 10);
+	const day = parseInt(parts[2], 10);
 	if (!day || !month || !year) return null;
 	return new Date(year, month - 1, day);
 }
@@ -70,7 +82,7 @@ export function formatDateWithoutYear(
 }
 
 export function formatMonth(input: string | Date, dateFormat: string | null = null): string {
-	const monthFormat = (dateFormat ?? 'dd.mm.YYYY').replace(/^dd[^a-zA-Z]|[^a-zA-Z]dd$/, '');
+	const monthFormat = (dateFormat ?? 'dd.mm.YYYY').replace(/^dd[^a-zA-Z]|[^a-zA-Z]dd$|(?<=[^a-zA-Z])dd[^a-zA-Z]/, '');
 	return formatDate(input, monthFormat);
 }
 
@@ -245,16 +257,17 @@ export function isDateYesterday(date: Date): boolean {
 	);
 }
 
-export function isDateThisWeek(date: Date): boolean {
-	const today = new Date();
-	const dayOfWeek = today.getDay();
-	const startOfWeek = new Date(today);
-	startOfWeek.setDate(today.getDate() - dayOfWeek);
-	startOfWeek.setHours(0, 0, 0, 0);
-	const endOfWeek = new Date(startOfWeek);
-	endOfWeek.setDate(startOfWeek.getDate() + 6);
-	endOfWeek.setHours(23, 59, 59, 999);
-	return date >= startOfWeek && date <= endOfWeek;
+export function getStartOfWeek(date: Date, weekStart: WeekStart): Date {
+	const daysSinceStart = weekStart === 'sunday' ? date.getDay() : (date.getDay() + 6) % 7;
+
+	return new Date(date.getFullYear(), date.getMonth(), date.getDate() - daysSinceStart);
+}
+
+export function isDateThisWeek(date: Date, weekStart: WeekStart): boolean {
+	const startOfWeek = getStartOfWeek(new Date(), weekStart);
+	const startOfNextWeek = getDatePlusDays(startOfWeek, 7);
+
+	return date >= startOfWeek && date < startOfNextWeek;
 }
 
 export function isDateLast7Days(date: Date): boolean {
@@ -357,14 +370,12 @@ export function getISOWeeksInYear(isoYear: number): number {
 	return getWeekNumber(new Date(isoYear, 11, 28));
 }
 
-export function getCalendarMonth(year?: number, month?: number): CalendarDay[] {
+export function getCalendarMonth(year?: number, month?: number, weekStart: WeekStart = 'monday'): CalendarDay[] {
 	const now = new Date();
 	const targetYear = year ?? now.getFullYear();
 	const targetMonth = month ?? now.getMonth();
 
-	const firstOfMonth = new Date(targetYear, targetMonth, 1);
-	const startWeekday = (firstOfMonth.getDay() || 7) - 1; // Monday = 0
-	const startDate = new Date(targetYear, targetMonth, 1 - startWeekday);
+	const startDate = getStartOfWeek(new Date(targetYear, targetMonth, 1), weekStart);
 
 	const days: CalendarDay[] = [];
 
@@ -384,16 +395,12 @@ export function getCalendarMonth(year?: number, month?: number): CalendarDay[] {
 	return days;
 }
 
-export function getCalendarWeek(year: number, week: number): CalendarDay[] {
+export function getCalendarWeek(startOfWeek: Date): CalendarDay[] {
 	const days: CalendarDay[] = [];
 
-	// ISO week 1 is the week containing January 4th; it starts on that week's Monday.
-	const jan4 = new Date(year, 0, 4);
-	const weekStart = new Date(year, 0, 4 - ((jan4.getDay() || 7) - 1) + (week - 1) * 7);
-
 	for (let i = 0; i < 7; i++) {
-		const date = new Date(weekStart);
-		date.setDate(weekStart.getDate() + i);
+		const date = new Date(startOfWeek);
+		date.setDate(startOfWeek.getDate() + i);
 
 		days.push({
 			number: date.getDate(),
@@ -405,6 +412,15 @@ export function getCalendarWeek(year: number, week: number): CalendarDay[] {
 	}
 
 	return days;
+}
+
+export function getWeekNumberOfWeek(startOfWeek: Date): number {
+	// Week numbers stay ISO: a Sunday week takes the number of its Monday, its second day.
+	return getWeekNumber(getNextDay(startOfWeek));
+}
+
+export function getWeekdayOrder(weekStart: WeekStart): number[] {
+	return weekStart === 'sunday' ? [7, 1, 2, 3, 4, 5, 6] : [1, 2, 3, 4, 5, 6, 7];
 }
 
 /** The 24 hours of a day as zero-padded strings, '00' to '23'. */

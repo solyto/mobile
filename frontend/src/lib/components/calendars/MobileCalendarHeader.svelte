@@ -41,7 +41,7 @@
 			);
 		}
 		if (calendars.view === 'week') {
-			return ts.get.calendar.calendar_week + ' ' + calendars.currentWeek;
+			return ts.get.calendar.calendar_week + ' ' + calendars.currentWeekNumber;
 		}
 		if (calendars.view === 'day') {
 			return formatDateWithoutYear(calendars.currentDate);

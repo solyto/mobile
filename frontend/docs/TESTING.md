@@ -98,7 +98,7 @@ context and are rendered directly.
   with `vi.useFakeTimers()` and `await tick()`/`flushSync`.
 - `$app/state`'s `page` is a static mock in node; code that reacts to
   navigation is covered at the component level, not in store tests.
-- When a component test asserts a UI string, the key must exist in all four
-  locales; `npm run check` enforces it.
+- When a component test asserts a UI string, the key must exist in every
+  locale; `npm run check` enforces it.
 - New dev-dependencies are pinned and installed only with approval
   (`AGENTS.md`).

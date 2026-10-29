@@ -18,11 +18,10 @@ import {
 	formatDate,
 	formatFloatingDate,
 	getCalendarMonth,
-	getCalendarWeek,
-	getISODateInfo,
-	getISOWeeksInYear,
+	getDatePlusDays,
+	getStartOfWeek,
 	getUrlFormat,
-	getWeekNumber
+	getWeekNumberOfWeek
 } from '$lib/helpers/DateHelper';
 import type { Todo, UpdateTodoRequest } from '$lib/types/todo';
 import type { Note } from '$lib/types/note';
@@ -33,14 +32,14 @@ import type { CalendarDropTarget } from '$lib/services/CalendarDragService';
 
 export class Calendars {
 	static readonly LS_VIEW_KEY: string = 'calendars_view';
+	static readonly VIEWS = ['month', 'week', 'day', 'list'] as const;
 
 	calendars = $state<Calendar[]>([]);
 	events = $state<CalendarEvent[]>([]);
 	sortedEvents = $state<Record<string, CalendarEvent[]>>({});
 	todos = $state<Todo[]>([]);
 	month = $state<CalendarMonth>({ weeks: [] });
-	currentWeek = $state<number>(0);
-	currentWeekYear = $state<number>(0);
+	currentWeekStart = $state<Date>(new Date());
 	currentMonth = $state<number>(0);
 	currentYear = $state<number>(0);
 	currentDate = $state<Date>(new Date());
@@ -51,7 +50,7 @@ export class Calendars {
 	newEventPreset = $state<NewEventPreset>({});
 	isSyncing = $state<boolean>(false);
 	lastSync = $state<number | null>(null);
-	view = $state<'month' | 'week' | 'day' | 'list'>('month');
+	view = $state<(typeof Calendars.VIEWS)[number]>('month');
 	activeEvent = $state<CalendarEvent | null>(null);
 	activeEventTodos = $state<Todo[]>([]);
 	activeEventNotes = $state<Note[]>([]);
@@ -90,9 +89,7 @@ export class Calendars {
 		this.localStorage = localStorage;
 
 		const today = new Date();
-		const iso = getISODateInfo(today);
-		this.currentWeek = iso.week;
-		this.currentWeekYear = iso.year;
+		this.currentWeekStart = getStartOfWeek(today, auth.getWeekStart());
 		this.currentMonth = today.getMonth() + 1;
 		this.currentYear = today.getFullYear();
 
@@ -107,14 +104,18 @@ export class Calendars {
 		this.loaded = true;
 	}
 
+	get currentWeekNumber(): number {
+		return getWeekNumberOfWeek(this.currentWeekStart);
+	}
+
 	loadMonth(): void {
-		const calendarDays = getCalendarMonth(this.currentYear, this.currentMonth - 1);
+		const calendarDays = getCalendarMonth(this.currentYear, this.currentMonth - 1, this.auth.getWeekStart());
 
 		const weeks: CalendarWeek[] = [];
 		for (let i = 0; i < calendarDays.length; i += 7) {
 			const firstDayOfWeek = calendarDays[i];
 			weeks.push({
-				number: firstDayOfWeek.date ? getWeekNumber(firstDayOfWeek.date) : 0,
+				number: firstDayOfWeek.date ? getWeekNumberOfWeek(firstDayOfWeek.date) : 0,
 				days: calendarDays.slice(i, i + 7)
 			});
 		}
@@ -175,14 +176,14 @@ export class Calendars {
 		this.checkInMarks = (checkInRes?.data as string[]) ?? [];
 	}
 
-	changeView(view: 'month' | 'week' | 'day' | 'list'): void {
+	changeView(view: (typeof Calendars.VIEWS)[number]): void {
 		this.view = view;
 		this.saveView();
 	}
 
 	loadView(): void {
 		const stored = this.localStorage.get(Calendars.LS_VIEW_KEY);
-		this.view = (stored as 'month' | 'week' | 'day' | 'list' | null) ?? 'month';
+		this.view = Calendars.VIEWS.find((view) => view === stored) ?? 'month';
 	}
 
 	saveView(): void {
@@ -214,27 +215,17 @@ export class Calendars {
 	}
 
 	nextWeek(): void {
-		if (this.currentWeek === getISOWeeksInYear(this.currentWeekYear)) {
-			this.currentWeek = 1;
-			this.currentWeekYear++;
-		} else {
-			this.currentWeek++;
-		}
-
-		const weekDays = getCalendarWeek(this.currentWeekYear, this.currentWeek);
-		this.mobileWeekStart = new Date(weekDays[0].date);
+		this.currentWeekStart = getDatePlusDays(this.currentWeekStart, 7);
+		this.mobileWeekStart = new Date(this.currentWeekStart);
 	}
 
 	lastWeek(): void {
-		if (this.currentWeek === 1) {
-			this.currentWeekYear--;
-			this.currentWeek = getISOWeeksInYear(this.currentWeekYear);
-		} else {
-			this.currentWeek--;
-		}
+		this.currentWeekStart = getDatePlusDays(this.currentWeekStart, -7);
+		this.mobileWeekStart = new Date(this.currentWeekStart);
+	}
 
-		const weekDays = getCalendarWeek(this.currentWeekYear, this.currentWeek);
-		this.mobileWeekStart = new Date(weekDays[0].date);
+	goToCurrentWeek(): void {
+		this.currentWeekStart = getStartOfWeek(new Date(), this.auth.getWeekStart());
 	}
 
 	nextDay(): void {
@@ -251,15 +242,13 @@ export class Calendars {
 
 	setMobileWeekStart(date: Date): void {
 		this.mobileWeekStart = new Date(date);
-		this.currentWeek = getWeekNumber(date);
+		this.currentWeekStart = getStartOfWeek(date, this.auth.getWeekStart());
 	}
 
 	async goToToday(): Promise<void> {
 		const today = new Date();
-		const iso = getISODateInfo(today);
 		this.currentDate = today;
-		this.currentWeek = iso.week;
-		this.currentWeekYear = iso.year;
+		this.currentWeekStart = getStartOfWeek(today, this.auth.getWeekStart());
 		this.currentMonth = today.getMonth() + 1;
 		this.currentYear = today.getFullYear();
 		this.mobileSelectedDate = new Date(today);
@@ -360,6 +349,7 @@ export class Calendars {
 			request
 		);
 		if (res) await this.loadEvents();
+		if (res) this.auth.widgetBridge.notifyChanged();
 		return res !== null;
 	}
 
@@ -372,6 +362,7 @@ export class Calendars {
 				: request
 		);
 		if (res) await this.loadEvents();
+		if (res) this.auth.widgetBridge.notifyChanged();
 		return res;
 	}
 
@@ -381,6 +372,7 @@ export class Calendars {
 			entry.uri
 		);
 		if (res) await this.loadEvents();
+		if (res) this.auth.widgetBridge.notifyChanged();
 		return res;
 	}
 
@@ -489,6 +481,7 @@ export class Calendars {
 			.replace('%s', encodeURIComponent(occDateStr));
 		const res = await this.apiService.put(url, request);
 		if (res) await this.loadEvents();
+		if (res) this.auth.widgetBridge.notifyChanged();
 		return res;
 	}
 
@@ -500,6 +493,7 @@ export class Calendars {
 			encodeURIComponent(occurrenceDate.toISOString())
 		);
 		if (res) await this.loadEvents();
+		if (res) this.auth.widgetBridge.notifyChanged();
 		return res;
 	}
 
@@ -534,6 +528,7 @@ export class Calendars {
 		if (res) {
 			await this.loadCalendars();
 			await this.loadEvents();
+			this.auth.widgetBridge.notifyChanged();
 		}
 		this.selectedCalendar = null;
 		this.deletionModal = false;
@@ -544,6 +539,7 @@ export class Calendars {
 		const request: UpdateTodoRequest = { is_completed: checked };
 		const res = await this.apiService.update(apiRoutes.todos.update, todo.id, request);
 		if (res) await this.loadTodos();
+		if (res) this.auth.widgetBridge.notifyChanged();
 		return res;
 	}
 }

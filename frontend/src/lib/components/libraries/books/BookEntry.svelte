@@ -22,12 +22,12 @@
 	{#if library.view === 'list' && entry.series}
 		<div class="font-bold">{entry.title} ({entry.series})</div>
 	{:else}
-		<div class="font-bold">{entry.title}</div>
+		<div class="font-bold" class:truncate={library.view === 'cards'} class:text-sm={library.view === 'cards'} title={entry.title}>{entry.title}</div>
 	{/if}
-	<div class="text-sm">{entry.author}</div>
+	<div class="text-sm" class:truncate={library.view === 'cards'} class:text-c-neutral-5={library.view === 'cards'} title={entry.author}>{entry.author}</div>
 	{#if library.view === 'cards'}
 		{#if entry.series}
-			<div class="text-sm text-c-neutral-5">
+			<div class="truncate text-sm text-c-neutral-5" title={entry.series}>
 				{entry.series}{entry.volume ? ' (' + entry.volume + ')' : ''}
 			</div>
 		{/if}

@@ -29,8 +29,8 @@
 	<Flag title={ts.get.libraries.wishlist} />
 {/if}
 <div class="text-left">
-	<div class="font-bold">{entry.title}</div>
-	<div class="text-sm">{platformLabels[entry.platform] || entry.platform}</div>
+	<div class="font-bold" class:truncate={library.view === 'cards'} class:text-sm={library.view === 'cards'} title={entry.title}>{entry.title}</div>
+	<div class="text-sm" class:text-c-neutral-5={library.view === 'cards'}>{platformLabels[entry.platform] || entry.platform}</div>
 </div>
 {#if library.view === 'list'}
 	<div class="ml-auto flex flex-row items-center gap-4">

@@ -6,6 +6,7 @@
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
+	import { RateLimitedError } from '$lib/services/ApiService';
 	import { fade } from 'svelte/transition';
 	import SettingsSection from '$lib/components/settings/SettingsSection.svelte';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
@@ -42,7 +43,8 @@
 			} else {
 				requestError = true;
 			}
-		} catch {
+		} catch (e) {
+			if (e instanceof RateLimitedError) throw e;
 			requestError = true;
 		} finally {
 			loadingIndicator.stop();

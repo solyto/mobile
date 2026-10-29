@@ -37,6 +37,7 @@ export class RecipeLibrary {
 	ratingFilter = $state<number | null>(null);
 	typeFilter = $state<RecipeType | null>(null);
 	searchTerm = $state<string>('');
+	activeFilter: 'none' | 'search' | 'ratingAndType' = 'none';
 	view = $state<'list' | 'cards'>('cards');
 	auth: Auth;
 	filterService = new LibraryFilterService();
@@ -51,13 +52,14 @@ export class RecipeLibrary {
 		const res = await this.apiService.list(apiRoutes.libraries.recipes.list);
 		if (res) {
 			this.entries = res.data as Recipe[];
-			this.filteredEntries = this.entries;
+			this.reapplyFilter();
 			this.loaded = true;
 		}
 	}
 
 	search(): void {
 		this.ratingFilter = null;
+		this.activeFilter = 'search';
 
 		const term = this.searchTerm.trim().toLowerCase();
 		if (term.length === 0) {
@@ -73,6 +75,7 @@ export class RecipeLibrary {
 	}
 
 	filter(): void {
+		this.activeFilter = 'ratingAndType';
 		let entries = this.entries;
 
 		if (this.ratingFilter !== null) {
@@ -99,7 +102,14 @@ export class RecipeLibrary {
 	clearFilters(): void {
 		this.ratingFilter = null;
 		this.typeFilter = null;
+		this.activeFilter = 'none';
 		this.filteredEntries = this.entries;
+	}
+
+	private reapplyFilter(): void {
+		if (this.activeFilter === 'search') this.search();
+		else if (this.activeFilter === 'ratingAndType') this.filter();
+		else this.filteredEntries = this.entries;
 	}
 
 	openCreateModal(entry?: Recipe): void {

@@ -82,7 +82,7 @@
 {/if}
 {#if portal && viewPoint.isMobile}
 	<div class="centered-datepicker">
-		<DatePicker bind:isOpen bind:startDate {onChange} />
+		<DatePicker bind:isOpen bind:startDate weekStart={auth.getWeekStart()} {onChange} />
 	</div>
 {:else if portal}
 	<div
@@ -94,10 +94,10 @@
 			}
 		}}
 	>
-		<DatePicker bind:isOpen bind:startDate {onChange} />
+		<DatePicker bind:isOpen bind:startDate weekStart={auth.getWeekStart()} {onChange} />
 	</div>
 {:else}
-	<DatePicker bind:isOpen bind:startDate {onChange} />
+	<DatePicker bind:isOpen bind:startDate weekStart={auth.getWeekStart()} {onChange} />
 {/if}
 
 <style>

@@ -3,15 +3,14 @@ import type { CheckInSummaryRecords } from '$lib/types/translation';
 import { SPORT_BY_ID } from '$lib/types/check_in';
 import { isDateToday, isDateYesterday } from '$lib/helpers/DateHelper';
 
-// Trackers where a high value (≥4) is undesirable
-const INVERTED_TRACKERS = new Set<CheckInType>(['alcohol', 'smoking']);
-
-function isBadValue(tracker: CheckInType, value: number): boolean {
-	return INVERTED_TRACKERS.has(tracker) ? value >= 4 : value <= 2;
+// Every tracker is stored on the same scale: 5 is the good end (for alcohol
+// and smoking that means none), as in the check-in form and the score.
+function isBadValue(value: number): boolean {
+	return value <= 2;
 }
 
-function isGoodValue(tracker: CheckInType, value: number): boolean {
-	return INVERTED_TRACKERS.has(tracker) ? value <= 2 : value >= 4;
+function isGoodValue(value: number): boolean {
+	return value >= 4;
 }
 
 function getPhraseForTracker(
@@ -48,11 +47,9 @@ function capitalize(s: string): string {
 function combineGroupPhrases(items: TrackerPhrase[], p: CheckInSummaryRecords): string {
 	if (items.length === 1) return items[0].phrase;
 
-	const good = items.filter((i) => isGoodValue(i.tracker, i.value));
-	const bad = items.filter((i) => isBadValue(i.tracker, i.value));
-	const neutral = items.filter(
-		(i) => !isGoodValue(i.tracker, i.value) && !isBadValue(i.tracker, i.value)
-	);
+	const good = items.filter((i) => isGoodValue(i.value));
+	const bad = items.filter((i) => isBadValue(i.value));
+	const neutral = items.filter((i) => !isGoodValue(i.value) && !isBadValue(i.value));
 
 	if (good.length > 0 && bad.length > 0) {
 		const goodPart = good.map((i) => i.phrase).join(` ${p.connector_and} `);

@@ -10,7 +10,7 @@
 </script>
 
 <div class="text-left">
-	<div class="font-bold">{entry.title}</div>
+	<div class="font-bold" class:truncate={library.view === 'cards'} class:text-sm={library.view === 'cards'} title={entry.title}>{entry.title}</div>
 </div>
 {#if library.view === 'list'}
 	<div class="ml-auto flex flex-row items-center gap-4">

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { getCalendars } from '$lib/state/Calendars.svelte';
-	import { formatDate, getCalendarWeek, getISODateInfo, getHoursOfDay } from '$lib/helpers/DateHelper';
+	import { formatDate, getCalendarWeek, getHoursOfDay } from '$lib/helpers/DateHelper';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import Day from '$lib/components/calendars/views/week/Day.svelte';
 	import CalendarMarks from '$lib/components/calendars/CalendarMarks.svelte';
@@ -12,13 +12,9 @@
 	const hours = getHoursOfDay();
 	const rows = '10% repeat(24, calc(100% / 27))';
 
-	let week = $derived(getCalendarWeek(calendars.currentWeekYear, calendars.currentWeek));
+	let week = $derived(getCalendarWeek(calendars.currentWeekStart));
 
-	onMount(() => {
-		const iso = getISODateInfo(new Date());
-		calendars.currentWeekYear = iso.year;
-		calendars.currentWeek = iso.week;
-	});
+	onMount(() => calendars.goToCurrentWeek());
 </script>
 
 <div class="calendar-view flex h-full w-full" style="background-color: color-mix(in srgb, var(--color-c-primary) 12%, var(--color-c-bg));">

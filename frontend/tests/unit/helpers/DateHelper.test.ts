@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import {
 	formatDate,
 	formatDateWithoutYear,
@@ -23,7 +23,9 @@ import {
 	getHoursOfDay,
 	isOffHour,
 	eachDayBetween,
-	parseDateSlug
+	parseDateSlug,
+	parseUrlFormat,
+	getUrlFormat
 } from '$lib/helpers/DateHelper';
 
 // Aug 15 2025, 14:30 — TZ=UTC so no timezone surprises
@@ -38,6 +40,8 @@ describe('formatDate', () => {
 		expect(formatDate(AUG_15, 'dd/mm/YYYY')).toBe('15/08/2025');
 		expect(formatDate(AUG_15, 'YYYY-mm-dd')).toBe('2025-08-15');
 		expect(formatDate(AUG_15, 'dd.mm.YY')).toBe('15.08.25');
+		expect(formatDate(AUG_15, 'mm/dd/YYYY')).toBe('08/15/2025');
+		expect(formatDate(AUG_15, 'mm/dd/YY')).toBe('08/15/25');
 	});
 
 	it('accepts an ISO date string', () => {
@@ -52,6 +56,8 @@ describe('formatDateWithoutYear', () => {
 
 	it('strips year and cleans trailing separator', () => {
 		expect(formatDateWithoutYear(AUG_15, 'dd/mm/YYYY')).toBe('15/08');
+		expect(formatDateWithoutYear(AUG_15, 'mm/dd/YYYY')).toBe('08/15');
+		expect(formatDateWithoutYear(AUG_15, 'mm/dd/YY')).toBe('08/15');
 	});
 });
 
@@ -67,6 +73,11 @@ describe('formatMonth', () => {
 	it('drops a trailing day', () => {
 		expect(formatMonth(AUG_15, 'YYYY/mm/dd')).toBe('2025/08');
 		expect(formatMonth(AUG_15, 'YYYY-mm-dd')).toBe('2025-08');
+	});
+
+	it('drops a day between month and year', () => {
+		expect(formatMonth(AUG_15, 'mm/dd/YYYY')).toBe('08/2025');
+		expect(formatMonth(AUG_15, 'mm/dd/YY')).toBe('08/25');
 	});
 });
 
@@ -329,5 +340,37 @@ describe('parseDateSlug', () => {
 		expect(parseDateSlug('2025-08-15')).toBeNull();
 		expect(parseDateSlug('aa.bb.cccc')).toBeNull();
 		expect(parseDateSlug('00.08.2025')).toBeNull();
+	});
+});
+
+describe('parseUrlFormat', () => {
+	afterEach(() => {
+		vi.unstubAllEnvs();
+	});
+
+	it('parses a YYYY-mm-dd value into a local date', () => {
+		const date = parseUrlFormat('2025-08-15');
+		expect(date?.getFullYear()).toBe(2025);
+		expect(date?.getMonth()).toBe(7);
+		expect(date?.getDate()).toBe(15);
+		expect(date?.getHours()).toBe(0);
+	});
+
+	it('keeps the day in a timezone west of UTC', () => {
+		vi.stubEnv('TZ', 'America/Chicago');
+		expect(parseUrlFormat('2026-10-28')?.getDate()).toBe(28);
+	});
+
+	it('round-trips with getUrlFormat', () => {
+		vi.stubEnv('TZ', 'America/Chicago');
+		expect(getUrlFormat(parseUrlFormat('2026-10-28') as Date)).toBe('2026-10-28');
+	});
+
+	it('returns null for invalid input', () => {
+		expect(parseUrlFormat('')).toBeNull();
+		expect(parseUrlFormat('2025-08')).toBeNull();
+		expect(parseUrlFormat('15.08.2025')).toBeNull();
+		expect(parseUrlFormat('aaaa-bb-cc')).toBeNull();
+		expect(parseUrlFormat('2025-08-00')).toBeNull();
 	});
 });

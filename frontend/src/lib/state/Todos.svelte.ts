@@ -25,6 +25,7 @@ import type { Auth } from '$lib/state/Auth.svelte';
 import { setContext, getContext } from 'svelte';
 import { getAuth } from '$lib/state/Auth.svelte';
 import { page } from '$app/state';
+import { validate as isUuid } from 'uuid';
 import TodoFilterService from '$lib/services/TodoFilterService';
 import TodoGroupingService from '$lib/services/TodoGroupingService';
 import TodoSortingService from '$lib/services/TodoSortingService';
@@ -131,6 +132,11 @@ export class Todos {
 		this.createModalOpen = true;
 	}
 
+	openFromUrl(): void {
+		const todoId = page.url.searchParams.get('todo');
+		if (todoId && isUuid(todoId)) this.openEdit(todoId);
+	}
+
 	closeEdit(): void {
 		this.editingTodoId = null;
 		this.createModalOpen = false;
@@ -211,7 +217,7 @@ export class Todos {
 		}
 
 		for (const filter of filters) {
-			this.filteredTodos = this.filterService.filter(filter, this.filteredTodos);
+			this.filteredTodos = this.filterService.filter(filter, this.filteredTodos, this.auth.getWeekStart());
 		}
 
 		this.filteredTodos = this.sortingService.sort(this.filteredTodos);
@@ -289,6 +295,7 @@ export class Todos {
 			const todo = res.data as Todo;
 			this.recentlyCreated = todo.id;
 			await this.load();
+			this.auth.widgetBridge.notifyChanged();
 
 			setTimeout(() => {
 				this.recentlyCreated = null;
@@ -303,6 +310,7 @@ export class Todos {
 	async delete(todo: Todo): Promise<boolean> {
 		const ok = await this.apiService.delete(apiRoutes.todos.delete, todo.id);
 		if (ok) await this.load();
+		if (ok) this.auth.widgetBridge.notifyChanged();
 		return ok;
 	}
 
@@ -386,6 +394,7 @@ export class Todos {
 		const request: UpdateTodoRequest = { priority };
 		const res = await this.apiService.update(apiRoutes.todos.update, todo.id, request);
 		if (res) await this.load();
+		if (res) this.auth.widgetBridge.notifyChanged();
 		return res;
 	}
 
@@ -396,6 +405,7 @@ export class Todos {
 		};
 		const res = await this.apiService.update(apiRoutes.todos.update, todo.id, request);
 		if (res) await this.load();
+		if (res) this.auth.widgetBridge.notifyChanged();
 		return res;
 	}
 
@@ -406,6 +416,7 @@ export class Todos {
 		};
 		const res = await this.apiService.update(apiRoutes.todos.update, todo.id, request);
 		if (res) await this.load();
+		if (res) this.auth.widgetBridge.notifyChanged();
 		return res;
 	}
 
@@ -413,6 +424,7 @@ export class Todos {
 		const request: UpdateTodoRequest = { category_id: categoryId };
 		const res = await this.apiService.update(apiRoutes.todos.update, todo.id, request);
 		if (res) await this.load();
+		if (res) this.auth.widgetBridge.notifyChanged();
 		return res;
 	}
 
@@ -420,6 +432,7 @@ export class Todos {
 		const request: UpdateTodoRequest = { category_id: null };
 		const res = await this.apiService.update(apiRoutes.todos.update, todo.id, request);
 		if (res) await this.load();
+		if (res) this.auth.widgetBridge.notifyChanged();
 		return res;
 	}
 
@@ -427,6 +440,7 @@ export class Todos {
 		const request: UpdateTodoRequest = { is_completed: checked };
 		const res = await this.apiService.update(apiRoutes.todos.update, todo.id, request);
 		if (res) await this.load();
+		if (res) this.auth.widgetBridge.notifyChanged();
 		return res;
 	}
 
@@ -434,6 +448,7 @@ export class Todos {
 		const request: UpdateTodoRequest = { effort };
 		const res = await this.apiService.update(apiRoutes.todos.update, todo.id, request);
 		if (res) await this.load();
+		if (res) this.auth.widgetBridge.notifyChanged();
 		return res;
 	}
 
@@ -441,6 +456,7 @@ export class Todos {
 		const request: UpdateTodoRequest = { status };
 		const res = await this.apiService.update(apiRoutes.todos.update, todoId, request);
 		if (res) await this.load();
+		if (res) this.auth.widgetBridge.notifyChanged();
 		return res;
 	}
 
@@ -448,6 +464,7 @@ export class Todos {
 		const request: UpdateTodoRequest = { progress };
 		const res = await this.apiService.update(apiRoutes.todos.update, todo.id, request);
 		if (res) await this.load();
+		if (res) this.auth.widgetBridge.notifyChanged();
 		return res;
 	}
 
@@ -455,6 +472,7 @@ export class Todos {
 		const request: UpdateTodoRequest = { due_at };
 		const res = await this.apiService.update(apiRoutes.todos.update, todo.id, request);
 		if (res) await this.load();
+		if (res) this.auth.widgetBridge.notifyChanged();
 		return res;
 	}
 
@@ -471,6 +489,7 @@ export class Todos {
 		};
 		const res = await this.apiService.update(apiRoutes.todos.update, todo.id, request);
 		if (res) await this.load();
+		if (res) this.auth.widgetBridge.notifyChanged();
 		return res;
 	}
 
@@ -478,6 +497,7 @@ export class Todos {
 		const request: UpdateTodoRequest = { title };
 		const res = await this.apiService.update(apiRoutes.todos.update, todo.id, request);
 		if (res) await this.load();
+		if (res) this.auth.widgetBridge.notifyChanged();
 		return res;
 	}
 
@@ -485,6 +505,7 @@ export class Todos {
 		const request: UpdateTodoRequest = { description };
 		const res = await this.apiService.update(apiRoutes.todos.update, todo.id, request);
 		if (res) await this.load();
+		if (res) this.auth.widgetBridge.notifyChanged();
 		return res;
 	}
 
@@ -492,6 +513,7 @@ export class Todos {
 		const request: UpdateTodoRequest = { link };
 		const res = await this.apiService.update(apiRoutes.todos.update, todo.id, request);
 		if (res) await this.load();
+		if (res) this.auth.widgetBridge.notifyChanged();
 		return res;
 	}
 
@@ -502,6 +524,7 @@ export class Todos {
 			request
 		);
 		if (res) await this.load();
+		if (res) this.auth.widgetBridge.notifyChanged();
 		return Promise.resolve(res !== null);
 	}
 
@@ -512,6 +535,7 @@ export class Todos {
 			request
 		);
 		if (res) await this.load();
+		if (res) this.auth.widgetBridge.notifyChanged();
 		return res;
 	}
 
@@ -522,6 +546,7 @@ export class Todos {
 			request
 		);
 		if (res) await this.load();
+		if (res) this.auth.widgetBridge.notifyChanged();
 		return res;
 	}
 
@@ -531,6 +556,7 @@ export class Todos {
 			todo.id
 		);
 		if (res) await this.load();
+		if (res) this.auth.widgetBridge.notifyChanged();
 		return res;
 	}
 }

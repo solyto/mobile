@@ -1,6 +1,10 @@
-# Backlog: 30 Confirm deleting todo categories and workspaces
+# Brief: 30 Confirm deleting todo categories and workspaces
 
-created: 2026-10-15
+type: feature
+id: hot
+branch: feature/hot_30-confirm-deleting-todo-categories-and-workspaces
+date: 2026-10-29
+author: Leander Muskalla
 
 ## What
 
@@ -18,4 +22,5 @@ Undo.
 
 ## Notes
 
-All new strings (title, description) in all four i18n files. Check how other features word their delete confirmations (`timeTracking.category_deletion_*`) and follow that. Safety: `check`, plus a manual run on mobile and desktop: delete a category and a workspace, cancel both, and confirm both.
+All new strings (title, description) in every i18n file. Check how other features word their delete confirmations (`timeTracking.category_deletion_*`) and follow that. Safety: `check`, plus a manual run on mobile and desktop: delete a category and a workspace, cancel both, and confirm both.
+No testing against API. Human tests.

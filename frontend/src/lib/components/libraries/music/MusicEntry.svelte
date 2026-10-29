@@ -18,8 +18,8 @@
 	<Flag title={ts.get.libraries.wishlist} />
 {/if}
 <div class="text-left">
-	<div class="font-bold">{entry.title}</div>
-	<div class="text-sm">{entry.artist}</div>
+	<div class="font-bold" class:truncate={library.view === 'cards'} class:text-sm={library.view === 'cards'} title={entry.title}>{entry.title}</div>
+	<div class="text-sm" class:truncate={library.view === 'cards'} class:text-c-neutral-5={library.view === 'cards'} title={entry.artist}>{entry.artist}</div>
 </div>
 {#if library.view === 'list'}
 	<div class="ml-auto flex flex-row items-center gap-4">

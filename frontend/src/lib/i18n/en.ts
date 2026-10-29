@@ -49,7 +49,10 @@ const layout: LayoutRecords = {
 	reload: 'Reload',
 	remove: 'Remove',
 	rename: 'Rename',
-	network_error: 'Connection problem. Please check your connection and try again.'
+	network_error: 'Connection problem. Please check your connection and try again.',
+	rate_limited: 'Too many attempts. Please try again in a moment.',
+	rate_limited_minutes_singular: 'Too many attempts. Please try again in 1 minute.',
+	rate_limited_minutes_plural: 'Too many attempts. Please try again in {n} minutes.'
 };
 
 const nav: NavigationRecords = {
@@ -103,6 +106,7 @@ const auth: AuthRecords = {
 	register_error: 'There was an error with the registration.',
 	login_success: 'You were successfully logged in.',
 	login_error: 'Authentication unsuccessful.',
+	login_email_unverified: 'Please confirm your email address first.',
 	verify_success: 'Your account has successfully been confirmed. You can now log in!',
 	verify_general_error: 'There was an error confirming your account.',
 	already_verified: 'Your account has already been confirmed. Feel free to log in!',
@@ -113,6 +117,11 @@ const auth: AuthRecords = {
 	forgot_password_sent_title: 'Check your inbox!',
 	forgot_password_sent_desc: 'We sent a password reset link to %s. It expires in 60 minutes.',
 	forgot_password_resend: 'Send again',
+	resend_verification_link: "Didn't get the confirmation email?",
+	resend_verification_title: 'New confirmation link',
+	resend_verification_hint: "Enter your email and we'll send you a new confirmation link.",
+	resend_verification_send: 'Send a new link',
+	resend_verification_sent_desc: "If an unconfirmed account exists for this address, we've sent a new link.",
 	reset_password_title: 'Set a new password',
 	reset_password_new: 'New password',
 	reset_password_confirm: 'Confirm new password',
@@ -160,6 +169,7 @@ const settings: SettingsRecords = {
 	german: 'German',
 	french: 'French',
 	spanish: 'Spanish',
+	italian: 'Italian',
 	tags: 'Tags',
 	new_tag: 'New Tag',
 	localization: 'Localization',
@@ -188,6 +198,7 @@ const settings: SettingsRecords = {
 	timezone: 'Timezone',
 	date_format: 'Date Format',
 	time_format: 'Time Format',
+	week_start: 'First Day of the Week',
 	nextcloud_token: 'Registered token',
 	nextcloud_no_token: 'No token registered.',
 	telegram_bot_integration_success: 'Integration successfully registered for Telegram Chat ID %s',
@@ -208,6 +219,8 @@ const settings: SettingsRecords = {
 	export_status_failed: 'Export failed.',
 	export_download: 'Download',
 	export_rate_limited: 'You can only export once every 24 hours.',
+	export_rate_limited_hours_singular: 'You can only export once every 24 hours. Try again in 1 hour.',
+	export_rate_limited_hours_plural: 'You can only export once every 24 hours. Try again in {n} hours.',
 	export_next_available: 'Next export available in',
 	export_expired: 'Export has expired.',
 	export_download_failed: 'Download failed.',
@@ -332,6 +345,10 @@ const todos: TodoRecords = {
 	uncategorized: 'Uncategorized',
 	delete_confirm_label: 'Delete Todo',
 	delete_confirm_message: 'Are you sure you want to delete this Todo?',
+	category_deletion_title: 'Delete Category',
+	category_deletion_description: 'Are you sure you want to delete this category?',
+	workspace_deletion_title: 'Delete Workspace',
+	workspace_deletion_description: 'Are you sure you want to delete this workspace?',
 	add_subtask: 'Add Subtask',
 	sort_by_score: 'Smart Score',
 	no_description: 'No description',
@@ -750,7 +767,7 @@ const dev: DevRecords = {
 		status_pending: 'Pending',
 		status_in_progress: 'In Progress',
 		status_completed: 'Completed',
-		status_cancelled: 'Cancelled',
+		status_cancelled: 'Rejected',
 		validation_error: 'Please add a title and a description',
 		priority_1: 'Low Priority',
 		priority_2: 'Medium Priority',
@@ -765,7 +782,13 @@ const dev: DevRecords = {
 		comments_placeholder: 'Add a comment...',
 		comments_submit: 'Submit',
 		current_requests: 'Current Requests',
-		resolved_requests: 'Resolved Requests'
+		resolved_requests: 'Resolved Requests',
+		edit: 'Edit Request',
+		fixed_in_version: 'Fixed in version',
+		fixed_in: 'Fixed in %s',
+		fixed_in_included: 'Fixed in %s ✓',
+		fixed_in_pending: 'Fixed in %s · update pending',
+		fixed_in_current_version: "You're on %s"
 	}
 };
 

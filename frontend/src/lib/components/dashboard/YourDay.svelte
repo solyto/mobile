@@ -55,7 +55,7 @@
 			})
 			.sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime())
 	);
-	let dueTodos = $derived(filterService.filterByDueDate('today-overdue', todos.filteredTodos));
+	let dueTodos = $derived(filterService.filterByDueDate('today-overdue', todos.filteredTodos, auth.getWeekStart()));
 	let scoredTodos = $derived.by(() => {
 		const cloned = todos.filteredTodos.map((t) => ({ ...t }));
 		const scored = sortingService.sortByScore(relevanceService.getScoredTodos(cloned));

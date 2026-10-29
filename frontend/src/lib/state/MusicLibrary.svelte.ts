@@ -21,6 +21,7 @@ import LocalStorageService from '$lib/services/LocalStorageService';
 
 export class MusicLibrary {
 	static readonly LS_VIEW_KEY: string = 'music_view';
+	static readonly VIEWS = ['list', 'cards', 'shelf', 'spine'] as const;
 
 	config: LibraryConfig = {
 		type: 'music',
@@ -51,11 +52,12 @@ export class MusicLibrary {
 	genreFilter = $state<MusicGenre | null>(null);
 	wishlistFilter = $state<boolean>(false);
 	searchTerm = $state<string>('');
+	activeFilter: 'none' | 'search' | 'genreAndRating' | 'wishlist' = 'none';
 	releases = $state<MusicRelease[]>([]);
 	releasesLoaded = $state<boolean>(false);
 	integrations = $state<string[]>(['deezer', 'discogs']);
 	integrationsLoaded = $state<boolean>(false);
-	view = $state<'list' | 'cards' | 'shelf' | 'spine'>('cards');
+	view = $state<(typeof MusicLibrary.VIEWS)[number]>('cards');
 	auth: Auth;
 	apiService: ApiService;
 	localStorage: LocalStorageService;
@@ -71,14 +73,14 @@ export class MusicLibrary {
 		this.localStorage = localStorage;
 
 		const saved = this.localStorage.get(MusicLibrary.LS_VIEW_KEY);
-		this.view = (saved as 'list' | 'cards' | 'shelf' | 'spine' | null) ?? 'cards';
+		this.view = MusicLibrary.VIEWS.find((view) => view === saved) ?? 'cards';
 	}
 
 	async load(): Promise<void> {
 		const res = await this.apiService.list(apiRoutes.libraries.music.list);
 		if (res) {
 			this.entries = res.data as Music[];
-			this.setFilteredEntries(this.entries);
+			this.reapplyFilter();
 			await this.loadGenres();
 			this.loaded = true;
 		}
@@ -112,27 +114,45 @@ export class MusicLibrary {
 	search(): void {
 		this.genreFilter = null;
 		this.ratingFilter = null;
-		this.setFilteredEntries(
-			this.filterService.search(this.entries, this.searchTerm, ['title', 'artist'])
-		);
+		this.activeFilter = 'search';
+		this.setFilteredEntries(this.filterEntries());
 	}
 
 	filterByGenreAndRating(): void {
-		this.setFilteredEntries(
-			this.filterService.byGenreAndRating(this.entries, this.genreFilter, this.ratingFilter)
-		);
+		this.activeFilter = 'genreAndRating';
+		this.setFilteredEntries(this.filterEntries());
 	}
 
 	filterByWishlist(): void {
 		this.wishlistFilter = true;
-		this.setFilteredEntries(this.filterService.byWishlist(this.entries));
+		this.activeFilter = 'wishlist';
+		this.setFilteredEntries(this.filterEntries());
 	}
 
 	clearFilters(): void {
 		this.genreFilter = null;
 		this.ratingFilter = null;
 		this.wishlistFilter = false;
+		this.activeFilter = 'none';
 		this.setFilteredEntries(this.entries);
+	}
+
+	private filterEntries(): Music[] {
+		switch (this.activeFilter) {
+			case 'search':
+				return this.filterService.search(this.entries, this.searchTerm, ['title', 'artist']);
+			case 'genreAndRating':
+				return this.filterService.byGenreAndRating(this.entries, this.genreFilter, this.ratingFilter);
+			case 'wishlist':
+				return this.filterService.byWishlist(this.entries);
+			default:
+				return this.entries;
+		}
+	}
+
+	private reapplyFilter(): void {
+		this.filteredEntries = this.filterEntries();
+		this.shelfIndex = Math.max(0, Math.min(this.shelfIndex, this.filteredEntries.length - 1));
 	}
 
 	private setFilteredEntries(entries: Music[]): void {

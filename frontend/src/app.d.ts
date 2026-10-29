@@ -1,6 +1,6 @@
 // See https://svelte.dev/docs/kit/types#app.d.ts
 // for information about these interfaces
-import type { ElectronAPI } from '$lib/types/platform';
+import type { ElectronAPI, SolytoWidgetsBridge } from '$lib/types/platform';
 
 declare global {
 	namespace App {
@@ -14,6 +14,7 @@ declare global {
 	interface Window {
 		electronAPI?: ElectronAPI;
 		Capacitor?: { isNativePlatform?: () => boolean };
+		SolytoWidgets?: SolytoWidgetsBridge;
 	}
 }
 

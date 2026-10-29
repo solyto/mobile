@@ -265,11 +265,9 @@ describe('BookLibrary', () => {
 	});
 
 	it('moves the shelf back to the first entry whenever the list is refiltered', async () => {
-		api.list.mockResolvedValue({ data: [book()] });
 		const s = new BookLibrary();
 		s.entries = [book({ id: '1' }), book({ id: '2' })];
 		const actions = [
-			() => s.load(),
 			() => s.search(),
 			() => s.filterByGenreAndRating(),
 			() => s.filterByWishlist(),
@@ -284,6 +282,45 @@ describe('BookLibrary', () => {
 		}
 	});
 
+	it('keeps the last applied filter when the list is reloaded', async () => {
+		const entries = [
+			book({ id: '1', title: 'Dune', genres: [fantasy], rating: 5, wishlist: true }),
+			book({ id: '2', title: 'Hobbit', genres: [fantasy], rating: 3, lent_to: 'Alice' })
+		];
+		api.list.mockResolvedValue({ data: entries });
+		const s = new BookLibrary();
+		const searchFor = (term: string) => {
+			s.searchTerm = term;
+			s.search();
+		};
+		const filters = [
+			{ apply: () => searchFor('dune'), ids: ['1'] },
+			{ apply: () => s.addRatingFilter(3), ids: ['2'] },
+			{ apply: () => s.filterByWishlist(), ids: ['1'] },
+			{ apply: () => s.filterByLent(), ids: ['2'] },
+			{ apply: () => s.clearFilters(), ids: ['1', '2'] }
+		];
+
+		for (const filter of filters) {
+			s.entries = entries;
+			filter.apply();
+			await s.load();
+			expect(s.filteredEntries.map((b) => b.id)).toEqual(filter.ids);
+		}
+	});
+
+	it('keeps the shelf position on reload and clamps it to the list', async () => {
+		const s = new BookLibrary();
+		api.list.mockResolvedValue({ data: [book({ id: '1' }), book({ id: '2' })] });
+		s.shelfIndex = 1;
+		await s.load();
+		expect(s.shelfIndex).toBe(1);
+
+		api.list.mockResolvedValue({ data: [book({ id: '1' })] });
+		await s.load();
+		expect(s.shelfIndex).toBe(0);
+	});
+
 	it('restores the persisted view and switches between views', () => {
 		storage.get.mockReturnValue('list');
 		const s = new BookLibrary();
@@ -295,6 +332,14 @@ describe('BookLibrary', () => {
 		expect(s.view).toBe('shelf');
 		s.switchView();
 		expect(s.view).toBe('list');
+	});
+
+	it('falls back to cards for an invalid persisted view', () => {
+		storage.get.mockReturnValue('grid');
+		expect(new BookLibrary().view).toBe('cards');
+
+		storage.get.mockReturnValue('');
+		expect(new BookLibrary().view).toBe('cards');
 	});
 });
 
@@ -335,11 +380,9 @@ describe('MusicLibrary', () => {
 	});
 
 	it('moves the shelf back to the first entry whenever the list is refiltered', async () => {
-		api.list.mockResolvedValue({ data: [music()] });
 		const s = new MusicLibrary();
 		s.entries = [music({ id: '1' }), music({ id: '2' })];
 		const actions = [
-			() => s.load(),
 			() => s.search(),
 			() => s.filterByGenreAndRating(),
 			() => s.filterByWishlist(),
@@ -353,10 +396,39 @@ describe('MusicLibrary', () => {
 		}
 	});
 
+	it('keeps the last applied filter and shelf position when the list is reloaded', async () => {
+		const entries = [
+			music({ id: '1', title: 'Abbey Road', rating: 5 }),
+			music({ id: '2', title: 'Revolver', wishlist: true }),
+			music({ id: '3', title: 'Help' })
+		];
+		api.list.mockResolvedValue({ data: entries });
+		const s = new MusicLibrary();
+		s.entries = entries;
+		s.filterByWishlist();
+		await s.load();
+		expect(s.filteredEntries.map((m) => m.id)).toEqual(['2']);
+
+		s.searchTerm = 'e';
+		s.search();
+		s.shelfIndex = 2;
+		await s.load();
+		expect(s.filteredEntries.map((m) => m.id)).toEqual(['1', '2', '3']);
+		expect(s.shelfIndex).toBe(2);
+	});
+
 	it('restores the persisted view', () => {
 		storage.get.mockReturnValue('spine');
 		const s = new MusicLibrary();
 		expect(s.view).toBe('spine');
+	});
+
+	it('falls back to cards for an invalid persisted view', () => {
+		storage.get.mockReturnValue('grid');
+		expect(new MusicLibrary().view).toBe('cards');
+
+		storage.get.mockReturnValue('');
+		expect(new MusicLibrary().view).toBe('cards');
 	});
 });
 
@@ -389,6 +461,24 @@ describe('MovieLibrary', () => {
 		expect(s.filteredEntries).toHaveLength(3);
 
 		s.filterByWishlist();
+		expect(s.filteredEntries.map((m) => m.id)).toEqual(['2']);
+	});
+
+	it('keeps the last applied filter when the list is reloaded', async () => {
+		const entries = [
+			movie({ id: '1', title: 'Inception', rating: 5 }),
+			movie({ id: '2', title: 'Heat' })
+		];
+		api.list.mockResolvedValue({ data: entries });
+		const s = new MovieLibrary();
+		s.entries = entries;
+		s.addRatingFilter(5);
+		await s.load();
+		expect(s.filteredEntries.map((m) => m.id)).toEqual(['1']);
+
+		s.searchTerm = 'heat';
+		s.search();
+		await s.load();
 		expect(s.filteredEntries.map((m) => m.id)).toEqual(['2']);
 	});
 
@@ -432,6 +522,24 @@ describe('GameLibrary', () => {
 
 		s.clearFilters();
 		s.filterByWishlist();
+		expect(s.filteredEntries.map((g) => g.id)).toEqual(['2']);
+	});
+
+	it('keeps the last applied filter when the list is reloaded', async () => {
+		const entries = [
+			game({ id: '1', title: 'Hades', wishlist: true }),
+			game({ id: '2', title: 'Bastion' })
+		];
+		api.list.mockResolvedValue({ data: entries });
+		const s = new GameLibrary();
+		s.entries = entries;
+		s.filterByWishlist();
+		await s.load();
+		expect(s.filteredEntries.map((g) => g.id)).toEqual(['1']);
+
+		s.searchTerm = 'bastion';
+		s.search();
+		await s.load();
 		expect(s.filteredEntries.map((g) => g.id)).toEqual(['2']);
 	});
 
@@ -480,6 +588,33 @@ describe('PlantLibrary', () => {
 		expect(s.filteredEntries).toHaveLength(3);
 	});
 
+	it('keeps the last applied filter when the list is reloaded', async () => {
+		const entries = [
+			plant({ id: '1', name: 'Monstera', location: 'indoor' }),
+			plant({ id: '2', name: null, latin_name: null }),
+			plant({ id: '3', name: 'Ficus' })
+		];
+		api.list.mockResolvedValue({ data: entries });
+		const s = new PlantLibrary();
+		const searchFor = (term: string) => {
+			s.searchTerm = term;
+			s.search();
+		};
+		s.entries = entries;
+		const filters = [
+			{ apply: () => searchFor('ficus'), ids: ['3'] },
+			{ apply: () => s.addLocationFilter('indoor' as PlantLocation), ids: ['1'] },
+			{ apply: () => s.filterByUnidentified(), ids: ['2'] },
+			{ apply: () => s.clearFilters(), ids: ['1', '2', '3'] }
+		];
+
+		for (const filter of filters) {
+			filter.apply();
+			await s.load();
+			expect(s.filteredEntries.map((p) => p.id)).toEqual(filter.ids);
+		}
+	});
+
 	it('toggles between list and cards view', () => {
 		const s = new PlantLibrary();
 		s.switchView();
@@ -503,6 +638,16 @@ describe('QuoteLibrary', () => {
 		s.searchTerm = 'GOETHE';
 		s.search();
 		expect(s.filteredEntries.map((q) => q.author)).toEqual(['Goethe']);
+	});
+
+	it('keeps the search when the list is reloaded', async () => {
+		api.list.mockResolvedValue({
+			data: [quote({ id: '1', author: 'Goethe' }), quote({ id: '2' })]
+		});
+		const s = new QuoteLibrary();
+		s.searchTerm = 'goethe';
+		await s.load();
+		expect(s.filteredEntries.map((q) => q.id)).toEqual(['1']);
 	});
 });
 
@@ -542,6 +687,24 @@ describe('RecipeLibrary', () => {
 		expect(s.filteredEntries).toHaveLength(3);
 		expect(s.ratingFilter).toBeNull();
 		expect(s.typeFilter).toBeNull();
+	});
+
+	it('keeps the last applied filter when the list is reloaded', async () => {
+		const entries = [
+			recipe({ id: '1', title: 'Pizza', rating: 5, type: 'dinner' }),
+			recipe({ id: '2', title: 'Cake', rating: 5, type: 'dessert' })
+		];
+		api.list.mockResolvedValue({ data: entries });
+		const s = new RecipeLibrary();
+		s.entries = entries;
+		s.addTypeFilter('dessert' as RecipeType);
+		await s.load();
+		expect(s.filteredEntries.map((r) => r.id)).toEqual(['2']);
+
+		s.searchTerm = 'pizza';
+		s.search();
+		await s.load();
+		expect(s.filteredEntries.map((r) => r.id)).toEqual(['1']);
 	});
 
 	it('toggles between list and cards view', () => {
@@ -633,6 +796,25 @@ describe('LinkLibrary', () => {
 		s.filterByFavorite();
 		s.reapplyFilter();
 		expect(s.activeFilter).toBe('favorite');
+	});
+
+	it('keeps the search after a reload until a category is chosen', () => {
+		const work = linkCategory(1, 'Work');
+		const s = new LinkLibrary();
+		s.entries = [
+			link({ id: '1', title: 'Solyto', category: work }),
+			link({ id: '2', title: 'Docs', category: work })
+		];
+		s.filterByCategory(1);
+		s.searchTerm = 'solyto';
+		s.search();
+
+		s.reapplyFilter();
+		expect(s.filteredEntries.map((l) => l.id)).toEqual(['1']);
+
+		s.filterByCategory(1);
+		s.reapplyFilter();
+		expect(s.filteredEntries.map((l) => l.id)).toEqual(['1', '2']);
 	});
 
 	it('resolves the active category id for new entries', () => {

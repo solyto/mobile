@@ -7,6 +7,8 @@
 	import { onMount } from 'svelte';
 	import { apiRoutes } from '$lib/config/apiRoutes';
 	import type { ExportStatus } from '$lib/types/export';
+	import { RateLimitedError } from '$lib/services/ApiService';
+	import { exportRateLimitedMessage } from '$lib/helpers/NetworkErrorHelper';
 
 	const ts = getTranslation();
 	const auth = getAuth();
@@ -64,17 +66,23 @@
 		}
 
 		loading = true;
-		const res = await apiService.postRaw<{ success: boolean; message?: string }>(apiRoutes.export.start, { features });
+		try {
+			const res = await apiService.postRaw<{ success: boolean; message?: string }>(apiRoutes.export.start, { features });
 
-		if (res.success) {
-			uiNotifications.success(res.message ?? '');
-			await loadStatus();
-		} else if (res.message) {
-			uiNotifications.error(res.message);
-		} else {
-			uiNotifications.error('Export failed.');
+			if (res.success) {
+				uiNotifications.success(res.message ?? '');
+				await loadStatus();
+			} else if (res.message) {
+				uiNotifications.error(res.message);
+			} else {
+				uiNotifications.error('Export failed.');
+			}
+		} catch (e) {
+			if (!(e instanceof RateLimitedError) || e.code !== 'export_rate_limited') throw e;
+			uiNotifications.error(exportRateLimitedMessage(e.retryAfter, ts.get.settings));
+		} finally {
+			loading = false;
 		}
-		loading = false;
 	}
 
 	function getStatusText(status: string): string {

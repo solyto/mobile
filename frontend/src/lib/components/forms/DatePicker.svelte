@@ -1,14 +1,17 @@
 <!--suppress CssUnusedSymbol -->
 <script lang="ts">
 	import { DatePicker } from '@svelte-plugins/datepicker';
+	import type { WeekStart } from '$lib/types/auth';
 
 	let {
 		isOpen = $bindable(),
 		startDate = $bindable(),
+		weekStart,
 		onChange
 	}: {
 		isOpen: boolean;
 		startDate: Date | null;
+		weekStart: WeekStart;
 		onChange: () => void | Promise<void>;
 	} = $props();
 </script>
@@ -17,7 +20,7 @@
 	onDateChange={onChange}
 	enableFutureDates={true}
 	enablePastDates={true}
-	startOfWeek="1"
+	startOfWeek={weekStart === 'sunday' ? 0 : 1}
 	includeFont={false}
 	bind:isOpen
 	bind:startDate

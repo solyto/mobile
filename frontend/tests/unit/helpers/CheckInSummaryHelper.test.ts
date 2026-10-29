@@ -106,6 +106,12 @@ describe('buildDaySummary', () => {
 		expect(result).toBe('Mood-5, but dreams-1.');
 	});
 
+	it('treats 5 as the good end for alcohol and smoking', () => {
+		const p = records();
+		const result = buildDaySummary(checkIn({ alcohol: 5, smoking: 1 }), all, p);
+		expect(result).toBe('Alcohol-5, but smoking-1.');
+	});
+
 	it('resolves sports by sport id and treats them as neutral', () => {
 		const p = records();
 		const result = buildDaySummary(checkIn({ sports: 2 }), all, p);

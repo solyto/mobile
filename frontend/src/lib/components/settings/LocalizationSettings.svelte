@@ -5,6 +5,7 @@
 	import Select from '$lib/components/forms/Select.svelte';
 	import { getTimeZones } from '@vvo/tzdb';
 	import { getAuth } from '$lib/state/Auth.svelte';
+	import type { WeekStart } from '$lib/types/auth';
 
 	const ts = getTranslation();
 	const auth = getAuth();
@@ -13,7 +14,8 @@
 		{ value: 'en', label: ts.get.settings.english },
 		{ value: 'de', label: ts.get.settings.german },
 		{ value: 'fr', label: ts.get.settings.french },
-		{ value: 'es', label: ts.get.settings.spanish }
+		{ value: 'es', label: ts.get.settings.spanish },
+		{ value: 'it', label: ts.get.settings.italian }
 	];
 
 	const timezoneOptions = getTimeZones()
@@ -29,13 +31,20 @@
 		{ value: 'YYYY/mm/dd', label: '2025/10/01' },
 		{ value: 'YY/mm/dd', label: '25/10/01' },
 		{ value: 'YYYY-mm-dd', label: '2025-10-01' },
-		{ value: 'YY-mm-dd', label: '25-10-01' }
+		{ value: 'YY-mm-dd', label: '25-10-01' },
+		{ value: 'mm/dd/YYYY', label: '10/01/2025' },
+		{ value: 'mm/dd/YY', label: '10/01/25' }
 	];
 
 	const timeFormatOptions = [
 		{ value: 'H:i', label: '13:37' },
 		{ value: 'g:i A', label: '1.37 PM' },
 		{ value: 'g:i a', label: '1.37 pm' }
+	];
+
+	const weekStartOptions = [
+		{ value: 'monday', label: ts.get.calendar.weekdays[1] },
+		{ value: 'sunday', label: ts.get.calendar.weekdays[7] }
 	];
 
 	let languageInput = $state<HTMLSelectElement | null>(null);
@@ -46,6 +55,7 @@
 	let dateFormatValues = $state<string>(auth?.user?.settings?.date_format ?? '');
 	let timeFormatInput = $state<HTMLSelectElement | null>(null);
 	let timeFormatValues = $state<string>(auth?.user?.settings?.time_format ?? '');
+	let weekStartValues = $state<string>(auth.getWeekStart());
 
 	const handleLanguageChange = async (value: string) => {
 		ts.changeLanguage(value as Language);
@@ -54,6 +64,7 @@
 	const handleTimezoneChange = async (value: string) => await auth.updateTimezone(value);
 	const handleDateFormatChange = async (value: string) => await auth.updateDateFormat(value);
 	const handleTimeFormatChange = async (value: string) => await auth.updateTimeFormat(value);
+	const handleWeekStartChange = async (value: string) => await auth.updateWeekStart(value as WeekStart);
 </script>
 
 <div class="flex gap-8 max-lg:flex-col">
@@ -87,6 +98,13 @@
 			bind:value={timeFormatValues}
 			onchange={(value) => handleTimeFormatChange(value)}
 			options={timeFormatOptions}
+		/>
+	</SettingsSection>
+	<SettingsSection label={ts.get.settings.week_start}>
+		<Select
+			bind:value={weekStartValues}
+			onchange={handleWeekStartChange}
+			options={weekStartOptions}
 		/>
 	</SettingsSection>
 </div>

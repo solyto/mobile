@@ -29,7 +29,7 @@
 	import TitleBar from '$lib/components/desktop/TitleBar.svelte';
 	import UpdateRequiredScreen from '$lib/components/ui/UpdateRequiredScreen.svelte';
 	import { setUpdateRequired } from '$lib/state/UpdateRequired.svelte';
-	import { createNetworkErrorHandler } from '$lib/helpers/NetworkErrorHelper';
+	import { createNetworkErrorHandler, rateLimitedMessage } from '$lib/helpers/NetworkErrorHelper';
 	import { getNavigation, setNavigation } from '$lib/state/Navigation.svelte';
 	import { getPageFeature, isAuthRoute, isDashboard, isSetupRoute, showNavbar } from '$lib/helpers/NavHelper';
 	import { featureConfig } from '$lib/config/features';
@@ -86,7 +86,8 @@
 
 	const handleUnhandledRejection = createNetworkErrorHandler(
 		() => loadingIndicator.stop(),
-		() => notifications.error(ts.get.layout.network_error)
+		() => notifications.error(ts.get.layout.network_error),
+		(error) => notifications.error(rateLimitedMessage(error.retryAfter, ts.get.layout))
 	);
 
 	auth.setSessionExpiredHandler(handleSessionExpired);
@@ -104,6 +105,7 @@
 		}
 
 		window.addEventListener('unhandledrejection', handleUnhandledRejection);
+		auth.loaded.finally(() => auth.widgetBridge.start());
 
 		const updateHeight = () => { innerHeight = window.innerHeight; };
 		updateHeight();

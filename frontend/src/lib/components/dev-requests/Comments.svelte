@@ -50,12 +50,12 @@
 	}
 </script>
 
-<div class="mt-2 w-full border-t border-c-neutral-2 pt-4 dark:border-s-dark-3">
+<div class="mt-3 w-full border-t border-c-neutral-1 pt-3 dark:border-s-dark-3">
 	<div class="flex flex-col gap-3">
 		{#if comments.length > 0}
 			<div class="flex flex-col gap-2" in:blur>
 				{#each comments as comment (comment.id)}
-					<div class="flex flex-col gap-1 rounded bg-c-bg-surface p-3">
+					<div class="flex flex-col gap-1 rounded bg-c-neutral p-3 dark:bg-s-dark-2">
 						<div class="flex flex-row items-center gap-2 text-sm">
 							<span class="font-medium">{comment.user.name}</span>
 							<span class="text-c-neutral-4">{formatDate(comment.created_at)}</span>

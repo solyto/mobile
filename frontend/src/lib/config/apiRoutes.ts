@@ -11,9 +11,12 @@ export const apiRoutes = {
 	auth: {
 		login: API_URL + '/auth/login',
 		refresh: API_URL + '/auth/refresh',
+		logout: API_URL + '/auth/logout',
+		widgetToken: API_URL + '/auth/widget-token',
 		register: API_URL + '/auth/register',
 		verify: API_URL + '/auth/verify',
 		forgotPassword: API_URL + '/auth/forgot-password',
+		resendVerification: API_URL + '/auth/resend-verification',
 		resetPassword: API_URL + '/auth/reset-password',
 		confirmAccountDeletion: API_URL + '/auth/confirm-account-deletion',
 		passkeys: {
@@ -37,6 +40,7 @@ export const apiRoutes = {
 			updateTimezone: API_URL + '/users/me/settings/timezone',
 			updateDateFormat: API_URL + '/users/me/settings/date-format',
 			updateTimeFormat: API_URL + '/users/me/settings/time-format',
+			updateWeekStart: API_URL + '/users/me/settings/week-start',
 			updateLanguage: API_URL + '/users/me/settings/language',
 			completeOnboarding: API_URL + '/users/me/settings/complete-onboarding',
 			updateWeatherCity: API_URL + '/users/me/settings/weather-city',

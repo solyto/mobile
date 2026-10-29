@@ -16,7 +16,7 @@
 </button>
 <div class="flex flex-col items-center justify-center gap-2">
 	<span>{ts.get.calendar.calendar_week}</span>
-	<span>{calendars.currentWeek}</span>
+	<span>{calendars.currentWeekNumber}</span>
 </div>
 <button
 	onclick={() => calendars.lastWeek()}

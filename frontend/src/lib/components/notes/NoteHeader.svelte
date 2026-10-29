@@ -11,6 +11,7 @@
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
 	import ConfirmationModal from '$lib/components/ui/ConfirmationModal.svelte';
 	import DeleteButton from '$lib/components/ui/buttons/DeleteButton.svelte';
+	import MovableHoverBox from '$lib/components/ui/MovableHoverBox.svelte';
 	import type { Note } from '$lib/types/note';
 
 	const ts = getTranslation();
@@ -28,6 +29,9 @@
 	let titleInput = $state<HTMLInputElement | null>(null);
 	let titleValue = $state<string>(notes.activeNote!.title);
 	let lastSaved = $state<Date | null>(null);
+	let showExplanationBox = $state<boolean>(false);
+	let explanationBoxX = $state<number>(0);
+	let explanationBoxY = $state<number>(0);
 	let keyHandlers: { [key: string]: string | null } = {
 		CtrlS: null,
 		Enter: null,
@@ -66,6 +70,7 @@
 
 	async function toggleChangeTitle(): Promise<void> {
 		changeTitle = !changeTitle;
+		showExplanationBox = false;
 
 		if (changeTitle) {
 			titleValue = notes.activeNote!.title;
@@ -102,6 +107,11 @@
 
 		await notes.changeTitle(noteTitle);
 		loadingIndicator.stop();
+	}
+
+	function setExplanationBoxPosition(e: MouseEvent): void {
+		explanationBoxX = e.clientX;
+		explanationBoxY = e.clientY;
 	}
 
 	function formatSavedTime(date: Date): string {
@@ -146,9 +156,20 @@
 						type="button"
 						class="text-left text-3xl leading-tight"
 						ondblclick={toggleChangeTitle}
+						onmouseover={() => (showExplanationBox = true)}
+						onmouseout={() => (showExplanationBox = false)}
+						onfocus={() => (showExplanationBox = true)}
+						onblur={() => (showExplanationBox = false)}
+						onmousemove={(e) => setExplanationBoxPosition(e)}
 					>
 						{notes.activeNote.title}
 					</button>
+					<MovableHoverBox
+						content={ts.get.layout.double_click_to_edit}
+						show={showExplanationBox}
+						x={explanationBoxX}
+						y={explanationBoxY}
+					/>
 				{/if}
 				{#if lastSaved}
 					<span class="text-xs text-c-neutral-5 dark:text-c-neutral-4">

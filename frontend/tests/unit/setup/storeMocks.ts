@@ -35,7 +35,9 @@ export const auth = {
 	user: { settings: {} },
 	getPublicProfile: vi.fn(),
 	updateNavigation: vi.fn(),
-	loadAdditionalData: vi.fn()
+	loadAdditionalData: vi.fn(),
+	getWeekStart: vi.fn(() => 'monday'),
+	widgetBridge: { notifyChanged: vi.fn() }
 };
 
 export const pageState = {
@@ -104,8 +106,11 @@ export function resetStoreMocks() {
 	auth.getPublicProfile.mockReset();
 	auth.updateNavigation.mockReset();
 	auth.loadAdditionalData.mockReset();
+	auth.getWeekStart.mockReset();
+	auth.widgetBridge.notifyChanged.mockReset();
 
 	auth.getToken.mockReturnValue('test-token');
+	auth.getWeekStart.mockReturnValue('monday');
 	for (const fn of Object.values(api)) fn.mockResolvedValue(null);
 
 	pageState.pathname = '/';

@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Auth } from '$lib/state/Auth.svelte';
+import { apiRoutes } from '$lib/config/apiRoutes';
 import type { User, AuthToken, LoginResponse } from '$lib/types/auth';
 
 // The Auth module itself must NOT be mocked — only its service dependencies.
 
-const { api, storage, monitor } = vi.hoisted(() => {
+const { api, storage, monitor, bridge } = vi.hoisted(() => {
 	const api = {
 		post: vi.fn(),
 		postWithStatus: vi.fn(),
@@ -27,8 +28,21 @@ const { api, storage, monitor } = vi.hoisted(() => {
 		check: null as (() => void) | null,
 		destroy: vi.fn()
 	};
-	return { api, storage, monitor };
+	const bridge = {
+		issueToken: vi.fn(),
+		clear: vi.fn(),
+		destroy: vi.fn()
+	};
+	return { api, storage, monitor, bridge };
 });
+
+vi.mock('$lib/state/WidgetBridge', () => ({
+	WidgetBridge: class FakeWidgetBridge {
+		issueToken = bridge.issueToken;
+		clear = bridge.clear;
+		destroy = bridge.destroy;
+	}
+}));
 
 vi.mock('$lib/state/SessionMonitor', () => ({
 	SessionMonitor: class FakeSessionMonitor {
@@ -76,6 +90,7 @@ function user(overrides: Partial<User> = {}): User {
 			timezone: 'UTC',
 			date_format: 'dd.mm.YYYY',
 			time_format: 'H:i',
+			week_start: 'monday',
 			widgets: '',
 			navigation: '',
 			first_visit: true,
@@ -450,6 +465,129 @@ describe('Auth store', () => {
 		});
 	});
 
+	describe('widget bridge', () => {
+		it('issues a widget token after a password login', async () => {
+			api.postRaw.mockResolvedValue({ data: loginResponse() });
+
+			const auth = new Auth();
+			await auth.login('a@b.c', 'p');
+
+			expect(bridge.issueToken).toHaveBeenCalledTimes(1);
+		});
+
+		it('does not issue a widget token after a failed login', async () => {
+			api.postRaw.mockResolvedValue({ success: false });
+
+			const auth = new Auth();
+			await auth.login('a@b.c', 'wrong');
+
+			expect(bridge.issueToken).not.toHaveBeenCalled();
+		});
+
+		it('issues a widget token after a passkey login', async () => {
+			api.postRaw.mockResolvedValue({ success: true, data: loginResponse() });
+
+			const auth = new Auth();
+			await auth.passkeyAuthenticate({ id: 'cred' });
+
+			expect(bridge.issueToken).toHaveBeenCalledTimes(1);
+		});
+
+		it('issues a widget token after a successful refresh only', async () => {
+			const auth = new Auth();
+			await auth.refresh();
+			expect(bridge.issueToken).not.toHaveBeenCalled();
+
+			api.postWithStatus.mockResolvedValue({ ok: true, status: 200, data: { data: loginResponse() } });
+			await auth.refresh();
+
+			expect(bridge.issueToken).toHaveBeenCalledTimes(1);
+		});
+
+		it('clears the widgets before the local session is cleared', () => {
+			const auth = new Auth();
+
+			auth.logout();
+
+			expect(bridge.clear).toHaveBeenCalledTimes(1);
+			expect(bridge.clear.mock.invocationCallOrder[0]).toBeLessThan(storage.destroy.mock.invocationCallOrder[0]);
+		});
+
+		it('destroy() tears the bridge down', () => {
+			const auth = new Auth();
+
+			auth.destroy();
+
+			expect(bridge.destroy).toHaveBeenCalledTimes(1);
+		});
+	});
+
+	describe('signOut', () => {
+		async function signedInAuth(): Promise<Auth> {
+			api.postRaw.mockResolvedValue({ data: loginResponse() });
+			const auth = new Auth();
+			await auth.login('a@b.c', 'p');
+			api.postWithStatus.mockClear();
+			return auth;
+		}
+
+		function expectSignedOut(auth: Auth): void {
+			expect(auth.loggedIn).toBe(false);
+			expect(auth.user).toBeNull();
+			expect(auth.getToken()).toBeNull();
+			expect(storage.destroy).toHaveBeenCalledWith('auth');
+		}
+
+		it('revokes the token on the server, then clears the session', async () => {
+			const auth = await signedInAuth();
+			api.postWithStatus.mockResolvedValue({ ok: true, status: 200, data: {} });
+
+			await auth.signOut();
+
+			expect(api.postWithStatus).toHaveBeenCalledWith(apiRoutes.auth.logout, {}, expect.any(AbortSignal));
+			expectSignedOut(auth);
+		});
+
+		it.each([401, 500])('still clears the session when the server answers %d', async (status) => {
+			const auth = await signedInAuth();
+			api.postWithStatus.mockResolvedValue({ ok: false, status, data: null });
+
+			await expect(auth.signOut()).resolves.toBeUndefined();
+
+			expectSignedOut(auth);
+		});
+
+		it('still clears the session when the request fails or times out', async () => {
+			const auth = await signedInAuth();
+			api.postWithStatus.mockRejectedValue(new Error('offline'));
+
+			await expect(auth.signOut()).resolves.toBeUndefined();
+
+			expectSignedOut(auth);
+		});
+
+		it('does not report an expired session', async () => {
+			const auth = await signedInAuth();
+			const handler = vi.fn();
+			auth.setSessionExpiredHandler(handler);
+			api.postWithStatus.mockResolvedValue({ ok: false, status: 401, data: null });
+
+			await auth.signOut();
+
+			expect(handler).not.toHaveBeenCalled();
+		});
+
+		it('skips the server call without a token', async () => {
+			const auth = new Auth();
+			await flushAsync();
+
+			await auth.signOut();
+
+			expect(api.postWithStatus).not.toHaveBeenCalled();
+			expect(auth.loggedIn).toBe(false);
+		});
+	});
+
 	describe('isAdmin', () => {
 		it('is true for admin and super_admin roles', () => {
 			expect(new Auth().isAdmin()).toBe(false);
@@ -647,6 +785,57 @@ describe('Auth store', () => {
 
 			expect(result).toBe(false);
 			expect(auth.user?.settings?.journal_enabled).toBe(false);
+		});
+	});
+
+	describe('week start setting', () => {
+		async function loggedInUser(): Promise<Auth> {
+			const expiresAt = new Date(Date.now() + 6 * 24 * 3600 * 1000).toISOString();
+			storage.getJson.mockReturnValue({ user: user(), authToken: authToken(expiresAt) });
+			const auth = new Auth();
+			await flushAsync();
+			return auth;
+		}
+
+		it('falls back to Monday without a user or a stored setting', () => {
+			const auth = new Auth();
+			expect(auth.getWeekStart()).toBe('monday');
+
+			const { week_start: _, ...settings } = user().settings;
+			auth.user = user({ settings: settings as User['settings'] });
+			expect(auth.getWeekStart()).toBe('monday');
+		});
+
+		it('returns the stored week start', () => {
+			const auth = new Auth();
+			auth.user = user({ settings: { ...user().settings, week_start: 'sunday' } });
+			expect(auth.getWeekStart()).toBe('sunday');
+		});
+
+		it('keeps an updated week start in the user settings and persists it', async () => {
+			api.put.mockResolvedValue(true);
+			const auth = await loggedInUser();
+			storage.setJson.mockClear();
+
+			const result = await auth.updateWeekStart('sunday');
+
+			expect(result).toBe(true);
+			expect(api.put).toHaveBeenCalledWith(
+				expect.stringContaining('/settings/week-start'),
+				{ week_start: 'sunday' }
+			);
+			expect(auth.getWeekStart()).toBe('sunday');
+			expect(storage.setJson).toHaveBeenCalled();
+		});
+
+		it('keeps the old week start when the API rejects the update', async () => {
+			api.put.mockResolvedValue(false);
+			const auth = await loggedInUser();
+
+			const result = await auth.updateWeekStart('sunday');
+
+			expect(result).toBe(false);
+			expect(auth.getWeekStart()).toBe('monday');
 		});
 	});
 

@@ -1,4 +1,4 @@
-export type Language = 'en' | 'de' | 'fr' | 'es';
+export type Language = 'en' | 'de' | 'fr' | 'es' | 'it';
 
 export interface LayoutRecords {
 	modal_explanation: string;
@@ -21,6 +21,9 @@ export interface LayoutRecords {
 	remove: string;
 	rename: string;
 	network_error: string;
+	rate_limited: string;
+	rate_limited_minutes_singular: string;
+	rate_limited_minutes_plural: string;
 }
 
 export interface NavigationRecords {
@@ -69,6 +72,7 @@ export interface SettingsRecords {
 	german: string;
 	french: string;
 	spanish: string;
+	italian: string;
 	tags: string;
 	new_tag: string;
 	localization: string;
@@ -97,6 +101,7 @@ export interface SettingsRecords {
 	timezone: string;
 	date_format: string;
 	time_format: string;
+	week_start: string;
 	nextcloud_no_token: string;
 	nextcloud_token: string;
 	telegram_bot_integration_success: string;
@@ -116,6 +121,8 @@ export interface SettingsRecords {
 	export_status_failed: string;
 	export_download: string;
 	export_rate_limited: string;
+	export_rate_limited_hours_singular: string;
+	export_rate_limited_hours_plural: string;
 	export_next_available: string;
 	export_expired: string;
 	export_download_failed: string;
@@ -211,6 +218,7 @@ export interface AuthRecords {
 	register_error: string;
 	login_success: string;
 	login_error: string;
+	login_email_unverified: string;
 	verify_success: string;
 	already_verified: string;
 	verify_general_error: string;
@@ -221,6 +229,11 @@ export interface AuthRecords {
 	forgot_password_sent_title: string;
 	forgot_password_sent_desc: string;
 	forgot_password_resend: string;
+	resend_verification_link: string;
+	resend_verification_title: string;
+	resend_verification_hint: string;
+	resend_verification_send: string;
+	resend_verification_sent_desc: string;
 	reset_password_title: string;
 	reset_password_new: string;
 	reset_password_confirm: string;
@@ -302,6 +315,10 @@ export interface TodoRecords {
 	uncategorized: string;
 	delete_confirm_label: string;
 	delete_confirm_message: string;
+	category_deletion_title: string;
+	category_deletion_description: string;
+	workspace_deletion_title: string;
+	workspace_deletion_description: string;
 	add_subtask: string;
 	sort_by_score: string;
 	no_description: string;
@@ -746,6 +763,12 @@ export interface DevRecords {
 		comments_submit: string;
 		current_requests: string;
 		resolved_requests: string;
+		edit: string;
+		fixed_in_version: string;
+		fixed_in: string;
+		fixed_in_included: string;
+		fixed_in_pending: string;
+		fixed_in_current_version: string;
 	};
 }
 

@@ -17,7 +17,7 @@
 	}
 </script>
 
-<div class="flex flex-row items-center gap-1 md:mr-2 md:flex-col">
+<div class="flex flex-row items-center gap-1">
 	<button
 		onclick={handleUpvote}
 		class="cursor-pointer transition-all hover:md:translate-y-[-2px] {entry.user_vote === 'up'

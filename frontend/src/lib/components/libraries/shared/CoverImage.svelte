@@ -1,5 +1,8 @@
 <script lang="ts">
 	import { scale, blur } from 'svelte/transition';
+	import { getLoadedCovers } from '$lib/state/LoadedCovers.svelte';
+
+	const loadedCovers = getLoadedCovers();
 
 	let { src, previewSrc = '', alt = '', class: customClass = '' }: {
 		src: string;
@@ -9,9 +12,15 @@
 	} = $props();
 
 	let previewLoaded = $state(false);
-	let fullLoaded = $state(false);
+	// Already loaded once: render right away, so the image shows without waiting and without the intro transition.
+	let fullLoaded = $state(loadedCovers.has(src));
 
 	$effect(() => {
+		if (loadedCovers.has(src)) {
+			fullLoaded = true;
+			return;
+		}
+
 		previewLoaded = false;
 		fullLoaded = false;
 
@@ -22,7 +31,10 @@
 		}
 
 		const full = new Image();
-		full.onload = () => (fullLoaded = true);
+		full.onload = () => {
+			loadedCovers.add(src);
+			fullLoaded = true;
+		};
 		full.src = src;
 
 		return () => {

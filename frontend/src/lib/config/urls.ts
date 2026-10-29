@@ -24,6 +24,7 @@ export const urls = {
 	logout: '/auth/logout',
 	register: '/auth/register',
 	forgotPassword: '/auth/forgot-password',
+	resendVerification: '/auth/resend-verification',
 	resetPassword: '/auth/reset-password',
 	confirmAccountDeletion: '/auth/confirm-account-deletion',
 	profile: '/profile',

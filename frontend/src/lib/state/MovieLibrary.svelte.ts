@@ -44,6 +44,7 @@ export class MovieLibrary {
 	genreFilter = $state<MovieGenre | null>(null);
 	wishlistFilter = $state<boolean>(false);
 	searchTerm = $state<string>('');
+	activeFilter: 'none' | 'search' | 'genreAndRating' | 'wishlist' = 'none';
 	releases = $state<MovieRelease[]>([]);
 	releasesLoaded = $state<boolean>(false);
 	view = $state<'list' | 'cards'>('cards');
@@ -60,7 +61,7 @@ export class MovieLibrary {
 		const res = await this.apiService.list(apiRoutes.libraries.movies.list);
 		if (res) {
 			this.entries = res.data as Movie[];
-			this.filteredEntries = this.entries;
+			this.reapplyFilter();
 			await this.loadGenres();
 			this.loaded = true;
 		}
@@ -76,27 +77,44 @@ export class MovieLibrary {
 	search(): void {
 		this.genreFilter = null;
 		this.ratingFilter = null;
-		this.filteredEntries = this.filterService.search(this.entries, this.searchTerm, ['title']);
+		this.activeFilter = 'search';
+		this.reapplyFilter();
 	}
 
 	filterByGenreAndRating(): void {
-		this.filteredEntries = this.filterService.byGenreAndRating(
-			this.entries,
-			this.genreFilter,
-			this.ratingFilter
-		);
+		this.activeFilter = 'genreAndRating';
+		this.reapplyFilter();
 	}
 
 	filterByWishlist(): void {
 		this.wishlistFilter = true;
-		this.filteredEntries = this.filterService.byWishlist(this.entries);
+		this.activeFilter = 'wishlist';
+		this.reapplyFilter();
 	}
 
 	clearFilters(): void {
 		this.genreFilter = null;
 		this.ratingFilter = null;
 		this.wishlistFilter = false;
-		this.filteredEntries = this.entries;
+		this.activeFilter = 'none';
+		this.reapplyFilter();
+	}
+
+	private reapplyFilter(): void {
+		this.filteredEntries = this.filterEntries();
+	}
+
+	private filterEntries(): Movie[] {
+		switch (this.activeFilter) {
+			case 'search':
+				return this.filterService.search(this.entries, this.searchTerm, ['title']);
+			case 'genreAndRating':
+				return this.filterService.byGenreAndRating(this.entries, this.genreFilter, this.ratingFilter);
+			case 'wishlist':
+				return this.filterService.byWishlist(this.entries);
+			default:
+				return this.entries;
+		}
 	}
 
 	addRatingFilter(rating: number | null): void {

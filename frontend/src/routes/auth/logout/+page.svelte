@@ -11,7 +11,7 @@
 
 	onMount(async () => {
 		if (auth.loggedIn) {
-			auth.logout();
+			await auth.signOut();
 
 			await new Promise((resolve) => setTimeout(resolve, 1500));
 

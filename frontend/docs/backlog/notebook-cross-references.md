@@ -32,4 +32,4 @@ Open decisions to settle before starting:
 - The autocomplete has to work on mobile, with the on-screen keyboard open.
 - Where backlinks go: a collapsible section under the editor, or a side panel on desktop.
 
-Content is stored as HTML (`TipTapEditor.svelte` saves `getHTML()`). All new strings in all four i18n files.
+Content is stored as HTML (`TipTapEditor.svelte` saves `getHTML()`). All new strings in every i18n file.

@@ -8,6 +8,7 @@ import type {
 	TodoWorkspace,
 	TodoCategory
 } from '$lib/types/todo';
+import type { WeekStart } from '$lib/types/auth';
 import {
 	isDateInThePast,
 	isDateThisWeek,
@@ -16,7 +17,7 @@ import {
 } from '$lib/helpers/DateHelper';
 
 export default class TodoFilterService {
-	filter(request: TodoFilter, todos: Todo[]): Todo[] {
+	filter(request: TodoFilter, todos: Todo[], weekStart: WeekStart): Todo[] {
 		switch (request.type) {
 			case 'priority':
 				return this.filterByPriority(request.value as TodoPriority, todos);
@@ -25,7 +26,7 @@ export default class TodoFilterService {
 			case 'effort':
 				return this.filterByEffort(request.value as TodoEffort, todos);
 			case 'due':
-				return this.filterByDueDate(request.value as TodoDueAtFilter, todos);
+				return this.filterByDueDate(request.value as TodoDueAtFilter, todos, weekStart);
 			case 'category':
 				return this.filterByCategory(Number(request.value), todos);
 			case 'tag':
@@ -55,7 +56,7 @@ export default class TodoFilterService {
 		);
 	}
 
-	filterByDueDate(due: TodoDueAtFilter, todos: Todo[]): Todo[] {
+	filterByDueDate(due: TodoDueAtFilter, todos: Todo[], weekStart: WeekStart): Todo[] {
 		switch (due) {
 			case 'today':
 				return todos.filter((t) => {
@@ -67,7 +68,7 @@ export default class TodoFilterService {
 				});
 			case 'week':
 				return todos.filter((t) => {
-					return t.due_at ? isDateThisWeek(new Date(t.due_at)) : false;
+					return t.due_at ? isDateThisWeek(new Date(t.due_at), weekStart) : false;
 				});
 			case 'overdue':
 				return todos.filter((t) => {

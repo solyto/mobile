@@ -1,17 +1,11 @@
 <script lang="ts">
 	import { slide, fade } from 'svelte/transition';
-	import type {
-		DevRequest,
-		UpdateDevRequestRequest
-	} from '$lib/types/dev_request';
+	import type { DevRequest } from '$lib/types/dev_request';
 	import { formatDate } from '$lib/helpers/DateHelper';
 	import IconChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
-	import { getDevRequests } from '$lib/state/DevRequests.svelte';
 	import { getAuth } from '$lib/state/Auth.svelte';
+	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { API_STORAGE_URL } from '$lib/config/apiRoutes';
-	import { onDestroy, tick } from 'svelte';
-	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
-	import { getKeyManager } from '$lib/state/KeyManager.svelte';
 	import { nl2br } from '$lib/helpers/FormatHelper';
 	import DOMPurify from 'dompurify';
 	import Author from '$lib/components/dev-requests/Author.svelte';
@@ -19,14 +13,14 @@
 	import Priority from '$lib/components/dev-requests/Priority.svelte';
 	import Type from '$lib/components/dev-requests/Type.svelte';
 	import Status from '$lib/components/dev-requests/Status.svelte';
+	import FixedIn from '$lib/components/dev-requests/FixedIn.svelte';
 	import Comments from '$lib/components/dev-requests/Comments.svelte';
-	import TextInput from '$lib/components/forms/TextInput.svelte';
+	import DevRequestEdit from '$lib/components/dev-requests/DevRequestEdit.svelte';
+	import EditButton from '$lib/components/ui/buttons/EditButton.svelte';
 	import IconMessageSquare from '@lucide/svelte/icons/message-square';
 
-	const devRequests = getDevRequests();
-	const loadingIndicator = getLoadingIndicator();
-	const keyManager = getKeyManager();
 	const auth = getAuth();
+	const ts = getTranslation();
 
 	const isAdmin = auth.isAdmin();
 
@@ -36,173 +30,88 @@
 	} = $props();
 
 	let open = $state<boolean>(active);
-	let titleInput = $state<HTMLInputElement | null>(null);
-	let titleValue = $state<string>(entry.title);
-	let descriptionInput = $state<HTMLTextAreaElement | null>(null);
-	let descriptionValue = $state<string>(entry.description);
-	let changeTitle = $state<boolean>(false);
-	let changeDescription = $state<boolean>(false);
-	let keyHandlers: { [key: string]: string | null } = {
-		Enter: null,
-		EnterNewLine: null,
-		Escape: null
-	};
-
-	async function toggleChange(toggleType: 'title' | 'description'): Promise<void> {
-		if (toggleType === 'title') {
-			changeTitle = !changeTitle;
-			await tick();
-			titleInput?.focus();
-		} else {
-			changeDescription = !changeDescription;
-			await tick();
-			descriptionInput?.focus();
-		}
-
-		keyHandlers.Enter = keyManager.registerKeyDown('Enter', handleEnter, { priority: 2 });
-		keyHandlers.EnterNewLine = keyManager.registerKeyDown('Enter', handleNewLineEnter, {
-			withHelperKey: 'Shift'
-		});
-		keyHandlers.Escape = keyManager.registerKeyDown('Escape', handleEscape);
-	}
-
-	onDestroy(() => keyManager.unregisterAll(keyHandlers));
-
-	async function handleEnter(event: KeyboardEvent): Promise<void> {
-		await onsubmit();
-		changeTitle = false;
-		changeDescription = false;
-	}
-
-	function handleNewLineEnter(event: KeyboardEvent): void {
-		if (descriptionInput) {
-			const start = descriptionInput.selectionStart;
-			const end = descriptionInput.selectionEnd;
-			descriptionValue =
-				descriptionValue?.slice(0, start) + '\n' + descriptionValue?.slice(end);
-			descriptionInput.selectionStart = descriptionInput.selectionEnd = start + 1;
-		}
-	}
-
-	function handleEscape(event: KeyboardEvent): void {
-		onblur();
-	}
-
-	function onblur(): void {
-		changeTitle = false;
-		changeDescription = false;
-		keyManager.unregisterAll(keyHandlers);
-	}
-
-	async function onsubmit(): Promise<void> {
-		loadingIndicator.start();
-		keyManager.unregisterAll(keyHandlers);
-		const title = titleValue.trim();
-		const description = descriptionValue.trim();
-
-		if (title === '' && description === '') {
-			return;
-		}
-
-		const request: UpdateDevRequestRequest = {
-			title: title !== entry.title ? title : undefined,
-			description: description !== entry.description ? description : undefined
-		};
-		await devRequests.update(entry, request);
-		loadingIndicator.stop();
-	}
+	let editOpen = $state<boolean>(false);
 </script>
 
 <div
-	class="flex w-full flex-col gap-2 rounded-lg bg-c-neutral px-4 py-2 transition-all hover:bg-c-neutral-1 hover:shadow-sm dark:bg-s-dark-2 dark:hover:bg-s-dark-2"
+	class="flex w-full flex-row rounded-lg border-1 border-d-lightblue bg-c-bg-surface shadow-sm transition-all hover:bg-d-lighterblue dark:border-s-dark dark:hover:bg-s-dark-3"
 	transition:fade
 >
-	<div class="flex w-full flex-col gap-2 md:flex-row md:items-center">
-		<div class="flex flex-row items-center gap-2">
+	<Priority {entry} />
+	<div class="flex min-w-0 flex-1 flex-col gap-2 px-4 py-2 md:py-4">
+		{#if editOpen}
+			<DevRequestEdit {entry} onClose={() => (editOpen = false)} />
+		{/if}
+		<div class="flex w-full flex-row flex-wrap items-center gap-x-4 gap-y-2 max-md:items-start md:flex-nowrap">
 			<Score {entry} />
-			<Priority {entry} editable={isAdmin} />
-			<Type {entry} />
-			<Status {entry} editable={isAdmin} />
-		</div>
-		<div class="mt-1 flex flex-row items-start gap-2 md:mt-0 md:ml-3 md:w-3/6">
-			<div class="min-w-0 flex-1">
-				{#if isAdmin}
-					{#if changeTitle}
-						<TextInput bind:input={titleInput} bind:value={titleValue} {onblur} />
-					{:else}
-						<button type="button" ondblclick={() => toggleChange('title')} class="cursor-pointer text-left text-lg font-bold md:text-base">
-							{entry.title}
-						</button>
+			<div class="flex w-full min-w-0 flex-row items-start gap-2 max-md:order-first md:w-1/4">
+				<span class="min-w-0 flex-1 text-lg font-bold md:text-base">{entry.title}</span>
+				<div class="mt-0.5 flex shrink-0 flex-row items-center gap-2 md:hidden">
+					{#if isAdmin}
+						<EditButton onClick={() => (editOpen = true)} title={ts.get.dev.requests.edit} inModal={false} buttonStyle="minimal" />
 					{/if}
-				{:else}
-					<span class="text-lg font-bold md:text-base">{entry.title}</span>
-				{/if}
+					<IconChevronsUpDown class="cursor-pointer text-c-neutral-3 transition-all hover:text-c-action" onclick={() => (open = !open)} />
+				</div>
 			</div>
-			<IconChevronsUpDown
-				class="mt-0.5 shrink-0 cursor-pointer text-c-btn md:hidden"
-				onclick={() => (open = !open)}
-			/>
-		</div>
-		<div class="flex flex-row items-center gap-4 md:ml-auto">
-			<Author {entry} />
-			<span class="text-sm text-c-neutral-5">{formatDate(entry.created_at)}</span>
-			{#if entry.updated_at !== entry.created_at}
-				<span class="text-sm text-c-btn">{formatDate(entry.updated_at)}</span>
-			{/if}
-			{#if entry.comment_count > 0}
-				<span class="flex flex-row items-center gap-1 text-c-neutral-4">
-					<IconMessageSquare class="h-4 w-4" />
-					<span class="text-sm">{entry.comment_count}</span>
-				</span>
-			{/if}
-			<IconChevronsUpDown
-				class="hidden cursor-pointer text-c-btn md:block"
-				onclick={() => (open = !open)}
-			/>
-		</div>
-	</div>
-	{#if open}
-		<div class="flex w-full flex-col" transition:slide>
-			<div class="mt-2 flex w-full flex-row gap-8" class:min-h-32={entry.screenshot}>
-				{#if entry.screenshot}
-					<button
-						class="transition-opacity hover:opacity-75"
-						onclick={() =>
-							window.open(API_STORAGE_URL + '/' + entry.screenshot, '_blank')}
-					>
-						<img
-							src={API_STORAGE_URL + '/' + entry.screenshot}
-							alt="Screenshot"
-							class="aspect-auto w-32 rounded-lg object-cover"
-						/>
-					</button>
-				{/if}
-				{#if isAdmin}
-					{#if changeDescription}
-						<textarea
-							class="w-full dark:bg-s-dark-3 dark:text-white"
-							{onblur}
-							bind:this={descriptionInput}
-							bind:value={descriptionValue}
-						></textarea>
-					{:else}
-						<button
-							type="button"
-							class="w-full cursor-pointer pt-4 text-left"
-							ondblclick={() => toggleChange('description')}
-						>
-							<!-- eslint-disable-next-line svelte/no-at-html-tags -- sanitised with DOMPurify -->
-							{@html DOMPurify.sanitize(nl2br(entry.description))}
-						</button>
-					{/if}
-				{:else}
-					<div class="w-full pt-4">
-						<!-- eslint-disable-next-line svelte/no-at-html-tags -- sanitised with DOMPurify -->
-						{@html DOMPurify.sanitize(nl2br(entry.description))}
+			<div class="flex min-w-0 flex-1 flex-row flex-wrap items-center gap-x-4 gap-y-2 md:flex-none">
+				<div class="md:w-32">
+					<Status {entry} />
+				</div>
+				<Type {entry} />
+				{#if entry.status === 'completed' && entry.fixed_in_version}
+					<div class="hidden md:ml-4 md:flex">
+						<FixedIn version={entry.fixed_in_version} />
 					</div>
 				{/if}
 			</div>
-			<Comments {entry} />
+			<div class="flex w-full flex-row items-center gap-4 md:ml-auto md:w-auto">
+				<Author {entry} />
+				<span class="text-sm text-c-neutral-5">{formatDate(entry.created_at)}</span>
+				{#if entry.updated_at !== entry.created_at}
+					<span class="text-sm text-c-btn">{formatDate(entry.updated_at)}</span>
+				{/if}
+				<span class="flex w-10 flex-row items-center gap-1 text-c-neutral-4">
+					{#if entry.comment_count > 0}
+						<IconMessageSquare class="h-4 w-4" />
+						<span class="-translate-y-px text-sm">{entry.comment_count}</span>
+					{/if}
+				</span>
+				<div class="hidden flex-row items-center gap-2 md:flex">
+					{#if isAdmin}
+						<EditButton onClick={() => (editOpen = true)} title={ts.get.dev.requests.edit} inModal={false} buttonStyle="minimal" />
+					{/if}
+					<IconChevronsUpDown class="cursor-pointer text-c-neutral-3 transition-all hover:text-c-action" onclick={() => (open = !open)} />
+				</div>
+			</div>
 		</div>
-	{/if}
+		{#if entry.status === 'completed' && entry.fixed_in_version}
+			<div class="flex md:hidden">
+				<FixedIn version={entry.fixed_in_version} />
+			</div>
+		{/if}
+		{#if open}
+			<div class="flex w-full flex-col" transition:slide>
+				<div class="mt-2 flex w-full flex-row gap-8" class:min-h-32={entry.screenshot}>
+					{#if entry.screenshot}
+						<button
+							class="transition-opacity hover:opacity-75"
+							onclick={() =>
+								window.open(API_STORAGE_URL + '/' + entry.screenshot, '_blank')}
+						>
+							<img
+								src={API_STORAGE_URL + '/' + entry.screenshot}
+								alt="Screenshot"
+								class="aspect-auto w-32 rounded-lg object-cover"
+							/>
+						</button>
+					{/if}
+					<div class="w-full">
+						<!-- eslint-disable-next-line svelte/no-at-html-tags -- sanitised with DOMPurify -->
+						{@html DOMPurify.sanitize(nl2br(entry.description))}
+					</div>
+				</div>
+				<Comments {entry} />
+			</div>
+		{/if}
+	</div>
 </div>

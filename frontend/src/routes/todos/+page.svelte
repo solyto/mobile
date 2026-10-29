@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Todo } from '$lib/types/todo';
 	import { onMount } from 'svelte';
+	import { afterNavigate } from '$app/navigation';
 	import { getTodos } from '$lib/state/Todos.svelte';
 	import { getTags } from '$lib/state/Tags.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
@@ -38,6 +39,8 @@
 		loadingIndicator.stop();
 		await Promise.all([tags.load()]);
 	});
+
+	afterNavigate(() => todos.openFromUrl());
 
 	async function handleCheck(event: Event, todo: Todo): Promise<void> {
 		loadingIndicator.start();

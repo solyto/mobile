@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Calendars } from '$lib/state/Calendars.svelte';
-import { api, storage, resetStoreMocks } from '../setup/storeMocks';
+import { api, auth, storage, resetStoreMocks } from '../setup/storeMocks';
 import { todo } from '../helpers/factories';
 import { SvelteDate } from 'svelte/reactivity';
 import { getWeekNumber } from '$lib/helpers/DateHelper';
@@ -58,6 +58,20 @@ describe('Calendars store', () => {
 		});
 	});
 
+	describe('widget refresh', () => {
+		it('notifies the widgets after a successful event change only', async () => {
+			const c = new Calendars();
+
+			api.delete.mockResolvedValueOnce(false);
+			await c.deleteEvent(event());
+			expect(auth.widgetBridge.notifyChanged).not.toHaveBeenCalled();
+
+			api.delete.mockResolvedValueOnce(true);
+			await c.deleteEvent(event());
+			expect(auth.widgetBridge.notifyChanged).toHaveBeenCalledTimes(1);
+		});
+	});
+
 	describe('loadMonth', () => {
 		it('builds a 42-day Monday-first grid for the current month', () => {
 			const c = new Calendars();
@@ -98,6 +112,43 @@ describe('Calendars store', () => {
 			// January 2026 starts on a Thursday, grid starts Mon 29 Dec 2025
 			expect(c.month.weeks[0].days[0].date).toEqual(new Date(2025, 11, 29));
 			expect(c.month.weeks[0].days[0].is_grayed_out).toBe(true);
+		});
+
+		it('builds a Sunday-first grid when the week starts on Sunday', () => {
+			auth.getWeekStart.mockReturnValue('sunday');
+			const c = new Calendars();
+			c.currentYear = 2026;
+			c.currentMonth = 8;
+			c.loadMonth();
+
+			for (const week of c.month.weeks) {
+				expect(week.days[0].weekday).toBe(7);
+			}
+			// August 2026: 1 Aug is a Saturday, grid starts Sun 26 Jul 2026 and ends Sat 5 Sep 2026
+			expect(c.month.weeks[0].days[0].date).toEqual(new Date(2026, 6, 26));
+			expect(c.month.weeks[5].days[6].date).toEqual(new Date(2026, 8, 5));
+			const nonGrayed = c.month.weeks.flatMap((w) => w.days).filter((d) => !d.is_grayed_out);
+			expect(nonGrayed).toHaveLength(31);
+		});
+
+		it('labels Sunday-first rows with the ISO week of their Monday', () => {
+			auth.getWeekStart.mockReturnValue('sunday');
+			const c = new Calendars();
+			c.currentYear = 2026;
+			c.currentMonth = 8;
+			c.loadMonth();
+			expect(c.month.weeks.map((w) => w.number)).toEqual([31, 32, 33, 34, 35, 36]);
+		});
+
+		it('handles a year-boundary month (January) when the week starts on Sunday', () => {
+			auth.getWeekStart.mockReturnValue('sunday');
+			const c = new Calendars();
+			c.currentYear = 2026;
+			c.currentMonth = 1;
+			c.loadMonth();
+			// grid starts Sun 28 Dec 2025, whose Monday (29 Dec) is in 2026-W1
+			expect(c.month.weeks[0].days[0].date).toEqual(new Date(2025, 11, 28));
+			expect(c.month.weeks[0].number).toBe(1);
 		});
 	});
 
@@ -352,66 +403,84 @@ describe('Calendars store', () => {
 	describe('week navigation', () => {
 		it('nextWeek advances the week and updates the mobile week start', () => {
 			const c = new Calendars();
-			c.currentWeekYear = 2026;
-			c.currentWeek = 32;
+			c.currentWeekStart = new Date(2026, 7, 3);
 			c.nextWeek();
-			expect(c.currentWeek).toBe(33);
-			expect(c.mobileWeekStart.getFullYear()).toBe(2026);
+			expect(c.currentWeekStart).toEqual(new Date(2026, 7, 10));
+			expect(c.currentWeekNumber).toBe(33);
+			expect(c.mobileWeekStart).toEqual(new Date(2026, 7, 10));
 		});
 
 		it('lastWeek goes back a week', () => {
 			const c = new Calendars();
-			c.currentWeekYear = 2026;
-			c.currentWeek = 32;
+			c.currentWeekStart = new Date(2026, 7, 3);
 			c.lastWeek();
-			expect(c.currentWeek).toBe(31);
+			expect(c.currentWeekStart).toEqual(new Date(2026, 6, 27));
+			expect(c.currentWeekNumber).toBe(31);
 		});
 
-		it('nextWeek wraps the last week of a 52-week year into week 1', () => {
+		it('nextWeek moves from the last week of a 52-week year into week 1', () => {
 			const c = new Calendars();
-			c.currentWeekYear = 2025;
-			c.currentWeek = 52;
+			c.currentWeekStart = new Date(2025, 11, 22);
 			c.nextWeek();
-			expect(c.currentWeekYear).toBe(2026);
-			expect(c.currentWeek).toBe(1);
+			expect(c.currentWeekNumber).toBe(1);
 			expect(c.mobileWeekStart).toEqual(new Date(2025, 11, 29));
 		});
 
-		it('nextWeek wraps week 53 of a 53-week year into week 1', () => {
+		it('nextWeek moves from week 53 of a 53-week year into week 1', () => {
 			const c = new Calendars();
-			c.currentWeekYear = 2026;
-			c.currentWeek = 53;
+			c.currentWeekStart = new Date(2026, 11, 28);
 			c.nextWeek();
-			expect(c.currentWeekYear).toBe(2027);
-			expect(c.currentWeek).toBe(1);
+			expect(c.currentWeekStart).toEqual(new Date(2027, 0, 4));
+			expect(c.currentWeekNumber).toBe(1);
 		});
 
-		it('lastWeek wraps week 1 into the last week of a 52-week year', () => {
+		it('lastWeek moves from week 1 into the last week of a 52-week year', () => {
 			const c = new Calendars();
-			c.currentWeekYear = 2026;
-			c.currentWeek = 1;
+			c.currentWeekStart = new Date(2025, 11, 29);
 			c.lastWeek();
-			expect(c.currentWeekYear).toBe(2025);
-			expect(c.currentWeek).toBe(52);
+			expect(c.currentWeekNumber).toBe(52);
 			expect(c.mobileWeekStart).toEqual(new Date(2025, 11, 22));
 		});
 
-		it('lastWeek wraps week 1 into week 53 of a 53-week year', () => {
+		it('lastWeek moves from week 1 into week 53 of a 53-week year', () => {
 			const c = new Calendars();
-			c.currentWeekYear = 2027;
-			c.currentWeek = 1;
+			c.currentWeekStart = new Date(2027, 0, 4);
 			c.lastWeek();
-			expect(c.currentWeekYear).toBe(2026);
-			expect(c.currentWeek).toBe(53);
+			expect(c.currentWeekNumber).toBe(53);
 			expect(c.mobileWeekStart).toEqual(new Date(2026, 11, 28));
+		});
+
+		it('moves Sunday weeks across the year boundary, labelled by their Monday', () => {
+			auth.getWeekStart.mockReturnValue('sunday');
+			const c = new Calendars();
+			c.currentWeekStart = new Date(2025, 11, 21);
+			expect(c.currentWeekNumber).toBe(52);
+			c.nextWeek();
+			expect(c.currentWeekStart).toEqual(new Date(2025, 11, 28));
+			expect(c.currentWeekNumber).toBe(1);
+			c.nextWeek();
+			expect(c.currentWeekStart).toEqual(new Date(2026, 0, 4));
+			expect(c.currentWeekNumber).toBe(2);
+			c.lastWeek();
+			c.lastWeek();
+			expect(c.currentWeekStart).toEqual(new Date(2025, 11, 21));
+		});
+
+		it('labels the Sunday week before week 1 of 2027 as week 53', () => {
+			auth.getWeekStart.mockReturnValue('sunday');
+			const c = new Calendars();
+			c.currentWeekStart = new Date(2027, 0, 3);
+			expect(c.currentWeekNumber).toBe(1);
+			c.lastWeek();
+			expect(c.currentWeekStart).toEqual(new Date(2026, 11, 27));
+			expect(c.currentWeekNumber).toBe(53);
 		});
 
 		it('nextWeek and lastWeek leave the calendar year and month alone', () => {
 			const c = new Calendars();
 			c.currentYear = 2026;
 			c.currentMonth = 12;
-			c.currentWeekYear = 2026;
-			c.currentWeek = 53;
+			c.currentWeekStart = new Date(2026, 11, 28);
 			c.nextWeek();
 			expect(c.currentYear).toBe(2026);
 			expect(c.currentMonth).toBe(12);
@@ -420,20 +489,43 @@ describe('Calendars store', () => {
 			expect(c.currentYear).toBe(2026);
 			expect(c.currentMonth).toBe(12);
 		});
+
+		it('goToCurrentWeek returns to the week containing today', () => {
+			vi.useFakeTimers({ toFake: ['Date'] });
+			vi.setSystemTime(new Date(2026, 2, 4, 12, 0));
+
+			const c = new Calendars();
+			c.currentWeekStart = new Date(2020, 0, 6);
+			c.goToCurrentWeek();
+			expect(c.currentWeekStart).toEqual(new Date(2026, 2, 2));
+
+			auth.getWeekStart.mockReturnValue('sunday');
+			c.goToCurrentWeek();
+			expect(c.currentWeekStart).toEqual(new Date(2026, 2, 1));
+			expect(c.currentWeekNumber).toBe(10);
+		});
+
+		it('setMobileWeekStart moves the week to the one containing the date', () => {
+			auth.getWeekStart.mockReturnValue('sunday');
+			const c = new Calendars();
+			c.setMobileWeekStart(new Date(2026, 2, 4));
+			expect(c.mobileWeekStart).toEqual(new Date(2026, 2, 4));
+			expect(c.currentWeekStart).toEqual(new Date(2026, 2, 1));
+		});
 	});
 
-	describe('week-year around New Year', () => {
+	describe('week around New Year', () => {
 		const days = [
-			{ date: new Date(2025, 11, 29, 12, 0), year: 2025, month: 12 },
-			{ date: new Date(2025, 11, 30, 12, 0), year: 2025, month: 12 },
-			{ date: new Date(2025, 11, 31, 12, 0), year: 2025, month: 12 },
-			{ date: new Date(2026, 0, 1, 12, 0), year: 2026, month: 1 },
-			{ date: new Date(2026, 0, 2, 12, 0), year: 2026, month: 1 },
-			{ date: new Date(2026, 0, 3, 12, 0), year: 2026, month: 1 },
-			{ date: new Date(2026, 0, 4, 12, 0), year: 2026, month: 1 }
+			{ date: new Date(2025, 11, 29, 12, 0), year: 2025, month: 12, sunday: new Date(2025, 11, 28), sundayWeek: 1 },
+			{ date: new Date(2025, 11, 30, 12, 0), year: 2025, month: 12, sunday: new Date(2025, 11, 28), sundayWeek: 1 },
+			{ date: new Date(2025, 11, 31, 12, 0), year: 2025, month: 12, sunday: new Date(2025, 11, 28), sundayWeek: 1 },
+			{ date: new Date(2026, 0, 1, 12, 0), year: 2026, month: 1, sunday: new Date(2025, 11, 28), sundayWeek: 1 },
+			{ date: new Date(2026, 0, 2, 12, 0), year: 2026, month: 1, sunday: new Date(2025, 11, 28), sundayWeek: 1 },
+			{ date: new Date(2026, 0, 3, 12, 0), year: 2026, month: 1, sunday: new Date(2025, 11, 28), sundayWeek: 1 },
+			{ date: new Date(2026, 0, 4, 12, 0), year: 2026, month: 1, sunday: new Date(2026, 0, 4), sundayWeek: 2 }
 		];
 
-		for (const { date, year, month } of days) {
+		for (const { date, year, month, sunday, sundayWeek } of days) {
 			const label = date.toDateString();
 
 			it(`constructor on ${label} is in 2026-W1 and the calendar month`, () => {
@@ -442,10 +534,21 @@ describe('Calendars store', () => {
 
 				const c = new Calendars();
 
-				expect(c.currentWeekYear).toBe(2026);
-				expect(c.currentWeek).toBe(1);
+				expect(c.currentWeekStart).toEqual(new Date(2025, 11, 29));
+				expect(c.currentWeekNumber).toBe(1);
 				expect(c.currentYear).toBe(year);
 				expect(c.currentMonth).toBe(month);
+			});
+
+			it(`constructor on ${label} starts the Sunday week on ${sunday.toDateString()}`, () => {
+				vi.useFakeTimers({ toFake: ['Date'] });
+				vi.setSystemTime(date);
+				auth.getWeekStart.mockReturnValue('sunday');
+
+				const c = new Calendars();
+
+				expect(c.currentWeekStart).toEqual(sunday);
+				expect(c.currentWeekNumber).toBe(sundayWeek);
 			});
 
 			it(`goToToday on ${label} is in 2026-W1 and the calendar month`, async () => {
@@ -453,14 +556,13 @@ describe('Calendars store', () => {
 				vi.setSystemTime(date);
 
 				const c = new Calendars();
-				c.currentWeekYear = 2020;
-				c.currentWeek = 10;
+				c.currentWeekStart = new Date(2020, 2, 2);
 				c.currentYear = 2020;
 				c.currentMonth = 3;
 				await c.goToToday();
 
-				expect(c.currentWeekYear).toBe(2026);
-				expect(c.currentWeek).toBe(1);
+				expect(c.currentWeekStart).toEqual(new Date(2025, 11, 29));
+				expect(c.currentWeekNumber).toBe(1);
 				expect(c.currentYear).toBe(year);
 				expect(c.currentMonth).toBe(month);
 			});
@@ -473,10 +575,22 @@ describe('Calendars store', () => {
 			const c = new Calendars();
 			await c.goToToday();
 
-			expect(c.currentWeekYear).toBe(2026);
-			expect(c.currentWeek).toBe(53);
+			expect(c.currentWeekStart).toEqual(new Date(2026, 11, 28));
+			expect(c.currentWeekNumber).toBe(53);
 			expect(c.currentYear).toBe(2027);
 			expect(c.currentMonth).toBe(1);
+		});
+
+		it('goToToday on 2027-01-01 starts the Sunday week on 2026-12-27, week 53', async () => {
+			vi.useFakeTimers({ toFake: ['Date'] });
+			vi.setSystemTime(new Date(2027, 0, 1, 12, 0));
+			auth.getWeekStart.mockReturnValue('sunday');
+
+			const c = new Calendars();
+			await c.goToToday();
+
+			expect(c.currentWeekStart).toEqual(new Date(2026, 11, 27));
+			expect(c.currentWeekNumber).toBe(53);
 		});
 	});
 
@@ -493,14 +607,14 @@ describe('Calendars store', () => {
 		it('goToToday resets navigation to the current date', async () => {
 			const c = new Calendars();
 			c.currentDate = new SvelteDate(2020, 0, 1);
-			c.currentWeek = 1;
+			c.currentWeekStart = new Date(2020, 0, 6);
 			c.currentMonth = 1;
 			c.currentYear = 2020;
 			const now = new Date();
 			await c.goToToday();
 			expect(c.currentYear).toBe(now.getFullYear());
 			expect(c.currentMonth).toBe(now.getMonth() + 1);
-			expect(c.currentWeek).toBe(getWeekNumber(now));
+			expect(c.currentWeekNumber).toBe(getWeekNumber(now));
 			expect(c.currentDate.getDate()).toBe(now.getDate());
 			expect(api.list).toHaveBeenCalledWith(
 				expect.stringContaining(
@@ -515,14 +629,15 @@ describe('Calendars store', () => {
 
 			const c = new Calendars();
 			c.currentDate = new Date(2020, 0, 1);
-			c.currentWeek = 1;
+			c.currentWeekStart = new Date(2020, 0, 6);
 			c.currentMonth = 1;
 			c.currentYear = 2020;
 			await c.goToToday();
 
 			expect(c.currentYear).toBe(2026);
 			expect(c.currentMonth).toBe(3);
-			expect(c.currentWeek).toBe(10);
+			expect(c.currentWeekStart).toEqual(new Date(2026, 2, 2));
+			expect(c.currentWeekNumber).toBe(10);
 			expect(c.currentDate).toEqual(new Date(2026, 2, 4, 12, 0));
 			expect(api.list).toHaveBeenCalledWith(expect.stringContaining('/calendars/events/2026-03'));
 		});
@@ -546,6 +661,18 @@ describe('Calendars store', () => {
 		it('loadView falls back to month when nothing is stored', () => {
 			storage.get.mockReturnValue(null);
 			const c = new Calendars();
+			c.loadView();
+			expect(c.view).toBe('month');
+		});
+
+		it('loadView falls back to month for an invalid stored view', () => {
+			const c = new Calendars();
+			storage.get.mockReturnValue('grid');
+			c.loadView();
+			expect(c.view).toBe('month');
+
+			// the JSON format written before 7afd9d43
+			storage.get.mockReturnValue('"week"');
 			c.loadView();
 			expect(c.view).toBe('month');
 		});

@@ -5,6 +5,7 @@
 	import { getAuth } from '$lib/state/Auth.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
+	import { RateLimitedError } from '$lib/services/ApiService';
 	import { scale } from 'svelte/transition';
 	import StaggeredLogo from '$lib/components/ui/StaggeredLogo.svelte';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
@@ -44,7 +45,8 @@
 			} else {
 				failed = true;
 			}
-		} catch {
+		} catch (e) {
+			if (e instanceof RateLimitedError) throw e;
 			failed = true;
 		} finally {
 			loadingIndicator.stop();

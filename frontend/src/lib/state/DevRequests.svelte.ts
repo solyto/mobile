@@ -8,6 +8,7 @@ import type {
 import { getContext, setContext } from 'svelte';
 import { getAuth, type Auth } from '$lib/state/Auth.svelte';
 import ApiService from '$lib/services/ApiService';
+import DevRequestSortingService from '$lib/services/DevRequestSortingService';
 import { apiRoutes } from '$lib/config/apiRoutes';
 
 export class DevRequests {
@@ -15,6 +16,7 @@ export class DevRequests {
 	entries = $state<DevRequest[]>([]);
 	auth: Auth;
 	apiService: ApiService;
+	sortingService = new DevRequestSortingService();
 
 	constructor(auth: Auth = getAuth(), apiService: ApiService = auth.apiService) {
 		this.auth = auth;
@@ -46,15 +48,7 @@ export class DevRequests {
 	}
 
 	sort(): void {
-		this.entries.sort((a, b) => {
-			if (a.status === 'completed' && b.status !== 'completed') return 1;
-			if (a.status !== 'completed' && b.status === 'completed') return -1;
-			if (a.status === 'cancelled' || b.status === 'cancelled') {
-				if (a.status === 'cancelled' && b.status !== 'cancelled') return 1;
-				if (a.status !== 'cancelled' && b.status === 'cancelled') return -1;
-			}
-			return (b.priority ?? 0) - (a.priority ?? 0);
-		});
+		this.entries = this.sortingService.sort(this.entries);
 	}
 
 	async create(request: CreateDevRequestRequest): Promise<boolean> {
@@ -95,6 +89,7 @@ export class DevRequests {
 			apiRoutes.dev.requests.createComment.replace('%d', entry.id.toString()),
 			{ content }
 		);
+		if (res) await this.load();
 		return Promise.resolve(res !== null);
 	}
 }

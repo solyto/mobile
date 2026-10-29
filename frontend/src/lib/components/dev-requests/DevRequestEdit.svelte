@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { slide } from 'svelte/transition';
 	import { onMount } from 'svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import type {
+		DevRequest,
 		DevRequestPriority,
 		DevRequestType,
 		DevRequestForm
@@ -12,7 +12,10 @@
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
 	import { getDevRequests } from '$lib/state/DevRequests.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
+	import ContentModal from '$lib/components/ui/ContentModal.svelte';
 	import FileUpload from '$lib/components/forms/FileUpload.svelte';
+	import VersionInput from '$lib/components/forms/VersionInput.svelte';
+	import DevRequestFormService from '$lib/services/DevRequestFormService';
 	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
 	import { getAuth } from '$lib/state/Auth.svelte';
 
@@ -22,24 +25,17 @@
 	const notifications = getUiNotifications();
 	const auth = getAuth();
 
-	let { onClose }: {
+	let { entry, onClose }: {
+		entry?: DevRequest;
 		onClose: () => void;
 	} = $props();
 
-	const emptyForm: DevRequestForm = {
-		title: '',
-		description: '',
-		type: 'bug',
-		priority: '1',
-		screenshot: '',
-		screenshot_name: '',
-		url: ''
-	};
-	let form = $state<DevRequestForm>(emptyForm);
+	const formService = new DevRequestFormService();
+	let form = $state<DevRequestForm>(entry ? formService.fromEntry(entry) : formService.empty());
 
 	const typeOptions: { value: string; label: string }[] = [
-		{ value: 'bug', label: 'Bug' },
-		{ value: 'feature', label: 'Feature' }
+		{ value: 'bug', label: ts.get.dev.requests.bug },
+		{ value: 'feature', label: ts.get.dev.requests.feature }
 	];
 
 	const priorityOptions: { value: string; label: string }[] = [
@@ -48,6 +44,14 @@
 		{ value: '3', label: ts.get.dev.requests.priority_3 },
 		{ value: '4', label: ts.get.dev.requests.priority_4 },
 		{ value: '5', label: ts.get.dev.requests.priority_5 }
+	];
+
+	const statusOptions: { value: string; label: string }[] = [
+		{ value: 'backlog', label: ts.get.dev.requests.status_backlog },
+		{ value: 'pending', label: ts.get.dev.requests.status_pending },
+		{ value: 'in-progress', label: ts.get.dev.requests.status_in_progress },
+		{ value: 'completed', label: ts.get.dev.requests.status_completed },
+		{ value: 'cancelled', label: ts.get.dev.requests.status_cancelled }
 	];
 
 	onMount(async () => {
@@ -65,6 +69,13 @@
 			return;
 		}
 
+		if (entry) {
+			await devRequests.update(entry, formService.changes(entry, form));
+			loadingIndicator.stop();
+			onClose();
+			return;
+		}
+
 		const res = await devRequests.create({
 			title: form.title,
 			description: form.description,
@@ -75,18 +86,15 @@
 			type: form.type as DevRequestType,
 			created_by_user_id: auth.user?.id ?? null
 		});
-		form = { ...emptyForm };
+		form = formService.empty();
 		if (res) await devRequests.load();
 		loadingIndicator.stop();
 		onClose();
 	}
 </script>
 
-<div
-	class="mx-auto flex w-120 max-w-screen flex-col gap-4 rounded-b-lg bg-c-bg-modal p-4 drop-shadow-lg"
-	transition:slide
->
-	<div class="flex w-full flex-col gap-2">
+<ContentModal title={entry ? ts.get.dev.requests.edit : ts.get.dev.requests.new} rounded="2xl" p="8" {onClose}>
+	<div class="flex flex-col gap-3">
 		<TextInput placeholder={ts.get.dev.requests.title} bind:value={form.title} />
 		<TextInput
 			placeholder={ts.get.dev.requests.description}
@@ -96,12 +104,21 @@
 		/>
 		<Select bind:value={form.type} options={typeOptions} />
 		<Select bind:value={form.priority} options={priorityOptions} />
-		<FileUpload
-			label={ts.get.dev.requests.screenshot}
-			bind:value={form.screenshot}
-			bind:filename={form.screenshot_name}
-		/>
-		<TextInput placeholder="URL" bind:value={form.url} />
-		<TextButton title={ts.get.layout.save} type="btn" onclick={onSave} class="mt-6" />
+		{#if entry}
+			<Select bind:value={form.status} options={statusOptions} />
+			{#if form.status === 'completed'}
+				<VersionInput label={ts.get.dev.requests.fixed_in_version} bind:value={form.fixed_in_version} />
+			{/if}
+		{:else}
+			<FileUpload
+				label={ts.get.dev.requests.screenshot}
+				bind:value={form.screenshot}
+				bind:filename={form.screenshot_name}
+			/>
+			<TextInput placeholder="URL" bind:value={form.url} />
+		{/if}
+		<div class="mt-4 flex w-full justify-end">
+			<TextButton title={ts.get.layout.save} type="btn" onclick={onSave} />
+		</div>
 	</div>
-</div>
+</ContentModal>

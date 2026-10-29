@@ -1,3 +1,4 @@
+import type { VersionParts } from '$lib/types/version';
 
 export type DevRequestType = 'feature' | 'bug';
 export type DevRequestStatus = 'backlog' | 'pending' | 'in-progress' | 'cancelled' | 'completed';
@@ -21,6 +22,7 @@ export interface DevRequest {
 	score: number;
 	user_vote: DevRequestVote;
 	comment_count: number;
+	fixed_in_version: string | null;
 	created_by_user_id: string | null;
 	created_by_user: {
 		id: string;
@@ -57,14 +59,17 @@ export interface UpdateDevRequestRequest {
 	description?: string;
 	screenshot?: string;
 	url?: string;
+	fixed_in_version?: string | null;
 }
 
 export interface DevRequestForm {
 	type: string;
 	priority: string;
+	status: string;
 	title: string;
 	description: string;
 	screenshot: string;
 	screenshot_name: string;
 	url: string;
+	fixed_in_version: VersionParts;
 }

@@ -10,11 +10,14 @@ export interface UserProfile {
 	profile_image_path: string | null;
 }
 
+export type WeekStart = 'monday' | 'sunday';
+
 export interface UserSettings {
 	language: string;
 	timezone: string;
 	date_format: string;
 	time_format: string;
+	week_start: WeekStart;
 	widgets: string;
 	navigation: string;
 	first_visit: boolean;
@@ -49,6 +52,12 @@ export interface LoginResponse {
 	user: User;
 }
 
+export interface WidgetTokenResponse {
+	token: string;
+	token_type: string;
+	token_expires_at: string;
+}
+
 export interface RegisterRequest {
 	name: string;
 	email: string;
@@ -70,6 +79,12 @@ export interface AuthActionResponse {
 
 export interface VerifyActionResponse {
 	success: boolean;
+	errors?: string[];
+}
+
+export interface LoginActionResponse {
+	success: boolean;
+	data?: LoginResponse;
 	errors?: string[];
 }
 

@@ -683,8 +683,8 @@ Check: `grep -rl '<input' src --include='*.svelte' | grep -v /forms/` lists
 
 Not a single user-facing word is written as a literal in a component: not a
 button label, not a placeholder, not a unit, not a fallback like
-`'occurrence(s)'`. If the key does not exist, add it to all four locale
-files (`en`, `de`, `es`, `fr`); `npm run check` enforces that the four files
+`'occurrence(s)'`. If the key does not exist, add it to every locale
+file (`en`, `de`, `es`, `fr`, `it`); `npm run check` enforces that the files
 match each other.
 
 What the tooling does **not** catch: a hardcoded string in a component.
@@ -712,6 +712,14 @@ Good:
 
 Check: look for bare words between tags or in `placeholder=`/`title=`
 attributes that are not a `{…}` expression.
+
+### 8.2 Translations follow `docs/I18N.md`
+
+New strings are written in `en` and translated by the `translator` agent
+following `docs/I18N.md` (voice, placeholders, glossary), not improvised per
+change. Translating on the fly is how `fr.ts` and `es.ts` ended up mixing
+formal and informal address
+(`docs/backlog/i18n-consistent-voice-and-terms.md`).
 
 ---
 

@@ -3,9 +3,12 @@
 	import Week from '$lib/components/calendars/views/month/Week.svelte';
 	import CalendarDragGhost from '$lib/components/calendars/dnd/CalendarDragGhost.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
+	import { getAuth } from '$lib/state/Auth.svelte';
+	import { getWeekdayOrder } from '$lib/helpers/DateHelper';
 
 	const calendars = getCalendars();
-	const weekdays = Array.from({ length: 7 }, (_, i) => i + 1);
+	const auth = getAuth();
+	const weekdays = getWeekdayOrder(auth.getWeekStart());
 	const ts = getTranslation();
 </script>
 

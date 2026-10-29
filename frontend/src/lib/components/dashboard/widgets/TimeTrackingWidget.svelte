@@ -6,22 +6,22 @@
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import IconTimer from '@lucide/svelte/icons/timer';
 	import TimeTrackingGroupingService from '$lib/services/TimeTrackingGroupingService';
+	import { getStartOfWeek } from '$lib/helpers/DateHelper';
+	import type { WeekStart } from '$lib/types/auth';
 
 	const tt = getTimeTracking();
 	const loadingIndicator = getLoadingIndicator();
 	const groupingService = new TimeTrackingGroupingService();
 
-	let { ts }: {
+	let { ts, weekStart }: {
 		ts: Translation;
+		weekStart: WeekStart;
 	} = $props();
 
 	let loaded = $state(false);
 
 	let weekBreakdown = $derived.by(() => {
-		const now = new Date();
-		const startOfWeek = new Date(now);
-		startOfWeek.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1));
-		startOfWeek.setHours(0, 0, 0, 0);
+		const startOfWeek = getStartOfWeek(new Date(), weekStart);
 		const filtered = tt.entries.filter(
 			(e) => e.stopped_at !== null && new Date(e.started_at) >= startOfWeek
 		);

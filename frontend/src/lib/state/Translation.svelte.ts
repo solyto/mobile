@@ -4,10 +4,11 @@ import { en } from '$lib/i18n/en';
 import { de } from '$lib/i18n/de';
 import { fr } from '$lib/i18n/fr';
 import { es } from '$lib/i18n/es';
+import { it } from '$lib/i18n/it';
 import { browser } from '$app/environment';
 import { type Auth, getAuth } from '$lib/state/Auth.svelte';
 
-const SUPPORTED: Language[] = ['en', 'de', 'fr', 'es'];
+const SUPPORTED: Language[] = ['en', 'de', 'fr', 'es', 'it'];
 
 export class Translation {
 	locale = $state<string>('en');
@@ -50,7 +51,12 @@ export class Translation {
 				this.locale = 'es';
 				this.get = es;
 				break;
+			case 'it':
+				this.locale = 'it';
+				this.get = it;
+				break;
 		}
+		if (browser) document.documentElement.lang = this.locale;
 	}
 }
 

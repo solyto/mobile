@@ -34,6 +34,7 @@ export class LinkLibrary {
 	activeFilter = $state<null | number | 'favorite'>(null);
 	searchVisible = $state<boolean>(false);
 	searchTerm = $state<string>('');
+	searchActive = false;
 	draggedEntry = $state<Link | null>(null);
 	dragTarget = $state<number | null>(null);
 	auth: Auth;
@@ -78,6 +79,7 @@ export class LinkLibrary {
 	}
 
 	search(): void {
+		this.searchActive = true;
 		this.filteredEntries = this.filterService.search(this.entries, this.searchTerm, [
 			'title',
 			'url'
@@ -113,6 +115,7 @@ export class LinkLibrary {
 
 	filterByCategory(categoryId: number | null): void {
 		this.activeFilter = categoryId;
+		this.searchActive = false;
 
 		if (categoryId === null) {
 			this.filteredEntries = this.entries;
@@ -125,11 +128,14 @@ export class LinkLibrary {
 
 	filterByFavorite(): void {
 		this.activeFilter = 'favorite';
+		this.searchActive = false;
 		this.filteredEntries = this.entries.filter((link) => link.is_favorite);
 	}
 
 	reapplyFilter(): void {
-		if (this.activeFilter === 'favorite') {
+		if (this.searchActive) {
+			this.search();
+		} else if (this.activeFilter === 'favorite') {
 			this.filterByFavorite();
 		} else {
 			this.filterByCategory(this.activeFilter);

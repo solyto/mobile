@@ -7,7 +7,8 @@
 	import {
 		formatDate,
 		isDateToday,
-		isDateYesterday
+		isDateYesterday,
+		parseUrlFormat
 	} from '$lib/helpers/DateHelper';
 	import { getCheckInData } from '$lib/state/CheckInData.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
@@ -23,8 +24,9 @@
 	let date = $derived(page.params.date);
 	let dayData = $derived(checkInData.getDayData());
 
-	const isToday = $derived(isDateToday(new Date(date as string)));
-	const isYesterday = $derived(isDateYesterday(new Date(date as string)));
+	let parsedDate = $derived(parseUrlFormat(date ?? ''));
+	const isToday = $derived(parsedDate !== null && isDateToday(parsedDate));
+	const isYesterday = $derived(parsedDate !== null && isDateYesterday(parsedDate));
 
 	afterNavigate(() => {
 		save = null;
@@ -55,7 +57,7 @@
 			{:else if isYesterday}
 				{ts.get.checkInSummary.day_yesterday}
 			{:else}
-				{formatDate(date!)}
+				{formatDate(parsedDate!)}
 			{/if}
 		</h2>
 	</div>

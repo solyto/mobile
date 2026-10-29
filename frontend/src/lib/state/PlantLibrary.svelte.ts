@@ -31,6 +31,7 @@ export class PlantLibrary {
 	locationFilter = $state<PlantLocation | null>(null);
 	unidentifiedFilter = $state<boolean>(false);
 	searchTerm = $state<string>('');
+	activeFilter: 'none' | 'search' | 'location' | 'unidentified' = 'none';
 	view = $state<'list' | 'cards'>('cards');
 	auth: Auth;
 	filterService = new LibraryFilterService();
@@ -45,12 +46,13 @@ export class PlantLibrary {
 		const res = await this.apiService.list(apiRoutes.libraries.plants.list);
 		if (res) {
 			this.entries = res.data as Plant[];
-			this.filteredEntries = this.entries;
+			this.reapplyFilter();
 			this.loaded = true;
 		}
 	}
 
 	search(): void {
+		this.activeFilter = 'search';
 		this.filteredEntries = this.filterService.search(this.entries, this.searchTerm, [
 			'name',
 			'latin_name'
@@ -59,19 +61,29 @@ export class PlantLibrary {
 
 	addLocationFilter(location: PlantLocation | null): void {
 		this.locationFilter = location;
+		this.activeFilter = 'location';
 		this.filteredEntries = this.filterService.byLocation(this.entries, location);
 	}
 
 	filterByUnidentified(): void {
 		this.unidentifiedFilter = true;
 		this.locationFilter = null;
+		this.activeFilter = 'unidentified';
 		this.filteredEntries = this.filterService.byUnidentified(this.entries);
 	}
 
 	clearFilters(): void {
 		this.locationFilter = null;
 		this.unidentifiedFilter = false;
+		this.activeFilter = 'none';
 		this.filteredEntries = this.entries;
+	}
+
+	private reapplyFilter(): void {
+		if (this.activeFilter === 'search') this.search();
+		else if (this.activeFilter === 'location') this.addLocationFilter(this.locationFilter);
+		else if (this.activeFilter === 'unidentified') this.filterByUnidentified();
+		else this.filteredEntries = this.entries;
 	}
 
 	openCreateModal(entry?: Plant): void {
