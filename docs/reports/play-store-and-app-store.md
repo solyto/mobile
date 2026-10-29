@@ -1,6 +1,7 @@
 # Report: publishing solyto on Google Play and the Apple App Store
 
 date: 2026-10-17
+read: true
 job: jail_play-store-and-app-store-strategy
 scope: report only. No code, Gradle, manifest, `patch/`, `frontend/`,
 `fdroid/`, `fastlane/`, CI or signing changes were made for this report. No

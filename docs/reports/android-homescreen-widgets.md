@@ -1,6 +1,7 @@
 # Report: Android home-screen widgets for solyto
 
 date: 2026-10-15
+read: true
 job: opinion_audit-android-homescreen-widgets
 scope: audit only. No code, Gradle, manifest, `patch/`, `frontend/` or
 `fdroid/` changes were made for this report.

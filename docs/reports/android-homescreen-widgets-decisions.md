@@ -1,6 +1,7 @@
 # Decisions: Android home-screen widgets
 
 date: 2026-10-29 (revised the same day, see §1)
+read: true
 builds on: `docs/reports/android-homescreen-widgets.md` (2026-10-15)
 scope: architecture decisions for the widget foundation. No code was
 changed. The first widget is "Your Day", but these decisions are meant to
