@@ -81,6 +81,9 @@ public class YourDayWidgetProvider extends AppWidgetProvider {
             message = payload == null
                     ? context.getString(R.string.widget_update_app)
                     : payload.emptyLabel != null ? payload.emptyLabel : "";
+        } else if (state == WidgetCache.State.LOADING && WidgetCache.isOutdated(context)) {
+            // A fetch failed before any data was cached: say so instead of "Loading…".
+            message = context.getString(R.string.widget_load_failed);
         } else {
             message = context.getString(stateMessage(state));
         }

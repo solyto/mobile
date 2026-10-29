@@ -9,6 +9,7 @@
     <string name="widget_your_day_name">Your Day</string>
     <string name="widget_your_day_description">Today\'s events, due todos and what\'s coming up</string>
     <string name="widget_loading">Loading…</string>
+    <string name="widget_load_failed">Couldn\'t load. Retrying automatically.</string>
     <string name="widget_signed_out">Open solyto to sign in</string>
     <string name="widget_unsupported_server">Your server doesn\'t support widgets yet</string>
     <string name="widget_update_app">Please update the app</string>

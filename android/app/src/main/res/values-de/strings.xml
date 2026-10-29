@@ -3,6 +3,7 @@
     <string name="widget_your_day_name">Dein Tag</string>
     <string name="widget_your_day_description">Heutige Termine, fällige Aufgaben und was ansteht</string>
     <string name="widget_loading">Wird geladen…</string>
+    <string name="widget_load_failed">Konnte nicht geladen werden. Neuer Versuch folgt automatisch.</string>
     <string name="widget_signed_out">Öffne solyto, um dich anzumelden</string>
     <string name="widget_unsupported_server">Dein Server unterstützt noch keine Widgets</string>
     <string name="widget_update_app">Bitte aktualisiere die App</string>
