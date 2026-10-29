@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { CheckInData } from '$lib/state/CheckInData.svelte';
-import { api, storage, pageState, resetStoreMocks } from '../setup/storeMocks';
+import { api, auth, storage, pageState, resetStoreMocks } from '../setup/storeMocks';
 import { ALL_CHECK_IN_TRACKERS, DEFAULT_SPORTS } from '$lib/types/check_in';
 import type { CheckIn, CheckInSettings } from '$lib/types/check_in';
 
@@ -209,6 +209,7 @@ describe('CheckInData store', () => {
 			await expect(s.save({ date: '2026-08-14', mood: 4 })).resolves.toBe(true);
 
 			expect(s.data).toEqual([checkIn()]);
+			expect(auth.widgetBridge.notifyChanged).toHaveBeenCalledTimes(1);
 		});
 
 		it('returns false and does not reload when the API rejects the check-in', async () => {
@@ -218,6 +219,7 @@ describe('CheckInData store', () => {
 			await expect(s.save({ date: '2026-08-14', mood: 4 })).resolves.toBe(false);
 
 			expect(api.list).not.toHaveBeenCalled();
+			expect(auth.widgetBridge.notifyChanged).not.toHaveBeenCalled();
 		});
 	});
 
@@ -237,6 +239,16 @@ describe('CheckInData store', () => {
 				selected_sports: ['bike']
 			});
 			expect(s.settings).toEqual(settings);
+			expect(auth.widgetBridge.notifyChanged).toHaveBeenCalledTimes(1);
+		});
+
+		it('does not notify the widgets when the API rejects the settings', async () => {
+			api.put.mockResolvedValue(false);
+
+			const s = new CheckInData();
+			await s.saveSettings({ enabledTrackers: ['mood'], selectedSports: ['bike'] });
+
+			expect(auth.widgetBridge.notifyChanged).not.toHaveBeenCalled();
 		});
 	});
 });

@@ -71,16 +71,18 @@ export class CheckInData {
 	async save(request: CreateCheckInRequest): Promise<boolean> {
 		const ok = await this.apiService.create(apiRoutes.checkIn.create, request);
 		if (!ok) return false;
+		this.auth.widgetBridge.notifyChanged();
 		await this.load();
 		return true;
 	}
 
 	async saveSettings(settings: CheckInSettings): Promise<void> {
-		await this.apiService.put(apiRoutes.users.settings.updateCheckInSettings, {
+		const ok = await this.apiService.put(apiRoutes.users.settings.updateCheckInSettings, {
 			enabled_trackers: settings.enabledTrackers,
 			selected_sports: settings.selectedSports
 		});
 		this.settings = settings;
+		if (ok) this.auth.widgetBridge.notifyChanged();
 	}
 
 	prevMonth(): void {

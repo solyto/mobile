@@ -296,6 +296,14 @@ describe('WidgetBridge', () => {
 			expect(navigation.goto).toHaveBeenCalledWith('/calendar');
 		});
 
+		it('opens the check-in page', () => {
+			createBridge().start();
+
+			receive({ type: 'navigate', key: 'check_in' });
+
+			expect(navigation.goto).toHaveBeenCalledWith('/check-in');
+		});
+
 		it('opens time tracking', () => {
 			createBridge().start();
 

@@ -145,6 +145,8 @@ export class WidgetBridge {
 			void goto(`${resolve(urls.todos)}?todo=${id}`);
 		} else if (key === 'calendar') {
 			void goto(resolve(urls.calendar));
+		} else if (key === 'check_in') {
+			void goto(resolve(urls.checkIn));
 		} else if (key === 'time_tracking') {
 			void goto(resolve(urls.timeTracking));
 		} else if (key === 'time_tracking_project' && id !== undefined && isUuid(id)) {
