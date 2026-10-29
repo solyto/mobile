@@ -333,3 +333,34 @@ own backlog entry in its repo.
   a separate decision.
 - Not part of this work: no `sanctum:prune-expired` is scheduled, so expired
   tokens are never deleted. Worth its own `../api` backlog entry.
+
+## 6. Time tracking widget (2026-10-29)
+
+The second widget, from the dev request "Home widgets and NFC activation"
+(NFC and Samsung Routines are out of scope).
+
+- **Content:** the running timer (project, live elapsed time, stop button)
+  and up to 20 projects, most recently used first, each with a start button.
+  The running project is not repeated in the list.
+- **Starting while another timer runs switches** to the new project in one
+  tap (the server stops the old timer and starts the new one in one locked
+  transaction). Starting the running project is a no-op. Stopping a stopped
+  timer is a no-op. The app's own `POST /time-tracking/entries/start` keeps
+  answering 409 while a timer runs.
+- **No descriptions** from the widget: widgets have no text input.
+- **Format additions**, backwards compatible (`schema_version` stays 1):
+  row `live: "elapsed"` (the widget counts up from `at` with a
+  `Chronometer`, without fetching), row `color` (`#RRGGBB`), action type
+  `button` with `icon` (`play` | `stop`), row icon `timer`. `refresh_at` is
+  optional.
+- **Route keys:** `time_tracking`, `time_tracking_project` + project UUID.
+- **Foundation gap found:** job 5 tied the native code to Your Day (one
+  cache, a hardcoded fetch path, Your Day classes referenced throughout).
+  It is made generic first, without visible change.
+
+| # | Repo | Job | Needs |
+|---|---|---|---|
+| 7 | `../api` | `widget-time-tracking`: endpoint, start/stop actions | — |
+| 8 | `../app` | `widget-refresh-on-time-tracking-changes`: refresh after time tracking changes, route keys | — |
+| 9 | this repo | `android-widget-foundation-multiple-kinds` | — |
+| 10 | this repo | `android-widget-time-tracking` (vendor `../app` with job 8 first, by hand) | 7, 8, 9 |
