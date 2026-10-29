@@ -5,7 +5,7 @@ import androidx.annotation.NonNull;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
-/** Fetches the Your Day data and applies the widget error contract. */
+/** Fetches the data of every placed widget kind and applies the widget error contract. */
 public class WidgetFetchWorker extends Worker {
 
     // Further failures wait for the next periodic fetch.
@@ -19,57 +19,66 @@ public class WidgetFetchWorker extends Worker {
     @Override
     public Result doWork() {
         Context context = getApplicationContext();
-        if (!YourDayWidgetProvider.hasWidgets(context)) return Result.success();
+        if (!WidgetKind.anyPlaced(context)) return Result.success();
 
         String token = WidgetTokenStore.readToken(context);
         String apiUrl = WidgetTokenStore.apiUrl(context);
         if (token == null || apiUrl == null) {
             WidgetCache.clear(context);
-            YourDayWidgetProvider.updateAll(context);
+            WidgetKind.updateAll(context);
             return Result.success();
         }
 
-        WidgetApi.Result result = WidgetApi.fetchYourDay(context, apiUrl, token);
+        boolean failed = false;
+        for (WidgetKind kind : WidgetKind.values()) {
+            if (!kind.hasWidgets(context)) continue;
 
-        // A logout or a new token arrived during the request; its own handling wins.
-        if (!token.equals(WidgetTokenStore.readToken(context))) return Result.success();
+            WidgetApi.Result result = WidgetApi.fetch(context, apiUrl, token, kind);
 
-        Result workResult = Result.success();
-        switch (result.outcome) {
-            case OK:
-                if (YourDayPayload.isNewerSchema(result.data)) {
-                    WidgetCache.setState(context, WidgetCache.State.UPDATE_APP);
+            // A logout or a new token arrived during the request; its own handling wins.
+            if (!token.equals(WidgetTokenStore.readToken(context))) return Result.success();
+
+            // Token and server outcomes are global and end the run; failures only mark their kind.
+            WidgetCache.State global = null;
+            switch (result.outcome) {
+                case OK:
+                    if (WidgetPayload.isNewerSchema(result.data)) {
+                        global = WidgetCache.State.UPDATE_APP;
+                        break;
+                    }
+                    WidgetPayload payload = WidgetPayload.parse(result.data, kind);
+                    if (payload == null) {
+                        WidgetCache.markOutdated(context, kind);
+                        failed = true;
+                        break;
+                    }
+                    WidgetCache.saveData(context, kind, result.data.toString(), System.currentTimeMillis());
+                    if (payload.refreshAt > 0) WidgetWork.fetchAt(context, kind, payload.refreshAt);
                     break;
-                }
-                YourDayPayload payload = YourDayPayload.parse(result.data);
-                if (payload == null) {
-                    workResult = failTemporarily(context);
+                case UNAUTHORIZED:
+                    WidgetTokenStore.clearIfCurrent(context, token);
+                    WidgetCache.clear(context);
+                    WidgetKind.updateAll(context);
+                    return Result.success();
+                case NOT_FOUND:
+                    global = WidgetCache.State.UNSUPPORTED_SERVER;
                     break;
-                }
-                WidgetCache.saveData(context, result.data.toString(), System.currentTimeMillis());
-                if (payload.refreshAt > 0) WidgetWork.fetchAt(context, payload.refreshAt);
-                break;
-            case UNAUTHORIZED:
-                WidgetTokenStore.clearIfCurrent(context, token);
-                WidgetCache.clear(context);
-                break;
-            case NOT_FOUND:
-                WidgetCache.setState(context, WidgetCache.State.UNSUPPORTED_SERVER);
-                break;
-            case UPGRADE_REQUIRED:
-                WidgetCache.setState(context, WidgetCache.State.UPDATE_APP);
-                break;
-            default:
-                workResult = failTemporarily(context);
+                case UPGRADE_REQUIRED:
+                    global = WidgetCache.State.UPDATE_APP;
+                    break;
+                default:
+                    // 429, 5xx, offline: keep the last data and mark it outdated.
+                    WidgetCache.markOutdated(context, kind);
+                    failed = true;
+            }
+            if (global != null) {
+                WidgetCache.setState(context, global);
+                WidgetKind.updateAll(context);
+                return Result.success();
+            }
         }
 
-        YourDayWidgetProvider.updateAll(context);
-        return workResult;
-    }
-
-    /** 429, 5xx, offline: keep the last data, mark it outdated and back off. */
-    private Result failTemporarily(Context context) {
-        WidgetCache.markOutdated(context);
-        return getRunAttemptCount() < MAX_RETRIES ? Result.retry() : Result.success();
+        WidgetKind.updateAll(context);
+        return failed && getRunAttemptCount() < MAX_RETRIES ? Result.retry() : Result.success();
     }
 }

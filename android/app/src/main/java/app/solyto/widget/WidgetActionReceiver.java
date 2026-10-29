@@ -15,6 +15,7 @@ import org.json.JSONObject;
 public class WidgetActionReceiver extends BroadcastReceiver {
 
     static final String ACTION_ROW_TAP = "app.solyto.action.WIDGET_ROW_TAP";
+    static final String EXTRA_ACTION_KIND = "app.solyto.extra.WIDGET_ACTION_KIND";
     static final String EXTRA_ACTION_TYPE = "app.solyto.extra.WIDGET_ACTION_TYPE";
     static final String EXTRA_ACTION_KEY = "app.solyto.extra.WIDGET_ACTION_KEY";
     static final String EXTRA_ACTION_ID = "app.solyto.extra.WIDGET_ACTION_ID";
@@ -23,12 +24,14 @@ public class WidgetActionReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         if (intent == null || !ACTION_ROW_TAP.equals(intent.getAction())) return;
 
+        String kind;
         String type;
         String key;
         String id;
         String routeKey;
         String routeId;
         try {
+            kind = intent.getStringExtra(EXTRA_ACTION_KIND);
             type = intent.getStringExtra(EXTRA_ACTION_TYPE);
             key = intent.getStringExtra(EXTRA_ACTION_KEY);
             id = intent.getStringExtra(EXTRA_ACTION_ID);
@@ -41,26 +44,26 @@ public class WidgetActionReceiver extends BroadcastReceiver {
 
         if (type != null) {
             // On API 31+ the launcher already toggled the CheckBox locally; re-render to undo that.
-            if (!runAction(context, type, key, id)) YourDayWidgetProvider.updateAll(context);
+            if (!runAction(context, WidgetKind.fromId(kind), type, key, id)) WidgetKind.updateAll(context);
         } else if (routeKey != null) {
             openRoute(context, routeKey, routeId);
         }
     }
 
-    private static boolean runAction(Context context, String type, String key, String id) {
-        if (!YourDayPayload.ACTION_CHECK.equals(type)) return false;
-        if (!YourDayPayload.isValidActionKey(key) || !YourDayPayload.isValidRowId(id)) return false;
+    private static boolean runAction(Context context, WidgetKind kind, String type, String key, String id) {
+        if (kind == null || !WidgetPayload.ACTION_CHECK.equals(type)) return false;
+        if (!WidgetPayload.isValidActionKey(key) || !WidgetPayload.isValidRowId(id)) return false;
 
         // Only rows the widget currently shows with this action, and not already done.
         if (WidgetCache.state(context) != WidgetCache.State.OK) return false;
-        YourDayPayload payload = cachedPayload(context);
-        YourDayPayload.Item row = payload != null ? payload.findAction(type, key, id) : null;
+        WidgetPayload payload = cachedPayload(context, kind);
+        WidgetPayload.Item row = payload != null ? payload.findAction(type, key, id) : null;
         if (row == null || row.actionChecked) return false;
 
         // Repeated taps while a call is running are ignored.
-        if (!WidgetCache.startAction(context, id)) return false;
-        YourDayWidgetProvider.updateAll(context);
-        WidgetWork.runAction(context, key, id);
+        if (!WidgetCache.startAction(context, kind, id)) return false;
+        kind.render(context);
+        WidgetWork.runAction(context, kind, key, id);
         return true;
     }
 
@@ -74,11 +77,11 @@ public class WidgetActionReceiver extends BroadcastReceiver {
         context.startActivity(open);
     }
 
-    private static YourDayPayload cachedPayload(Context context) {
-        String json = WidgetCache.payload(context);
+    private static WidgetPayload cachedPayload(Context context, WidgetKind kind) {
+        String json = WidgetCache.payload(context, kind);
         if (json == null) return null;
         try {
-            return YourDayPayload.parse(new JSONObject(json));
+            return WidgetPayload.parse(new JSONObject(json), kind);
         } catch (JSONException e) {
             return null;
         }

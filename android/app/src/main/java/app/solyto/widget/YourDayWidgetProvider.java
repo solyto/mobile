@@ -21,6 +21,7 @@ import org.json.JSONObject;
 /** The "Your Day" list widget. Renders from {@link WidgetCache}. */
 public class YourDayWidgetProvider extends AppWidgetProvider {
 
+    private static final WidgetKind KIND = WidgetKind.YOUR_DAY;
     private static final int REQUEST_HEADER = 1;
     private static final int REQUEST_ROW_TEMPLATE = 2;
 
@@ -31,7 +32,7 @@ public class YourDayWidgetProvider extends AppWidgetProvider {
 
     @Override
     public void onDisabled(Context context) {
-        WidgetWork.cancelAll(context);
+        WidgetWork.cancelIfNoWidgets(context);
     }
 
     @Override
@@ -45,10 +46,6 @@ public class YourDayWidgetProvider extends AppWidgetProvider {
     public void onAppWidgetOptionsChanged(Context context, AppWidgetManager manager, int appWidgetId,
             Bundle newOptions) {
         render(context, manager, appWidgetId);
-    }
-
-    public static boolean hasWidgets(Context context) {
-        return widgetIds(context).length > 0;
     }
 
     /** Re-renders every placed Your Day widget from the cache. */
@@ -70,21 +67,25 @@ public class YourDayWidgetProvider extends AppWidgetProvider {
         views.setOnClickPendingIntent(R.id.widget_message, openApp);
         views.setPendingIntentTemplate(R.id.widget_list, rowTemplateIntent(context));
 
-        YourDayPayload payload = null;
+        WidgetPayload payload = null;
         String message;
         WidgetCache.State state = WidgetCache.state(context);
 
-        if (WidgetCache.isDeviceUnsupported(context)) {
+        boolean deviceUnsupported = WidgetCache.isDeviceUnsupported(context);
+        if (!deviceUnsupported && state == WidgetCache.State.OK) {
+            payload = parse(WidgetCache.payload(context, KIND));
+        }
+
+        if (deviceUnsupported) {
             message = context.getString(R.string.widget_not_supported);
-        } else if (state == WidgetCache.State.OK) {
-            payload = parse(WidgetCache.payload(context));
-            message = payload == null
-                    ? context.getString(R.string.widget_update_app)
-                    : payload.emptyLabel != null ? payload.emptyLabel : "";
-        } else if (state == WidgetCache.State.LOADING && WidgetCache.isOutdated(context)) {
+        } else if (payload != null) {
+            message = payload.emptyLabel != null ? payload.emptyLabel : "";
+        } else if ((state == WidgetCache.State.LOADING || state == WidgetCache.State.OK)
+                && WidgetCache.isOutdated(context, KIND)) {
             // A fetch failed before any data was cached: say so instead of "Loading…".
             message = context.getString(R.string.widget_load_failed);
         } else {
+            // OK without data of this kind yet (e.g. right after an app update) shows "Loading…".
             message = context.getString(stateMessage(state));
         }
 
@@ -124,33 +125,33 @@ public class YourDayWidgetProvider extends AppWidgetProvider {
         }
     }
 
-    private static YourDayPayload parse(String json) {
+    private static WidgetPayload parse(String json) {
         if (json == null) return null;
         try {
-            return YourDayPayload.parse(new JSONObject(json));
+            return WidgetPayload.parse(new JSONObject(json), KIND);
         } catch (JSONException e) {
             return null;
         }
     }
 
     private static void renderUpdatedAt(Context context, RemoteViews views, boolean hasData) {
-        long fetchedAt = WidgetCache.fetchedAt(context);
+        long fetchedAt = WidgetCache.fetchedAt(context, KIND);
         if (!hasData || fetchedAt <= 0) {
             views.setViewVisibility(R.id.widget_updated, View.GONE);
             return;
         }
-        if (WidgetCache.hasActionError(context)) {
+        if (WidgetCache.hasActionError(context, KIND)) {
             views.setTextViewText(R.id.widget_updated, context.getString(R.string.widget_action_failed));
             views.setViewVisibility(R.id.widget_updated, View.VISIBLE);
             return;
         }
         String time = DateFormat.getTimeFormat(context).format(new Date(fetchedAt));
-        views.setTextViewText(R.id.widget_updated, context.getString(
-                WidgetCache.isOutdated(context) ? R.string.widget_outdated_at : R.string.widget_updated_at, time));
+        int label = WidgetCache.isOutdated(context, KIND) ? R.string.widget_outdated_at : R.string.widget_updated_at;
+        views.setTextViewText(R.id.widget_updated, context.getString(label, time));
         views.setViewVisibility(R.id.widget_updated, View.VISIBLE);
     }
 
-    private static RemoteViews itemView(Context context, YourDayPayload.Item item) {
+    private static RemoteViews itemView(Context context, WidgetPayload.Item item) {
         if (item.isHeader) {
             RemoteViews header = new RemoteViews(context.getPackageName(), R.layout.widget_your_day_section);
             header.setTextViewText(R.id.widget_section_title, item.title);
@@ -191,9 +192,10 @@ public class YourDayWidgetProvider extends AppWidgetProvider {
      * The fill-in is always set, so a recycled list view never keeps another
      * row's; the receiver ignores taps on checked and active rows.
      */
-    private static void bindCheck(Context context, RemoteViews row, YourDayPayload.Item item) {
-        boolean checked = item.actionChecked || WidgetCache.isActionActive(context, item.id);
+    private static void bindCheck(Context context, RemoteViews row, WidgetPayload.Item item) {
+        boolean checked = item.actionChecked || WidgetCache.isActionActive(context, KIND, item.id);
         Intent fillIn = new Intent()
+                .putExtra(WidgetActionReceiver.EXTRA_ACTION_KIND, KIND.id)
                 .putExtra(WidgetActionReceiver.EXTRA_ACTION_TYPE, item.actionType)
                 .putExtra(WidgetActionReceiver.EXTRA_ACTION_KEY, item.actionKey)
                 .putExtra(WidgetActionReceiver.EXTRA_ACTION_ID, item.id);

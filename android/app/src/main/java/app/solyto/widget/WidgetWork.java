@@ -48,22 +48,23 @@ public final class WidgetWork {
 
     /** A fetch as soon as possible; a newer request replaces a pending one. */
     public static void fetchNow(Context context) {
-        if (!YourDayWidgetProvider.hasWidgets(context)) return;
+        if (!WidgetKind.anyPlaced(context)) return;
         WorkManager.getInstance(context).enqueueUniqueWork(NOW, ExistingWorkPolicy.REPLACE, oneTime(0));
     }
 
-    /** A fetch at the payload's refresh_at (epoch millis). */
-    static void fetchAt(Context context, long refreshAt) {
+    /** A fetch at a kind's refresh_at (epoch millis). */
+    static void fetchAt(Context context, WidgetKind kind, long refreshAt) {
         long delay = Math.max(0, refreshAt - System.currentTimeMillis()) + REFRESH_AT_DELAY_MS;
         WorkManager.getInstance(context).enqueueUniqueWork(
-                AT_REFRESH, ExistingWorkPolicy.REPLACE, oneTime(delay));
+                atRefresh(kind), ExistingWorkPolicy.REPLACE, oneTime(delay));
     }
 
     /** Runs a row action once; while one is enqueued or running for this row, further requests are ignored. */
-    static void runAction(Context context, String key, String id) {
+    static void runAction(Context context, WidgetKind kind, String key, String id) {
         OneTimeWorkRequest.Builder builder = new OneTimeWorkRequest.Builder(WidgetActionWorker.class)
                 .addTag(ACTION_TAG)
                 .setInputData(new Data.Builder()
+                        .putString(WidgetActionWorker.INPUT_KIND, kind.id)
                         .putString(WidgetActionWorker.INPUT_KEY, key)
                         .putString(WidgetActionWorker.INPUT_ID, id)
                         .build());
@@ -72,15 +73,26 @@ public final class WidgetWork {
             builder.setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST);
         }
         WorkManager.getInstance(context).enqueueUniqueWork(
-                ACTION_PREFIX + id, ExistingWorkPolicy.KEEP, builder.build());
+                ACTION_PREFIX + kind.id + "-" + id, ExistingWorkPolicy.KEEP, builder.build());
     }
 
-    static void cancelAll(Context context) {
+    /** Called when a provider's last widget is removed: stops all work once no kind is placed. */
+    static void cancelIfNoWidgets(Context context) {
+        if (!WidgetKind.anyPlaced(context)) cancelAll(context);
+    }
+
+    private static void cancelAll(Context context) {
         WorkManager workManager = WorkManager.getInstance(context);
         workManager.cancelUniqueWork(PERIODIC);
         workManager.cancelUniqueWork(NOW);
+        // AT_REFRESH alone is the name builds before widget kinds used.
         workManager.cancelUniqueWork(AT_REFRESH);
+        for (WidgetKind kind : WidgetKind.values()) workManager.cancelUniqueWork(atRefresh(kind));
         workManager.cancelAllWorkByTag(ACTION_TAG);
+    }
+
+    private static String atRefresh(WidgetKind kind) {
+        return AT_REFRESH + "-" + kind.id;
     }
 
     private static OneTimeWorkRequest oneTime(long delayMillis) {

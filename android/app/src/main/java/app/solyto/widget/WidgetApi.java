@@ -30,17 +30,17 @@ final class WidgetApi {
         }
     }
 
-    private static final String YOUR_DAY_PATH = "/api/v1/widgets/your-day";
     private static final String ACTIONS_PATH = "/api/v1/widgets/actions/";
     private static final int TIMEOUT_MS = 15_000;
     private static final int MAX_BODY_BYTES = 1024 * 1024;
 
     private WidgetApi() {}
 
-    static Result fetchYourDay(Context context, String apiUrl, String token) {
+    /** Fetches the kind's data from its widget route. */
+    static Result fetch(Context context, String apiUrl, String token, WidgetKind kind) {
         HttpURLConnection connection = null;
         try {
-            connection = open(context, apiUrl + YOUR_DAY_PATH, "GET", token);
+            connection = open(context, apiUrl + kind.path, "GET", token);
 
             int status = connection.getResponseCode();
             if (status == 404) return new Result(Outcome.NOT_FOUND, null);
@@ -64,7 +64,7 @@ final class WidgetApi {
      * body. 403 counts as {@link Outcome#NOT_FOUND}: the row is not the user's.
      */
     static Outcome postAction(Context context, String apiUrl, String token, String key, String id) {
-        if (!YourDayPayload.isValidActionKey(key) || !YourDayPayload.isValidRowId(id)) {
+        if (!WidgetPayload.isValidActionKey(key) || !WidgetPayload.isValidRowId(id)) {
             return Outcome.NOT_FOUND;
         }
         HttpURLConnection connection = null;

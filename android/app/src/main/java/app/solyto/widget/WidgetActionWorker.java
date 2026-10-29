@@ -11,6 +11,7 @@ import androidx.work.WorkerParameters;
  */
 public class WidgetActionWorker extends Worker {
 
+    static final String INPUT_KIND = "kind";
     static final String INPUT_KEY = "key";
     static final String INPUT_ID = "id";
 
@@ -22,15 +23,20 @@ public class WidgetActionWorker extends Worker {
     @Override
     public Result doWork() {
         Context context = getApplicationContext();
+        String kindId = getInputData().getString(INPUT_KIND);
+        // Actions enqueued by a build before widget kinds carry none; Your Day was the only kind then.
+        WidgetKind kind = kindId == null ? WidgetKind.YOUR_DAY : WidgetKind.fromId(kindId);
         String key = getInputData().getString(INPUT_KEY);
         String id = getInputData().getString(INPUT_ID);
-        if (!YourDayPayload.isValidActionKey(key) || !YourDayPayload.isValidRowId(id)) return Result.success();
+        if (kind == null || !WidgetPayload.isValidActionKey(key) || !WidgetPayload.isValidRowId(id)) {
+            return Result.success();
+        }
 
         String token = WidgetTokenStore.readToken(context);
         String apiUrl = WidgetTokenStore.apiUrl(context);
         if (token == null || apiUrl == null) {
             WidgetCache.clear(context);
-            YourDayWidgetProvider.updateAll(context);
+            WidgetKind.updateAll(context);
             return Result.success();
         }
 
@@ -38,8 +44,8 @@ public class WidgetActionWorker extends Worker {
 
         // A logout or a new token arrived during the request; its own handling wins.
         if (!token.equals(WidgetTokenStore.readToken(context))) {
-            WidgetCache.revertAction(context, id, false);
-            YourDayWidgetProvider.updateAll(context);
+            WidgetCache.revertAction(context, kind, id, false);
+            WidgetKind.updateAll(context);
             return Result.success();
         }
 
@@ -47,7 +53,7 @@ public class WidgetActionWorker extends Worker {
             case OK:
             case NOT_FOUND:
                 // Done, or the row is gone: the re-fetch shows the server's state.
-                WidgetCache.finishAction(context, id);
+                WidgetCache.finishAction(context, kind, id);
                 WidgetWork.fetchNow(context);
                 break;
             case UNAUTHORIZED:
@@ -55,14 +61,14 @@ public class WidgetActionWorker extends Worker {
                 WidgetCache.clear(context);
                 break;
             case UPGRADE_REQUIRED:
-                WidgetCache.revertAction(context, id, false);
+                WidgetCache.revertAction(context, kind, id, false);
                 WidgetCache.setState(context, WidgetCache.State.UPDATE_APP);
                 break;
             default:
-                WidgetCache.revertAction(context, id, true);
+                WidgetCache.revertAction(context, kind, id, true);
         }
 
-        YourDayWidgetProvider.updateAll(context);
+        WidgetKind.updateAll(context);
         return Result.success();
     }
 }

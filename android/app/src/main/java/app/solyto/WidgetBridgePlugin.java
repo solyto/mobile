@@ -11,9 +11,9 @@ import androidx.webkit.WebMessageCompat;
 import androidx.webkit.WebViewCompat;
 import androidx.webkit.WebViewFeature;
 import app.solyto.widget.WidgetCache;
+import app.solyto.widget.WidgetKind;
 import app.solyto.widget.WidgetTokenStore;
 import app.solyto.widget.WidgetWork;
-import app.solyto.widget.YourDayWidgetProvider;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.WebViewListener;
 import com.getcapacitor.annotation.CapacitorPlugin;
@@ -66,7 +66,7 @@ public class WidgetBridgePlugin extends Plugin {
 
         boolean unsupported = !supported;
         storage.execute(() -> {
-            if (WidgetCache.setDeviceUnsupported(context, unsupported)) YourDayWidgetProvider.updateAll(context);
+            if (WidgetCache.setDeviceUnsupported(context, unsupported)) WidgetKind.updateAll(context);
         });
         if (unsupported) return;
 
@@ -118,7 +118,7 @@ public class WidgetBridgePlugin extends Plugin {
                 storage.execute(() -> {
                     WidgetTokenStore.clear(context);
                     WidgetCache.clear(context);
-                    YourDayWidgetProvider.updateAll(context);
+                    WidgetKind.updateAll(context);
                 });
                 break;
             case "refresh":
@@ -132,7 +132,7 @@ public class WidgetBridgePlugin extends Plugin {
                     WidgetTokenStore.clear(context);
                     WidgetCache.clear(context);
                     WidgetCache.setState(context, WidgetCache.State.UNSUPPORTED_SERVER);
-                    YourDayWidgetProvider.updateAll(context);
+                    WidgetKind.updateAll(context);
                 });
                 break;
             default:
@@ -171,7 +171,7 @@ public class WidgetBridgePlugin extends Plugin {
             if (!WidgetTokenStore.save(context, token, expiresAt, apiUrl)) return;
             if (WidgetCache.state(context) != WidgetCache.State.OK) {
                 WidgetCache.setState(context, WidgetCache.State.LOADING);
-                YourDayWidgetProvider.updateAll(context);
+                WidgetKind.updateAll(context);
             }
             WidgetWork.fetchNow(context);
         });

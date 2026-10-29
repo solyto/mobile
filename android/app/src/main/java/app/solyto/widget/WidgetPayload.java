@@ -11,16 +11,14 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 /**
- * The Your Day widget data (`kind: your-day`, schema version 1), flattened
- * into section headers and rows. Unknown sections, icons and fields are
- * ignored and malformed rows skipped. All text is display-ready from the server.
+ * Widget data (schema version 1), the format all widget kinds share,
+ * flattened into section headers and rows. Unknown sections, icons and fields
+ * are ignored and malformed rows skipped. All text is display-ready from the server.
  */
-final class YourDayPayload {
+final class WidgetPayload {
 
-    static final String KIND = "your-day";
     static final int SCHEMA_VERSION = 1;
 
-    private static final Set<String> SECTION_KEYS = new HashSet<>(Arrays.asList("today", "due", "upcoming"));
     private static final Set<String> ICONS = new HashSet<>(Arrays.asList("event", "todo"));
     private static final int MAX_ROWS_PER_SECTION = 20;
     private static final int MAX_TEXT_LENGTH = 500;
@@ -71,7 +69,7 @@ final class YourDayPayload {
     /** Epoch millis when the data goes stale, or -1. */
     final long refreshAt;
 
-    private YourDayPayload(String title, String emptyLabel, List<Item> items, long refreshAt) {
+    private WidgetPayload(String title, String emptyLabel, List<Item> items, long refreshAt) {
         this.title = title;
         this.emptyLabel = emptyLabel;
         this.items = items;
@@ -101,9 +99,9 @@ final class YourDayPayload {
         return data.optInt("schema_version", SCHEMA_VERSION) > SCHEMA_VERSION;
     }
 
-    /** Null when the data is not a Your Day payload this version can read. */
-    static YourDayPayload parse(JSONObject data) {
-        if (data == null || !KIND.equals(data.optString("kind")) || isNewerSchema(data)) return null;
+    /** Null when the data is not a payload of this kind this version can read. */
+    static WidgetPayload parse(JSONObject data, WidgetKind kind) {
+        if (data == null || !kind.id.equals(data.optString("kind")) || isNewerSchema(data)) return null;
 
         JSONObject labels = data.optJSONObject("labels");
         String title = labels != null ? text(labels, "title") : null;
@@ -114,12 +112,12 @@ final class YourDayPayload {
         if (sections != null) {
             for (int i = 0; i < sections.length(); i++) {
                 JSONObject section = sections.optJSONObject(i);
-                if (section == null || !SECTION_KEYS.contains(section.optString("key"))) continue;
+                if (section == null || !kind.sectionKeys.contains(section.optString("key"))) continue;
                 addSection(items, section);
             }
         }
 
-        return new YourDayPayload(title, emptyLabel, Collections.unmodifiableList(items),
+        return new WidgetPayload(title, emptyLabel, Collections.unmodifiableList(items),
                 IsoTime.parse(data.optString("refresh_at", null)));
     }
 
