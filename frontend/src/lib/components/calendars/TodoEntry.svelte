@@ -10,13 +10,15 @@
 		todo,
 		checkboxRight = true,
 		showPriority = true,
-		px = true
-	} = $props<{
+		px = true,
+		wrap = false
+	}: {
 		todo: Todo;
 		checkboxRight?: boolean;
 		showPriority?: boolean;
 		px?: boolean;
-	}>();
+		wrap?: boolean;
+	} = $props();
 
 	async function check(): Promise<void> {
 		await calendars.changeTodoCompleted(todo, !todo.is_completed);
@@ -24,8 +26,10 @@
 </script>
 
 <button
-	class="flex w-full cursor-pointer flex-nowrap items-center justify-start gap-1.5 py-1 text-sm text-nowrap transition-all hover:bg-c-neutral max-md:text-xs max-sm:pl-1 dark:hover:bg-s-dark-3"
+	class="flex w-full cursor-pointer flex-nowrap items-center justify-start gap-1.5 py-1 text-sm transition-all hover:bg-c-neutral max-md:text-xs max-sm:pl-1 dark:hover:bg-s-dark-3"
 	class:px-2={px}
+	class:text-nowrap={!wrap}
+	title={wrap ? undefined : todo.title}
 	class:max-sm:pl-1={px}
 	class:bg-c-neutral-1={todo.is_completed}
 	class:dark:bg-s-dark-3={todo.is_completed}
@@ -42,7 +46,9 @@
 	{#if !checkboxRight}
 		<Checkbox isChecked={todo.is_completed} onchange={check} class="scale-80" />
 	{/if}
-	<span class="grow text-left">{todo.title}</span>
+	<span class="min-w-0 grow text-left" class:truncate={!wrap} class:wrap-anywhere={wrap}>
+		{todo.title}
+	</span>
 	{#if checkboxRight}
 		<Checkbox isChecked={todo.is_completed} onchange={check} class="scale-80" />
 	{/if}

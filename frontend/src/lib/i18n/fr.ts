@@ -25,7 +25,8 @@ import type {
 	CookieConsentRecords,
 	TimeTrackingRecords,
 	QuickAddRecords,
-	SetupRecords
+	SetupRecords,
+	UpdateRequiredRecords
 } from '$lib/types/translation';
 
 const layout: LayoutRecords = {
@@ -45,7 +46,10 @@ const layout: LayoutRecords = {
 	legal_notice: 'Mentions légales',
 	privacy_policy: 'Politique de confidentialité',
 	terms_of_service: 'Conditions d\'utilisation',
-	reload: 'Recharger'
+	reload: 'Recharger',
+	remove: 'Retirer',
+	rename: 'Renommer',
+	network_error: 'Problème de connexion. Vérifie ta connexion et réessaie.'
 };
 
 const nav: NavigationRecords = {
@@ -123,7 +127,14 @@ const auth: AuthRecords = {
 	no_account: 'Pas encore de compte ?',
 	register_link: 'Créer un compte',
 	have_account: 'Déjà un compte ?',
-	open_in_app: "Ouvrir dans l'application"
+	open_in_app: "Ouvrir dans l'application",
+	session_expired: 'Votre session a expiré. Veuillez vous reconnecter.',
+	confirm_deletion_title: 'Supprimer ton compte',
+	confirm_deletion_warning: 'Cette action supprime définitivement le compte %s et toutes ses données. Elle est irréversible.',
+	confirm_deletion_submit: 'Supprimer mon compte définitivement',
+	confirm_deletion_success: 'Ton compte et toutes ses données ont été supprimés. Au revoir !',
+	confirm_deletion_invalid: 'Ce lien est invalide ou a expiré. Demandes-en un nouveau dans les paramètres de ton compte.',
+	confirm_deletion_error: 'Ton compte n\'a pas pu être supprimé. Réessaie.'
 };
 
 const home: HomeRecords = {
@@ -140,7 +151,8 @@ const home: HomeRecords = {
 	new_books: 'Nouveaux livres',
 	recent_notes: 'Notes récentes',
 	newest_links: 'Liens récents',
-	inspiration_empty_hint: 'Ajoute des notes, de la musique, des livres ou des liens pour les voir ici.'
+	more_to_come: 'Il y aura plus ici.',
+	more_to_come_desc: 'Plus tu utilises les différentes fonctions, plus il y aura de choses ici.'
 };
 
 const settings: SettingsRecords = {
@@ -148,14 +160,8 @@ const settings: SettingsRecords = {
 	german: 'Allemand',
 	french: 'Français',
 	spanish: 'Espagnol',
-	todos: 'Tâches',
 	tags: 'Tags',
 	new_tag: 'Nouveau tag',
-	categories: 'Catégories',
-	new_category: 'Nouvelle catégorie',
-	rename_category: 'Renommer la catégorie',
-	workspaces: 'Espaces de travail',
-	new_workspace: 'Nouvel espace',
 	localization: 'Localisation',
 	language: 'Langue',
 	integrations: 'Intégrations',
@@ -169,11 +175,16 @@ const settings: SettingsRecords = {
 	nextcloud: 'Nextcloud',
 	widgets: 'Widgets',
 	ai: 'IA',
+	plugins: 'Plugins',
 	telegram_bot: 'Bot Telegram',
 	telegram_bot_notifications: 'Notifications Telegram',
 	enable_telegram_bot_notifications: 'Activer les notifications Telegram',
-	openai_token: 'Jeton OpenAI',
 	features: 'Fonctionnalités',
+	navigation_order_desktop: 'Bureau',
+	navigation_order_mobile: 'Mobile',
+	navigation_order_hint: 'Choisissez les fonctionnalités que vous utilisez et faites-les glisser pour définir leur ordre dans la navigation.',
+	navigation_order_more_menu: 'Dans le menu « Plus »',
+	navigation_order_reset: "Rétablir l'ordre par défaut",
 	timezone: 'Fuseau horaire',
 	date_format: 'Format de date',
 	time_format: 'Format de l\'heure',
@@ -198,9 +209,10 @@ const settings: SettingsRecords = {
 	export_rate_limited: 'Vous ne pouvez exporter qu\'une fois toutes les 24 heures.',
 	export_next_available: 'Prochain export disponible dans',
 	export_expired: 'L\'export a expiré.',
+	export_download_failed: 'Le téléchargement a échoué.',
 	export_expires_at: 'Expire le',
 	export_no_exports: 'Aucun export pour l\'instant.',
-	security: 'Sécurité',
+	security: 'Compte et sécurité',
 	passkeys: 'Clés d\'accès',
 	passkey_add: 'Ajouter une clé d\'accès',
 	passkey_name_placeholder: 'ex. Mon MacBook',
@@ -213,36 +225,89 @@ const settings: SettingsRecords = {
 	passkey_last_used: 'Dernière utilisation',
 	passkey_never_used: 'Jamais utilisée',
 	passkey_no_passkeys: 'Aucune clé d\'accès enregistrée pour l\'instant.',
+	current_password: 'Mot de passe actuel',
+	new_password: 'Nouveau mot de passe',
+	confirm_new_password: 'Confirmer le nouveau mot de passe',
+	change_password_submit: 'Changer le mot de passe',
+	current_password_required: 'Veuillez saisir votre mot de passe actuel.',
+	current_password_incorrect: 'Le mot de passe actuel est incorrect.',
+	new_password_same_as_current: 'Le nouveau mot de passe doit être différent de votre mot de passe actuel.',
+	password_changed: 'Mot de passe modifié. Veuillez vous reconnecter avec votre nouveau mot de passe.',
+	password_change_error: 'Impossible de changer le mot de passe.',
+	delete_account: 'Supprimer le compte',
+	delete_account_start: 'Supprimer mon compte',
+	delete_account_warning: 'Toutes tes données seront définitivement supprimées et ne pourront pas être restaurées. Si tu veux conserver quelque chose, exporte d\'abord tes données. Veux-tu continuer ?',
+	delete_account_submit: 'Envoyer l\'e-mail de confirmation',
+	delete_account_email_sent: 'Nous avons envoyé un lien de confirmation à %s. Ton compte ne sera supprimé qu\'après avoir ouvert le lien et confirmé. Le lien expire dans 60 minutes.',
+	delete_account_request_error: 'La suppression du compte n\'a pas pu être demandée. Réessaie plus tard.',
+	delete_account_super_admin: 'Les super-administrateurs ne peuvent pas supprimer leur propre compte.',
+	no_tags: 'Vous n\'avez pas encore de tags.',
 	theme: 'Thème',
 	animations: 'Animations',
-	animations_label: 'Activer les animations et transitions'
+	animations_label: 'Activer les animations et transitions',
+	flat_navigation: 'Barre de navigation',
+	flat_navigation_label: 'Barre plate collée au bord de la fenêtre',
+	bottom_navigation_label: 'Afficher la barre en bas sur ordinateur',
+	appearance: 'Apparence',
+	color_mode: 'Mode de couleur',
+	appearance_system: 'Auto',
+	appearance_light: 'Clair',
+	appearance_dark: 'Sombre',
+	calendar_life_marks: 'Journal et indicateurs du calendrier',
+	journal_enabled: 'Activer le journal',
+	journal_calendar_mark: 'Indicateur du journal dans le calendrier',
+	check_in_calendar_mark: 'Indicateur de test quotidien dans le calendrier',
+	ai_plugin_description: 'Utilisez votre propre fournisseur et votre clé API. Les recommandations IA pour les livres et la musique utilisent ces paramètres.',
+	ai_plugin_enabled: 'Activer les fonctionnalités IA',
+	ai_plugin_provider: 'Fournisseur',
+	ai_plugin_select_provider: 'Choisir un fournisseur',
+	ai_plugin_model: 'Modèle',
+	ai_plugin_select_model: 'Choisir un modèle',
+	ai_plugin_model_unavailable: "Le modèle choisi n'est plus disponible. Veuillez en choisir un nouveau.",
+	ai_plugin_api_key: 'Clé API',
+	ai_plugin_api_key_placeholder: 'Collez votre clé API',
+	ai_plugin_api_key_replace_placeholder: 'Saisissez une nouvelle clé pour remplacer celle enregistrée',
+	ai_plugin_api_key_stored: 'Une clé API est enregistrée. Laissez le champ vide pour la conserver.',
+	ai_plugin_api_key_required: 'Une clé API est nécessaire pour enregistrer les paramètres IA.',
+	ai_plugin_saved: 'Paramètres IA enregistrés.',
+	ai_plugin_save_error: "Les paramètres IA n'ont pas pu être enregistrés.",
+	ai_plugin_load_error: "Les paramètres IA n'ont pas pu être chargés."
 };
 
 const todos: TodoRecords = {
 	all_todos: 'Toutes les tâches',
 	new_todo: 'Nouvelle tâche',
+	title: 'Titre',
 	enter_todo: 'Entrer une tâche',
 	no_todos: 'Aucune tâche trouvée.',
-	no_todos_desc: 'Appuie sur Entrée pour en ajouter une.',
+	no_todos_desc: 'Essaie un autre filtre ou espace de travail.',
+	no_todos_yet: 'Pas encore de tâches.',
+	no_todos_yet_desc: 'Ajoute la première avec le bouton « Nouvelle tâche ».',
 	tags: 'Tags',
-	add_tag: 'Ajouter un tag',
+	tag: 'Tag',
 	tag_error: 'Le tag n\'existe pas',
+	category: 'Catégorie',
 	categories: 'Catégories',
 	category_error: 'La catégorie n\'existe pas',
-	add_category: 'Ajouter une catégorie',
 	workspaces: 'Espaces de travail',
 	workspace_hide_it: 'Masquer',
-	workspace_hide_it_description: 'Disponible dans Masquer',
+	new_category: 'Nouvelle catégorie',
+	rename_category: 'Renommer la catégorie',
+	no_categories: 'Vous n\'avez pas encore de catégories.',
+	new_workspace: 'Nouvel espace',
+	no_workspaces: 'Vous n\'avez pas encore d\'espaces de travail.',
+	workspaces_help: 'Les espaces de travail regroupent vos catégories, par exemple un espace pour votre vie privée et un autre pour le travail. Sélectionnez un espace dans la barre latérale pour ne voir que ses tâches.\n\nMasquer : rendez un espace disponible dans Masquer, puis activez Masquer sur la page des tâches ; toutes les tâches de cet espace disparaissent. Par exemple, masquez tout ce qui concerne le travail pour vous concentrer sur votre vie privée.',
 	priority: 'Priorité',
 	priority_high: 'Haute',
 	priority_medium: 'Moyenne',
 	priority_low: 'Basse',
 	due_at: 'À faire pour',
+	due_date: 'Date d\'échéance',
 	due_today: 'Aujourd\'hui',
 	due_tomorrow: 'Demain',
 	due_week: 'Cette semaine',
 	due_overdue: 'En retard',
-	add_due_at: 'Ajouter une date limite',
+	add_due_at: 'Date',
 	status: 'Statut',
 	status_pending: 'En attente',
 	status_in_progress: 'En cours',
@@ -262,11 +327,12 @@ const todos: TodoRecords = {
 	view_kanban: 'Kanban',
 	view_overview: 'Aperçu',
 	view_card: 'Carte',
+	view_grouped: 'Groupé',
 	uncategorized: 'Sans catégorie',
 	delete_confirm_label: 'Supprimer la tâche',
 	delete_confirm_message: 'Es-tu sûr de vouloir supprimer cette tâche?',
 	add_subtask: 'Ajouter une sous-tâche',
-	sort_by_score: 'Trier par score intelligent',
+	sort_by_score: 'Score intelligent',
 	no_description: 'Aucune description',
 	recurrence: 'Récurrence',
 	recurrence_daily: 'Quotidien',
@@ -275,10 +341,16 @@ const todos: TodoRecords = {
 	recurrence_yearly: 'Annuel',
 	recurrence_ends_at: 'Se termine le',
 	add_recurrence: 'Ajouter une récurrence',
-	remove_recurrence: 'Supprimer la récurrence',
 	recurrence_requires_due: 'Définir une date d\'échéance d\'abord',
+	recurrence_every: 'Tous les',
+	recurrence_unit_daily: 'jour(s)',
+	recurrence_unit_weekly: 'semaine(s)',
+	recurrence_unit_monthly: 'mois',
+	recurrence_unit_yearly: 'an(s)',
+	recurrence_unit_fallback: 'occurrence(s)',
 	link: 'Lien',
 	no_link: 'Pas de lien',
+	open_link: 'Ouvrir le lien',
 	add_link: 'Ajouter un lien'
 };
 
@@ -311,7 +383,11 @@ const checkIn: CheckInRecords = {
 	sport_yoga: 'Yoga',
 	sport_replace_with: 'Remplacer par...',
 	score: 'Score',
-	score_description: 'Calculer un score moyen pour ce type (compte également dans le score total)'
+	score_description: 'Calculer un score moyen pour ce type (compte également dans le score total)',
+	range_30_days: '30 jours',
+	range_3_months: '3 mois',
+	range_6_months: '6 mois',
+	range_all: 'Tout'
 };
 
 const checkInSummary: CheckInSummaryRecords = {
@@ -320,7 +396,7 @@ const checkInSummary: CheckInSummaryRecords = {
 	dreams_1: "fait d'affreux cauchemars", dreams_2: 'fait de mauvais rêves', dreams_3: 'fait des rêves quelconques', dreams_4: 'fait de bons rêves', dreams_5: "fait d'excellents rêves",
 	water_1: 'à peine bu', water_2: 'peu bu', water_3: 'assez bu', water_4: 'bien bu', water_5: 'très bien hydraté',
 	food_quality_1: 'très mal mangé', food_quality_2: 'mal mangé', food_quality_3: 'mangé correctement', food_quality_4: 'bien mangé', food_quality_5: 'excellent repas',
-	food_amount_1: 'mangé très peu', food_amount_2: 'mangé trop peu', food_amount_3: 'mangé une quantité modérée', food_amount_4: 'mangé une bonne quantité', food_amount_5: 'mangé amplement',
+	food_amount_1: 'mangé très peu', food_amount_2: 'mangé trop peu', food_amount_3: 'mangé une quantité modérée', food_amount_4: 'mangé une bonne quantité', food_amount_5: 'mangé trop',
 	work_1: 'eu une terrible journée de travail', work_2: 'eu une dure journée de travail', work_3: 'eu une journée de travail ordinaire', work_4: 'eu une bonne journée de travail', work_5: 'eu une excellente journée de travail',
 	alcohol_1: 'beaucoup bu', alcohol_2: 'pas mal bu', alcohol_3: 'pris quelques verres', alcohol_4: 'pris un verre ou deux', alcohol_5: "pas d'alcool",
 	smoking_1: 'beaucoup fumé', smoking_2: 'pas mal fumé', smoking_3: 'fumé modérément', smoking_4: 'peu fumé', smoking_5: 'pas fumé',
@@ -351,6 +427,7 @@ const widgets: WidgetRecords = {
 	random_quote: 'Citation aléatoire',
 	shortcuts: 'Raccourcis',
 	manage_shortcuts: 'Gérer les raccourcis',
+	no_shortcuts_hint: 'Les raccourcis sont des liens rapides vers tes sites web préférés. Utilise le stylo pour ajouter le premier.',
 	shortcut_title: 'Titre',
 	shortcut_url: 'URL',
 	clock: 'Horloge',
@@ -365,10 +442,12 @@ const widgets: WidgetRecords = {
 
 const notes: NoteRecords = {
 	notebook: 'Bloc-notes',
-	welcome: 'Bienvenue dans ton bloc-notes.',
-	instruction: 'Commence par créer une nouvelle note ou en sélectionner une.',
+	no_notes: 'Pas encore de notes.',
+	no_notes_desc: 'Ajoute la première avec le bouton « Nouvelle note ».',
 	new_note: 'Nouvelle note',
 	new_folder: 'Nouveau dossier',
+	no_folders: 'Pas encore de dossiers.',
+	no_folders_desc: 'Crée-en un avec le bouton dossier.',
 	delete_note: 'Supprimer la note',
 	delete_folder: 'Supprimer le dossier',
 	edit_folder: 'Renommer le dossier',
@@ -376,6 +455,8 @@ const notes: NoteRecords = {
 	output: 'Sortie',
 	create_note_success: 'La note a été créée avec succès.',
 	create_folder_success: 'Le dossier a été créé avec succès.',
+	create_error: 'Échec de la création de la note.',
+	create_folder_error: 'Échec de la création du dossier.',
 	save_success: 'La note a été enregistrée avec succès.',
 	save_error: 'Échec de l\'enregistrement de la note.',
 	import: 'Importer',
@@ -401,7 +482,13 @@ const notes: NoteRecords = {
 	insert_link_name: 'Nom du lien',
 	delete_confirm_label: 'Supprimer la note',
 	delete_confirm_message: 'Êtes-vous sûr de vouloir supprimer cette note ?',
-	delete_success: 'La note a été supprimée avec succès.'
+	delete_success: 'La note a été supprimée avec succès.',
+	journal: 'Journal',
+	today: "Aujourd'hui",
+	yesterday: 'Hier',
+	other: 'Autre',
+	journal_empty: "Il n'y a pas encore d'entrée pour ce jour.",
+	journal_create_error: "Échec de la création de l'entrée du journal."
 };
 
 const libraries: LibraryRecords = {
@@ -608,7 +695,9 @@ const libraries: LibraryRecords = {
 		favorite: 'Un favori',
 		random: 'Quelque chose au hasard',
 		unrated: 'Quelque chose que je n\'ai jamais vu',
-		new: 'Quelque chose de nouveau'
+		new: 'Quelque chose de nouveau',
+		ai_plugin_hint: 'Aucune recommandation disponible. Pour recommander quelque chose de nouveau, le plugin IA est nécessaire ; vous pouvez le configurer dans les paramètres.',
+		open_settings: 'Ouvrir les paramètres'
 	},
 	navigation: {
 		music: 'Musique',
@@ -643,7 +732,10 @@ const libraries: LibraryRecords = {
 	show_on: 'Afficher sur %s',
 	search: 'Rechercher',
 	import: 'Importer',
-	no_results: 'Aucun résultat trouvé.'
+	no_results: 'Aucun résultat trouvé.',
+	no_results_desc: 'Essaie une autre recherche ou retire les filtres.',
+	no_entries: 'Rien ici pour le moment.',
+	no_entries_desc: 'Ajoute ta première entrée avec le bouton plus.'
 };
 
 const dev: DevRecords = {
@@ -678,17 +770,30 @@ const dev: DevRecords = {
 
 const finances: FinanceRecords = {
 	wealth: 'Patrimoine',
-	budget: 'Revenus',
+	budget: 'Budget',
 	positions: 'Postes',
 	total: 'Total',
 	income: 'Revenus',
 	expenses: 'Dépenses',
-	show_history: 'Afficher l\'historique',
-	hide_history: 'Masquer l\'historique',
 	wealth_distribution: 'Répartition du patrimoine',
 	income_vs_expenses: 'Revenus vs Dépenses',
 	wealth_trend: 'Tendance du patrimoine',
-	add_entry: 'Ajouter une entrée'
+	add_entry: 'Ajouter une entrée',
+	history: 'Historique',
+	date: 'Date',
+	amount: 'Montant',
+	no_values: 'Aucune entrée pour l\'instant.',
+	replaces_value: 'Remplace l\'entrée existante de %s à cette date.',
+	date_taken: 'Il existe déjà une entrée à cette date.',
+	edit_value: 'Modifier l\'entrée',
+	dashboard: 'Tableau de bord',
+	history_development: 'Évolution',
+	history_composition: 'Composition',
+	new_entry: 'Nouvelle entrée',
+	delete_value_label: 'Supprimer l\'entrée',
+	delete_value_message: 'Voulez-vous vraiment supprimer cette entrée ?',
+	delete_item: 'Supprimer %s',
+	delete_item_message: 'Voulez-vous vraiment supprimer %s et toutes ses entrées ?'
 };
 
 
@@ -722,7 +827,11 @@ const feeds: FeedRecords = {
 	browse_feeds_empty: 'Aucun flux trouvé.',
 	browse_feeds_friends: 'Abonnements de tes amis',
 	browse_feeds_friends_empty: 'Tes amis ne se sont pas encore abonnés à des flux.',
-	browse_feeds_subscribers: 'abonnés'
+	browse_feeds_subscribers: 'abonnés',
+	no_feeds: 'Pas encore de flux.',
+	no_feeds_desc: 'Ajoute un flux ou découvre ce que les autres lisent.',
+	no_items: 'Rien ici pour le moment.',
+	no_items_desc: 'Les nouvelles entrées apparaîtront dès que ce flux les publiera.'
 };
 
 const calendar: CalendarRecords = {
@@ -775,6 +884,19 @@ const calendar: CalendarRecords = {
 	location: 'Lieu',
 	is_all_day: 'Toute la journée',
 	is_recurring: 'Récurrent',
+	recurrence_daily: 'Tous les jours',
+	recurrence_weekly: 'Chaque semaine',
+	recurrence_monthly_date: 'Chaque mois à cette date',
+	recurrence_monthly_weekday: 'Chaque mois un jour de la semaine',
+	recurrence_yearly: 'Chaque année',
+	recurrence_on_the: 'le',
+	recurrence_not_editable: 'Cette récurrence ne peut pas être modifiée ici. Elle reste inchangée.',
+	recurrence_ordinals: {
+		1: '1er',
+		2: '2e',
+		3: '3e',
+		4: '4e'
+	},
 	choose_calendar: 'Choisir un calendrier',
 	request_sync: 'Synchroniser',
 	sync_success: 'Synchronisation réussie.',
@@ -827,10 +949,16 @@ const calendar: CalendarRecords = {
 	attach_note: 'Associer une note',
 	search_todo: 'Rechercher un todo',
 	search_note: 'Rechercher une note',
+	life_journal: 'Journal',
+	life_check_in: 'Suivi quotidien'
 };
 
 const contacts: ContactRecords = {
 	add_contact: 'Ajouter un contact',
+	no_contacts: 'Pas encore de contacts.',
+	no_contacts_desc: 'Ajoute un contact ou importe un carnet d\'adresses.',
+	no_visible_contacts: 'Aucun contact à afficher.',
+	no_visible_contacts_desc: 'Choisis un autre carnet d\'adresses ou affiche ceux qui sont masqués.',
 	address_books: 'Carnets d\'adresses',
 	import_success: 'Les carnets d\'adresses ont été importés avec succès.',
 	import_error: 'Une erreur est survenue lors de l\'importation des carnets d\'adresses.',
@@ -840,7 +968,9 @@ const contacts: ContactRecords = {
 	import_contacts_running: 'Importation de %d contacts pour le carnet d\'adresses %s…',
 	import_contacts: 'Importer les contacts',
 	save_error: 'Échec de l\'enregistrement du contact.',
-	name_required: 'Le prénom et le nom sont obligatoires.'
+	name_required: 'Le prénom et le nom sont obligatoires.',
+	email_placeholder: 'E-mail',
+	phone_placeholder: 'Numéro de téléphone'
 };
 
 const notifications: NotificationRecords = {
@@ -883,6 +1013,8 @@ const clipboard: ClipboardRecords = {
 	delete_error: 'Échec de la suppression de l\'entrée',
 	image_save_success: 'Image enregistrée',
 	image_save_error: 'Échec de l\'enregistrement de l\'image',
+	image_too_large: 'L\'image n\'a pas pu être envoyée. Elle est peut-être trop volumineuse.',
+	image_reduce: 'Réduire la taille',
 	image_copy_success: 'Image copiée dans le presse-papiers',
 	image_copy_error: 'Échec de la copie de l\'image'
 };
@@ -1061,7 +1193,8 @@ const welcome_tour: WelcomeTourRecords = {
 
 const admin: AdminRecords = {
 	role_update_success: 'Le rôle de l\'utilisateur a été mis à jour avec succès.',
-	role_update_error: 'Impossible de mettre à jour le rôle de l\'utilisateur.'
+	role_update_error: 'Impossible de mettre à jour le rôle de l\'utilisateur.',
+	search_placeholder: 'Rechercher par nom ou e-mail...'
 };
 
 const timeTracking: TimeTrackingRecords = {
@@ -1081,13 +1214,12 @@ const timeTracking: TimeTrackingRecords = {
 	started_at: 'Démarré à',
 	stopped_at: 'Arrêté à',
 	duration: 'Durée',
-	duration_minutes: 'Durée (minutes)',
 	project: 'Projet',
-	category: 'Catégorie',
 	start_timer: 'Démarrer le chrono',
 	stop_timer: 'Arrêter le chrono',
 	timer_running: 'Chrono en cours',
 	no_projects: 'Aucun projet pour le moment.',
+	no_projects_desc: 'Crée un projet pour commencer à suivre ton temps.',
 	no_entries: 'Aucune entrée pour le moment.',
 	no_description: 'Aucune description',
 	manual_entry: 'Entrée manuelle',
@@ -1102,7 +1234,6 @@ const timeTracking: TimeTrackingRecords = {
 	recent_entries: 'Entrées récentes',
 	today: 'Aujourd\'hui',
 	this_week: 'Cette semaine',
-	this_month: 'Ce mois',
 	deletion_title: 'Supprimer le projet',
 	deletion_description:
 		'Es-tu sûr de vouloir supprimer ce projet? Toutes les entrées associées seront supprimées.',
@@ -1118,7 +1249,11 @@ const timeTracking: TimeTrackingRecords = {
 	reset: 'Réinitialiser',
 	filter_by_category: 'Filtrer par catégorie',
 	all_categories: 'Toutes',
-	edit_entry: 'Modifier l\'entrée'
+	edit_entry: 'Modifier l\'entrée',
+	entry_deletion_title: 'Supprimer l\'entrée',
+	entry_deletion_description: 'Voulez-vous vraiment supprimer cette entrée ?',
+	category_deletion_title: 'Supprimer la catégorie',
+	category_deletion_description: 'Voulez-vous vraiment supprimer cette catégorie ?'
 };
 
 const cookie_consent: CookieConsentRecords = {
@@ -1185,7 +1320,20 @@ const setup: SetupRecords = {
 	continue: 'Continuer',
 	done: 'Tout est prêt !',
 	checking: 'Vérification de la connexion…',
-	url_error: 'Impossible de se connecter. Vérifiez l\'URL et réessayez.'
+	url_error: 'Impossible de se connecter. Vérifiez l\'URL et réessayez.',
+	back: 'Retour'
+};
+
+const update_required: UpdateRequiredRecords = {
+	title: 'Mise à jour requise',
+	explanation: "Cette version de solyto n'est plus prise en charge par le serveur.",
+	instruction_web: 'Recharge la page pour charger la dernière version.',
+	instruction_desktop: 'Quitte puis relance solyto pour installer la dernière mise à jour.',
+	instruction_mobile: "Mets à jour solyto depuis la boutique d'applications ou F-Droid, selon l'endroit où tu l'as installé.",
+	reload: 'Charger la dernière version',
+	required_version: 'Version requise : %s',
+	your_version: 'Ta version : %s',
+	server_outdated: "Ton serveur utilise la version %server, mais cette application est en %app. Certaines fonctions peuvent ne pas marcher tant que le serveur n'est pas mis à jour."
 };
 
 export const fr: LanguageFile = {
@@ -1214,5 +1362,6 @@ export const fr: LanguageFile = {
 	cookie_consent,
 	timeTracking,
 	quick_add,
-	setup
+	setup,
+	update_required
 };

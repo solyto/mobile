@@ -6,12 +6,11 @@ import type {
 	RecipeRelease
 } from '$lib/types/library_recipe';
 import { getContext, setContext } from 'svelte';
-import { getAuth } from '$lib/state/Auth.svelte';
+import { getAuth, type Auth } from '$lib/state/Auth.svelte';
 import ApiService from '$lib/services/ApiService';
 import { apiRoutes } from '$lib/config/apiRoutes';
 import LibraryFilterService from '$lib/services/LibraryFilterService';
 import type { LibraryConfig } from '$lib/types/library';
-import type { Book } from '$lib/types/library_book';
 
 export class RecipeLibrary {
 	config: LibraryConfig = {
@@ -39,12 +38,13 @@ export class RecipeLibrary {
 	typeFilter = $state<RecipeType | null>(null);
 	searchTerm = $state<string>('');
 	view = $state<'list' | 'cards'>('cards');
-	auth = getAuth();
+	auth: Auth;
 	filterService = new LibraryFilterService();
 	apiService: ApiService;
 
-	constructor() {
-		this.apiService = new ApiService(this.auth.getToken());
+	constructor(auth: Auth = getAuth(), apiService: ApiService = auth.apiService) {
+		this.auth = auth;
+		this.apiService = apiService;
 	}
 
 	async load(): Promise<void> {
@@ -94,6 +94,12 @@ export class RecipeLibrary {
 	addTypeFilter(type: RecipeType | null): void {
 		this.typeFilter = type;
 		this.filter();
+	}
+
+	clearFilters(): void {
+		this.ratingFilter = null;
+		this.typeFilter = null;
+		this.filteredEntries = this.entries;
 	}
 
 	openCreateModal(entry?: Recipe): void {

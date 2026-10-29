@@ -26,6 +26,7 @@
 	import GameSearch from '$lib/components/libraries/games/GameSearch.svelte';
 	import SteamIcon from '$lib/assets/services/steam_icon.svg';
 	import Dices from '@lucide/svelte/icons/dices';
+	import { getIntegrations } from '$lib/state/Integrations.svelte';
 
 	const ts = getTranslation();
 	const library = getGameLibrary();
@@ -33,6 +34,7 @@
 	const auth = getAuth();
 	const loadingIndicator = getLoadingIndicator();
 	const notifications = getUiNotifications();
+	const integrations = getIntegrations();
 
 	let activeEntry = $state<Game | null>(library.activeEntry);
 
@@ -59,10 +61,9 @@
 	let importLoading = $state<boolean>(false);
 	let importDropdownOpen = $state<boolean>(false);
 
-	const importOptions = [
-		{ label: 'Steam', icon: SteamIcon, onClick: () => importFrom('steam', 'store.steampowered.com', ts.get.libraries.games.steam_import_validation_error) },
-		{ label: 'BGG', icon: Dices, onClick: () => importFrom('bgg', 'boardgamegeek.com', ts.get.libraries.games.bgg_import_validation_error, 'boardgame') }
-	];
+	const steamImport = { label: 'Steam', icon: SteamIcon, onClick: () => importFrom('steam', 'store.steampowered.com', ts.get.libraries.games.steam_import_validation_error) };
+	const bggImport = { label: 'BGG', icon: Dices, onClick: () => importFrom('bgg', 'boardgamegeek.com', ts.get.libraries.games.bgg_import_validation_error, 'boardgame') };
+	const importOptions = integrations.isConfigured('bgg') ? [steamImport, bggImport] : [steamImport];
 
 	let genreOptions: { label: string; value: string }[] = $derived(
 		library.genres.map((genre) => ({ label: genre.title, value: genre.id.toString() }))
@@ -302,5 +303,5 @@
 </CreateModal>
 
 {#if library.externalSearchModalVisible}
-	<GameSearch {library} {ts} onSelect={onSearchSelect} />
+	<GameSearch {library} {ts} showBgg={integrations.isConfigured('bgg')} onSelect={onSearchSelect} />
 {/if}

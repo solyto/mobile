@@ -3,20 +3,22 @@
 	import { onDestroy, tick } from 'svelte';
 	import { getTodos } from '$lib/state/Todos.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
-	import { getKeyManager } from '$lib/KeyManager.svelte';
+	import { getKeyManager } from '$lib/state/KeyManager.svelte';
 	import { markdownToHtml } from '$lib/helpers/FormatHelper';
 	import { nl2br } from '$lib/helpers/FormatHelper.js';
 	import DOMPurify from 'dompurify';
 	import TextInput from '$lib/components/forms/TextInput.svelte';
 	import MovableHoverBox from '$lib/components/ui/MovableHoverBox.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
+	import { getViewPoint } from '$lib/state/Viewpoint.svelte';
 
 	const todos = getTodos();
 	const loadingIndicator = getLoadingIndicator();
 	const keyManager = getKeyManager();
 	const ts = getTranslation();
+	const viewPoint = getViewPoint();
 
-	let { todo } = $props<{ todo: Todo }>();
+	let { todo }: { todo: Todo } = $props();
 
 	let changeDescription = $state<boolean>(false);
 	let descriptionInput = $state<HTMLTextAreaElement | null>(null);
@@ -27,13 +29,13 @@
 	let showExplanationBox = $state<boolean>(false);
 	let explanationBoxX = $state<number>(0);
 	let explanationBoxY = $state<number>(0);
-	let keyHandlers = $state<{ [key: string]: string | null }>({
+	let keyHandlers: { [key: string]: string | null } = {
 		EnterSave: null,
 		EnterNewLine: null,
 		EnterSubtask: null,
 		EscapeSubtask: null,
 		Escape: null
-	});
+	};
 
 	async function toggleChangeDescription(): Promise<void> {
 		changeDescription = !changeDescription;
@@ -151,6 +153,7 @@
 			role="button"
 			tabindex="0"
 			ondblclick={toggleChangeDescription}
+			onclick={() => viewPoint.isMobile && toggleChangeDescription()}
 			onmouseover={() => (showExplanationBox = true)}
 			onmouseout={() => (showExplanationBox = false)}
 			onfocus={() => (showExplanationBox = true)}
@@ -158,6 +161,7 @@
 			onmousemove={(e) => setExplanationBoxPosition(e)}
 		>
 			{#if todo.description}
+				<!-- eslint-disable-next-line svelte/no-at-html-tags -- sanitised with DOMPurify -->
 				{@html DOMPurify.sanitize(markdownToHtml(nl2br(todo.description)))}
 			{:else}
 				{ts.get.todos.no_description}

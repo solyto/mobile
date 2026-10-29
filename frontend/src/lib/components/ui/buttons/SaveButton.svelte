@@ -1,9 +1,9 @@
 <script lang="ts">
 	import IconSave from '@lucide/svelte/icons/save';
 
-	let { onClick } = $props<{
-		onClick: Function;
-	}>();
+	let { onClick }: {
+		onClick: () => void;
+	} = $props();
 </script>
 
 <button

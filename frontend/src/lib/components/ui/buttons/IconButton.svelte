@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	let {
 		onclick = () => {},
 		type = 'btn',
@@ -6,14 +7,14 @@
 		pulse = false,
 		class: customClass = '',
 		children
-	} = $props<{
+	}: {
 		onclick?: () => void;
 		type?: 'btn' | 'action' | 'danger' | 'success' | 'primary' | 'warning' | 'plain' | 'slight';
 		disabled?: boolean;
 		pulse?: boolean;
 		class?: string;
-		children: any;
-	}>();
+		children: Snippet;
+	} = $props();
 </script>
 
 <button
@@ -37,9 +38,11 @@
 	class:dark:hover:bg-s-dark-2={type === 'slight' && !disabled}
 	class:dark:text-white={type === 'slight'}
 	class:text-c-neutral-7={type === 'slight'}
-	class:text-c-heading={type === 'warning' || type === 'action'}
-	class:text-c-btn-text={type !== 'plain' && type !== 'slight' && type !== 'warning' && type !== 'action'}
-	class:hover:text-white={type !== 'plain' && type !== 'slight' && type !== 'warning' && type !== 'action' && !disabled}
+	class:text-c-action-text={type === 'warning' || type === 'action'}
+	class:text-c-btn-text={type !== 'plain' && type !== 'slight' && type !== 'warning' && type !== 'action' && type !== 'primary'}
+	class:text-c-primary-text={type === 'primary'}
+	class:hover:text-white={type !== 'plain' && type !== 'slight' && type !== 'warning' && type !== 'action' && type !== 'primary' && !disabled}
+	class:hover:text-c-primary-text-hover={type === 'primary' && !disabled}
 	class:px-4={type !== 'plain'}
 	class:py-2={type !== 'plain'}
 	class:animate-pulse={pulse}

@@ -2,8 +2,7 @@
 	import { slide, fade } from 'svelte/transition';
 	import type {
 		DevRequest,
-		UpdateDevRequestRequest,
-		DevRequestVote
+		UpdateDevRequestRequest
 	} from '$lib/types/dev_request';
 	import { formatDate } from '$lib/helpers/DateHelper';
 	import IconChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
@@ -12,7 +11,7 @@
 	import { API_STORAGE_URL } from '$lib/config/apiRoutes';
 	import { onDestroy, tick } from 'svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
-	import { getKeyManager } from '$lib/KeyManager.svelte';
+	import { getKeyManager } from '$lib/state/KeyManager.svelte';
 	import { nl2br } from '$lib/helpers/FormatHelper';
 	import DOMPurify from 'dompurify';
 	import Author from '$lib/components/dev-requests/Author.svelte';
@@ -21,6 +20,7 @@
 	import Type from '$lib/components/dev-requests/Type.svelte';
 	import Status from '$lib/components/dev-requests/Status.svelte';
 	import Comments from '$lib/components/dev-requests/Comments.svelte';
+	import TextInput from '$lib/components/forms/TextInput.svelte';
 	import IconMessageSquare from '@lucide/svelte/icons/message-square';
 
 	const devRequests = getDevRequests();
@@ -30,10 +30,10 @@
 
 	const isAdmin = auth.isAdmin();
 
-	let { entry, active = false } = $props<{
+	let { entry, active = false }: {
 		entry: DevRequest;
 		active?: boolean;
-	}>();
+	} = $props();
 
 	let open = $state<boolean>(active);
 	let titleInput = $state<HTMLInputElement | null>(null);
@@ -42,11 +42,11 @@
 	let descriptionValue = $state<string>(entry.description);
 	let changeTitle = $state<boolean>(false);
 	let changeDescription = $state<boolean>(false);
-	let keyHandlers = $state<{ [key: string]: string | null }>({
+	let keyHandlers: { [key: string]: string | null } = {
 		Enter: null,
 		EnterNewLine: null,
 		Escape: null
-	});
+	};
 
 	async function toggleChange(toggleType: 'title' | 'description'): Promise<void> {
 		if (toggleType === 'title') {
@@ -123,29 +123,25 @@
 			<Priority {entry} editable={isAdmin} />
 			<Type {entry} />
 			<Status {entry} editable={isAdmin} />
+		</div>
+		<div class="mt-1 flex flex-row items-start gap-2 md:mt-0 md:ml-3 md:w-3/6">
+			<div class="min-w-0 flex-1">
+				{#if isAdmin}
+					{#if changeTitle}
+						<TextInput bind:input={titleInput} bind:value={titleValue} {onblur} />
+					{:else}
+						<button type="button" ondblclick={() => toggleChange('title')} class="cursor-pointer text-left text-lg font-bold md:text-base">
+							{entry.title}
+						</button>
+					{/if}
+				{:else}
+					<span class="text-lg font-bold md:text-base">{entry.title}</span>
+				{/if}
+			</div>
 			<IconChevronsUpDown
-				class="ml-auto cursor-pointer text-c-btn md:hidden"
+				class="mt-0.5 shrink-0 cursor-pointer text-c-btn md:hidden"
 				onclick={() => (open = !open)}
 			/>
-		</div>
-		<div class="mt-1 md:mt-0 md:ml-3 md:w-3/6">
-			{#if isAdmin}
-				{#if changeTitle}
-					<input
-						type="text"
-						class="w-full dark:bg-s-dark-3 dark:text-white"
-						{onblur}
-						bind:this={titleInput}
-						bind:value={titleValue}
-					/>
-				{:else}
-					<button type="button" ondblclick={() => toggleChange('title')} class="cursor-pointer text-lg font-bold md:text-base">
-						{entry.title}
-					</button>
-				{/if}
-			{:else}
-				<span class="text-lg font-bold md:text-base">{entry.title}</span>
-			{/if}
 		</div>
 		<div class="flex flex-row items-center gap-4 md:ml-auto">
 			<Author {entry} />
@@ -195,11 +191,13 @@
 							class="w-full cursor-pointer pt-4 text-left"
 							ondblclick={() => toggleChange('description')}
 						>
+							<!-- eslint-disable-next-line svelte/no-at-html-tags -- sanitised with DOMPurify -->
 							{@html DOMPurify.sanitize(nl2br(entry.description))}
 						</button>
 					{/if}
 				{:else}
 					<div class="w-full pt-4">
+						<!-- eslint-disable-next-line svelte/no-at-html-tags -- sanitised with DOMPurify -->
 						{@html DOMPurify.sanitize(nl2br(entry.description))}
 					</div>
 				{/if}

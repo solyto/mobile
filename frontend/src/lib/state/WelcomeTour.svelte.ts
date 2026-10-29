@@ -29,12 +29,12 @@ const FEATURE_STEPS: StepDef[] = [
 	{ key: 'profile', route: urls.profile, always: true },
 	{ key: 'settings', route: urls.settings, always: true },
 	{ key: 'dev_requests', route: urls.devRequests }
-]
+];
 
 export class WelcomeTour {
-	active = $state(false)
-	currentStepIndex = $state(0)
-	steps = $state<TourStep[]>([])
+	active = $state(false);
+	currentStepIndex = $state(0);
+	steps = $state<TourStep[]>([]);
 
 	start(features: Record<FeatureType, boolean>): void {
 		const featureSteps: TourStep[] = FEATURE_STEPS
@@ -43,58 +43,58 @@ export class WelcomeTour {
 				key: s.key,
 				route: s.route,
 				selector: `[data-tour="${s.key}"]`
-			}))
+			}));
 
 		this.steps = [
 			{ key: 'intro', route: urls.home, selector: null },
 			...featureSteps,
 			{ key: 'outro', route: urls.home, selector: null }
-		]
-		this.currentStepIndex = 0
-		this.active = true
+		];
+		this.currentStepIndex = 0;
+		this.active = true;
 	}
 
 	next(): void {
 		if (this.currentStepIndex < this.steps.length - 1) {
-			this.currentStepIndex++
+			this.currentStepIndex++;
 		} else {
-			this.finish()
+			this.finish();
 		}
 	}
 
 	prev(): void {
-		if (this.currentStepIndex > 0) this.currentStepIndex--
+		if (this.currentStepIndex > 0) this.currentStepIndex--;
 	}
 
 	finish(): void {
-		this.active = false
-		this.currentStepIndex = 0
-		this.steps = []
+		this.active = false;
+		this.currentStepIndex = 0;
+		this.steps = [];
 	}
 
 	get currentStep(): TourStep | null {
-		return this.steps[this.currentStepIndex] ?? null
+		return this.steps[this.currentStepIndex] ?? null;
 	}
 
 	get isFirst(): boolean {
-		return this.currentStepIndex === 0
+		return this.currentStepIndex === 0;
 	}
 
 	get isLast(): boolean {
-		return this.currentStepIndex === this.steps.length - 1
+		return this.currentStepIndex === this.steps.length - 1;
 	}
 
 	get totalSteps(): number {
-		return this.steps.length
+		return this.steps.length;
 	}
 }
 
-const TOUR_KEY = Symbol('SOLYTO_WELCOME_TOUR')
+const TOUR_KEY = Symbol('SOLYTO_WELCOME_TOUR');
 
 export function setWelcomeTour(): WelcomeTour {
-	return setContext(TOUR_KEY, new WelcomeTour())
+	return setContext(TOUR_KEY, new WelcomeTour());
 }
 
 export function getWelcomeTour(): WelcomeTour {
-	return getContext<WelcomeTour>(TOUR_KEY)
+	return getContext<WelcomeTour>(TOUR_KEY);
 }

@@ -2,9 +2,10 @@
 	import type { Todo } from '$lib/types/todo';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import { getTodos } from '$lib/state/Todos.svelte';
-	import { getKeyManager } from '$lib/KeyManager.svelte';
+	import { getKeyManager } from '$lib/state/KeyManager.svelte';
 	import { onDestroy, tick } from 'svelte';
 	import MovableHoverBox from '$lib/components/ui/MovableHoverBox.svelte';
+	import TextInput from '$lib/components/forms/TextInput.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 
 	const todos = getTodos();
@@ -12,12 +13,12 @@
 	const keyManager = getKeyManager();
 	const ts = getTranslation();
 
-	let { todo } = $props<{ todo: Todo }>();
+	let { todo }: { todo: Todo } = $props();
 
 	let changeTitle = $state<boolean>(false);
 	let titleInput = $state<HTMLInputElement | null>(null);
 	let titleValue = $state<string>(todo.title);
-	let keyHandlers = $state<{ [key: string]: string | null }>({ Enter: null, Escape: null });
+	let keyHandlers: { [key: string]: string | null } = { Enter: null, Escape: null };
 	let showExplanationBox = $state<boolean>(false);
 	let explanationBoxX = $state<number>(0);
 	let explanationBoxY = $state<number>(0);
@@ -71,18 +72,12 @@
 </script>
 
 {#if changeTitle}
-	<input
-		type="text"
-		class="{todos.view === 'list'
-			? 'w-9/10'
-			: 'w-3/4'} rounded-lg border-1 border-c-neutral-2 text-sm shadow-xs transition-all focus:ring-2 focus:ring-d-lightblue focus:outline-none dark:border-s-dark-2 dark:bg-s-dark-3 dark:text-white dark:focus:ring-c-primary"
-		{onblur}
-		bind:this={titleInput}
-		bind:value={titleValue}
-	/>
+	<div class={todos.view === 'list' ? 'w-9/10' : 'w-3/4'}>
+		<TextInput bind:input={titleInput} bind:value={titleValue} {onblur} />
+	</div>
 {:else}
 	<span
-		class="text-base"
+		class="text-base font-semibold"
 		role="button"
 		tabindex="0"
 		ondblclick={toggleChangeTitle}

@@ -9,10 +9,10 @@
 
 	const ts = getTranslation();
 
-	let { entry, library } = $props<{
+	let { entry, library }: {
 		entry: Movie;
 		library: MovieLibrary;
-	}>();
+	} = $props();
 </script>
 
 {#if entry.wishlist}
@@ -20,7 +20,6 @@
 {/if}
 <div class="text-left">
 	<div class="font-bold">{entry.title}</div>
-	<div class="text-sm">{entry.author}</div>
 </div>
 {#if library.view === 'list'}
 	<div class="ml-auto flex flex-row items-center gap-4">

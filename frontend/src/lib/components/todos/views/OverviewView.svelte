@@ -1,45 +1,19 @@
 <script lang="ts">
-	import type { Todo, TodoCategory } from '$lib/types/todo';
+	import type { Todo } from '$lib/types/todo';
 	import { fade } from 'svelte/transition';
-	import CompactCard from '$lib/components/todos/views/CompactCard.svelte';
+	import CompactEntry from '$lib/components/todos/views/CompactEntry.svelte';
 	import NoTodos from '$lib/components/todos/NoTodos.svelte';
 	import { getTodos } from '$lib/state/Todos.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
+	import TodoGroupingService from '$lib/services/TodoGroupingService';
 
 	const todos = getTodos();
 	const ts = getTranslation();
+	const grouping = new TodoGroupingService();
 
-	let { handleCheck } = $props<{ handleCheck: (event: Event, todo: Todo) => Promise<void> }>();
+	let { handleCheck }: { handleCheck: (event: Event, todo: Todo) => Promise<void> } = $props();
 
-	interface CategoryGroup {
-		category: TodoCategory | null;
-		todos: Todo[];
-	}
-
-	let groups = $derived.by(() => {
-		const map = new Map<number | null, CategoryGroup>();
-
-		for (const todo of todos.filteredTodos) {
-			const key = todo.category?.id ?? null;
-			if (!map.has(key)) {
-				map.set(key, { category: todo.category, todos: [] });
-			}
-			map.get(key)!.todos.push(todo);
-		}
-
-		const result: CategoryGroup[] = [];
-		const uncategorized = map.get(null);
-
-		for (const [key, group] of map) {
-			if (key !== null) result.push(group);
-		}
-
-		result.sort((a, b) => a.category!.title.localeCompare(b.category!.title));
-
-		if (uncategorized) result.push(uncategorized);
-
-		return result;
-	});
+	let groups = $derived(grouping.groupByCategory(todos.filteredTodos));
 </script>
 
 {#if todos.filteredTodos.length === 0}
@@ -56,7 +30,7 @@
 				</h3>
 				<div class="grid grid-cols-1 gap-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
 					{#each group.todos as todo (todo.id)}
-						<CompactCard {todo} {handleCheck} />
+						<CompactEntry {todo} {handleCheck} minimal={true} />
 					{/each}
 				</div>
 			</div>

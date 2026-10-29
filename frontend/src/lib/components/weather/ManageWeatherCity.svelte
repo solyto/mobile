@@ -12,7 +12,7 @@
 	const loadingIndicator = getLoadingIndicator();
 	const weather = getWeather();
 
-	let { onClose } = $props<{ onClose: () => void }>();
+	let { onClose }: { onClose: () => void } = $props();
 
 	let searchQuery = $state<string>('');
 	let searchResults = $state<NominatimResult[]>([]);

@@ -3,7 +3,7 @@
 	import type { Library } from '$lib/types/library';
 	import LocalStorageService from '$lib/services/LocalStorageService';
 
-	let { library } = $props<{ library: Library }>();
+	let { library }: { library: Library } = $props();
 
 	const ls = new LocalStorageService();
 

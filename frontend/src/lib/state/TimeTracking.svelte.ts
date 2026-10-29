@@ -12,7 +12,7 @@ import type {
 	TimeTrackingStatistics
 } from '$lib/types/time_tracking';
 import { setContext, getContext } from 'svelte';
-import { getAuth } from '$lib/state/Auth.svelte';
+import { getAuth, type Auth } from '$lib/state/Auth.svelte';
 import ApiService from '$lib/services/ApiService';
 import { apiRoutes } from '$lib/config/apiRoutes';
 
@@ -23,12 +23,12 @@ export class TimeTracking {
 	entries = $state<TimeTrackingEntry[]>([]);
 	activeTimer = $state<TimeTrackingEntry | null>(null);
 	statistics = $state<TimeTrackingStatistics | null>(null);
-	activeTab = $state<'dashboard' | 'entries'>('dashboard');
-	auth = getAuth();
+	auth: Auth;
 	apiService: ApiService;
 
-	constructor() {
-		this.apiService = new ApiService(this.auth.getToken());
+	constructor(auth: Auth = getAuth(), apiService: ApiService = auth.apiService) {
+		this.auth = auth;
+		this.apiService = apiService;
 	}
 
 	async load(): Promise<void> {
@@ -144,9 +144,11 @@ export class TimeTracking {
 		return res !== null;
 	}
 
-	async loadStatistics(from: string, to: string): Promise<void> {
+	async loadStatistics(from: string, to: string, categoryIds: number[] = []): Promise<void> {
+		const params = [`from=${encodeURIComponent(from)}`, `to=${encodeURIComponent(to)}`];
+		if (categoryIds.length > 0) params.push(`category_ids=${categoryIds.join(',')}`);
 		const res = await this.apiService.list(
-			apiRoutes.timeTracking.entries.statistics + `?from=${from}&to=${to}`
+			apiRoutes.timeTracking.entries.statistics + `?${params.join('&')}`
 		);
 		if (res) this.statistics = res.data as unknown as TimeTrackingStatistics;
 	}

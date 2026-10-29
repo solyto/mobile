@@ -1,9 +1,7 @@
 <script lang="ts">
 	import { getCheckInData } from '$lib/state/CheckInData.svelte';
 	import { getViewPoint } from '$lib/state/Viewpoint.svelte';
-	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { getDaysInMonth, getUrlFormat } from '$lib/helpers/DateHelper';
-	import { SvelteDate } from 'svelte/reactivity';
 	import { fade } from 'svelte/transition';
 	import type { CheckIn } from '$lib/types/check_in';
 	import OverviewDesktop from '$lib/components/check-in/overview/OverviewDesktop.svelte';
@@ -15,7 +13,6 @@
 
 	const viewPoint = getViewPoint();
 	const checkInData = getCheckInData();
-	const ts = getTranslation();
 
 	const dates = $derived(getDaysInMonth(checkInData.historyMonth.year, checkInData.historyMonth.month).reverse());
 
@@ -25,7 +22,7 @@
 	});
 
 	const monthLabel = $derived(
-		new SvelteDate(checkInData.historyMonth.year, checkInData.historyMonth.month, 1)
+		new Date(checkInData.historyMonth.year, checkInData.historyMonth.month, 1)
 			.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
 	);
 </script>

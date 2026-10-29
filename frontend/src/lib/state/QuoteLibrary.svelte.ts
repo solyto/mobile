@@ -1,11 +1,10 @@
 import type { Quote, CreateQuoteRequest, UpdateQuoteRequest } from '$lib/types/library_quote';
 import { getContext, setContext } from 'svelte';
-import { getAuth } from '$lib/state/Auth.svelte';
+import { getAuth, type Auth } from '$lib/state/Auth.svelte';
 import ApiService from '$lib/services/ApiService';
 import { apiRoutes } from '$lib/config/apiRoutes';
 import LibraryFilterService from '$lib/services/LibraryFilterService';
 import type { LibraryConfig } from '$lib/types/library';
-import type { Book } from '$lib/types/library_book';
 
 export class QuoteLibrary {
 	config: LibraryConfig = {
@@ -31,12 +30,13 @@ export class QuoteLibrary {
 	activeEntry = $state<Quote | null>(null);
 	searchTerm = $state<string>('');
 	view = $state<'list'>('list');
-	auth = getAuth();
+	auth: Auth;
 	filterService = new LibraryFilterService();
 	apiService: ApiService;
 
-	constructor() {
-		this.apiService = new ApiService(this.auth.getToken());
+	constructor(auth: Auth = getAuth(), apiService: ApiService = auth.apiService) {
+		this.auth = auth;
+		this.apiService = apiService;
 	}
 
 	async load(): Promise<void> {

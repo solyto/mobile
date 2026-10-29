@@ -4,7 +4,7 @@
 	import type { Todo, TodoSubtask } from '$lib/types/todo.js';
 	import { onDestroy, tick } from 'svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
-	import { getKeyManager } from '$lib/KeyManager.svelte';
+	import { getKeyManager } from '$lib/state/KeyManager.svelte';
 	import { getTodos } from '$lib/state/Todos.svelte';
 	import TextInput from '$lib/components/forms/TextInput.svelte';
 	import DeleteButton from '$lib/components/ui/buttons/DeleteButton.svelte';
@@ -16,16 +16,16 @@
 	const todos = getTodos();
 	const ts = getTranslation();
 
-	let { todo, subtask, handleCheckboxClick } = $props<{
+	let { todo, subtask, handleCheckboxClick }: {
 		todo: Todo;
 		subtask: TodoSubtask;
 		handleCheckboxClick: (subtask: TodoSubtask) => void;
-	}>();
+	} = $props();
 
 	let changeTitle = $state<boolean>(false);
 	let titleInput = $state<HTMLInputElement | null>(null);
 	let titleValue = $state<string>(subtask.title);
-	let keyHandlers = $state<{ [key: string]: string | null }>({ Enter: null, Escape: null });
+	let keyHandlers: { [key: string]: string | null } = { Enter: null, Escape: null };
 	let showExplanationBox = $state<boolean>(false);
 	let explanationBoxX = $state<number>(0);
 	let explanationBoxY = $state<number>(0);
@@ -91,29 +91,31 @@
 			handleCheckboxClick(subtask);
 		}}
 	/>
-	{#if changeTitle}
-		<TextInput bind:input={titleInput} bind:value={titleValue} {onblur} />
-	{:else}
-		<div
-			role="button"
-			tabindex="0"
-			ondblclick={toggleChangeTitle}
-			onmouseover={() => (showExplanationBox = true)}
-			onmouseout={() => (showExplanationBox = false)}
-			onfocus={() => (showExplanationBox = true)}
-			onblur={() => (showExplanationBox = false)}
-			onmousemove={(e) => setExplanationBoxPosition(e)}
-		>
-			{subtask.title}
-		</div>
-		<MovableHoverBox
-			content={ts.get.layout.double_click_to_edit}
-			show={showExplanationBox}
-			x={explanationBoxX}
-			y={explanationBoxY}
-		/>
-	{/if}
-	<div class="ml-2">
+	<div class="min-w-0 flex-1">
+		{#if changeTitle}
+			<TextInput bind:input={titleInput} bind:value={titleValue} {onblur} />
+		{:else}
+			<div
+				role="button"
+				tabindex="0"
+				ondblclick={toggleChangeTitle}
+				onmouseover={() => (showExplanationBox = true)}
+				onmouseout={() => (showExplanationBox = false)}
+				onfocus={() => (showExplanationBox = true)}
+				onblur={() => (showExplanationBox = false)}
+				onmousemove={(e) => setExplanationBoxPosition(e)}
+			>
+				{subtask.title}
+			</div>
+			<MovableHoverBox
+				content={ts.get.layout.double_click_to_edit}
+				show={showExplanationBox}
+				x={explanationBoxX}
+				y={explanationBoxY}
+			/>
+		{/if}
+	</div>
+	<div class="shrink-0">
 		<DeleteButton inModal={false} buttonStyle="plain" onClick={onDelete} />
 	</div>
 </div>

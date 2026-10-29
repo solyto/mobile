@@ -24,6 +24,7 @@
 	import BookSearch from '$lib/components/libraries/books/BookSearch.svelte';
 	import IconHardcover from '$lib/components/ui/icons/IconHardcover.svelte';
 	import GoodreadsIcon from '$lib/assets/services/goodreads_icon.png';
+	import { getIntegrations } from '$lib/state/Integrations.svelte';
 
 	const ts = getTranslation();
 	const library = getBookLibrary();
@@ -31,6 +32,7 @@
 	const auth = getAuth();
 	const loadingIndicator = getLoadingIndicator();
 	const notifications = getUiNotifications();
+	const integrations = getIntegrations();
 
 	let activeEntry = $state<Book | null>(library.activeEntry);
 
@@ -63,28 +65,31 @@
 	let importLoading = $state<boolean>(false);
 	let importDropdownOpen = $state<boolean>(false);
 
-	const importOptions = [
-		{
-			label: 'Hardcover',
-			icon: IconHardcover,
-			onClick: () =>
-				importFrom(
-					'hardcover',
-					'hardcover.app',
-					ts.get.libraries.books.hardcover_import_validation_error
-				)
-		},
-		{
-			label: 'Goodreads',
-			icon: GoodreadsIcon,
-			onClick: () =>
-				importFrom(
-					'goodreads',
-					'goodreads.com',
-					ts.get.libraries.books.goodreads_import_validation_error
-				)
-		}
-	];
+	const hardcoverImport = {
+		label: 'Hardcover',
+		icon: IconHardcover,
+		onClick: () =>
+			importFrom(
+				'hardcover',
+				'hardcover.app',
+				ts.get.libraries.books.hardcover_import_validation_error
+			)
+	};
+
+	const goodreadsImport = {
+		label: 'Goodreads',
+		icon: GoodreadsIcon,
+		onClick: () =>
+			importFrom(
+				'goodreads',
+				'goodreads.com',
+				ts.get.libraries.books.goodreads_import_validation_error
+			)
+	};
+
+	const importOptions = integrations.isConfigured('hardcover')
+		? [hardcoverImport, goodreadsImport]
+		: [goodreadsImport];
 
 	let genreOptions: { label: string; value: string }[] = $derived(
 		library.genres.map((genre) => ({ label: genre.title, value: genre.id.toString() }))
@@ -302,7 +307,9 @@
 	</ModalFormRow>
 	<div class="mt-8 flex w-full flex-row items-center justify-end gap-3">
 		{#if !activeEntry}
-			<CreateModalSearchButton {library} {ts} />
+			{#if integrations.isConfigured('hardcover')}
+				<CreateModalSearchButton {library} {ts} />
+			{/if}
 			<CreateModalImport
 				options={importOptions}
 				{ts}

@@ -13,7 +13,7 @@ import type {
 	LibraryConfig
 } from '$lib/types/library';
 import { getContext, setContext } from 'svelte';
-import { getAuth } from '$lib/state/Auth.svelte';
+import { getAuth, type Auth } from '$lib/state/Auth.svelte';
 import ApiService from '$lib/services/ApiService';
 import { apiRoutes } from '$lib/config/apiRoutes';
 import LibraryFilterService from '$lib/services/LibraryFilterService';
@@ -39,6 +39,7 @@ export class MusicLibrary {
 	loaded = $state<boolean>(false);
 	entries = $state<Music[]>([]);
 	filteredEntries = $state<Music[]>([]);
+	shelfIndex = $state<number>(0);
 	genres = $state<MusicGenre[]>([]);
 	createModalVisible = $state<boolean>(false);
 	detailModalVisible = $state<boolean>(false);
@@ -55,13 +56,19 @@ export class MusicLibrary {
 	integrations = $state<string[]>(['deezer', 'discogs']);
 	integrationsLoaded = $state<boolean>(false);
 	view = $state<'list' | 'cards' | 'shelf' | 'spine'>('cards');
-	auth = getAuth();
+	auth: Auth;
 	apiService: ApiService;
-	localStorage = new LocalStorageService();
+	localStorage: LocalStorageService;
 	filterService = new LibraryFilterService();
 
-	constructor() {
-		this.apiService = new ApiService(this.auth.getToken());
+	constructor(
+		auth: Auth = getAuth(),
+		apiService: ApiService = auth.apiService,
+		localStorage: LocalStorageService = new LocalStorageService()
+	) {
+		this.auth = auth;
+		this.apiService = apiService;
+		this.localStorage = localStorage;
 
 		const saved = this.localStorage.get(MusicLibrary.LS_VIEW_KEY);
 		this.view = (saved as 'list' | 'cards' | 'shelf' | 'spine' | null) ?? 'cards';
@@ -71,7 +78,7 @@ export class MusicLibrary {
 		const res = await this.apiService.list(apiRoutes.libraries.music.list);
 		if (res) {
 			this.entries = res.data as Music[];
-			this.filteredEntries = this.entries;
+			this.setFilteredEntries(this.entries);
 			await this.loadGenres();
 			this.loaded = true;
 		}
@@ -105,30 +112,32 @@ export class MusicLibrary {
 	search(): void {
 		this.genreFilter = null;
 		this.ratingFilter = null;
-		this.filteredEntries = this.filterService.search(this.entries, this.searchTerm, [
-			'title',
-			'artist'
-		]);
+		this.setFilteredEntries(
+			this.filterService.search(this.entries, this.searchTerm, ['title', 'artist'])
+		);
 	}
 
 	filterByGenreAndRating(): void {
-		this.filteredEntries = this.filterService.byGenreAndRating(
-			this.entries,
-			this.genreFilter,
-			this.ratingFilter
+		this.setFilteredEntries(
+			this.filterService.byGenreAndRating(this.entries, this.genreFilter, this.ratingFilter)
 		);
 	}
 
 	filterByWishlist(): void {
 		this.wishlistFilter = true;
-		this.filteredEntries = this.filterService.byWishlist(this.entries);
+		this.setFilteredEntries(this.filterService.byWishlist(this.entries));
 	}
 
 	clearFilters(): void {
 		this.genreFilter = null;
 		this.ratingFilter = null;
 		this.wishlistFilter = false;
-		this.filteredEntries = this.entries;
+		this.setFilteredEntries(this.entries);
+	}
+
+	private setFilteredEntries(entries: Music[]): void {
+		this.filteredEntries = entries;
+		this.shelfIndex = 0;
 	}
 
 	async recommend(type: LibraryRecommendationType): Promise<LibraryRecommendation | null> {

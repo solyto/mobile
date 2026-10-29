@@ -7,11 +7,11 @@
 
 	const notes = getNotes();
 
-	let { categoryId, depth, handleNavigation } = $props<{
+	let { categoryId, depth, handleNavigation }: {
 		categoryId: number | null;
 		depth: number;
 		handleNavigation: () => void;
-	}>();
+	} = $props();
 </script>
 
 <div transition:fade>

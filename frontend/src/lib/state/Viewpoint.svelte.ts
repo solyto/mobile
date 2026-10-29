@@ -7,6 +7,7 @@ interface ViewPointState {
 	isDesktop: boolean;
 	isMobile: boolean;
 	isTablet: boolean;
+	keyboardHeight: number;
 }
 
 export class ViewPoint {
@@ -15,7 +16,8 @@ export class ViewPoint {
 		height: 0,
 		isDesktop: false,
 		isMobile: true,
-		isTablet: false
+		isTablet: false,
+		keyboardHeight: 0
 	});
 
 	private mediaQueries: MediaQueryList[] = [];
@@ -55,6 +57,25 @@ export class ViewPoint {
 			mq.addEventListener('change', handler);
 			this.cleanup.push(() => mq.removeEventListener('change', handler));
 		});
+
+		const vv = window.visualViewport;
+		if (vv) {
+			const updateKeyboardHeight = () => {
+				const diff = window.innerHeight - vv.height;
+				// Only count the difference as keyboard when it clearly is one, ignoring
+				// normal browser chrome and small jitter.
+				this._state.keyboardHeight = diff > 60 ? diff : 0;
+			};
+
+			updateKeyboardHeight();
+
+			vv.addEventListener('resize', updateKeyboardHeight);
+			vv.addEventListener('scroll', updateKeyboardHeight);
+			this.cleanup.push(() => {
+				vv.removeEventListener('resize', updateKeyboardHeight);
+				vv.removeEventListener('scroll', updateKeyboardHeight);
+			});
+		}
 	}
 
 	get state() {
@@ -75,6 +96,9 @@ export class ViewPoint {
 	}
 	get isTablet() {
 		return this._state.isTablet;
+	}
+	get keyboardHeight() {
+		return this._state.keyboardHeight;
 	}
 
 	destroy() {

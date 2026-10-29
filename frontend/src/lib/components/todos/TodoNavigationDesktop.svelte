@@ -10,10 +10,10 @@
 	const todos = getTodos();
 	const tags = getTags();
 
-	let { sections, ts } = $props<{
+	let { sections, ts }: {
 		sections: TodoNavigationSection[];
 		ts: Translation;
-	}>();
+	} = $props();
 
 	let categoriesExpanded = $state<boolean>(true);
 	let tagsExpanded = $state<boolean>(false);

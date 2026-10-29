@@ -16,7 +16,7 @@
 		})
 	);
 
-	let { code } = $props<{ code: number }>();
+	let { code }: { code: number } = $props();
 
 	let src = $derived<string | null>(WEATHER_IMAGE_URLS[String(code)] ?? null);
 </script>

@@ -7,50 +7,49 @@
 	import BarChart from '$lib/components/charts/BarChart.svelte';
 	import Heading from '$lib/components/ui/Heading.svelte';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
+	import DateInput from '$lib/components/forms/DateInput.svelte';
+	import { getReadableTextColor } from '$lib/helpers/ColorHelper';
 
 	const tt = getTimeTracking();
 	const ts = getTranslation();
 	const loadingIndicator = getLoadingIndicator();
 
-	const today = new Date();
-	const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+	function toLocalDateValue(date: Date): string {
+		const y = date.getFullYear();
+		const m = String(date.getMonth() + 1).padStart(2, '0');
+		const d = String(date.getDate()).padStart(2, '0');
+		return `${y}-${m}-${d}`;
+	}
 
-	let fromDate = $state<string>(thirtyDaysAgo.toISOString().split('T')[0]);
-	let toDate = $state<string>(today.toISOString().split('T')[0]);
+	const today = new Date();
+	const thirtyDaysAgo = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 30);
+
+	let fromDate = $state<string>(toLocalDateValue(thirtyDaysAgo));
+	let toDate = $state<string>(toLocalDateValue(today));
 	let selectedCategoryIds = $state<number[]>([]);
 
-	function toggleCategory(id: number): void {
+	async function toggleCategory(id: number): Promise<void> {
 		if (selectedCategoryIds.includes(id)) {
 			selectedCategoryIds = selectedCategoryIds.filter((c) => c !== id);
 		} else {
 			selectedCategoryIds = [...selectedCategoryIds, id];
 		}
+		await loadStats();
 	}
 
-	let filteredProjects = $derived(() => {
-		const all = tt.statistics?.by_project ?? [];
-		if (selectedCategoryIds.length === 0) return all;
-		return all.filter((p) => {
-			const project = tt.projects.find((proj) => proj.id === p.project_id);
-			return project?.categories.some((c) => selectedCategoryIds.includes(c.id)) ?? false;
-		});
-	});
-
-	let filteredTotal = $derived(() =>
-		filteredProjects().reduce((sum, p) => sum + p.total_minutes, 0)
-	);
+	let filteredProjects = $derived(tt.statistics?.by_project ?? []);
 
 	let projectDonutData = $derived(
-		filteredProjects().map((p) => ({
+		filteredProjects.map((p) => ({
 			value: p.total_minutes,
 			name: p.project_title,
 			color: p.color
 		}))
 	);
 
-	let categoryBreakdown = $derived(() => {
+	let categoryBreakdown = $derived.by(() => {
 		const map = new Map<number, { title: string; minutes: number }>();
-		for (const stat of filteredProjects()) {
+		for (const stat of filteredProjects) {
 			const project = tt.projects.find((p) => p.id === stat.project_id);
 			if (!project) continue;
 			for (const cat of project.categories) {
@@ -62,10 +61,7 @@
 		return [...map.values()].sort((a, b) => b.minutes - a.minutes);
 	});
 
-	let categoryChartLabels = $derived(categoryBreakdown().map((c) => c.title));
-	let categoryChartValues = $derived(
-		categoryBreakdown().map((c) => Math.round((c.minutes / 60) * 10) / 10)
-	);
+	let categoryChartLabels = $derived(categoryBreakdown.map((c) => c.title));
 
 	onMount(async () => {
 		await loadStats();
@@ -73,35 +69,29 @@
 
 	async function loadStats(): Promise<void> {
 		loadingIndicator.start();
-		await tt.loadStatistics(fromDate, toDate);
+		await tt.loadStatistics(fromDate, toDate, selectedCategoryIds);
 		loadingIndicator.stop();
 	}
 </script>
 
 <div class="flex flex-col gap-6">
-	<div class="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
-		<Heading title={ts.get.timeTracking.statistics} my={0} />
+	<div class="flex flex-col items-start justify-between gap-4 md:flex-row md:items-start">
+		<div class="max-lg:ml-14">
+			<Heading title={ts.get.timeTracking.statistics} my={0} />
+		</div>
 		<div class="flex flex-wrap items-end gap-4">
-			<div class="flex flex-col gap-1">
+			<label class="flex flex-col gap-1">
 				<span class="text-sm font-medium text-c-neutral-5 dark:text-c-neutral-4">
 					{ts.get.timeTracking.from}
 				</span>
-				<input
-					type="date"
-					bind:value={fromDate}
-					class="rounded-lg border-1 border-c-neutral-2 px-3 py-2 text-sm shadow-xs dark:border-s-dark-3 dark:bg-inherit dark:text-white"
-				/>
-			</div>
-			<div class="flex flex-col gap-1">
+				<DateInput bind:value={fromDate} />
+			</label>
+			<label class="flex flex-col gap-1">
 				<span class="text-sm font-medium text-c-neutral-5 dark:text-c-neutral-4">
 					{ts.get.timeTracking.to}
 				</span>
-				<input
-					type="date"
-					bind:value={toDate}
-					class="rounded-lg border-1 border-c-neutral-2 px-3 py-2 text-sm shadow-xs dark:border-s-dark-3 dark:bg-inherit dark:text-white"
-				/>
-			</div>
+				<DateInput bind:value={toDate} />
+			</label>
 			<TextButton title={ts.get.layout.apply} onclick={loadStats} />
 		</div>
 	</div>
@@ -114,7 +104,10 @@
 			<div class="flex flex-wrap gap-2">
 				<button
 					type="button"
-					onclick={() => (selectedCategoryIds = [])}
+					onclick={async () => {
+						selectedCategoryIds = [];
+						await loadStats();
+					}}
 					class="rounded-full border px-3 py-1 text-xs font-medium transition-colors
 						{selectedCategoryIds.length === 0
 						? 'border-c-primary bg-c-primary text-white'
@@ -128,15 +121,15 @@
 						onclick={() => toggleCategory(category.id)}
 						class="flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors
 							{selectedCategoryIds.includes(category.id)
-							? 'border-transparent text-white'
+							? 'border-transparent'
 							: 'border-c-neutral-2 text-c-neutral-5 hover:border-c-primary dark:border-s-dark dark:text-c-neutral-4'}"
 						style={selectedCategoryIds.includes(category.id)
-							? `background-color: ${category.color ?? '#1dbda5'}; border-color: ${category.color ?? '#1dbda5'}`
+							? `background-color: ${category.color ?? 'var(--color-c-primary)'}; border-color: ${category.color ?? 'var(--color-c-primary)'}; color: ${getReadableTextColor(category.color ?? 'var(--color-c-primary)')}`
 							: ''}
 					>
 						<span
 							class="h-2 w-2 shrink-0 rounded-full"
-							style="background-color: {category.color ?? '#1dbda5'}"
+							style="background-color: {category.color ?? 'var(--color-c-primary)'}"
 						></span>
 						{category.title}
 					</button>
@@ -151,7 +144,7 @@
 				{ts.get.timeTracking.total_time}:
 			</span>
 			<span class="text-lg font-bold text-c-primary">
-				{tt.formatDuration(filteredTotal())}
+				{tt.formatDuration(filteredProjects.reduce((sum, p) => sum + p.total_minutes, 0))}
 			</span>
 		</div>
 
@@ -171,8 +164,8 @@
 					<span class="text-lg font-medium">{ts.get.timeTracking.categories}</span>
 					<BarChart
 						categories={categoryChartLabels}
-						values={categoryChartValues}
-						valueFormatter={(v) => tt.formatDuration(Math.round(v * 60))}
+						values={categoryBreakdown.map((c) => c.minutes)}
+						valueFormatter={(v) => tt.formatDuration(v)}
 					/>
 				</div>
 			{/if}

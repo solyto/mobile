@@ -215,11 +215,11 @@ describe('Feeds store', () => {
 
 		it('saveToLibrary toggles membership and persists', () => {
 			const s = new Feeds();
-			s.saveToLibrary(feed());
+			s.saveToLibrary(item({ id: 'sub-1' }));
 			expect(s.isInLibrary('sub-1')).toBe(true);
 			expect(storage.set).toHaveBeenCalledWith(Feeds.LS_IN_LIBRARY_KEY, 'sub-1');
 
-			s.saveToLibrary(feed());
+			s.saveToLibrary(item({ id: 'sub-1' }));
 			expect(s.isInLibrary('sub-1')).toBe(false);
 			expect(storage.set).toHaveBeenCalledWith(Feeds.LS_IN_LIBRARY_KEY, '');
 		});
@@ -227,7 +227,7 @@ describe('Feeds store', () => {
 		it('unsaveToLibrary removes the id', () => {
 			const s = new Feeds();
 			s.inLibrary = ['sub-1', 'sub-2'];
-			s.unsaveToLibrary(feed());
+			s.unsaveToLibrary(item({ id: 'sub-1' }));
 			expect(s.inLibrary).toEqual(['sub-2']);
 		});
 

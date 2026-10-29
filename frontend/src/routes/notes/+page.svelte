@@ -3,8 +3,7 @@
 	import { getNotes } from '$lib/state/Notes.svelte';
 	import OverviewEntries from '$lib/components/notes/OverviewEntries.svelte';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
-	import Typewriter from 'svelte-typewriter';
-	import { onMount } from 'svelte';
+	import EmptyState from '$lib/components/ui/EmptyState.svelte';
 
 	const ts = getTranslation();
 	const notes = getNotes();
@@ -12,13 +11,6 @@
 	let favorites = $derived(notes.favoriteNotes);
 	let newest = $derived(notes.newestNotes);
 	let lastUpdated = $derived(notes.lastUpdatedNotes);
-	let instructionsShown = $state<boolean>(false);
-
-	onMount(() => {
-		if (notes.notes.length === 0) {
-			setTimeout(() => (instructionsShown = true), 1200);
-		}
-	});
 </script>
 
 <div class="flex h-full w-full flex-col gap-4 px-4 max-md:mt-16 md:px-8">
@@ -35,17 +27,8 @@
 		{#if lastUpdated.length > 0}
 			<OverviewEntries entries={lastUpdated} title={ts.get.notes.last_updated} />
 		{/if}
-		{#if notes.notes.length === 0}
-			<div class="flex h-full w-full flex-col items-center justify-center px-8">
-				<Typewriter>
-					<h1 class="text-2xl">{ts.get.notes.welcome}</h1>
-				</Typewriter>
-				{#if instructionsShown}
-					<Typewriter>
-						<h2 class="mt-4 text-xl">{ts.get.notes.instruction}</h2>
-					</Typewriter>
-				{/if}
-			</div>
+		{#if notes.getVisibleNotes().length === 0}
+			<EmptyState title={ts.get.notes.no_notes} description={ts.get.notes.no_notes_desc} py={6} />
 		{/if}
 	{/if}
 </div>

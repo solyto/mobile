@@ -5,12 +5,18 @@
 	--t-font-heading: 'Barlow', sans-serif;
 
 	--color-c-primary: #8ec07c;
+	--color-c-primary-text: #282828;
+	--color-c-primary-text-hover: #282828;
+	--color-c-flag-text: #282828;
 	--color-c-heading: #fabd2f;
 	--color-c-heading-base: #ebdbb2;
 	--color-c-btn: #458588;
 	--color-c-btn-hover: #83a598;
 	--color-c-action: #fe8019;
 	--color-c-action-hover: #fabd2f;
+	--color-c-action-text: #282828;
+	--color-c-action-icon: #282828;
+	--color-c-action-icon-hover: #282828;
 	--color-c-danger: #fb4934;
 	--color-c-danger-hover: #cc241d;
 	--color-c-success: #b8bb26;
@@ -41,6 +47,7 @@
 	--color-c-neutral-7: #d5c4a1;
 	--color-c-neutral-8: #ebdbb2;
 	--color-c-neutral-9: #fbf1c7;
+	--color-c-avatar-text: #fbf1c7;
 
 	--color-d-lightblue: #3c3836;
 	--color-d-lighterblue: #1d2021;

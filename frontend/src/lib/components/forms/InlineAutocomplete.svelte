@@ -16,14 +16,14 @@
 		placeholder,
 		onblur,
 		triggers
-	} = $props<{
+	}: {
 		input?: HTMLInputElement | null;
 		value: string;
 		open?: boolean;
 		placeholder?: string;
 		onblur?: () => void;
 		triggers: Trigger[];
-	}>();
+	} = $props();
 
 	let suggestions = $state<TriggerItem[]>([]);
 	let selectedIndex = $state<number>(0);

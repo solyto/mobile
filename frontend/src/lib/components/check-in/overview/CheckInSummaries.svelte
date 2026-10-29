@@ -5,12 +5,11 @@
 	import { buildDaySummary, buildPeriodSummary, getDayLabel } from '$lib/helpers/CheckInSummaryHelper';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { getAuth } from '$lib/state/Auth.svelte';
-	import { SvelteDate } from 'svelte/reactivity';
 
-	let { dates, trackers } = $props<{
+	let { dates, trackers }: {
 		dates: Date[];
 		trackers: CheckInType[];
-	}>();
+	} = $props();
 
 	interface SummaryRow {
 		key: string;
@@ -29,15 +28,15 @@
 
 	function getCheckInsForDates(ds: Date[]): CheckIn[] {
 		return ds
-			.map((d) => checkInData.getDayData(getUrlFormat(new SvelteDate(d))))
+			.map((d) => checkInData.getDayData(getUrlFormat(new Date(d))))
 			.filter((c): c is CheckIn => c !== null);
 	}
 
 	function buildDaySummaryRows(): SummaryRow[] {
 		const p = ts.get.checkInSummary;
 		return dates
-			.map((date: Date) => {
-				const key = getUrlFormat(new SvelteDate(date));
+			.map((date: Date): SummaryRow | null => {
+				const key = getUrlFormat(new Date(date));
 				const checkIn = checkInData.getDayData(key);
 				if (!checkIn) return null;
 				const text = buildDaySummary(checkIn, trackers, p);
@@ -52,11 +51,11 @@
 
 	function buildWeekAndMonthPeriodSummaryRows(): SummaryRow[] {
 		const p = ts.get.checkInSummary;
-		const today = new SvelteDate();
+		const today = new Date();
 		const rows: SummaryRow[] = [];
 
 		const thisWeek = getISODateInfo(today);
-		const lastWeekDate = new SvelteDate(today);
+		const lastWeekDate = new Date(today);
 		lastWeekDate.setDate(today.getDate() - 7);
 		const lastWeek = getISODateInfo(lastWeekDate);
 
@@ -76,7 +75,7 @@
 
 		const thisMonth = today.getMonth();
 		const thisYear = today.getFullYear();
-		const lastMonthDate = new SvelteDate(thisYear, thisMonth - 1, 1);
+		const lastMonthDate = new Date(thisYear, thisMonth - 1, 1);
 
 		for (const { month, year, label } of [
 			{ month: thisMonth, year: thisYear, label: p.period_this_month },

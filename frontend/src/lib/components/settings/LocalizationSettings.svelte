@@ -56,7 +56,7 @@
 	const handleTimeFormatChange = async (value: string) => await auth.updateTimeFormat(value);
 </script>
 
-<div class="flex gap-8 max-lg:flex-col md:p-4">
+<div class="flex gap-8 max-lg:flex-col">
 	<SettingsSection label={ts.get.settings.language}>
 		<Select
 			bind:input={languageInput}

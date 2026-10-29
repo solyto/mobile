@@ -10,7 +10,7 @@
 		id,
 		onchange,
 		oninput
-	} = $props<{
+	}: {
 		value: number;
 		min: number;
 		max: number;
@@ -21,7 +21,7 @@
 		id?: string;
 		onchange?: (value: number) => void;
 		oninput?: (value: number) => void;
-	}>();
+	} = $props();
 
 	let percent = $derived(max > min ? ((value - min) / (max - min)) * 100 : 0);
 

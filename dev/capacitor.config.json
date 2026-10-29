@@ -1,0 +1,13 @@
+{
+  "appId": "app.sodevto",
+  "appName": "sodevto",
+  "webDir": "frontend/build",
+  "server": {
+    "androidScheme": "https",
+    "hostname": "my.solyto.app"
+  },
+  "android": {
+    "path": "android",
+    "adjustMarginsForEdgeToEdge": "auto"
+  }
+}

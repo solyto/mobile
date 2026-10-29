@@ -1,36 +1,37 @@
 <script lang="ts">
+	import type { Component, Snippet } from 'svelte';
 	let {
 		label = null,
 		fixedWidth = true,
 		fullWidth = false,
 		href = null,
-		icon = null,
+		icon: Icon = null,
 		hover = true,
 		noShadowOnMobile = false,
 		children
-	} = $props<{
-		label?: string;
+	}: {
+		label?: string | null;
 		fixedWidth?: boolean;
 		fullWidth?: boolean;
 		href?: string | null;
-		icon?: any;
+		icon?: Component<{ class?: string }> | null;
 		hover?: boolean;
 		noShadowOnMobile?: boolean;
-		children?: any;
-	}>();
+		children?: Snippet;
+	} = $props();
 </script>
 
 {#snippet cardBody()}
 	{#if label !== null}
 		<div
 			class="flex flex-row items-center gap-4 pb-2 text-xl leading-loose tracking-wide text-c-heading dark:text-c-primary"
-			class:gap-2={!icon}
-			class:mt-[-10px]={!icon}
+			class:gap-2={!Icon}
+			class:mt-[-10px]={!Icon}
 			class:mb-2={children !== undefined}
 			class:pb-2={children !== undefined}
 		>
-			{#if icon !== null}
-				{@render icon({ class: 'w-6 h-6' })}
+			{#if Icon !== null}
+				<Icon class="w-6 h-6" />
 			{/if}
 			<span>{label}</span>
 		</div>

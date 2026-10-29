@@ -2,7 +2,7 @@
 	import Day from '$lib/components/calendars/views/month/Day.svelte';
 	import type { CalendarWeek } from '$lib/types/calendar';
 
-	let { week } = $props<{ week: CalendarWeek }>();
+	let { week }: { week: CalendarWeek } = $props();
 </script>
 
 <div class="relative flex h-1/6 w-full">

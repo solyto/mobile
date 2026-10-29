@@ -1,5 +1,4 @@
 // $lib/helpers/music/NoteOperations.ts
-import type { Interval } from '$lib/types/music_theory';
 
 // Basic note arrays that can be used across the application
 export const notesSharp: string[] = [

@@ -1,10 +1,9 @@
 <script lang="ts">
-	import { formatDate } from '$lib/helpers/DateHelper.js';
 	import type { MovieRelease } from '$lib/types/library_movie';
 	import MissingCover from '$lib/components/libraries/shared/MissingCover.svelte';
 	import type { MovieLibrary } from '$lib/state/MovieLibrary.svelte';
 
-	let { release, library } = $props<{ release: MovieRelease; library: MovieLibrary }>();
+	let { release, library }: { release: MovieRelease; library: MovieLibrary } = $props();
 </script>
 
 <div

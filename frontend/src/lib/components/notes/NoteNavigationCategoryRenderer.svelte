@@ -8,11 +8,11 @@
 
 	const notes = getNotes();
 
-	let { category, depth, handleNavigation } = $props<{
+	let { category, depth, handleNavigation }: {
 		category: NoteCategory;
 		depth: number;
 		handleNavigation: () => void;
-	}>();
+	} = $props();
 </script>
 
 <div

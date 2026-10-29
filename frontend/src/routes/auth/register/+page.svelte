@@ -137,7 +137,7 @@
 	</form>
 	<div class="flex items-center gap-2 text-sm text-c-neutral-5 dark:text-c-neutral-4">
 		<span>{ts.get.auth.have_account}</span>
-		<a href={urls.login} class="font-medium text-c-btn transition-colors hover:underline">
+		<a href={resolve(urls.login)} class="font-medium text-c-btn transition-colors hover:underline">
 			{ts.get.auth.sign_in}
 		</a>
 	</div>

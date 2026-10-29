@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { fade, fly } from 'svelte/transition';
+	import { fly } from 'svelte/transition';
 	import { getTodos } from '$lib/state/Todos.svelte';
 	import { getTags } from '$lib/state/Tags.svelte';
 	import { Translation } from '$lib/state/Translation.svelte';
@@ -13,10 +13,10 @@
 	const todos = getTodos();
 	const tags = getTags();
 
-	let { sections, ts } = $props<{
+	let { sections, ts }: {
 		sections: TodoNavigationSection[];
 		ts: Translation;
-	}>();
+	} = $props();
 
 	type SectionKey = 'workspaces' | 'categories' | 'priority' | 'status' | 'effort' | 'due' | 'tags';
 
@@ -26,7 +26,7 @@
 
 	let current = $derived(stack.length > 0 ? stack[stack.length - 1] : null);
 
-	const sectionHeaders: { key: SectionKey; label: string; icon?: any }[] = [
+	const sectionHeaders: { key: SectionKey; label: string }[] = [
 		{ key: 'workspaces', label: ts.get.todos.workspaces },
 		{ key: 'categories', label: ts.get.todos.categories },
 		{ key: 'priority', label: ts.get.todos.priority },
@@ -58,13 +58,18 @@
 		}
 		close();
 	}
+
+	function currentSection(): TodoNavigationSection | undefined {
+		const header = sectionHeaders.find((h) => h.key === current)?.label;
+		return sections.find((s: TodoNavigationSection) => s.header === header);
+	}
 </script>
 
 <HamburgerButton onclick={() => (open = true)} top={6} />
 
 {#if open}
 	<div
-		class="secondary-nav-mobile-container fixed inset-0 z-50 flex flex-col bg-c-bg lg:hidden dark:bg-s-dark-1"
+		class="secondary-nav-mobile-container fixed inset-x-0 top-0 bottom-16 z-50 flex flex-col bg-c-bg lg:hidden dark:bg-s-dark-1"
 		transition:fly={{ x: -400, duration: 200 }}
 	>
 		<div class="relative flex-1 overflow-hidden">
@@ -183,7 +188,6 @@
 							{/if}
 						</div>
 					{:else}
-						{@const section = sections.find((s: TodoNavigationSection) => s.header === sectionHeaders.find((h) => h.key === current)?.label)}
 						<div class="flex shrink-0 items-center justify-between border-b border-c-neutral-2 p-4 dark:border-s-dark-3">
 							<div class="flex items-center gap-3">
 								<button
@@ -192,21 +196,19 @@
 								>
 									<IconArrowLeft size={22} />
 								</button>
-								<span class="text-xl font-semibold">{section?.header ?? current}</span>
+								<span class="text-xl font-semibold">{currentSection()?.header ?? current}</span>
 							</div>
 							<CloseButton onClick={close} inModal={false} />
 						</div>
 						<div class="flex-1 overflow-y-auto">
-							{#if section}
-								{#each section.items as item (item.filter ? item.filter.type + '-' + item.filter.value : item.label)}
-									<button
-										class="flex w-full cursor-pointer items-center border-b border-c-neutral-1 px-4 py-4 text-left hover:bg-c-neutral-1 dark:border-s-dark-3 dark:hover:bg-s-dark-3 {item.filter && todos.isFilterActive(item.filter) ? 'bg-c-neutral-1 dark:bg-s-dark-3' : ''}"
-										onclick={() => { if (item.filter) applyFilter(item.filter); }}
-									>
-										<span class="text-base">{item.label}</span>
-									</button>
-								{/each}
-							{/if}
+							{#each currentSection()?.items ?? [] as item (item.filter ? item.filter.type + '-' + item.filter.value : item.label)}
+								<button
+									class="flex w-full cursor-pointer items-center border-b border-c-neutral-1 px-4 py-4 text-left hover:bg-c-neutral-1 dark:border-s-dark-3 dark:hover:bg-s-dark-3 {item.filter && todos.isFilterActive(item.filter) ? 'bg-c-neutral-1 dark:bg-s-dark-3' : ''}"
+									onclick={() => { if (item.filter) applyFilter(item.filter); }}
+								>
+									<span class="text-base">{item.label}</span>
+								</button>
+							{/each}
 						</div>
 					{/if}
 				</div>

@@ -4,10 +4,10 @@
 
 	const ts = getTranslation();
 
-	let { onClick, loading } = $props<{
+	let { onClick, loading }: {
 		onClick: () => void;
 		loading: boolean;
-	}>();
+	} = $props();
 </script>
 
 <button

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { DevRequest } from '$lib/types/dev_request';
 
-	let { entry } = $props<{ entry: DevRequest }>();
+	let { entry }: { entry: DevRequest } = $props();
 </script>
 
 {#if entry.created_by_user}

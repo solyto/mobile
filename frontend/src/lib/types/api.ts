@@ -5,6 +5,7 @@ export interface ListResponse {
 
 export interface GetResponse {
 	data: object;
+	meta?: Record<string, unknown>;
 }
 
 export interface CreateResponse {

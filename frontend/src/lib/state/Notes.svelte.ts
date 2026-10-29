@@ -7,15 +7,17 @@ import type {
 	UpdateNoteRequest
 } from '$lib/types/note';
 import { setContext, getContext, tick } from 'svelte';
-import { getAuth } from '$lib/state/Auth.svelte';
+import { getAuth, type Auth } from '$lib/state/Auth.svelte';
+import { getTranslation, type Translation } from '$lib/state/Translation.svelte';
+import { getUiNotifications, type UiNotifications } from '$lib/state/UiNotifications.svelte';
 import { page } from '$app/state';
 import { goto } from '$app/navigation';
 import { urls } from '$lib/config/urls';
 import { resolve } from '$app/paths';
 import ApiService from '$lib/services/ApiService';
+import JournalService from '$lib/services/JournalService';
 import LocalStorageService from '$lib/services/LocalStorageService';
 import { apiRoutes } from '$lib/config/apiRoutes';
-import { SvelteDate } from 'svelte/reactivity';
 
 export class NotesSvelte {
 	static readonly LS_COLLAPSED_CATEGORIES_KEY: string = 'notes.collapsedCategories';
@@ -26,6 +28,7 @@ export class NotesSvelte {
 	lastUpdatedNotes = $state<Note[]>([]);
 	favoriteNotes = $state<Note[]>([]);
 	categories = $state<NoteCategory[]>([]);
+	journalCategory = $state<NoteCategory | null>(null);
 	collapsedCategories = $state<number[]>([]);
 	activeNote = $state<Note | null>(null);
 	modalOpen = $state<boolean>(false);
@@ -40,20 +43,36 @@ export class NotesSvelte {
 	dragTarget = $state<NoteCategory | null>(null);
 	input = $state<HTMLInputElement | null>(null);
 	inputValue = $state<string>('');
-	auth = getAuth();
+	auth: Auth;
+	ts: Translation;
+	notifications: UiNotifications;
 	apiService: ApiService;
-	localStorage = new LocalStorageService();
+	localStorage: LocalStorageService;
+	journalService = new JournalService();
 
-	constructor() {
-		this.apiService = new ApiService(this.auth.getToken());
+	constructor(
+		auth: Auth = getAuth(),
+		apiService: ApiService = auth.apiService,
+		localStorage: LocalStorageService = new LocalStorageService(),
+		ts: Translation = getTranslation(),
+		notifications: UiNotifications = getUiNotifications()
+	) {
+		this.auth = auth;
+		this.apiService = apiService;
+		this.localStorage = localStorage;
+		this.ts = ts;
+		this.notifications = notifications;
 		this.loadCollapsedCategories();
 	}
 
 	async load(): Promise<void> {
-		const res = await this.apiService.list(apiRoutes.notes.list);
-		if (res) {
+		const [res, hiddenRes] = await Promise.all([
+			this.apiService.list(apiRoutes.notes.list),
+			this.apiService.list(apiRoutes.notes.listHidden)
+		]);
+		if (res && hiddenRes) {
 			this.loaded = true;
-			this.notes = res.data as Note[];
+			this.notes = [...(res.data as Note[]), ...(hiddenRes.data as Note[])];
 			this.newestNotes = this.getNewestNotes();
 			this.lastUpdatedNotes = this.getLastUpdatedNotes();
 			this.favoriteNotes = this.getFavorites();
@@ -80,8 +99,63 @@ export class NotesSvelte {
 	}
 
 	async loadCategories(): Promise<void> {
-		const res = await this.apiService.list(apiRoutes.notes.listCategories);
-		if (res) this.categories = res.data as NoteCategory[];
+		const [res, hiddenRes] = await Promise.all([
+			this.apiService.list(apiRoutes.notes.listCategories),
+			this.apiService.list(apiRoutes.notes.listHiddenCategories)
+		]);
+		if (res && hiddenRes) {
+			const all = this.journalService.mergeCategories(
+				res.data as NoteCategory[],
+				hiddenRes.data as NoteCategory[]
+			);
+			this.journalCategory = this.journalService.findJournalCategory(all);
+			this.categories = all.filter((c) => !c.is_system);
+			this.newestNotes = this.getNewestNotes();
+			this.lastUpdatedNotes = this.getLastUpdatedNotes();
+			this.favoriteNotes = this.getFavorites();
+		}
+	}
+
+	isJournalNote(note: Note): boolean {
+		return this.journalCategory !== null && note.category_id === this.journalCategory.id;
+	}
+
+	isJournalDraft(note: Note | null): boolean {
+		return note !== null && note.id === '' && this.isJournalNote(note);
+	}
+
+	getJournalEntry(date: Date): Note | null {
+		if (this.journalCategory === null) return null;
+		return this.journalService.findEntry(this.notes, this.journalCategory.id, date);
+	}
+
+	getJournalEntryDates(): string[] {
+		if (this.journalCategory === null) return [];
+		return this.journalService.getEntryDates(this.notes, this.journalCategory.id);
+	}
+
+	async openJournalEntry(date: Date): Promise<Note | null> {
+		if (this.journalCategory === null) return null;
+
+		const existing = this.getJournalEntry(date);
+		if (existing) {
+			this.activeNote = existing;
+			return existing;
+		}
+
+		const draft: Note = {
+			id: '',
+			title: this.journalService.getEntryTitle(date),
+			content: '',
+			category_id: this.journalCategory.id,
+			tags: [],
+			is_favorite: false,
+			created_at: '',
+			updated_at: ''
+		};
+		this.activeNote = draft;
+
+		return draft;
 	}
 
 	toggleCollapseCategory(categoryId: number): void {
@@ -99,7 +173,11 @@ export class NotesSvelte {
 	}
 
 	getNotesForCategory(categoryId: number | null): Note[] {
-		return this.notes.filter((n) => n.category_id === categoryId);
+		return this.notes.filter((n) => n.category_id === categoryId && !this.isJournalNote(n));
+	}
+
+	getVisibleNotes(): Note[] {
+		return this.notes.filter((n) => !this.isJournalNote(n));
 	}
 
 	getCategoryTitle(categoryId: number): string {
@@ -116,25 +194,25 @@ export class NotesSvelte {
 	}
 
 	getLastUpdatedNotes(): Note[] {
-		return [...this.notes]
+		return this.getVisibleNotes()
 			.sort(
 				(a, b) =>
-					new SvelteDate(b.updated_at).getTime() - new SvelteDate(a.updated_at).getTime()
+					new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
 			)
 			.slice(0, 5);
 	}
 
 	getNewestNotes(): Note[] {
-		return [...this.notes]
+		return this.getVisibleNotes()
 			.sort(
 				(a, b) =>
-					new SvelteDate(b.created_at).getTime() - new SvelteDate(a.created_at).getTime()
+					new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
 			)
 			.slice(0, 5);
 	}
 
 	getFavorites(): Note[] {
-		return [...this.notes].filter((n) => n.is_favorite);
+		return this.getVisibleNotes().filter((n) => n.is_favorite);
 	}
 
 	selectNote(noteId: string): void {
@@ -208,8 +286,9 @@ export class NotesSvelte {
 		const res = await this.apiService.create(apiRoutes.notes.create, request);
 
 		if (!res) {
-			this.inputValue = '';
-			this.createParent = null;
+			// Keep the modal and the user's input intact so the note (and the
+			// failure) is not silently swallowed; a 401 is recovered upstream.
+			this.notifications.error(this.ts.get.notes.create_error);
 			this.rightClickMenuOpen = false;
 			return null;
 		}
@@ -223,6 +302,7 @@ export class NotesSvelte {
 		this.inputValue = '';
 		this.createParent = null;
 		this.rightClickMenuOpen = false;
+		this.modalOpen = false;
 
 		await this.load();
 		this.activeNote = this.notes.find((n) => n.id === note.id) ?? note;
@@ -253,7 +333,13 @@ export class NotesSvelte {
 			res = await this.apiService.create(apiRoutes.notes.createCategory, request);
 		}
 
-		if (res) await this.loadCategories();
+		if (!res) {
+			this.notifications.error(this.ts.get.notes.create_folder_error);
+			this.rightClickMenuOpen = false;
+			return null;
+		}
+
+		await this.loadCategories();
 
 		if (this.createParent && !this.collapsedCategories.includes(this.createParent)) {
 			this.toggleCollapseCategory(this.createParent);
@@ -262,15 +348,46 @@ export class NotesSvelte {
 		this.inputValue = '';
 		this.createParent = null;
 		this.rightClickMenuOpen = false;
+		this.modalOpen = false;
 
-		return res && typeof res === 'object' ? (res.data as NoteCategory) : null;
+		return typeof res === 'object' ? (res.data as NoteCategory) : null;
 	}
 
 	async saveContent(): Promise<boolean> {
-		const request: UpdateNoteRequest = { content: this.activeNote!.content };
+		if (this.activeNote === null) return false;
+
+		// A journal draft is persisted only once it has content. Creating takes
+		// two calls because the create contract does not accept content.
+		if (this.isJournalDraft(this.activeNote)) {
+			if (!this.journalService.hasContent(this.activeNote.content)) return true;
+
+			const createRes = await this.apiService.create(apiRoutes.notes.create, {
+				title: this.activeNote.title,
+				category_id: this.activeNote.category_id
+			});
+			if (!createRes) {
+				this.notifications.error(this.ts.get.notes.journal_create_error);
+				return false;
+			}
+
+			const created = createRes.data as Note;
+			const updateRes = await this.apiService.update(apiRoutes.notes.update, created.id, {
+				content: this.activeNote.content
+			});
+			if (!updateRes) {
+				this.notifications.error(this.ts.get.notes.save_error);
+				return false;
+			}
+
+			await this.load();
+			this.activeNote = this.notes.find((n) => n.id === created.id) ?? created;
+			return true;
+		}
+
+		const request: UpdateNoteRequest = { content: this.activeNote.content };
 		const ok = await this.apiService.update(
 			apiRoutes.notes.update,
-			this.activeNote!.id,
+			this.activeNote.id,
 			request
 		);
 		if (ok) await this.load();
@@ -290,11 +407,7 @@ export class NotesSvelte {
 
 	async updateFavoriteStatus(note: Note, isFavorite: boolean): Promise<boolean> {
 		const request: UpdateNoteRequest = { is_favorite: isFavorite };
-		const ok = await this.apiService.update(
-			apiRoutes.notes.update,
-			this.activeNote!.id,
-			request
-		);
+		const ok = await this.apiService.update(apiRoutes.notes.update, note.id, request);
 		if (ok) await this.load();
 		return ok;
 	}

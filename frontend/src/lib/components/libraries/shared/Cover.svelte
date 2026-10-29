@@ -1,22 +1,22 @@
 <script lang="ts">
-	import type { Book } from '$lib/types/library_book';
-	import type { Music } from '$lib/types/library_music';
-	import type { Recipe } from '$lib/types/library_recipe';
-	import type { Movie } from '$lib/types/library_movie';
-	import type { BookLibrary } from '$lib/state/BookLibrary.svelte';
-	import type { MusicLibrary } from '$lib/state/MusicLibrary.svelte';
-	import type { RecipeLibrary } from '$lib/state/RecipeLibrary.svelte';
-	import type { MovieLibrary } from '$lib/state/MovieLibrary.svelte';
+	import type { LibraryConfig, LibraryEntry } from '$lib/types/library';
+	import type { Quote } from '$lib/types/library_quote';
 	import { API_USER_STORAGE_URL } from '$lib/config/apiRoutes';
 	import { getAuth } from '$lib/state/Auth.svelte';
 	import MissingCover from '$lib/components/libraries/shared/MissingCover.svelte';
 
-	let { entry, library } = $props<{
-		entry: Book | Music | Recipe | Movie;
-		library: BookLibrary | MusicLibrary | RecipeLibrary | MovieLibrary;
-	}>();
+	let { entry, library }: {
+		entry: Exclude<LibraryEntry, Quote>;
+		library: { config: LibraryConfig };
+	} = $props();
 
 	const auth = getAuth();
+
+	function coverAlt(): string {
+		if ('artist' in entry) return `${entry.artist} - ${entry.title} cover`;
+		if ('name' in entry) return `${entry.name} cover`;
+		return `${entry.title} cover`;
+	}
 </script>
 
 {#if entry.cover}
@@ -31,7 +31,7 @@
 	>
 		<img
 			src={`${API_USER_STORAGE_URL}/${auth.user?.id}/${library.config.type}/${entry.cover}`}
-			alt={`${entry.artist} - ${entry.title} cover`}
+			alt={coverAlt()}
 			class="max-h-full max-w-full rounded-lg object-contain transition-all duration-300"
 		/>
 	</div>

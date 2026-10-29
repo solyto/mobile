@@ -4,12 +4,12 @@
 	import { Translation } from '$lib/state/Translation.svelte';
 	import type { Todo } from '$lib/types/todo';
 
-	let { dueTodos, handleCheck, ts, mt = false } = $props<{
+	let { dueTodos, handleCheck, ts, mt = false }: {
 		dueTodos: Todo[];
 		handleCheck: (event: Event, todo: Todo) => Promise<void>;
 		ts: Translation;
 		mt: boolean;
-	}>();
+	} = $props();
 </script>
 
 <div class:mt-12={mt}>

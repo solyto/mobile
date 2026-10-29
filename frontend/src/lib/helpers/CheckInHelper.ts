@@ -28,3 +28,11 @@ export function getTotalMeanValue(data: CheckIn[], types: CheckInType[]): number
 	const values = types.map((t) => getMeanValue(data, t)).filter((v) => !isNaN(v));
 	return values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0;
 }
+
+export function getScoreColor(value: number): string {
+	if (value >= 4) return 'bg-c-success';
+	if (value >= 3) return 'bg-c-primary';
+	if (value >= 2) return 'bg-c-warning';
+	if (value >= 1.5) return 'bg-c-action';
+	return 'bg-c-danger';
+}

@@ -9,10 +9,10 @@
 
 	const ts = getTranslation();
 
-	let { entry, library } = $props<{
+	let { entry, library }: {
 		entry: Game;
 		library: GameLibrary;
-	}>();
+	} = $props();
 
 	const platformLabels: Record<string, string> = {
 		pc: ts.get.libraries.games.platform_pc,

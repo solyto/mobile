@@ -1,5 +1,5 @@
 import { getContext, setContext } from 'svelte';
-import { getAuth } from '$lib/state/Auth.svelte';
+import { getAuth, type Auth } from '$lib/state/Auth.svelte';
 import ApiService from '$lib/services/ApiService';
 import { apiRoutes } from '$lib/config/apiRoutes';
 import type { UserNotification } from '$lib/types/user_notification';
@@ -9,13 +9,14 @@ const POLL_INTERVAL_MS = 5 * 60 * 1000;
 export class UserNotifications {
 	notifications = $state<UserNotification[]>([]);
 	loaded = $state<boolean>(false);
-	auth = getAuth();
+	auth: Auth;
 	apiService: ApiService;
 	private pollInterval: ReturnType<typeof setInterval> | null = null;
 	private visibilityHandler: (() => void) | null = null;
 
-	constructor() {
-		this.apiService = new ApiService(this.auth.getToken());
+	constructor(auth: Auth = getAuth(), apiService: ApiService = auth.apiService) {
+		this.auth = auth;
+		this.apiService = apiService;
 	}
 
 	async load(): Promise<void> {

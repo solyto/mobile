@@ -6,10 +6,10 @@
 	import { nl2br } from '$lib/helpers/FormatHelper.js';
 	import DOMPurify from 'dompurify';
 
-	let { entry, library } = $props<{
+	let { entry, library }: {
 		entry: Quote;
 		library: QuoteLibrary;
-	}>();
+	} = $props();
 
 	const loadingIndicator = getLoadingIndicator();
 
@@ -23,6 +23,7 @@
 
 <div class="ml-2 text-left">
 	<div class="">
+		<!-- eslint-disable-next-line svelte/no-at-html-tags -- sanitised with DOMPurify -->
 		{@html DOMPurify.sanitize(entry.summary ? nl2br(entry.summary) : nl2br(entry.quote))}
 	</div>
 	<div class="mt-4 font-bold">{entry.author}</div>

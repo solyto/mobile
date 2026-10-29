@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
 	formatDate,
 	formatDateWithoutYear,
+	formatMonth,
 	formatDateTime,
 	formatTime,
 	formatTimeWithSeconds,
@@ -10,6 +11,7 @@ import {
 	getDateMinusDays,
 	getDatePlusDays,
 	getISOWeek,
+	getISOWeeksInYear,
 	getWeekNumber,
 	isDateAfter,
 	isDateInTheFuture,
@@ -17,7 +19,11 @@ import {
 	isDateToday,
 	isDateTomorrow,
 	isDateYesterday,
-	daysSince
+	daysSince,
+	getHoursOfDay,
+	isOffHour,
+	eachDayBetween,
+	parseDateSlug
 } from '$lib/helpers/DateHelper';
 
 // Aug 15 2025, 14:30 — TZ=UTC so no timezone surprises
@@ -46,6 +52,21 @@ describe('formatDateWithoutYear', () => {
 
 	it('strips year and cleans trailing separator', () => {
 		expect(formatDateWithoutYear(AUG_15, 'dd/mm/YYYY')).toBe('15/08');
+	});
+});
+
+describe('formatMonth', () => {
+	it('returns mm.YYYY by default', () => {
+		expect(formatMonth(AUG_15)).toBe('08.2025');
+	});
+
+	it('drops a leading day', () => {
+		expect(formatMonth(AUG_15, 'dd.mm.YY')).toBe('08.25');
+	});
+
+	it('drops a trailing day', () => {
+		expect(formatMonth(AUG_15, 'YYYY/mm/dd')).toBe('2025/08');
+		expect(formatMonth(AUG_15, 'YYYY-mm-dd')).toBe('2025-08');
 	});
 });
 
@@ -200,5 +221,113 @@ describe('getISOWeek', () => {
 		const result = getISOWeek(new Date(2025, 11, 29));
 		expect(result.week).toBe(1);
 		expect(result.year).toBe(2026);
+	});
+});
+
+describe('getISOWeeksInYear', () => {
+	it('returns 53 for years with an ISO week 53', () => {
+		expect(getISOWeeksInYear(2020)).toBe(53);
+		expect(getISOWeeksInYear(2026)).toBe(53);
+	});
+
+	it('returns 52 for years without an ISO week 53', () => {
+		expect(getISOWeeksInYear(2025)).toBe(52);
+		expect(getISOWeeksInYear(2027)).toBe(52);
+	});
+});
+
+describe('getHoursOfDay', () => {
+	it('returns the 24 hours as zero-padded strings', () => {
+		const hours = getHoursOfDay();
+		expect(hours).toHaveLength(24);
+		expect(hours[0]).toBe('00');
+		expect(hours[9]).toBe('09');
+		expect(hours[23]).toBe('23');
+	});
+
+	it('matches the array the calendar views used to build', () => {
+		const legacy = Array.from({ length: 24 }, (_, i) => i + 1).map((i) =>
+			(i - 1).toString().padStart(2, '0')
+		);
+		expect(getHoursOfDay()).toEqual(legacy);
+	});
+});
+
+describe('isOffHour', () => {
+	it('is true before 06:00', () => {
+		expect(isOffHour('00')).toBe(true);
+		expect(isOffHour('05')).toBe(true);
+	});
+
+	it('is false from 06:00 to 21:00', () => {
+		expect(isOffHour('06')).toBe(false);
+		expect(isOffHour('12')).toBe(false);
+		expect(isOffHour('21')).toBe(false);
+	});
+
+	it('is true from 22:00 on', () => {
+		expect(isOffHour('22')).toBe(true);
+		expect(isOffHour('23')).toBe(true);
+	});
+});
+
+describe('eachDayBetween', () => {
+	const slugs = (dates: Date[]) => dates.map((d) => formatDate(d));
+
+	it('walks the days after start up to and including the day that reaches end', () => {
+		const days = eachDayBetween(new Date(2025, 7, 15), new Date(2025, 7, 18));
+		expect(slugs(days)).toEqual(['16.08.2025', '17.08.2025', '18.08.2025']);
+	});
+
+	it('includes the first day past end when end is not on a day boundary', () => {
+		const days = eachDayBetween(new Date(2025, 7, 15, 10), new Date(2025, 7, 17, 9));
+		expect(slugs(days)).toEqual(['16.08.2025', '17.08.2025']);
+	});
+
+	it('keeps the time of day of start', () => {
+		const days = eachDayBetween(AUG_15, new Date(2025, 7, 16, 14, 30));
+		expect(days).toHaveLength(1);
+		expect(days[0].getHours()).toBe(14);
+		expect(days[0].getMinutes()).toBe(30);
+	});
+
+	it('crosses month and year boundaries', () => {
+		const days = eachDayBetween(new Date(2025, 11, 30), new Date(2026, 0, 2));
+		expect(slugs(days)).toEqual(['31.12.2025', '01.01.2026', '02.01.2026']);
+	});
+
+	it('returns nothing when start is not before end', () => {
+		expect(eachDayBetween(AUG_15, AUG_15)).toEqual([]);
+		expect(eachDayBetween(AUG_15, new Date(2025, 7, 14))).toEqual([]);
+	});
+
+	it('does not mutate start', () => {
+		const start = new Date(2025, 7, 15);
+		eachDayBetween(start, new Date(2025, 7, 18));
+		expect(start.getDate()).toBe(15);
+	});
+});
+
+describe('parseDateSlug', () => {
+	it('parses a dd.mm.YYYY slug into a local date', () => {
+		const date = parseDateSlug('15.08.2025');
+		expect(date?.getFullYear()).toBe(2025);
+		expect(date?.getMonth()).toBe(7);
+		expect(date?.getDate()).toBe(15);
+		expect(date?.getHours()).toBe(0);
+	});
+
+	it('round-trips with formatDate', () => {
+		const date = parseDateSlug(formatDate(AUG_15));
+		expect(date).not.toBeNull();
+		expect(formatDate(date as Date)).toBe('15.08.2025');
+	});
+
+	it('returns null for invalid input', () => {
+		expect(parseDateSlug('')).toBeNull();
+		expect(parseDateSlug('15.08')).toBeNull();
+		expect(parseDateSlug('2025-08-15')).toBeNull();
+		expect(parseDateSlug('aa.bb.cccc')).toBeNull();
+		expect(parseDateSlug('00.08.2025')).toBeNull();
 	});
 });

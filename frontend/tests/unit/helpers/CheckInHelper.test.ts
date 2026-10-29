@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getMeanValue, getTotalMeanValue } from '$lib/helpers/CheckInHelper';
+import { getMeanValue, getScoreColor, getTotalMeanValue } from '$lib/helpers/CheckInHelper';
 import type { CheckIn } from '$lib/types/check_in';
 
 function checkIn(overrides: Partial<CheckIn> = {}): CheckIn {
@@ -63,5 +63,22 @@ describe('getTotalMeanValue', () => {
 	it('ignores trackers with no data', () => {
 		const data = [checkIn({ mood: 2, sleep: null })];
 		expect(getTotalMeanValue(data, ['mood', 'sleep'])).toBe(2);
+	});
+});
+
+describe('getScoreColor', () => {
+	it.each([
+		[5, 'bg-c-success'],
+		[4, 'bg-c-success'],
+		[3.99, 'bg-c-primary'],
+		[3, 'bg-c-primary'],
+		[2.5, 'bg-c-warning'],
+		[2, 'bg-c-warning'],
+		[1.75, 'bg-c-action'],
+		[1.5, 'bg-c-action'],
+		[1.49, 'bg-c-danger'],
+		[1, 'bg-c-danger']
+	])('colors %s as %s', (value, expected) => {
+		expect(getScoreColor(value)).toBe(expected);
 	});
 });

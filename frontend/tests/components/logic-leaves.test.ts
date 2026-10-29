@@ -1,7 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
-import AverageNumber from '$lib/components/check-in/stats/AverageNumber.svelte';
 import Rating from '$lib/components/libraries/shared/Rating.svelte';
 import StatisticWidget from '$lib/components/admin/StatisticWidget.svelte';
 import DailyCheckInIcon from '$lib/components/check-in/daily/DailyCheckInIcon.svelte';
@@ -13,42 +12,6 @@ import NoTodos from '$lib/components/todos/NoTodos.svelte';
 import { renderWithContext } from './helpers/context';
 import { tag } from '../unit/helpers/factories';
 import type { BookGenre } from '$lib/types/library_book';
-
-describe('AverageNumber', () => {
-	it('renders the value with two decimals', () => {
-		render(AverageNumber, { props: { type: 'mood', value: 3.14159 } });
-		expect(screen.getByText('3.14')).toBeInTheDocument();
-	});
-
-	it('renders a dash for NaN values', () => {
-		render(AverageNumber, { props: { type: 'mood', value: NaN } });
-		expect(screen.getByText('-')).toBeInTheDocument();
-	});
-
-	it.each([
-		[4, 'bg-c-success'],
-		[3.5, 'bg-c-btn'],
-		[2.5, 'bg-c-warning'],
-		[1.75, 'bg-c-action'],
-		[1.5, 'bg-c-danger']
-	])('colors value %s as %s', (value, expected) => {
-		const { container } = render(AverageNumber, { props: { type: 'mood', value } });
-		const dot = container.querySelector('.size-4');
-		expect(dot?.classList.contains(expected)).toBe(true);
-	});
-
-	it('applies the food_amount thresholds for that tracker', () => {
-		const success = render(AverageNumber, { props: { type: 'food_amount', value: 4 } });
-		expect(success.container.querySelector('.size-4')?.classList.contains('bg-c-success')).toBe(
-			true
-		);
-
-		const danger = render(AverageNumber, { props: { type: 'food_amount', value: 4.6 } });
-		expect(danger.container.querySelector('.size-4')?.classList.contains('bg-c-danger')).toBe(
-			true
-		);
-	});
-});
 
 describe('Rating', () => {
 	it('renders five stars', () => {
@@ -86,8 +49,8 @@ describe('StatisticWidget', () => {
 		const { container } = render(StatisticWidget, {
 			props: { label: 'X', number: 1, color: 'blue' }
 		});
-		expect(container.querySelector('.bg-blue-50')).toBeInTheDocument();
-		expect(container.querySelector('.text-blue-600')).toBeInTheDocument();
+		expect(container.querySelector('[class~="bg-c-btn/10"]')).toBeInTheDocument();
+		expect(container.querySelector('.text-c-btn')).toBeInTheDocument();
 	});
 });
 

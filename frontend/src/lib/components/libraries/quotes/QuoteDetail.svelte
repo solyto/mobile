@@ -18,10 +18,12 @@
 		<div class="text-lg font-bold">{entry.author}</div>
 	{/if}
 	<div class:mt-4={entry.author !== null}>
+		<!-- eslint-disable-next-line svelte/no-at-html-tags -- sanitised with DOMPurify -->
 		{@html DOMPurify.sanitize(nl2br(entry.quote))}
 	</div>
 	<div class="mt-4" class:hidden={entry.summary === null}>
 		<Divider />
+		<!-- eslint-disable-next-line svelte/no-at-html-tags -- sanitised with DOMPurify -->
 		{@html DOMPurify.sanitize(entry.summary ? nl2br(entry.summary) : '')}
 	</div>
 	<div class:hidden={entry.tags.length === 0} class="mt-4 text-sm text-c-neutral-6">

@@ -56,12 +56,10 @@
 			.sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime())
 	);
 	let dueTodos = $derived(filterService.filterByDueDate('today-overdue', todos.filteredTodos));
-	let scoredTodos = $state<Todo[]>([]);
-
-	$effect(() => {
+	let scoredTodos = $derived.by(() => {
 		const cloned = todos.filteredTodos.map((t) => ({ ...t }));
 		const scored = sortingService.sortByScore(relevanceService.getScoredTodos(cloned));
-		scoredTodos = scored
+		return scored
 			.filter(
 				(t) =>
 					t.relevance !== null &&

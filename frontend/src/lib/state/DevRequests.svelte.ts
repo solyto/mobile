@@ -6,18 +6,19 @@ import type {
 	DevRequestComment
 } from '$lib/types/dev_request';
 import { getContext, setContext } from 'svelte';
-import { getAuth } from '$lib/state/Auth.svelte';
+import { getAuth, type Auth } from '$lib/state/Auth.svelte';
 import ApiService from '$lib/services/ApiService';
 import { apiRoutes } from '$lib/config/apiRoutes';
 
 export class DevRequests {
 	loaded = $state<boolean>(false);
 	entries = $state<DevRequest[]>([]);
-	auth = getAuth();
+	auth: Auth;
 	apiService: ApiService;
 
-	constructor() {
-		this.apiService = new ApiService(this.auth.getToken());
+	constructor(auth: Auth = getAuth(), apiService: ApiService = auth.apiService) {
+		this.auth = auth;
+		this.apiService = apiService;
 	}
 
 	async load(): Promise<void> {

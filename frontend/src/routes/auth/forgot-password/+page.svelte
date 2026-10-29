@@ -115,7 +115,7 @@
 				<TextButton title={ts.get.auth.forgot_password_send} class="w-full" />
 			</div>
 			<div class="flex justify-center pt-1">
-				<a href={urls.login} class="cursor-pointer text-xs text-gray-400 hover:text-gray-600 dark:text-white/50 dark:hover:text-white/80">
+				<a href={resolve(urls.login)} class="cursor-pointer text-xs text-gray-400 hover:text-gray-600 dark:text-white/50 dark:hover:text-white/80">
 					{ts.get.auth.login}
 				</a>
 			</div>

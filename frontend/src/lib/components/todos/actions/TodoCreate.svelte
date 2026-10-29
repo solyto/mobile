@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { tick } from 'svelte';
 	import { fade } from 'svelte/transition';
-	import { getKeyManager } from '$lib/KeyManager.svelte';
+	import { getKeyManager } from '$lib/state/KeyManager.svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import { getTodos } from '$lib/state/Todos.svelte';
 	import { getTags } from '$lib/state/Tags.svelte';
@@ -9,9 +9,10 @@
 	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
+	import SettingsButton from '$lib/components/ui/buttons/SettingsButton.svelte';
 	import InlineAutocomplete from '$lib/components/forms/InlineAutocomplete.svelte';
 	import { getViewPoint } from '$lib/state/Viewpoint.svelte';
-	import BottomSheetConfirmationModal from '$lib/components/ui/BottomSheetConfirmationModal.svelte';
+	import BottomSheetModal from '$lib/components/ui/BottomSheetModal.svelte';
 
 	const keyManager = getKeyManager();
 	const todos = getTodos();
@@ -25,7 +26,7 @@
 	let userInput = $state<string>('');
 	let input = $state<HTMLInputElement | null>(null);
 	let autocompleteOpen = $state<boolean>(false);
-	let keyHandlers = $state<{ [key: string]: string | null }>({ Enter: null, Escape: null });
+	let keyHandlers: { [key: string]: string | null } = { Enter: null, Escape: null };
 
 	function getDueDateSuggestions(): { label: string; value: string }[] {
 		const today = new Date();
@@ -110,7 +111,7 @@
 </script>
 
 <div
-	class="relative mb-4 flex h-14 w-full flex-row justify-end p-2 pl-20 sm:pl-30 lg:pl-2 2xl:pl-14 pr-0"
+	class="relative mb-4 flex h-14 w-full flex-row justify-end p-2 pr-0"
 >
 	{#if formOpen}
 		{#if viewPoint.isDesktop}
@@ -128,31 +129,27 @@
 			>
 				<div class="flex items-center gap-1">
 					<div class="bg-c-neutral-1 px-2 py-1 dark:bg-s-dark-2">/</div>
-					<span>Category</span>
+					<span>{ts.get.todos.category}</span>
 				</div>
 				<div class="flex items-center gap-1">
 					<div class="bg-c-neutral-1 px-2 py-1 dark:bg-s-dark-2">#</div>
-					<span>Tag</span>
+					<span>{ts.get.todos.tag}</span>
 				</div>
 				<div class="flex items-center gap-1">
 					<div class="bg-c-neutral-1 px-2 py-1 dark:bg-s-dark-2">due:</div>
-					<span>Due Date</span>
+					<span>{ts.get.todos.due_date}</span>
 				</div>
 				<div class="flex items-center gap-1">
 					<div class="bg-c-neutral-1 px-2 py-1 dark:bg-s-dark-2">repeat:</div>
-					<span>Recurrence</span>
+					<span>{ts.get.todos.recurrence}</span>
 				</div>
 				<div class="flex items-center gap-1">
 					<div class="bg-c-neutral-1 px-2 py-1 dark:bg-s-dark-2">link:</div>
-					<span>Link</span>
+					<span>{ts.get.todos.link}</span>
 				</div>
 			</div>
 		{:else}
-			<BottomSheetConfirmationModal
-				title={ts.get.todos.new_todo}
-				onConfirm={onSubmit}
-				onCancel={onblur}
-			>
+			<BottomSheetModal title={ts.get.todos.new_todo} onClose={onblur}>
 				<InlineAutocomplete
 					bind:input
 					bind:value={userInput}
@@ -160,9 +157,13 @@
 					triggers={autocompleteTriggers}
 					bind:open={autocompleteOpen}
 				/>
-			</BottomSheetConfirmationModal>
+				<TextButton title={ts.get.layout.modal_confirm} type="action" onclick={onSubmit} class="mt-8 w-full" />
+			</BottomSheetModal>
 		{/if}
 	{:else}
-		<TextButton title={ts.get.todos.new_todo} onclick={toggleForm} />
+		<div class="flex items-center gap-2">
+			<SettingsButton title={ts.get.nav.settings} onclick={() => todos.openSettingsModal()} />
+			<TextButton title={ts.get.todos.new_todo} onclick={toggleForm} />
+		</div>
 	{/if}
 </div>

@@ -10,9 +10,9 @@
 
 	const shortcuts = getShortcuts();
 
-	let { ts } = $props<{
+	let { ts }: {
 		ts: Translation;
-	}>();
+	} = $props();
 
 	let manageModalOpen = $state(false);
 
@@ -25,7 +25,7 @@
 	}
 </script>
 
-{#if shortcuts.loaded && shortcuts.shortcuts.length > 0}
+{#if shortcuts.loaded}
 	<div>
 		<div class="mb-2 flex items-center gap-2">
 			<IconGlobe size={15} class="text-c-heading dark:text-c-primary" />
@@ -60,6 +60,10 @@
 						class="ml-auto shrink-0 text-c-neutral-4 opacity-0 transition-opacity group-hover:opacity-100"
 					/>
 				</a>
+			{:else}
+				<span class="text-xs text-c-neutral-4 dark:text-c-neutral-5">
+					{ts.get.widgets.no_shortcuts_hint}
+				</span>
 			{/each}
 		</div>
 	</div>

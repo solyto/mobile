@@ -1,10 +1,13 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { startRegistration } from '@simplewebauthn/browser';
+	import { startRegistration, type RegistrationResponseJSON } from '@simplewebauthn/browser';
 	import { getAuth } from '$lib/state/Auth.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
 	import SettingsSection from '$lib/components/settings/SettingsSection.svelte';
+	import PasswordSettings from '$lib/components/settings/PasswordSettings.svelte';
+	import AccountDeletionSettings from '$lib/components/settings/AccountDeletionSettings.svelte';
+	import TextInput from '$lib/components/forms/TextInput.svelte';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
 	import IconButton from '$lib/components/ui/buttons/IconButton.svelte';
 	import ConfirmationModal from '$lib/components/ui/ConfirmationModal.svelte';
@@ -24,7 +27,7 @@
 	let addingPasskey = $state(false);
 	let newPasskeyName = $state('');
 	let showNameInput = $state(false);
-	let pendingResponse = $state<any>(null);
+	let pendingResponse = $state<RegistrationResponseJSON | null>(null);
 	let editingId = $state<string | null>(null);
 	let editingName = $state('');
 	let confirmDeletePasskey = $state<Passkey | null>(null);
@@ -51,7 +54,7 @@
 			pendingResponse = response;
 			newPasskeyName = '';
 			showNameInput = true;
-		} catch (e) {
+		} catch {
 			notifications.error(ts.get.settings.passkey_add_error);
 		} finally {
 			addingPasskey = false;
@@ -66,7 +69,7 @@
 			await auth.passkeyRegister(pendingResponse, newPasskeyName.trim() || 'Passkey');
 			notifications.success(ts.get.settings.passkey_added);
 			await loadPasskeys();
-		} catch (e) {
+		} catch {
 			notifications.error(ts.get.settings.passkey_add_error);
 		} finally {
 			addingPasskey = false;
@@ -81,6 +84,11 @@
 		newPasskeyName = '';
 	}
 
+	function onNameKeyDown(event: KeyboardEvent) {
+		if (event.key === 'Enter') confirmAddPasskey();
+		if (event.key === 'Escape') cancelAddPasskey();
+	}
+
 	async function deletePasskey() {
 		if (!confirmDeletePasskey) return;
 		const id = confirmDeletePasskey.id;
@@ -89,7 +97,7 @@
 			await auth.deletePasskey(id);
 			notifications.success(ts.get.settings.passkey_deleted);
 			passkeys = passkeys.filter((p) => p.id !== id);
-		} catch (e) {
+		} catch {
 			notifications.error(ts.get.settings.passkey_delete_error);
 		}
 	}
@@ -101,9 +109,14 @@
 			await auth.renamePasskey(id, name);
 			passkeys = passkeys.map((p) => (p.id === id ? { ...p, name } : p));
 			editingId = null;
-		} catch (e) {
+		} catch {
 			notifications.error(ts.get.settings.passkey_rename_error);
 		}
+	}
+
+	function onEditKeyDown(event: KeyboardEvent, id: string) {
+		if (event.key === 'Enter') saveEdit(id);
+		if (event.key === 'Escape') editingId = null;
 	}
 
 	function formatDate(dateStr: string | null): string {
@@ -122,14 +135,10 @@
 	}
 </script>
 
-<div class="flex flex-col gap-6 md:p-4">
+<div class="flex flex-col gap-8">
+<div class="flex gap-8 max-lg:flex-col">
+<PasswordSettings />
 <SettingsSection label={ts.get.settings.passkeys}>
-	{#snippet headerAction()}
-		{#if !showNameInput}
-			<TextButton title={ts.get.settings.passkey_add} onclick={startAddPasskey} disabled={addingPasskey} />
-		{/if}
-	{/snippet}
-
 	{#if loading}
 		<p class="text-sm text-c-neutral-5 dark:text-c-neutral-4">Loading...</p>
 	{:else if passkeys.length === 0 && !showNameInput}
@@ -142,14 +151,9 @@
 					<IconKey size={16} class="shrink-0 text-c-neutral-5 dark:text-c-neutral-4" />
 
 					{#if editingId === passkey.id}
-						<input
-							class="min-w-0 flex-1 rounded border border-c-neutral-3 bg-transparent px-2 py-0.5 text-sm dark:border-white/20 dark:text-white"
-							bind:value={editingName}
-							onkeydown={(e) => {
-								if (e.key === 'Enter') saveEdit(passkey.id);
-								if (e.key === 'Escape') editingId = null;
-							}}
-						/>
+						<div class="min-w-0 flex-1">
+							<TextInput bind:value={editingName} onkeydown={(e: KeyboardEvent) => onEditKeyDown(e, passkey.id)} />
+						</div>
 						<div class="flex shrink-0 items-center gap-1">
 							<IconButton type="btn" onclick={() => saveEdit(passkey.id)}>
 								<IconCheck size={14} />
@@ -181,15 +185,13 @@
 
 	{#if showNameInput}
 		<div class="mt-4 flex items-center gap-2">
-			<input
-				class="flex-1 rounded border border-c-neutral-3 bg-transparent px-3 py-1.5 text-sm dark:border-white/20 dark:text-white"
-				placeholder={ts.get.settings.passkey_name_placeholder}
-				bind:value={newPasskeyName}
-				onkeydown={(e) => {
-					if (e.key === 'Enter') confirmAddPasskey();
-					if (e.key === 'Escape') cancelAddPasskey();
-				}}
-			/>
+			<div class="flex-1">
+				<TextInput
+					bind:value={newPasskeyName}
+					placeholder={ts.get.settings.passkey_name_placeholder}
+					onkeydown={onNameKeyDown}
+				/>
+			</div>
 			<IconButton type="btn" onclick={confirmAddPasskey}>
 				<IconCheck size={14} />
 			</IconButton>
@@ -197,8 +199,14 @@
 				<IconX size={14} />
 			</IconButton>
 		</div>
+	{:else}
+		<div class="mt-6">
+			<TextButton title={ts.get.settings.passkey_add} onclick={startAddPasskey} disabled={addingPasskey} />
+		</div>
 	{/if}
 </SettingsSection>
+</div>
+<AccountDeletionSettings />
 </div>
 
 {#if confirmDeletePasskey}

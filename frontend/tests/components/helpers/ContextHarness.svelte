@@ -2,7 +2,7 @@
 	import type { AnyComponent } from './context';
 	import { setAuth } from '$lib/state/Auth.svelte';
 	import { setTranslation } from '$lib/state/Translation.svelte';
-	import { setKeyManager } from '$lib/KeyManager.svelte';
+	import { setKeyManager } from '$lib/state/KeyManager.svelte';
 	import { setTodos } from '$lib/state/Todos.svelte';
 	import { setLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import { setUiNotifications } from '$lib/state/UiNotifications.svelte';
@@ -21,7 +21,7 @@
 	const cookieConsent = setCookieConsent();
 
 	let {
-		component,
+		component: ComponentToRender,
 		props = {},
 		stores = {},
 		onReady,
@@ -45,22 +45,25 @@
 		viewPoint,
 		cookieConsent
 	};
-	for (const [name, overrides] of Object.entries(stores)) {
-		const instance = instances[name];
-		if (instance) Object.assign(instance, overrides);
+	// Runs once at mount: the harness is set up per test and never re-rendered with new props
+	function setUp(): void {
+		for (const [name, overrides] of Object.entries(stores)) {
+			const instance = instances[name];
+			if (instance) Object.assign(instance, overrides);
+		}
+
+		// Let the test pass the created instances (e.g. ts/auth) into the props
+		if (prepare) {
+			const prepared = prepare(instances);
+			if (prepared) props = prepared;
+		}
 	}
 
-	// Let the test pass the created instances (e.g. ts/auth) into the props
-	if (prepare) {
-		const prepared = prepare(instances);
-		if (prepared) props = prepared;
-	}
+	setUp();
 
 	$effect(() => {
 		onReady?.(instances);
 	});
-
-	const ComponentToRender = component;
 </script>
 
 <ComponentToRender {...props} />

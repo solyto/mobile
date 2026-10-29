@@ -10,7 +10,7 @@
 	import { getNavigation } from '$lib/state/Navigation.svelte';
 	import { getWelcomeTour } from '$lib/state/WelcomeTour.svelte';
 	import { setTimeTracking } from '$lib/state/TimeTracking.svelte';
-	import { getKeyManager } from '$lib/KeyManager.svelte';
+	import { getKeyManager } from '$lib/state/KeyManager.svelte';
 	import { getQuickAdd } from '$lib/state/QuickAdd.svelte';
 	import OnboardingModal from '$lib/components/dashboard/OnboardingModal.svelte';
 	import YourDay from '$lib/components/dashboard/YourDay.svelte';
@@ -33,7 +33,7 @@
 	const quickAdd = getQuickAdd();
 
 	let showOnboardingModal = $state<boolean>(false);
-	let keyHandlers = $state<{ [key: string]: string | null }>({ Enter: null });
+	let keyHandlers: { [key: string]: string | null } = { Enter: null };
 
 	onMount(async () => {
 		loadingIndicator.start();

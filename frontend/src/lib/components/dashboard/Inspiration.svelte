@@ -3,55 +3,38 @@
 	import type { Quote } from '$lib/types/library_quote';
 	import type { MusicRelease } from '$lib/types/library_music';
 	import type { BookRelease } from '$lib/types/library_book';
-	import type { MovieRelease } from '$lib/types/library_movie';
 	import type { Note } from '$lib/types/note';
 	import { onMount } from 'svelte';
-	import { blur } from 'svelte/transition';
 	import { getAuth } from '$lib/state/Auth.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
-	import ApiService from '$lib/services/ApiService';
 	import { apiRoutes } from '$lib/config/apiRoutes';
 	import MusicReleasesWidget from '$lib/components/dashboard/widgets/MusicReleasesWidget.svelte';
 	import BookReleasesWidget from '$lib/components/dashboard/widgets/BookReleasesWidget.svelte';
-	import MovieReleasesWidget from '$lib/components/dashboard/widgets/MovieReleasesWidget.svelte';
 	import NewestNotesWidget from '$lib/components/dashboard/widgets/NewestNotesWidget.svelte';
 	import NewestLinksWidget from '$lib/components/dashboard/widgets/NewestLinksWidget.svelte';
 	import QuoteWidget from '$lib/components/dashboard/widgets/QuoteWidget.svelte';
+	import EmptyState from '$lib/components/ui/EmptyState.svelte';
 
 	const auth = getAuth();
 	const ts = getTranslation();
-	const apiService = new ApiService(auth.getToken());
+	const apiService = auth.apiService;
 
 	let quote = $state<Quote | null>(null);
 	let musicReleases = $state<MusicRelease[]>([]);
 	let bookReleases = $state<BookRelease[]>([]);
-	let movieReleases = $state<MovieRelease[]>([]);
 	let newestNotes = $state<Note[]>([]);
 	let newestLinks = $state<Link[]>([]);
-	let loadedCount = $state(0);
-
-	let isEmpty = $derived(
-		loadedCount >= 6 &&
-			musicReleases.length === 0 &&
-			bookReleases.length === 0 &&
-			movieReleases.length === 0 &&
-			newestNotes.length === 0 &&
-			newestLinks.length === 0 &&
-			!quote
-	);
+	let notesLoaded = $state<boolean>(false);
 
 	onMount(() => {
 		apiService.get(apiRoutes.libraries.quotes.getRandom, null).then((res) => {
 			if (res) quote = res.data as Quote;
-			loadedCount++;
 		});
 		apiService.list(apiRoutes.libraries.music.releases).then((res) => {
 			if (res) musicReleases = (res.data as MusicRelease[]).slice(0, 5);
-			loadedCount++;
 		});
 		apiService.list(apiRoutes.libraries.books.releases).then((res) => {
 			if (res) bookReleases = (res.data as BookRelease[]).slice(0, 5);
-			loadedCount++;
 		});
 		apiService.list(apiRoutes.notes.list).then((res) => {
 			if (res) {
@@ -63,15 +46,10 @@
 					})
 					.slice(0, 5);
 			}
-			loadedCount++;
-		});
-		apiService.list(apiRoutes.libraries.movies.releases).then((res) => {
-			if (res) movieReleases = (res.data as MovieRelease[]).slice(0, 5);
-			loadedCount++;
+			notesLoaded = true;
 		});
 		apiService.list(apiRoutes.libraries.links.newest).then((res) => {
 			if (res) newestLinks = res.data as Link[];
-			loadedCount++;
 		});
 	});
 </script>
@@ -97,23 +75,7 @@
 		<QuoteWidget {quote} />
 	{/if}
 
-	{#if isEmpty}
-		<div class="flex flex-col gap-3" in:blur>
-			<p class="text-sm text-c-neutral-4 dark:text-c-neutral-5">{ts.get.home.inspiration_empty_hint}</p>
-			<div class="flex flex-wrap gap-3">
-				<a
-					href="/notes"
-					class="text-xs text-c-primary transition-colors hover:text-c-primary/70"
-				>
-					{ts.get.nav.notes} →
-				</a>
-				<a
-					href="/libraries"
-					class="text-xs text-c-primary transition-colors hover:text-c-primary/70"
-				>
-					{ts.get.nav.libraries} →
-				</a>
-			</div>
-		</div>
+	{#if notesLoaded && musicReleases.length === 0 && bookReleases.length === 0 && newestNotes.length === 0 && newestLinks.length === 0 && !quote}
+		<EmptyState title={ts.get.home.more_to_come} description={ts.get.home.more_to_come_desc} smallerTitle={true} />
 	{/if}
 </div>

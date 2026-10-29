@@ -2,7 +2,7 @@
 	import AddButton from '$lib/components/ui/buttons/AddButton.svelte';
 	import TextInput from '$lib/components/forms/TextInput.svelte';
 	import { onDestroy, tick } from 'svelte';
-	import { getKeyManager } from '$lib/KeyManager.svelte';
+	import { getKeyManager } from '$lib/state/KeyManager.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import { getLinkLibrary } from '$lib/state/LinkLibrary.svelte';
 	import ContentModal from '$lib/components/ui/ContentModal.svelte';
@@ -21,7 +21,7 @@
 	let title = $state<string>('');
 	let hex = $state<string>('#1dbda5');
 
-	let keyHandlers = $state<{ [key: string]: string | null }>({ Enter: null, Escape: null });
+	let keyHandlers: { [key: string]: string | null } = { Enter: null, Escape: null };
 
 	async function toggleAddCategory() {
 		addCategory = !addCategory;

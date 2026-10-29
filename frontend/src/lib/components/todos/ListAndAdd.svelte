@@ -1,6 +1,6 @@
 <script lang="ts">
 	import IconPlus from '@lucide/svelte/icons/plus';
-	import { getKeyManager } from '$lib/KeyManager.svelte';
+	import { getKeyManager } from '$lib/state/KeyManager.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import { getTodos } from '$lib/state/Todos.svelte';
 	import { getTags } from '$lib/state/Tags.svelte';
@@ -8,12 +8,12 @@
 	import SaveButton from '$lib/components/ui/buttons/SaveButton.svelte';
 	import TextInput from '$lib/components/forms/TextInput.svelte';
 
-	let { title, type, onStart, onFinish } = $props<{
+	let { title, type, onStart, onFinish }: {
 		title: string;
 		type: 'tag' | 'category';
 		onStart: () => void;
 		onFinish: () => void;
-	}>();
+	} = $props();
 
 	const keyManager = getKeyManager();
 	const loadingIndicator = getLoadingIndicator();
@@ -23,7 +23,7 @@
 	let visible = $state<boolean>(false);
 	let value = $state<string>('');
 	let input = $state<HTMLInputElement | null>(null);
-	let keyHandlers = $state<{ [key: string]: string | null }>({ Enter: null, Escape: null });
+	let keyHandlers: { [key: string]: string | null } = { Enter: null, Escape: null };
 
 	async function toggle(): Promise<void> {
 		visible = !visible;
@@ -55,11 +55,11 @@
 	}
 
 	async function onsubmit(): Promise<void> {
-		loadingIndicator.start();
-
 		if (value.trim() === '') {
 			return;
 		}
+
+		loadingIndicator.start();
 
 		if (type === 'tag') {
 			await tags.create(value);

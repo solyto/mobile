@@ -3,13 +3,13 @@
 
 	let {
 		sections,
-		selected,
+		active,
 		onselect
-	} = $props<{
+	}: {
 		sections: { id: number; title: string }[];
-		selected: number;
+		active: number;
 		onselect: (id: number) => void;
-	}>();
+	} = $props();
 </script>
 
 <div
@@ -21,10 +21,11 @@
 		{#each sections as section (section.id)}
 			<button
 				class="cursor-pointer rounded-lg px-2 py-1 text-left text-sm 2xl:text-base"
-				class:bg-c-neutral-1={selected === section.id}
-				class:dark:bg-s-dark-3={selected === section.id}
-				class:hover:bg-c-neutral={selected !== section.id}
-				class:dark:hover:bg-s-dark-3={selected !== section.id}
+				class:bg-c-neutral-1={active === section.id}
+				class:dark:bg-s-dark-3={active === section.id}
+				class:hover:bg-c-neutral={active !== section.id}
+				class:dark:hover:bg-s-dark-3={active !== section.id}
+				aria-current={active === section.id ? 'true' : undefined}
 				onclick={() => onselect(section.id)}
 			>
 				{section.title}

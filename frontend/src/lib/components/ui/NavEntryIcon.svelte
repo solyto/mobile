@@ -14,7 +14,7 @@
 	import IconContactRound from '@lucide/svelte/icons/contact-round';
 	import IconBell from '@lucide/svelte/icons/bell';
 
-	let { type } = $props<{ type: string }>();
+	let { type }: { type: string } = $props();
 </script>
 
 {#if type === 'home'}

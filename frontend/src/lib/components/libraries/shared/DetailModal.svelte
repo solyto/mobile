@@ -1,41 +1,29 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	import ContentModal from '$lib/components/ui/ContentModal.svelte';
 	import Rating from '$lib/components/libraries/shared/Rating.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
-	import type { Book } from '$lib/types/library_book';
-	import type { Music } from '$lib/types/library_music';
-	import type { Movie } from '$lib/types/library_movie';
-	import type { Recipe } from '$lib/types/library_recipe';
+	import type { LibraryConfig, LibraryEntry } from '$lib/types/library';
 	import type { Quote } from '$lib/types/library_quote';
-	import type { Game } from '$lib/types/library_game';
-	import type { Plant } from '$lib/types/library_plant';
-	import type { BookLibrary } from '$lib/state/BookLibrary.svelte';
-	import type { MusicLibrary } from '$lib/state/MusicLibrary.svelte';
-	import type { RecipeLibrary } from '$lib/state/RecipeLibrary.svelte';
-	import type { MovieLibrary } from '$lib/state/MovieLibrary.svelte';
-	import type { GameLibrary } from '$lib/state/GameLibrary.svelte';
-	import type { PlantLibrary } from '$lib/state/PlantLibrary.svelte';
-	import type { QuoteLibrary } from '$lib/state/QuoteLibrary.svelte';
 	import ExternalLink from '$lib/components/libraries/shared/ExternalLink.svelte';
 	import Cover from '$lib/components/libraries/shared/Cover.svelte';
 
 	const loadingIndicator = getLoadingIndicator();
-	let { entry, library, children } = $props<{
-		entry: Book | Music | Recipe | Movie | Quote | Game | Plant;
-		library:
-			| BookLibrary
-			| MusicLibrary
-			| RecipeLibrary
-			| MovieLibrary
-			| GameLibrary
-			| PlantLibrary
-			| QuoteLibrary;
-		children: any;
-	}>();
+	let { entry, library, children }: {
+		entry: LibraryEntry;
+		library: {
+			config: LibraryConfig;
+			closeDetailModal(): void;
+			openCreateModal(entry?: LibraryEntry): void;
+			delete(entry: LibraryEntry): Promise<boolean>;
+			updateRating?(entry: LibraryEntry, rating: number): Promise<boolean>;
+		};
+		children: Snippet;
+	} = $props();
 
 	async function changeRating(rating: number): Promise<void> {
 		loadingIndicator.start();
-		await library.updateRating(entry!, rating);
+		await library.updateRating?.(entry!, rating);
 		loadingIndicator.stop();
 	}
 </script>
@@ -59,15 +47,15 @@
 			{#if library.config.hasCovers || library.config.hasRatings || library.config.hasExternalLinks}
 				<div class="flex flex-col items-center gap-2">
 					{#if library.config.hasCovers}
-						<Cover {entry} {library} />
+						<Cover entry={entry as Exclude<LibraryEntry, Quote>} {library} />
 					{/if}
 					{#if library.config.hasRatings}
 						<div class="flex w-full justify-center">
-							<Rating startRating={entry?.rating ?? 0} onchange={changeRating} />
+							<Rating startRating={'rating' in entry ? (entry.rating ?? 0) : 0} onchange={changeRating} />
 						</div>
 					{/if}
 					{#if library.config.hasExternalLinks}
-						<ExternalLink {entry} />
+						<ExternalLink entry={entry as Exclude<LibraryEntry, Quote>} />
 					{/if}
 				</div>
 			{/if}

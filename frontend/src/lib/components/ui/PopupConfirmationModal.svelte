@@ -1,10 +1,9 @@
 <script lang="ts">
 	import { scale, fade, blur } from 'svelte/transition';
-	import { getKeyManager } from '$lib/KeyManager.svelte';
+	import { getKeyManager } from '$lib/state/KeyManager.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
-	import { onDestroy, onMount } from 'svelte';
+	import { onDestroy, onMount, type Snippet } from 'svelte';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
-	import Divider from '$lib/components/ui/Divider.svelte';
 
 	const ts = getTranslation(),
 		keyManager = getKeyManager();
@@ -17,18 +16,18 @@
 		onConfirm,
 		onCancel,
 		children
-	} = $props<{
-		title?: string;
-		description?: string;
+	}: {
+		title?: string | null;
+		description?: string | null;
 		type?: 'default' | 'confirm' | 'confirm-delete' | 'info';
 		width?: string;
-		onConfirm: () => void | Promise<any>;
-		onCancel: () => void | Promise<any>;
-		children?: any;
-	}>();
+		onConfirm: () => void;
+		onCancel: () => void;
+		children?: Snippet;
+	} = $props();
 
 	let visible = $state<boolean>(false);
-	let keyHandlers = $state<{ [key: string]: string | null }>({ Enter: null, Escape: null });
+	let keyHandlers: { [key: string]: string | null } = { Enter: null, Escape: null };
 
 	onMount(() => {
 		setTimeout(() => {

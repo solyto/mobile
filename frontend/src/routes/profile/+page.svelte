@@ -51,7 +51,7 @@
 				<IconShieldUser class="size-6" />
 			</a>
 		{/if}
-		<a href={resolve(urls.logout)} class="rounded-full bg-c-action p-2 text-white hover:text-black">
+		<a href={resolve(urls.logout)} class="rounded-full bg-c-action p-2 text-c-action-icon hover:text-black">
 			<IconLogout class="size-6" />
 		</a>
 	</div>

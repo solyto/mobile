@@ -6,9 +6,9 @@
 	const ts = getTranslation();
 	const auth = getAuth();
 
-	let { onClose } = $props<{
+	let { onClose }: {
 		onClose: () => void;
-	}>();
+	} = $props();
 </script>
 
 <ContentModal title={ts.get.dav.synchronize} rounded="2xl" {onClose}>

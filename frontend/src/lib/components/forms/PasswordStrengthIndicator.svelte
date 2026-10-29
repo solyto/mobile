@@ -3,7 +3,7 @@
 	import Check from '@lucide/svelte/icons/check';
 	import X from '@lucide/svelte/icons/x';
 
-	let { password } = $props<{ password: string }>();
+	let { password }: { password: string } = $props();
 
 	const ts = getTranslation();
 

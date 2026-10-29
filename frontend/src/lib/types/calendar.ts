@@ -46,6 +46,27 @@ export interface CalendarEvent {
 	etag: string;
 }
 
+export interface CalendarEventResponse {
+	id: number;
+	uri: string;
+	title: string;
+	description: string;
+	location: string;
+	start_date: string;
+	end_date: string;
+	is_all_day: boolean;
+	is_recurring: boolean;
+	recurrence_rule: string | null;
+	recurrence_end: string | null;
+	original_start_date: string | null;
+	created_at: string | null;
+	updated_at: string | null;
+	calendar_id: number;
+	calendar_name: string;
+	calendar_color: string;
+	etag: string;
+}
+
 export interface CalendarDay {
 	number: number;
 	weekday: number;
@@ -104,6 +125,7 @@ export interface UpdateEventRequest {
 	is_recurring: boolean;
 	recurrence_rule: string | null;
 	recurrence_end: string | null;
+	occurrence_start_date?: string;
 	etag: string;
 }
 
@@ -122,6 +144,11 @@ export interface EventForm {
 	is_recurring: boolean;
 	recurrence_rule: string | null;
 	recurrence_end: Date | null;
+}
+
+export interface NewEventPreset {
+	hour?: number;
+	allDay?: boolean;
 }
 
 export interface ImportForm {

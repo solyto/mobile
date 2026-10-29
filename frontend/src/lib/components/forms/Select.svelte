@@ -4,12 +4,12 @@
 		value = $bindable(),
 		options,
 		onchange
-	} = $props<{
+	}: {
 		input?: HTMLSelectElement | null;
 		value: string;
 		options: { label: string; value: string }[];
 		onchange?: (value: string) => void;
-	}>();
+	} = $props();
 </script>
 
 <select

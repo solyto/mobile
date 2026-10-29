@@ -37,5 +37,5 @@
 </div>
 
 {#if settingsOpen}
-	<CheckInSettings onClose={() => {settingsOpen = false}} />
+	<CheckInSettings onClose={() => {settingsOpen = false;}} />
 {/if}

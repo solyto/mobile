@@ -1,10 +1,10 @@
 <script lang="ts">
 	import IconStar from '@lucide/svelte/icons/star';
 
-	let { onClick, selected } = $props<{
+	let { onClick, selected }: {
 		onClick: (e: MouseEvent) => void | Promise<void>;
 		selected?: boolean;
-	}>();
+	} = $props();
 </script>
 
 <div

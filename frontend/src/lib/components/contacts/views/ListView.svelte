@@ -3,8 +3,11 @@
 	import { onDestroy } from 'svelte';
 	import ContactHeader from '$lib/components/contacts/ContactHeader.svelte';
 	import { getContacts } from '$lib/state/Contacts.svelte';
+	import { getTranslation } from '$lib/state/Translation.svelte';
+	import EmptyState from '$lib/components/ui/EmptyState.svelte';
 
 	const contacts = getContacts();
+	const ts = getTranslation();
 
 	let sectionRefs: Record<string, HTMLDivElement> = {};
 
@@ -13,6 +16,10 @@
 			behavior: 'smooth',
 			block: 'start'
 		});
+	}
+
+	function hasVisibleContacts(): boolean {
+		return Object.values(contacts.contactsAZ).some((entries) => entries.length > 0);
 	}
 
 	onDestroy(() => {
@@ -25,6 +32,11 @@
 		class="flex h-full w-full flex-col gap-4 overflow-y-auto bg-c-bg p-4 drop-shadow-xl md:p-8"
 	>
 		<ContactHeader />
+		{#if contacts.contacts.length === 0}
+			<EmptyState title={ts.get.contacts.no_contacts} description={ts.get.contacts.no_contacts_desc} py={4} />
+		{:else if !hasVisibleContacts()}
+			<EmptyState title={ts.get.contacts.no_visible_contacts} description={ts.get.contacts.no_visible_contacts_desc} py={4} />
+		{/if}
 		{#each Object.entries(contacts.contactsAZ) as [letter, entries] (letter)}
 			{#if entries.length > 0}
 				<div class="w-full py-4 text-2xl font-bold" bind:this={sectionRefs[letter]}>

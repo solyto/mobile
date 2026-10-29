@@ -4,7 +4,7 @@
 	import AddressBookEdit from '$lib/components/contacts/AddressBookEdit.svelte';
 	import AddressBookCreate from '$lib/components/contacts/AddressBookCreate.svelte';
 
-	let { onClose } = $props<{ onClose: () => void }>();
+	let { onClose }: { onClose: () => void } = $props();
 
 	const contacts = getContacts();
 </script>

@@ -2,14 +2,12 @@
 	import { fly } from 'svelte/transition';
 	import { onMount } from 'svelte';
 
-	const w = 56;
-	const h = 71;
 	const x = 7;
 	const y = 9;
 
 	let tiles = $state<number[]>([]);
 
-	let { path = null } = $props<{ path?: string | null }>();
+	let { path = null }: { path?: string | null } = $props();
 
 	onMount(() => {
 		for (let i = 0; i < x * y; i++) {
@@ -24,16 +22,33 @@
 		const j = index % x;
 		return { i, j };
 	}
+
+	function tileBackgroundImage(): string {
+		return `url('${path || './'}logo_cut.png')`;
+	}
+
+	function tileBackgroundPosition(tile: number): string {
+		const { i, j } = getTilePosition(tile);
+		return `-${j * 8}px -${i * 8}px`;
+	}
+
+	function tileFly(tile: number) {
+		const { i, j } = getTilePosition(tile);
+		return { x: j < i ? -200 : 200, y: j > i ? -200 : 200, duration: 300 };
+	}
 </script>
 
 <div class="flex flex-wrap gap-0" style="width: {x * 8}px;">
 	{#each tiles as tile (tile)}
-		{@const pos = getTilePosition(tile)}
 		<div
-			style="width: 8px; height: 8px; background-image: url('{path
-				? path
-				: './'}logo_cut_small.png'); background-position: -{pos.j * 8}px -{pos.i * 8}px;"
-			in:fly={{ x: pos.j < pos.i ? -200 : 200, y: pos.j > pos.i ? -200 : 200, duration: 300 }}
+			style="
+				width: 8px;
+				height: 8px;
+				background-image: {tileBackgroundImage()};
+				background-position: {tileBackgroundPosition(tile)};
+				background-size: 56px 71px;
+			"
+			in:fly={tileFly(tile)}
 		></div>
 	{/each}
 </div>

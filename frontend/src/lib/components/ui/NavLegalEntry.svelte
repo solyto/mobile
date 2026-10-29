@@ -6,7 +6,7 @@
 
 	const ts = getTranslation();
 
-	let { mobile = false } = $props<{ mobile?: boolean }>();
+	let { mobile = false }: { mobile?: boolean } = $props();
 
 	let legalOpen = $state<boolean>(false);
 	let legalClosedByOutside = false;

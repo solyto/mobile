@@ -9,6 +9,7 @@ const settings = () => auth.user.settings as SettingsWithNavigation;
 
 beforeEach(() => {
 	resetStoreMocks();
+	delete settings().navigation;
 });
 
 afterEach(() => {
@@ -84,6 +85,36 @@ describe('Navigation store', () => {
 		});
 	});
 
+	describe('mobile bar split', () => {
+		it('fills the bar with five enabled items when a bar feature is disabled', () => {
+			const s = new Navigation();
+			s.features.calendar = false;
+
+			expect(s.mobileBarItems().map((item) => item.slug)).toEqual([
+				'home',
+				'todos',
+				'check-in',
+				'libraries',
+				'notes'
+			]);
+			expect(s.mobileOverflowItems()[0].slug).toBe('contacts');
+			expect(s.mobileOverflowItems().map((item) => item.slug)).not.toContain('calendar');
+		});
+
+		it('promotes based on enabled items only', () => {
+			const s = new Navigation();
+			s.features.calendar = false;
+			s.usage = { todos: 5, checkIn: 3, libraries: 2, notes: 4 };
+
+			s.promoteMobileItem('notes');
+			expect(storage.setJson).not.toHaveBeenCalled();
+
+			s.promoteMobileItem('contacts');
+			expect(s.mobileBarItems().map((item) => item.slug)).toContain('contacts');
+			expect(s.mobileBarItems().map((item) => item.slug)).not.toContain('libraries');
+		});
+	});
+
 	describe('mobile order persistence', () => {
 		it('loadMobileOrder restores a saved order', async () => {
 			storage.getJson.mockReturnValue(['home', 'notes', 'todos']);
@@ -101,7 +132,7 @@ describe('Navigation store', () => {
 
 		it('saveMobileOrder persists the current order', () => {
 			const s = new Navigation();
-			s.mobileOrder = ['home', 'notes'];
+			s.autoMobileOrder = ['home', 'notes'];
 			s.saveMobileOrder();
 			expect(storage.setJson).toHaveBeenCalledWith(Navigation.LS_MOBILE_ORDER_KEY, [
 				'home',
@@ -127,6 +158,20 @@ describe('Navigation store', () => {
 			expect(s.features.notes).toBe(true);
 		});
 
+		it('applies saved custom orders', async () => {
+			settings().navigation = JSON.stringify({
+				visible: { notes: false },
+				desktop: ['home', 'notes', 'todos'],
+				mobile: null
+			});
+			const s = new Navigation();
+			await s.loadActiveFeatures();
+			expect(s.features.notes).toBe(false);
+			expect(s.desktopOrder.slice(0, 3)).toEqual(['home', 'notes', 'todos']);
+			expect(s.isOrderCustomised('desktop')).toBe(true);
+			expect(s.isOrderCustomised('mobile')).toBe(false);
+		});
+
 		it('persists and returns early when the saved settings parse to null', async () => {
 			settings().navigation = 'null';
 			auth.updateNavigation.mockResolvedValue(undefined);
@@ -140,8 +185,54 @@ describe('Navigation store', () => {
 		});
 	});
 
+	describe('custom orders', () => {
+		it('falls back to the default desktop order and the auto mobile order', () => {
+			const s = new Navigation();
+			s.autoMobileOrder = ['home', 'notes', 'todos'];
+			expect(s.desktopOrder[1]).toBe('calendar');
+			expect(s.mobileOrder).toEqual(['home', 'notes', 'todos']);
+		});
+
+		it('saveOrder stores the order for one layout and persists it', async () => {
+			auth.updateNavigation.mockResolvedValue(undefined);
+			auth.loadAdditionalData.mockResolvedValue(undefined);
+
+			const s = new Navigation();
+			await s.saveOrder('mobile', ['home', 'notes', 'todos']);
+
+			expect(s.mobileOrder).toEqual(['home', 'notes', 'todos']);
+			expect(s.desktopOrder[1]).toBe('calendar');
+			expect(JSON.parse(settings().navigation!).mobile).toEqual(['home', 'notes', 'todos']);
+		});
+
+		it('resetOrder returns the layout to its default', async () => {
+			auth.updateNavigation.mockResolvedValue(undefined);
+			auth.loadAdditionalData.mockResolvedValue(undefined);
+
+			const s = new Navigation();
+			await s.saveOrder('desktop', ['home', 'notes']);
+			await s.resetOrder('desktop');
+
+			expect(s.isOrderCustomised('desktop')).toBe(false);
+			expect(s.desktopOrder[1]).toBe('calendar');
+		});
+
+		it('a custom mobile order turns off auto-promotion', async () => {
+			auth.updateNavigation.mockResolvedValue(undefined);
+			auth.loadAdditionalData.mockResolvedValue(undefined);
+
+			const s = new Navigation();
+			await s.saveOrder('mobile', ['home', 'todos', 'calendar', 'check-in', 'libraries', 'notes']);
+			storage.setJson.mockClear();
+			s.promoteMobileItem('notes');
+
+			expect(s.mobileOrder[5]).toBe('notes');
+			expect(storage.setJson).not.toHaveBeenCalled();
+		});
+	});
+
 	describe('save', () => {
-		it('writes the serialised features back through the auth store', async () => {
+		it('writes visibility and orders back through the auth store', async () => {
 			auth.updateNavigation.mockResolvedValue(undefined);
 			auth.loadAdditionalData.mockResolvedValue(undefined);
 
@@ -149,8 +240,9 @@ describe('Navigation store', () => {
 			s.features.calendar = false;
 			await s.save();
 
-			expect(settings().navigation).toBe(JSON.stringify(s.features));
-			expect(auth.updateNavigation).toHaveBeenCalledWith(JSON.stringify(s.features));
+			const expected = JSON.stringify({ visible: s.features, desktop: null, mobile: null });
+			expect(settings().navigation).toBe(expected);
+			expect(auth.updateNavigation).toHaveBeenCalledWith(expected);
 			expect(auth.loadAdditionalData).toHaveBeenCalled();
 		});
 	});

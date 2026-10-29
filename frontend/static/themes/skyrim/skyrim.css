@@ -19,20 +19,19 @@
 	--radius-4xl: 0px;
 	--radius-full: 0px;
 
-	.rounded-full {
-		border-radius: 0;
-	}
-
 	/* Shadows — subtle amber glow */
-	--shadow-xs: none;
-	--shadow-sm: none;
-	--shadow-md: none;
-	--shadow-lg: none;
+	--shadow-xs: 0 0 #0000;
+	--shadow-sm: 0 0 #0000;
+	--shadow-md: 0 0 #0000;
+	--shadow-lg: 0 0 #0000;
 	--drop-shadow-sm: none;
 	--drop-shadow-md: none;
 
 	/* Semantic color tokens */
 	--color-c-primary: #a09880;
+	--color-c-primary-text: #0e0e12;
+	--color-c-primary-text-hover: #0e0e12;
+	--color-c-flag-text: #0e0e12;
 	--color-c-heading: #d4cdb8;
 	--color-c-heading-base: #e8e4dc;
 	--color-c-btn: #2a2830;
@@ -73,6 +72,7 @@
 	--color-c-neutral-7: #b8b0c0;
 	--color-c-neutral-8: #ccc4d0;
 	--color-c-neutral-9: #e0d8e8;
+	--color-c-avatar-text: #e0d8e8;
 
 	/* Override light-blue utility colors used for borders and subtle backgrounds */
 	--color-d-lightblue: transparent;
@@ -95,6 +95,10 @@ html.dark {
 body {
 	background-image: url('./wallpaper.jpg');
 	background-size: cover;
+	/* The page can end a fraction of a pixel above the viewport bottom; don't let the */
+	/* wallpaper's light top edge repeat into that strip. #10100c is its bottom edge.  */
+	background-repeat: no-repeat;
+	background-color: #10100c;
 }
 
 .page-container {
@@ -125,6 +129,14 @@ body {
 	background: none !important;
 }
 
+/* Icon of the current page shown on the mobile overflow button: solid, without */
+/* a border and without the default light glow.                                 */
+.nav-overflow-active {
+	--tw-shadow: 0 0 #0000;
+	background-color: #0e0e12;
+	color: var(--color-c-nav-active-text);
+}
+
 /* Secondary navigation overlays (mobile hamburger/funnel menus) — opaque so   */
 /* their entries stay readable over the wallpaper and the content behind them. */
 /* Desktop sidebars (lg: and up, sm: and up for contacts) keep the transparent */
@@ -141,6 +153,15 @@ body {
 		background-color: rgba(14, 14, 18, 0.9);
 	}
 }
+
+/* rounded-full and rounded compile to fixed values, so the radius tokens alone leave them round */
+*, *::before, *::after { border-radius: 0 !important; }
+
+/* Tailwind compiles shadow values into the utilities, so the --shadow-* tokens are applied here */
+.shadow-xs, .hover\:shadow-xs:hover { --tw-shadow: var(--shadow-xs); }
+.shadow-sm, .hover\:shadow-sm:hover { --tw-shadow: var(--shadow-sm); }
+.shadow-md, .hover\:shadow-md:hover { --tw-shadow: var(--shadow-md); }
+.shadow-lg, .hover\:shadow-lg:hover { --tw-shadow: var(--shadow-lg); }
 
 .logo {
 	filter: grayscale(0.7) sepia(0.5) brightness(0.85);

@@ -13,7 +13,7 @@ import type {
 	LibraryConfig
 } from '$lib/types/library';
 import { getContext, setContext } from 'svelte';
-import { getAuth } from '$lib/state/Auth.svelte';
+import { getAuth, type Auth } from '$lib/state/Auth.svelte';
 import ApiService from '$lib/services/ApiService';
 import { apiRoutes } from '$lib/config/apiRoutes';
 import LibraryFilterService from '$lib/services/LibraryFilterService';
@@ -39,6 +39,7 @@ export class BookLibrary {
 	loaded = $state<boolean>(false);
 	entries = $state<Book[]>([]);
 	filteredEntries = $state<Book[]>([]);
+	shelfIndex = $state<number>(0);
 	genres = $state<BookGenre[]>([]);
 	createModalVisible = $state<boolean>(false);
 	detailModalVisible = $state<boolean>(false);
@@ -54,13 +55,19 @@ export class BookLibrary {
 	releases = $state<BookRelease[]>([]);
 	releasesLoaded = $state<boolean>(false);
 	view = $state<'list' | 'cards' | 'shelf' | 'spine'>('cards');
-	auth = getAuth();
+	auth: Auth;
 	filterService = new LibraryFilterService();
 	apiService: ApiService;
-	localStorage = new LocalStorageService();
+	localStorage: LocalStorageService;
 
-	constructor() {
-		this.apiService = new ApiService(this.auth.getToken());
+	constructor(
+		auth: Auth = getAuth(),
+		apiService: ApiService = auth.apiService,
+		localStorage: LocalStorageService = new LocalStorageService()
+	) {
+		this.auth = auth;
+		this.apiService = apiService;
+		this.localStorage = localStorage;
 		const saved = this.localStorage.get(BookLibrary.LS_VIEW_KEY);
 		this.view = (saved as 'list' | 'cards' | 'shelf' | 'spine' | null) ?? 'cards';
 	}
@@ -69,7 +76,7 @@ export class BookLibrary {
 		const res = await this.apiService.list(apiRoutes.libraries.books.list);
 		if (res) {
 			this.entries = res.data as Book[];
-			this.filteredEntries = this.entries;
+			this.setFilteredEntries(this.entries);
 			await this.loadGenres();
 			this.loaded = true;
 		}
@@ -92,31 +99,27 @@ export class BookLibrary {
 	search(): void {
 		this.genreFilter = null;
 		this.ratingFilter = null;
-		this.filteredEntries = this.filterService.search(this.entries, this.searchTerm, [
-			'title',
-			'author',
-			'series'
-		]);
+		this.setFilteredEntries(
+			this.filterService.search(this.entries, this.searchTerm, ['title', 'author', 'series'])
+		);
 	}
 
 	filterByGenreAndRating(): void {
-		this.filteredEntries = this.filterService.byGenreAndRating(
-			this.entries,
-			this.genreFilter,
-			this.ratingFilter
+		this.setFilteredEntries(
+			this.filterService.byGenreAndRating(this.entries, this.genreFilter, this.ratingFilter)
 		);
 	}
 
 	filterByWishlist(): void {
 		this.lentFilter = false;
 		this.wishlistFilter = true;
-		this.filteredEntries = this.filterService.byWishlist(this.entries);
+		this.setFilteredEntries(this.filterService.byWishlist(this.entries));
 	}
 
 	filterByLent(): void {
 		this.wishlistFilter = false;
 		this.lentFilter = true;
-		this.filteredEntries = this.filterService.byLent(this.entries);
+		this.setFilteredEntries(this.filterService.byLent(this.entries));
 	}
 
 	clearFilters(): void {
@@ -124,7 +127,12 @@ export class BookLibrary {
 		this.ratingFilter = null;
 		this.wishlistFilter = false;
 		this.lentFilter = false;
-		this.filteredEntries = this.entries;
+		this.setFilteredEntries(this.entries);
+	}
+
+	private setFilteredEntries(entries: Book[]): void {
+		this.filteredEntries = entries;
+		this.shelfIndex = 0;
 	}
 
 	async recommend(type: LibraryRecommendationType): Promise<LibraryRecommendation | null> {

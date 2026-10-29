@@ -57,7 +57,7 @@
 					</div>
 					<div class="mt-3 flex justify-center">
 						<a
-							href={urls.login}
+							href={resolve(urls.login)}
 							class="text-xs text-c-neutral-5 transition-colors hover:text-c-btn dark:text-c-neutral-4 dark:hover:text-c-btn"
 						>
 							{ts.get.auth.sign_in}

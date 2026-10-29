@@ -3,14 +3,13 @@
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { onMount } from 'svelte';
 	import { getAuth } from '$lib/state/Auth.svelte';
-	import ApiService from '$lib/services/ApiService';
 	import { apiRoutes } from '$lib/config/apiRoutes';
 	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
 
 	const ts = getTranslation();
 	const auth = getAuth();
 	const notifications = getUiNotifications();
-	const apiService = new ApiService(auth.getToken());
+	const apiService = auth.apiService;
 
 	let checked = $state<boolean>(false);
 	let isLoading = $state<boolean>(false);
@@ -25,7 +24,6 @@
 
 	async function checkPushSubscription() {
 		try {
-			// Only check subscription if we have permission
 			if (Notification.permission !== 'granted') {
 				checked = false;
 				return;
@@ -57,7 +55,6 @@
 		} catch (error) {
 			console.error('Push notification error:', error);
 			notifications.error(ts.get.settings.push_notification_error);
-			// checked stays at its original value
 		} finally {
 			isLoading = false;
 		}
@@ -82,10 +79,8 @@
 			applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
 		});
 
-		// Convert subscription to JSON format that matches Laravel expectations
 		const subscriptionData = sub.toJSON();
 
-		// Send subscription to backend
 		const res = await apiService.create(
 			apiRoutes.notifications.push.subscribe,
 			subscriptionData
@@ -103,17 +98,15 @@
 		if (sub) {
 			await sub.unsubscribe();
 
-			// Send endpoint to backend for deletion
 			await apiService.create(apiRoutes.notifications.push.unsubscribe, {
 				endpoint: sub.endpoint
 			});
 		}
 	}
 
-	// Helper function to convert VAPID key
 	function urlBase64ToUint8Array(base64String: string) {
 		const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-		const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+		const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
 
 		const rawData = window.atob(base64);
 		const outputArray = new Uint8Array(rawData.length);

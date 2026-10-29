@@ -11,6 +11,7 @@
 		SelectImportCalendarsRequest
 	} from '$lib/types/calendar';
 	import { getCalendars } from '$lib/state/Calendars.svelte';
+	import { getCalendarImport } from '$lib/state/CalendarImport.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import IconLoaderCircle from '@lucide/svelte/icons/loader-circle';
 	import Checkbox from '$lib/components/forms/Checkbox.svelte';
@@ -19,6 +20,7 @@
 	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
 
 	const calendars = getCalendars();
+	const calendarImport = getCalendarImport();
 	const loadingIndicator = getLoadingIndicator();
 	const notifications = getUiNotifications();
 	const ts = getTranslation();
@@ -40,7 +42,7 @@
 		loading = true;
 
 		const request = form as ImportRequest;
-		const res = await calendars.startImport(request);
+		const res = await calendarImport.startImport(request);
 
 		loadingIndicator.stop();
 
@@ -68,7 +70,7 @@
 		loading = true;
 
 		const request: SelectImportCalendarsRequest = { calendars: selectedCalendars };
-		const res = await calendars.selectImportCalendars(request);
+		const res = await calendarImport.selectImportCalendars(request);
 
 		loadingIndicator.stop();
 
@@ -77,7 +79,7 @@
 
 	async function loadState(firstCall: boolean = false): Promise<void> {
 		setTimeout(async () => {
-			const state = await calendars.getImportState();
+			const state = await calendarImport.getImportState();
 
 			if (!state && !firstCall) {
 				return;
@@ -104,12 +106,12 @@
 		importState = null;
 		error = false;
 		loading = false;
-		calendars.importModal = false;
+		calendarImport.importModal = false;
 		selectedCalendars = [];
 	}
 </script>
 
-{#if calendars.importModal}
+{#if calendarImport.importModal}
 	<ContentModal title={ts.get.calendar.import_calendars} rounded="2xl" {onClose}>
 		{#if loading}
 			<div

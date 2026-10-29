@@ -6,12 +6,18 @@
 	--font-sans: 'Share Tech Mono', monospace;
 
 	--color-c-primary: #00ff41;
+	--color-c-primary-text: #0d0d0d;
+	--color-c-primary-text-hover: #0d0d0d;
+	--color-c-flag-text: #0d0d0d;
 	--color-c-heading: #00cc33;
 	--color-c-heading-base: #00ff41;
 	--color-c-btn: #003300;
 	--color-c-btn-hover: #005500;
 	--color-c-action: #00aaff;
 	--color-c-action-hover: #33ccff;
+	--color-c-action-text: #0d0d0d;
+	--color-c-action-icon: #0d0d0d;
+	--color-c-action-icon-hover: #0d0d0d;
 	--color-c-danger: #ff0000;
 	--color-c-danger-hover: #cc0000;
 	--color-c-success: #00ff41;
@@ -65,4 +71,11 @@ html.dark {
 	--color-c-nav-active-text: #00ff41;
 	--color-c-neutral: #0f2a0f;
 }
+
+.notification-toast {
+	background-color: var(--color-c-neutral);
+	-webkit-backdrop-filter: none;
+	backdrop-filter: none;
+}
+
 .logo { filter: grayscale(1) sepia(1) hue-rotate(90deg) saturate(8) brightness(0.8); }

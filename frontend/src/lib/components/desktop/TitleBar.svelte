@@ -1,24 +1,20 @@
 <script lang="ts">
-	import { getTranslation } from "$lib/state/Translation.svelte";
-	import IconRotateCw from '@lucide/svelte/icons/rotate-cw';
-
 	const isElectron = typeof window !== 'undefined' && 'electronAPI' in window;
-    const ts = getTranslation();
 
 	function minimize() {
-		(window as any).electronAPI?.minimize();
+		window.electronAPI?.minimize();
 	}
 
 	function maximize() {
-		(window as any).electronAPI?.maximize();
+		window.electronAPI?.maximize();
 	}
 
 	function close() {
-		(window as any).electronAPI?.close();
+		window.electronAPI?.close();
 	}
 
     function reload() {
-        (window as any).location.reload(true);
+        window.location.reload();
     }
 </script>
 

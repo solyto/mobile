@@ -4,13 +4,13 @@
 	import { onMount } from 'svelte';
 	import type { TodoCategory } from '$lib/types/todo';
 
-	let { x, y, categories, onclick, close } = $props<{
+	let { x, y, categories, onclick, close }: {
 		x: number;
 		y: number;
 		categories: TodoCategory[];
 		onclick: (id: number) => void;
 		close: () => void;
-	}>();
+	} = $props();
 
 	let visible = $state<boolean>(false);
 

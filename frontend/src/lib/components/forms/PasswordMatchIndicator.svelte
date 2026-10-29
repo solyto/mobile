@@ -3,10 +3,10 @@
 	import Check from '@lucide/svelte/icons/check';
 	import X from '@lucide/svelte/icons/x';
 
-	let { password, passwordConfirmation } = $props<{
+	let { password, passwordConfirmation }: {
 		password: string;
 		passwordConfirmation: string;
-	}>();
+	} = $props();
 
 	const ts = getTranslation();
 

@@ -48,6 +48,9 @@
 	--color-c-neutral-9: var(--color-gray-900);
 
 	--color-c-primary: var(--color-s-teal);
+	--color-c-primary-text: var(--color-c-btn-text);
+	--color-c-primary-text-hover: var(--color-white);
+	--color-c-flag-text: var(--color-white);
 	--color-c-heading: var(--color-s-darkpurple);
 	--color-c-heading-base: #1f2937;
 	--color-c-btn: var(--color-s-lightblue);
@@ -55,6 +58,10 @@
 	--color-c-btn-text: #f9fafb;
 	--color-c-action: var(--color-s-orange);
 	--color-c-action-hover: var(--color-s-yellow);
+	--color-c-action-text: var(--color-c-heading);
+	--color-c-action-icon: var(--color-white);
+	--color-c-action-icon-hover: var(--color-c-heading);
+	--color-c-avatar-text: var(--color-black);
 	--color-c-danger: var(--color-s-red);
 	--color-c-danger-hover: var(--color-s-purple);
 	--color-c-success: var(--color-s-green);

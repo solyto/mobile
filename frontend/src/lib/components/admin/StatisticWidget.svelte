@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { Component } from 'svelte';
 	import { scale } from 'svelte/transition';
 	import { humanReadableNumber } from '$lib/helpers/NumberHelper.js';
 
@@ -6,15 +7,15 @@
 		label,
 		number,
 		loadDelay,
-		icon,
+		icon: Icon,
 		color = 'teal'
-	} = $props<{
+	}: {
 		label: string;
 		number: number;
 		loadDelay?: number;
-		icon?: any;
+		icon?: Component<{ class?: string }>;
 		color?: 'teal' | 'blue' | 'green' | 'purple' | 'orange' | 'red' | 'yellow';
-	}>();
+	} = $props();
 
 	const colorClasses: Record<string, { bg: string; text: string; border: string }> = {
 		teal: { bg: 'bg-c-primary/10 dark:bg-c-primary/20', text: 'text-c-primary', border: 'border-c-primary/40' },
@@ -34,7 +35,11 @@
 	in:scale={{ delay: loadDelay ?? 0, duration: 200 }}
 >
 	<div class="rounded-lg p-3 {colors.bg}">
-		<span class={colors.text}>{@render icon?.({ class: 'w-6 h-6' })}</span>
+		<span class={colors.text}>
+			{#if Icon}
+				<Icon class="w-6 h-6" />
+			{/if}
+		</span>
 	</div>
 	<div class="flex flex-col">
 		<span class="text-sm text-c-neutral-5 dark:text-c-neutral-4">{label}</span>

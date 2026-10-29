@@ -1,12 +1,11 @@
 import type { CreateCheckInRequest, CheckIn, CheckInSettings, CheckInType, SportId } from '$lib/types/check_in';
 import { ALL_CHECK_IN_TRACKERS, DEFAULT_SPORTS } from '$lib/types/check_in';
 import { setContext, getContext } from 'svelte';
-import { getAuth } from '$lib/state/Auth.svelte';
+import { getAuth, type Auth } from '$lib/state/Auth.svelte';
 import ApiService from '$lib/services/ApiService';
 import { apiRoutes } from '$lib/config/apiRoutes';
 import { getUrlFormat } from '$lib/helpers/DateHelper';
 import { page } from '$app/state';
-import { SvelteDate } from 'svelte/reactivity';
 import LocalStorageService from '$lib/services/LocalStorageService';
 
 export interface HistoryMonth {
@@ -20,16 +19,23 @@ export class CheckInData {
 	loaded = $state<boolean>(false);
 	data = $state<CheckIn[]>([]);
 	settings = $state<CheckInSettings>({ enabledTrackers: [...ALL_CHECK_IN_TRACKERS], selectedSports: [...DEFAULT_SPORTS] });
-	historyMonth = $state<HistoryMonth>({ year: new SvelteDate().getFullYear(), month: new SvelteDate().getMonth() });
-	localStorage = new LocalStorageService();
-	scoredTrackers = $state<CheckInType[]>(this.loadScoredTrackers());
+	historyMonth = $state<HistoryMonth>({ year: new Date().getFullYear(), month: new Date().getMonth() });
+	localStorage: LocalStorageService;
+	scoredTrackers = $state<CheckInType[]>([]);
 	activeTrackers = $derived(ALL_CHECK_IN_TRACKERS.filter((t) => this.settings.enabledTrackers.includes(t)));
 	selectedDate = $derived(page.params.date);
-	auth = getAuth();
+	auth: Auth;
 	apiService: ApiService;
 
-	constructor() {
-		this.apiService = new ApiService(this.auth.getToken());
+	constructor(
+		auth: Auth = getAuth(),
+		apiService: ApiService = auth.apiService,
+		localStorage: LocalStorageService = new LocalStorageService()
+	) {
+		this.auth = auth;
+		this.apiService = apiService;
+		this.localStorage = localStorage;
+		this.scoredTrackers = this.loadScoredTrackers();
 	}
 
 	private loadScoredTrackers(): CheckInType[] {
@@ -63,9 +69,11 @@ export class CheckInData {
 		}
 	}
 
-	async save(request: CreateCheckInRequest): Promise<void> {
+	async save(request: CreateCheckInRequest): Promise<boolean> {
 		const ok = await this.apiService.create(apiRoutes.checkIn.create, request);
-		if (ok) await this.load();
+		if (!ok) return false;
+		await this.load();
+		return true;
 	}
 
 	async saveSettings(settings: CheckInSettings): Promise<void> {
@@ -77,24 +85,24 @@ export class CheckInData {
 	}
 
 	prevMonth(): void {
-		const d = new SvelteDate(this.historyMonth.year, this.historyMonth.month - 1, 1);
+		const d = new Date(this.historyMonth.year, this.historyMonth.month - 1, 1);
 		this.historyMonth = { year: d.getFullYear(), month: d.getMonth() };
 	}
 
 	nextMonth(): void {
-		const d = new SvelteDate(this.historyMonth.year, this.historyMonth.month + 1, 1);
+		const d = new Date(this.historyMonth.year, this.historyMonth.month + 1, 1);
 		this.historyMonth = { year: d.getFullYear(), month: d.getMonth() };
 	}
 
 	isCurrentMonth(): boolean {
-		const now = new SvelteDate();
+		const now = new Date();
 		return this.historyMonth.year === now.getFullYear() && this.historyMonth.month === now.getMonth();
 	}
 
 	getDayData(day?: string): CheckIn | null {
 		if (!day)
 			return (
-				this.data.find((t) => t.date === getUrlFormat(new SvelteDate(this.selectedDate))) ??
+				this.data.find((t) => t.date === getUrlFormat(new Date(this.selectedDate as string))) ??
 				null
 			);
 

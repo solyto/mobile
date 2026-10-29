@@ -5,13 +5,13 @@
 
 	let {
 		sections,
-		selected,
+		active,
 		onselect
-	} = $props<{
+	}: {
 		sections: { id: number; title: string }[];
-		selected: number;
+		active: number;
 		onselect: (id: number) => void;
-	}>();
+	} = $props();
 
 	let open = $state(false);
 
@@ -25,7 +25,7 @@
 
 {#if open}
 	<div
-		class="secondary-nav-mobile-container fixed inset-0 z-50 flex flex-col bg-c-bg lg:hidden dark:bg-s-dark-1"
+		class="secondary-nav-mobile-container fixed inset-x-0 top-0 bottom-16 z-50 flex flex-col bg-c-bg lg:hidden dark:bg-s-dark-1"
 		transition:fly={{ x: -400, duration: 200 }}
 	>
 		<div
@@ -38,7 +38,8 @@
 			{#each sections as section (section.id)}
 				<button
 					class="flex w-full cursor-pointer items-center border-b border-c-neutral-1 px-4 py-4 text-left hover:bg-c-neutral-1 dark:border-s-dark-3 dark:hover:bg-s-dark-3
-						{selected === section.id ? 'bg-c-neutral-1 dark:bg-s-dark-3' : ''}"
+						{active === section.id ? 'bg-c-neutral-1 dark:bg-s-dark-3' : ''}"
+					aria-current={active === section.id ? 'true' : undefined}
 					onclick={() => select(section.id)}
 				>
 					<span class="text-base">{section.title}</span>

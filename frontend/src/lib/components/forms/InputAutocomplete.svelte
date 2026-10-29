@@ -11,7 +11,7 @@
 		onblur,
 		onselect,
 		items
-	} = $props<{
+	}: {
 		input?: HTMLInputElement | null;
 		value: string;
 		open?: boolean;
@@ -19,7 +19,7 @@
 		onblur?: () => void;
 		onselect?: (label: string) => void;
 		items: Item[];
-	}>();
+	} = $props();
 
 	let suggestions = $state<Item[]>([]);
 	let selectedIndex = $state<number>(0);

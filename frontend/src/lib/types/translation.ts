@@ -18,6 +18,9 @@ export interface LayoutRecords {
 	privacy_policy: string;
 	terms_of_service: string;
 	reload: string;
+	remove: string;
+	rename: string;
+	network_error: string;
 }
 
 export interface NavigationRecords {
@@ -57,7 +60,8 @@ export interface HomeRecords {
 	new_books: string;
 	recent_notes: string;
 	newest_links: string;
-	inspiration_empty_hint: string;
+	more_to_come: string;
+	more_to_come_desc: string;
 }
 
 export interface SettingsRecords {
@@ -65,14 +69,8 @@ export interface SettingsRecords {
 	german: string;
 	french: string;
 	spanish: string;
-	todos: string;
 	tags: string;
 	new_tag: string;
-	categories: string;
-	new_category: string;
-	rename_category: string;
-	workspaces: string;
-	new_workspace: string;
 	localization: string;
 	language: string;
 	integrations: string;
@@ -86,11 +84,16 @@ export interface SettingsRecords {
 	nextcloud: string;
 	widgets: string;
 	ai: string;
+	plugins: string;
 	telegram_bot: string;
 	telegram_bot_notifications: string;
 	enable_telegram_bot_notifications: string;
-	openai_token: string;
 	features: string;
+	navigation_order_desktop: string;
+	navigation_order_mobile: string;
+	navigation_order_hint: string;
+	navigation_order_more_menu: string;
+	navigation_order_reset: string;
 	timezone: string;
 	date_format: string;
 	time_format: string;
@@ -115,6 +118,7 @@ export interface SettingsRecords {
 	export_rate_limited: string;
 	export_next_available: string;
 	export_expired: string;
+	export_download_failed: string;
 	export_expires_at: string;
 	export_no_exports: string;
 	security: string;
@@ -130,9 +134,53 @@ export interface SettingsRecords {
 	passkey_last_used: string;
 	passkey_never_used: string;
 	passkey_no_passkeys: string;
+	current_password: string;
+	new_password: string;
+	confirm_new_password: string;
+	change_password_submit: string;
+	current_password_required: string;
+	current_password_incorrect: string;
+	new_password_same_as_current: string;
+	password_changed: string;
+	password_change_error: string;
+	delete_account: string;
+	delete_account_start: string;
+	delete_account_warning: string;
+	delete_account_submit: string;
+	delete_account_email_sent: string;
+	delete_account_request_error: string;
+	delete_account_super_admin: string;
+	no_tags: string;
 	theme: string;
 	animations: string;
 	animations_label: string;
+	flat_navigation: string;
+	flat_navigation_label: string;
+	bottom_navigation_label: string;
+	appearance: string;
+	color_mode: string;
+	appearance_system: string;
+	appearance_light: string;
+	appearance_dark: string;
+	calendar_life_marks: string;
+	journal_enabled: string;
+	journal_calendar_mark: string;
+	check_in_calendar_mark: string;
+	ai_plugin_description: string;
+	ai_plugin_enabled: string;
+	ai_plugin_provider: string;
+	ai_plugin_select_provider: string;
+	ai_plugin_model: string;
+	ai_plugin_select_model: string;
+	ai_plugin_model_unavailable: string;
+	ai_plugin_api_key: string;
+	ai_plugin_api_key_placeholder: string;
+	ai_plugin_api_key_replace_placeholder: string;
+	ai_plugin_api_key_stored: string;
+	ai_plugin_api_key_required: string;
+	ai_plugin_saved: string;
+	ai_plugin_save_error: string;
+	ai_plugin_load_error: string;
 }
 
 export interface AuthRecords {
@@ -188,28 +236,44 @@ export interface AuthRecords {
 	register_link: string;
 	have_account: string;
 	open_in_app: string;
+	session_expired: string;
+	confirm_deletion_title: string;
+	confirm_deletion_warning: string;
+	confirm_deletion_submit: string;
+	confirm_deletion_success: string;
+	confirm_deletion_invalid: string;
+	confirm_deletion_error: string;
 }
 
 export interface TodoRecords {
 	all_todos: string;
 	new_todo: string;
+	title: string;
 	enter_todo: string;
 	no_todos: string;
 	no_todos_desc: string;
+	no_todos_yet: string;
+	no_todos_yet_desc: string;
 	tags: string;
-	add_tag: string;
+	tag: string;
 	tag_error: string;
+	category: string;
 	categories: string;
-	add_category: string;
 	category_error: string;
 	workspaces: string;
 	workspace_hide_it: string;
-	workspace_hide_it_description: string;
+	new_category: string;
+	rename_category: string;
+	no_categories: string;
+	new_workspace: string;
+	no_workspaces: string;
+	workspaces_help: string;
 	priority: string;
 	priority_high: string;
 	priority_medium: string;
 	priority_low: string;
 	due_at: string;
+	due_date: string;
 	due_today: string;
 	due_tomorrow: string;
 	due_week: string;
@@ -234,6 +298,7 @@ export interface TodoRecords {
 	view_kanban: string;
 	view_overview: string;
 	view_card: string;
+	view_grouped: string;
 	uncategorized: string;
 	delete_confirm_label: string;
 	delete_confirm_message: string;
@@ -247,10 +312,16 @@ export interface TodoRecords {
 	recurrence_yearly: string;
 	recurrence_ends_at: string;
 	add_recurrence: string;
-	remove_recurrence: string;
 	recurrence_requires_due: string;
+	recurrence_every: string;
+	recurrence_unit_daily: string;
+	recurrence_unit_weekly: string;
+	recurrence_unit_monthly: string;
+	recurrence_unit_yearly: string;
+	recurrence_unit_fallback: string;
 	link: string;
 	no_link: string;
+	open_link: string;
 	add_link: string;
 }
 
@@ -284,6 +355,10 @@ export interface CheckInRecords {
 	sport_replace_with: string;
 	score: string;
 	score_description: string;
+	range_30_days: string;
+	range_3_months: string;
+	range_6_months: string;
+	range_all: string;
 }
 
 export interface CheckInSummaryRecords {
@@ -332,6 +407,7 @@ export interface WidgetRecords {
 	random_quote: string;
 	shortcuts: string;
 	manage_shortcuts: string;
+	no_shortcuts_hint: string;
 	shortcut_title: string;
 	shortcut_url: string;
 	clock: string;
@@ -346,10 +422,12 @@ export interface WidgetRecords {
 
 export interface NoteRecords {
 	notebook: string;
-	welcome: string;
-	instruction: string;
+	no_notes: string;
+	no_notes_desc: string;
 	new_note: string;
 	new_folder: string;
+	no_folders: string;
+	no_folders_desc: string;
 	edit_folder: string;
 	delete_note: string;
 	delete_folder: string;
@@ -357,6 +435,8 @@ export interface NoteRecords {
 	output: string;
 	create_note_success: string;
 	create_folder_success: string;
+	create_error: string;
+	create_folder_error: string;
 	save_success: string;
 	save_error: string;
 	import: string;
@@ -383,6 +463,12 @@ export interface NoteRecords {
 	delete_confirm_label: string;
 	delete_confirm_message: string;
 	delete_success: string;
+	journal: string;
+	today: string;
+	yesterday: string;
+	other: string;
+	journal_empty: string;
+	journal_create_error: string;
 }
 
 export interface LibraryRecords {
@@ -591,6 +677,8 @@ export interface LibraryRecords {
 		random: string;
 		unrated: string;
 		new: string;
+		ai_plugin_hint: string;
+		open_settings: string;
 	};
 	navigation: {
 		music: string;
@@ -626,6 +714,9 @@ export interface LibraryRecords {
 	search: string;
 	import: string;
 	no_results: string;
+	no_results_desc: string;
+	no_entries: string;
+	no_entries_desc: string;
 }
 
 export interface DevRecords {
@@ -665,12 +756,25 @@ export interface FinanceRecords {
 	total: string;
 	income: string;
 	expenses: string;
-	show_history: string;
-	hide_history: string;
 	wealth_distribution: string;
 	income_vs_expenses: string;
 	wealth_trend: string;
 	add_entry: string;
+	history: string;
+	date: string;
+	amount: string;
+	no_values: string;
+	replaces_value: string;
+	date_taken: string;
+	edit_value: string;
+	dashboard: string;
+	history_development: string;
+	history_composition: string;
+	new_entry: string;
+	delete_value_label: string;
+	delete_value_message: string;
+	delete_item: string;
+	delete_item_message: string;
 }
 
 
@@ -705,6 +809,10 @@ export interface FeedRecords {
 	browse_feeds_friends: string;
 	browse_feeds_friends_empty: string;
 	browse_feeds_subscribers: string;
+	no_feeds: string;
+	no_feeds_desc: string;
+	no_items: string;
+	no_items_desc: string;
 }
 
 export interface CalendarRecords {
@@ -723,6 +831,7 @@ export interface CalendarRecords {
 		12: string;
 	};
 	weekdays: {
+		[key: number]: string;
 		1: string;
 		2: string;
 		3: string;
@@ -758,6 +867,20 @@ export interface CalendarRecords {
 	location: string;
 	is_all_day: string;
 	is_recurring: string;
+	recurrence_daily: string;
+	recurrence_weekly: string;
+	recurrence_monthly_date: string;
+	recurrence_monthly_weekday: string;
+	recurrence_yearly: string;
+	recurrence_on_the: string;
+	recurrence_not_editable: string;
+	recurrence_ordinals: {
+		[key: number]: string;
+		1: string;
+		2: string;
+		3: string;
+		4: string;
+	};
 	choose_calendar: string;
 	request_sync: string;
 	sync_success: string;
@@ -808,10 +931,16 @@ export interface CalendarRecords {
 	attach_note: string;
 	search_todo: string;
 	search_note: string;
+	life_journal: string;
+	life_check_in: string;
 }
 
 export interface ContactRecords {
 	add_contact: string;
+	no_contacts: string;
+	no_contacts_desc: string;
+	no_visible_contacts: string;
+	no_visible_contacts_desc: string;
 	address_books: string;
 	import_success: string;
 	import_error: string;
@@ -822,6 +951,8 @@ export interface ContactRecords {
 	import_contacts_running: string;
 	save_error: string;
 	name_required: string;
+	email_placeholder: string;
+	phone_placeholder: string;
 }
 
 export interface DavRecords {
@@ -873,6 +1004,8 @@ export interface ClipboardRecords {
 	delete_error: string;
 	image_save_success: string;
 	image_save_error: string;
+	image_too_large: string;
+	image_reduce: string;
 	image_copy_success: string;
 	image_copy_error: string;
 }
@@ -891,6 +1024,7 @@ export interface ProfileRecords {
 export interface AdminRecords {
 	role_update_success: string;
 	role_update_error: string;
+	search_placeholder: string;
 }
 
 export interface WelcomeTourRecords {
@@ -966,13 +1100,12 @@ export interface TimeTrackingRecords {
 	started_at: string;
 	stopped_at: string;
 	duration: string;
-	duration_minutes: string;
 	project: string;
-	category: string;
 	start_timer: string;
 	stop_timer: string;
 	timer_running: string;
 	no_projects: string;
+	no_projects_desc: string;
 	no_entries: string;
 	no_description: string;
 	manual_entry: string;
@@ -987,7 +1120,6 @@ export interface TimeTrackingRecords {
 	recent_entries: string;
 	today: string;
 	this_week: string;
-	this_month: string;
 	deletion_title: string;
 	deletion_description: string;
 	pomodoro: string;
@@ -1003,6 +1135,10 @@ export interface TimeTrackingRecords {
 	filter_by_category: string;
 	all_categories: string;
 	edit_entry: string;
+	entry_deletion_title: string;
+	entry_deletion_description: string;
+	category_deletion_title: string;
+	category_deletion_description: string;
 }
 
 export interface CookieConsentRecords {
@@ -1070,6 +1206,19 @@ export interface SetupRecords {
 	done: string;
 	checking: string;
 	url_error: string;
+	back: string;
+}
+
+export interface UpdateRequiredRecords {
+	title: string;
+	explanation: string;
+	instruction_web: string;
+	instruction_desktop: string;
+	instruction_mobile: string;
+	reload: string;
+	required_version: string;
+	your_version: string;
+	server_outdated: string;
 }
 
 export interface LanguageFile {
@@ -1099,4 +1248,5 @@ export interface LanguageFile {
 	cookie_consent: CookieConsentRecords;
 	timeTracking: TimeTrackingRecords;
 	quick_add: QuickAddRecords;
+	update_required: UpdateRequiredRecords;
 }

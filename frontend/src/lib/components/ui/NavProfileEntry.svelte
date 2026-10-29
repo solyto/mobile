@@ -12,39 +12,32 @@
 		active = false,
 		mobile = false,
 		onSelect = () => {}
-	} = $props<{
+	}: {
 		active?: boolean;
 		mobile?: boolean;
 		onSelect?: () => void;
-	}>();
+	} = $props();
 
 	// The profile image is fetched cross-origin from the API's storage; a
 	// transient failure (e.g. cold browser session) breaks the <img> with no
 	// retry. Retry once with a cache-buster, then fall back to the initial
 	// letter instead of showing a broken image.
-	let attempts = $state(0);
-	let failed = $state(false);
+	let retriedPath = $state<string | null>(null);
+	let failedPath = $state<string | null>(null);
 
 	const imagePath = $derived(auth.user?.profile?.profile_image_path ?? null);
 	const imageSrc = $derived(
 		imagePath
-			? `${API_USER_STORAGE_URL}/${imagePath}${attempts ? `?retry=${attempts}` : ''}`
+			? `${API_USER_STORAGE_URL}/${imagePath}${retriedPath === imagePath ? '?retry=1' : ''}`
 			: null
 	);
 
-	$effect(() => {
-		if (imagePath !== null) {
-			attempts = 0;
-			failed = false;
-		}
-	});
-
 	function handleError() {
-		if (attempts === 0) {
-			attempts = 1;
+		if (retriedPath !== imagePath) {
+			retriedPath = imagePath;
 			return;
 		}
-		failed = true;
+		failedPath = imagePath;
 	}
 </script>
 
@@ -56,8 +49,8 @@
 	{mobile}
 	{onSelect}
 >
-	<div class="flex size-10 items-center justify-center rounded-full bg-c-neutral-2 text-black">
-		{#if imageSrc && !failed}
+	<div class="flex size-10 items-center justify-center rounded-full bg-c-neutral-2 text-c-avatar-text">
+		{#if imageSrc && failedPath !== imagePath}
 			<img
 				src={imageSrc}
 				alt="Profile"

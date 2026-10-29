@@ -3,10 +3,10 @@
 	import type { Recipe } from '$lib/types/library_recipe';
 	import type { RecipeLibrary } from '$lib/state/RecipeLibrary.svelte';
 
-	let { entry, library } = $props<{
+	let { entry, library }: {
 		entry: Recipe;
 		library: RecipeLibrary;
-	}>();
+	} = $props();
 </script>
 
 <div class="text-left">
