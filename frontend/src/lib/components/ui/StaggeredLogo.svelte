@@ -24,7 +24,7 @@
 	}
 
 	function tileBackgroundImage(): string {
-		return `url('${path || './'}logo_cut_small.png')`;
+		return `url('${path || './'}logo_cut.png')`;
 	}
 
 	function tileBackgroundPosition(tile: number): string {
@@ -46,6 +46,7 @@
 				height: 8px;
 				background-image: {tileBackgroundImage()};
 				background-position: {tileBackgroundPosition(tile)};
+				background-size: 56px 71px;
 			"
 			in:fly={tileFly(tile)}
 		></div>
