@@ -10,7 +10,9 @@ const { platform, navigation } = vi.hoisted(() => ({
 
 vi.mock('$app/environment', () => ({ browser: true, dev: false }));
 vi.mock('$app/navigation', () => ({ goto: navigation.goto }));
-vi.mock('$app/paths', () => ({ resolve: (path: string) => path }));
+vi.mock('$app/paths', () => ({
+	resolve: (path: string, params: Record<string, string> = {}) => path.replace(/\[(\w+)\]/g, (_, key: string) => params[key])
+}));
 vi.mock('$lib/config/platform', () => ({
 	get IS_MOBILE() {
 		return platform.mobile;
@@ -19,6 +21,7 @@ vi.mock('$lib/config/platform', () => ({
 }));
 
 const TODO_ID = '3f2b8c1e-4d5a-4b6c-8e7f-9a0b1c2d3e4f';
+const PROJECT_ID = '8c1d2e3f-4a5b-4c6d-9e8f-0a1b2c3d4e5f';
 
 let native: { postMessage: ReturnType<typeof vi.fn>; onmessage: ((event: { data: unknown }) => void) | null };
 let api: { postWithStatus: ReturnType<typeof vi.fn>; storedServerVersion: ReturnType<typeof vi.fn> };
@@ -293,6 +296,22 @@ describe('WidgetBridge', () => {
 			expect(navigation.goto).toHaveBeenCalledWith('/calendar');
 		});
 
+		it('opens time tracking', () => {
+			createBridge().start();
+
+			receive({ type: 'navigate', key: 'time_tracking' });
+
+			expect(navigation.goto).toHaveBeenCalledWith('/time-tracking');
+		});
+
+		it('opens a time tracking project by id', () => {
+			createBridge().start();
+
+			receive({ type: 'navigate', key: 'time_tracking_project', id: PROJECT_ID });
+
+			expect(navigation.goto).toHaveBeenCalledWith(`/time-tracking/${PROJECT_ID}`);
+		});
+
 		it('ignores unknown keys and invalid ids', () => {
 			createBridge().start();
 
@@ -300,6 +319,9 @@ describe('WidgetBridge', () => {
 			receive({ type: 'navigate', key: 'todo', id: 'not-a-uuid' });
 			receive({ type: 'navigate', key: 'todo' });
 			receive({ type: 'navigate', key: 'todo', id: 42 });
+			receive({ type: 'navigate', key: 'time_tracking_project', id: 'not-a-uuid' });
+			receive({ type: 'navigate', key: 'time_tracking_project' });
+			receive({ type: 'navigate', key: 'time_tracking_project', id: 42 });
 
 			expect(navigation.goto).not.toHaveBeenCalled();
 		});

@@ -89,6 +89,7 @@ export class TimeTracking {
 			request
 		);
 		if (res) await this.loadProjects();
+		if (res) this.auth.widgetBridge.notifyChanged();
 		return res !== null;
 	}
 
@@ -99,12 +100,14 @@ export class TimeTracking {
 			request
 		);
 		if (res) await this.loadProjects();
+		if (res) this.auth.widgetBridge.notifyChanged();
 		return res;
 	}
 
 	async deleteProject(id: string): Promise<boolean> {
 		const res = await this.apiService.delete(apiRoutes.timeTracking.projects.delete, id);
 		if (res) await Promise.all([this.loadProjects(), this.loadEntries()]);
+		if (res) this.auth.widgetBridge.notifyChanged();
 		return res;
 	}
 
@@ -114,24 +117,28 @@ export class TimeTracking {
 			request
 		);
 		if (res) await Promise.all([this.loadEntries(), this.loadProjects()]);
+		if (res) this.auth.widgetBridge.notifyChanged();
 		return res !== null;
 	}
 
 	async updateEntry(id: string, request: UpdateTimeTrackingEntryRequest): Promise<boolean> {
 		const res = await this.apiService.update(apiRoutes.timeTracking.entries.update, id, request);
 		if (res) await Promise.all([this.loadEntries(), this.loadProjects()]);
+		if (res) this.auth.widgetBridge.notifyChanged();
 		return res;
 	}
 
 	async deleteEntry(id: string): Promise<boolean> {
 		const res = await this.apiService.delete(apiRoutes.timeTracking.entries.delete, id);
 		if (res) await Promise.all([this.loadEntries(), this.loadProjects()]);
+		if (res) this.auth.widgetBridge.notifyChanged();
 		return res;
 	}
 
 	async startTimer(request: StartTimerRequest): Promise<boolean> {
 		const res = await this.apiService.post(apiRoutes.timeTracking.entries.start, request);
 		if (res) await this.loadEntries();
+		if (res) this.auth.widgetBridge.notifyChanged();
 		return res !== null;
 	}
 
@@ -141,6 +148,7 @@ export class TimeTracking {
 			{}
 		);
 		if (res) await Promise.all([this.loadEntries(), this.loadProjects()]);
+		if (res) this.auth.widgetBridge.notifyChanged();
 		return res !== null;
 	}
 

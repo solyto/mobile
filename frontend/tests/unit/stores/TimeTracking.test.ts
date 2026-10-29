@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { TimeTracking } from '$lib/state/TimeTracking.svelte';
-import { api, resetStoreMocks } from '../setup/storeMocks';
+import { api, auth, resetStoreMocks } from '../setup/storeMocks';
 
 beforeEach(() => {
 	resetStoreMocks();
@@ -59,6 +59,50 @@ describe('TimeTracking store', () => {
 
 		expect(api.list.mock.calls[0][0]).toMatch(/\?from=2026-09-16&to=2026-10-16&category_ids=3,7$/);
 		expect(api.list.mock.calls[1][0]).toMatch(/\?from=2026-09-16&to=2026-10-16$/);
+	});
+
+	describe('widget refresh', () => {
+		const mutations: [string, 'create' | 'post' | 'update' | 'delete', (t: TimeTracking) => Promise<boolean>][] = [
+			['startTimer', 'post', (t) => t.startTimer({ project_id: '1' })],
+			['stopTimer', 'post', (t) => t.stopTimer('1')],
+			['createEntry', 'create', (t) => t.createEntry({} as never)],
+			['updateEntry', 'update', (t) => t.updateEntry('1', {} as never)],
+			['deleteEntry', 'delete', (t) => t.deleteEntry('1')],
+			['createProject', 'create', (t) => t.createProject({} as never)],
+			['updateProject', 'update', (t) => t.updateProject('1', {} as never)],
+			['deleteProject', 'delete', (t) => t.deleteProject('1')]
+		];
+
+		it.each(mutations)('%s notifies the widgets on success', async (_, method, mutate) => {
+			api.list.mockResolvedValue({ data: [] });
+			api[method].mockResolvedValue(method === 'update' || method === 'delete' ? true : { data: {} });
+
+			await mutate(new TimeTracking());
+
+			expect(auth.widgetBridge.notifyChanged).toHaveBeenCalledTimes(1);
+		});
+
+		it.each(mutations)('%s does not notify on failure', async (_, method, mutate) => {
+			api[method].mockResolvedValue(method === 'update' || method === 'delete' ? false : null);
+
+			await mutate(new TimeTracking());
+
+			expect(auth.widgetBridge.notifyChanged).not.toHaveBeenCalled();
+		});
+
+		it('does not notify for category changes', async () => {
+			api.list.mockResolvedValue({ data: [] });
+			api.create.mockResolvedValue({ data: {} });
+			api.update.mockResolvedValue(true);
+			api.delete.mockResolvedValue(true);
+			const t = new TimeTracking();
+
+			await t.createCategory({} as never);
+			await t.updateCategory(1, {} as never);
+			await t.deleteCategory(1);
+
+			expect(auth.widgetBridge.notifyChanged).not.toHaveBeenCalled();
+		});
 	});
 
 	describe('formatDuration', () => {
