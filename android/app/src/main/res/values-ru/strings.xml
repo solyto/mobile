@@ -1,0 +1,24 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="widget_your_day_name">Ваш день</string>
+    <string name="widget_your_day_description">События и задачи на сегодня, а также предстоящие события</string>
+    <string name="widget_loading">Загрузка…</string>
+    <string name="widget_load_failed">Не удалось загрузить. Повторяем попытку автоматически.</string>
+    <string name="widget_signed_out">Откройте solyto, чтобы войти</string>
+    <string name="widget_unsupported_server">Ваш сервер пока не поддерживает виджеты</string>
+    <string name="widget_update_app">Обновите приложение</string>
+    <string name="widget_not_supported">Не поддерживается на этом устройстве</string>
+    <string name="widget_updated_at">Обновлено в %1$s</string>
+    <string name="widget_outdated_at">Устарело · %1$s</string>
+    <string name="widget_action_failed">Не удалось выполнить</string>
+    <string name="widget_action_check">Отметить как выполненную</string>
+    <string name="widget_time_tracking_name">Учёт времени</string>
+    <string name="widget_time_tracking_description">Запуск и остановка таймеров для ваших проектов</string>
+    <string name="widget_time_tracking_failed">Не удалось обновить</string>
+    <string name="widget_action_start">Запустить</string>
+    <string name="widget_action_stop">Остановить</string>
+    <string name="widget_check_in_name">Ежедневный опрос</string>
+    <string name="widget_check_in_description">Пройдите ежедневный опрос за сегодня прямо с главного экрана</string>
+    <string name="widget_check_in_option">%1$s: %2$d из %3$d</string>
+    <string name="widget_check_in_option_selected">%1$s: %2$d из %3$d, выбрано</string>
+</resources>
