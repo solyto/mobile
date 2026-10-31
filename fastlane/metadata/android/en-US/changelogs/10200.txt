@@ -1,0 +1,8 @@
+Home-screen widgets: Your Day, Time Tracking and Check-in.
+Now in Italian and Russian.
+Weeks can start on Sunday, plus new mm/dd date formats.
+Redesigned Libraries, Feeds, Contacts, Notes and Time Tracking.
+Multi-day events show on every day they cover.
+Resend your confirmation email from the login screen.
+The navbar hides while the keyboard is open.
+For self-hosters: please update your server first.
