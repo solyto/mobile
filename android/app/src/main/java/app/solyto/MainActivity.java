@@ -45,7 +45,12 @@ public class MainActivity extends BridgeActivity {
     // Where the spinner rests below the top of the WebView (SwipeRefreshLayout's default).
     private static final int REFRESH_INDICATOR_REST_DP = 64;
 
+    // Toggled on <html> while the keyboard is open (see keyboardScript).
+    private static final String KEYBOARD_CLASS = "solyto-keyboard";
+    private static final String KEYBOARD_STYLE_ID = "solyto-keyboard-style";
+
     private PullToRefreshLayout swipeRefresh;
+    private boolean keyboardVisible = false;
     private int appliedIndicatorTop = 0;
     // Bar colours matching the page, reported by SystemBarsPlugin.
     private Integer pageStatusBarColor = null;
@@ -173,8 +178,37 @@ public class MainActivity extends BridgeActivity {
             mlp.rightMargin = bars.right;
             mlp.bottomMargin = Math.max(bars.bottom, ime.bottom);
             v.setLayoutParams(mlp);
+
+            boolean imeVisible = windowInsets.isVisible(WindowInsetsCompat.Type.ime());
+            if (imeVisible != keyboardVisible) {
+                keyboardVisible = imeVisible;
+                ((WebView) v).evaluateJavascript(keyboardScript(imeVisible), null);
+            }
             return WindowInsetsCompat.CONSUMED;
         });
+    }
+
+    /**
+     * Hides the mobile navbar while the keyboard is open: with the WebView
+     * shrunk above the keyboard, the navbar would otherwise sit on top of it
+     * and push bottom sheets further up. Also drops the bottom sheet's
+     * padding that keeps it clear of the navbar. The page's own keyboard
+     * handling (visualViewport) never fires here, as the WebView shrinks
+     * together with the viewport.
+     */
+    private static String keyboardScript(boolean visible) {
+        return "(function () {"
+                + "  var d = document;"
+                + "  if (!d.getElementById('" + KEYBOARD_STYLE_ID + "')) {"
+                + "    var s = d.createElement('style');"
+                + "    s.id = '" + KEYBOARD_STYLE_ID + "';"
+                + "    s.textContent ="
+                + "      'html." + KEYBOARD_CLASS + " div:has(> .nav-mobile-container) { display: none; }' +"
+                + "      'html." + KEYBOARD_CLASS + " .modal-blur { padding-bottom: 0; }';"
+                + "    d.head.appendChild(s);"
+                + "  }"
+                + "  d.documentElement.classList.toggle('" + KEYBOARD_CLASS + "', " + visible + ");"
+                + "})();";
     }
 
     private void finishRefresh() {

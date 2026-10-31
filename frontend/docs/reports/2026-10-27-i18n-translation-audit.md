@@ -1,3 +1,4 @@
+read: true
 # Translation audit: all locales against `en.ts`
 
 Date: 2026-10-27
