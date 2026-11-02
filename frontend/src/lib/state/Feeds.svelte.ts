@@ -122,6 +122,10 @@ export class Feeds {
 		return this.feedCounts[feed.feed_id] ?? 0;
 	}
 
+	getFeedTitle(feedId: string): string {
+		return this.feeds.find((feed) => feed.feed_id === feedId)?.title ?? '';
+	}
+
 	saveToLibrary(feed: FeedItem): void {
 		if (this.inLibrary.includes(feed.id)) {
 			this.inLibrary = this.inLibrary.filter((id) => id !== feed.id);

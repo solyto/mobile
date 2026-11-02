@@ -96,6 +96,15 @@
 							</div>
 						</div>
 						<div class="flex-1 overflow-y-auto">
+							<a
+								href={resolve(urls.notes)}
+								onclick={close}
+								class="flex items-center border-b border-c-neutral-1 px-4 py-4 hover:bg-c-neutral-1 dark:border-s-dark-3 dark:hover:bg-s-dark-3"
+								class:bg-c-neutral-1={page.url.pathname === urls.notes}
+								class:dark:bg-s-dark-3={page.url.pathname === urls.notes}
+							>
+								<span class="text-base">{ts.get.notes.dashboard}</span>
+							</a>
 							{#if auth.user?.settings?.journal_enabled}
 								<button
 									class="flex w-full cursor-pointer items-center justify-between border-b border-c-neutral-1 px-4 py-4 text-left hover:bg-c-neutral-1 dark:border-s-dark-3 dark:hover:bg-s-dark-3"

@@ -9,7 +9,6 @@
 	const notes = getNotes();
 
 	let favorites = $derived(notes.favoriteNotes);
-	let newest = $derived(notes.newestNotes);
 	let lastUpdated = $derived(notes.lastUpdatedNotes);
 </script>
 
@@ -20,9 +19,6 @@
 	{#if notes.loaded}
 		{#if favorites.length > 0}
 			<OverviewEntries entries={favorites} title={ts.get.notes.favorites} />
-		{/if}
-		{#if newest.length > 0}
-			<OverviewEntries entries={newest} title={ts.get.notes.new_notes} />
 		{/if}
 		{#if lastUpdated.length > 0}
 			<OverviewEntries entries={lastUpdated} title={ts.get.notes.last_updated} />

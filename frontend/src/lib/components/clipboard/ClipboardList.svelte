@@ -89,7 +89,7 @@
 	</div>
 {/snippet}
 
-<div class="flex w-full flex-col gap-4 md:w-1/2">
+<div class="flex w-full flex-col gap-6 md:w-1/2">
 	<Heading title={ts.get.clipboard.history} my={0} mb={4} />
 	{#each clipboard.entries as entry (entry.id)}
 		{#if entry.type === 'image' && entry.file_path}

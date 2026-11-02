@@ -9,6 +9,8 @@
 	const feeds = getFeeds();
 	const ts = getTranslation();
 
+	const DIVIDED_LIST = 'flex w-full flex-col divide-y';
+
 	let sentinel: HTMLDivElement;
 
 	$effect(() => {
@@ -30,21 +32,21 @@
 		<EmptyState title={ts.get.feeds.no_items} description={ts.get.feeds.no_items_desc} py={6} />
 	{/if}
 {:else if feeds.view === 'compact'}
-	<div class="flex w-full flex-col gap-2">
+	<div class={DIVIDED_LIST}>
 		{#each feeds.filteredItems as item (item.id)}
-			<CompactEntry {item} />
+			<CompactEntry {item} source={feeds.getFeedTitle(item.feed_id)} />
 		{/each}
 	</div>
 {:else if feeds.view === 'comfortable'}
-	<div class="flex w-full flex-col gap-2">
+	<div class={DIVIDED_LIST}>
 		{#each feeds.filteredItems as item (item.id)}
-			<ComfortableEntry {item} />
+			<ComfortableEntry {item} source={feeds.getFeedTitle(item.feed_id)} />
 		{/each}
 	</div>
 {:else}
-	<div class="grid w-full grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+	<div class="grid w-full grid-cols-[repeat(auto-fill,minmax(min(22rem,100%),1fr))] gap-x-4 gap-y-8">
 		{#each feeds.filteredItems as item (item.id)}
-			<CardEntry {item} />
+			<CardEntry {item} source={feeds.getFeedTitle(item.feed_id)} />
 		{/each}
 	</div>
 {/if}

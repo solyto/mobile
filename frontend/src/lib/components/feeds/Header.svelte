@@ -7,6 +7,7 @@
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import ViewSwitcher from '$lib/components/ui/ViewSwitcher.svelte';
 	import Heading from '$lib/components/ui/Heading.svelte';
+	import ConfirmationModal from '$lib/components/ui/ConfirmationModal.svelte';
 
 	const loadingIndicator = getLoadingIndicator();
 	const feeds = getFeeds();
@@ -16,10 +17,13 @@
 		feed: FeedSubscription | null;
 	} = $props();
 
+	let confirmingDelete = $state(false);
+
 	async function onDelete(): Promise<void> {
 		loadingIndicator.start();
 		await feeds.delete(feed!);
 		loadingIndicator.stop();
+		confirmingDelete = false;
 	}
 
 	const views = [
@@ -36,11 +40,12 @@
 	{#if feed !== null}
 		<div class="mr-4 flex gap-2">
 			<InlineEditButton
+				label={ts.get.feeds.edit_feed}
 				onClick={() => {
 					feeds.modalOpen = true;
 				}}
 			/>
-			<InlineDeleteButton onClick={onDelete} />
+			<InlineDeleteButton label={ts.get.feeds.delete_feed} onClick={() => { confirmingDelete = true; }} />
 		</div>
 	{/if}
 	<ViewSwitcher
@@ -49,3 +54,13 @@
 		onChange={(type) => feeds.changeView(type as FeedEntrySize)}
 	/>
 </div>
+
+{#if confirmingDelete}
+	<ConfirmationModal
+		title={ts.get.feeds.delete_feed}
+		description={ts.get.feeds.delete_feed_description}
+		type="confirm-delete"
+		onConfirm={onDelete}
+		onCancel={() => (confirmingDelete = false)}
+	/>
+{/if}

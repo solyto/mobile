@@ -1,4 +1,5 @@
 import { setContext, getContext } from 'svelte';
+import { browser } from '$app/environment';
 import LocalStorageService from '$lib/services/LocalStorageService';
 
 export class CookieConsent {
@@ -8,7 +9,7 @@ export class CookieConsent {
 	localStorage = new LocalStorageService();
 
 	constructor() {
-		this.acknowledged = this.localStorage.getBool(CookieConsent.LS_ACKNOWLEDGED_KEY) ?? true;
+		if (browser) this.acknowledged = this.localStorage.getBool(CookieConsent.LS_ACKNOWLEDGED_KEY) ?? false;
 	}
 
 	acknowledge(): void {

@@ -35,7 +35,8 @@ export class BookLibrary {
 		hasExternalLinks: true,
 		hasReleases: true,
 		hasShelf: true,
-		entriesAreLinks: false
+		entriesAreLinks: false,
+		hasSmallForm: false
 	};
 	loaded = $state<boolean>(false);
 	entries = $state<Book[]>([]);

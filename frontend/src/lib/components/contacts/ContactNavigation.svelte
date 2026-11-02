@@ -34,9 +34,8 @@
 
 <div
 	bind:this={navigation}
-	class="secondary-nav-mobile-container-sm absolute top-0 left-0 z-40 hidden h-full max-h-screen w-full flex-col overflow-y-auto bg-c-bg drop-shadow-xl sm:relative sm:flex sm:w-60 dark:border-r-1 dark:border-s-dark-2 dark:drop-shadow-sm dark:drop-shadow-s-dark-shadow"
-	class:lg:w-60={editMode}
-	class:lg:w-80={editMode}
+	class="secondary-nav-mobile-container-sm absolute top-0 left-0 z-40 hidden h-full max-h-screen w-full flex-col overflow-y-auto bg-c-bg drop-shadow-xl sm:relative sm:flex sm:w-60 transition-[width] duration-300 dark:border-r-1 dark:border-s-dark-2 dark:drop-shadow-sm dark:drop-shadow-s-dark-shadow"
+	class:lg:w-96={editMode}
 	in:fade
 >
 	{#if !editMode}
@@ -49,7 +48,7 @@
 			</div>
 			<div class="flex w-full flex-col justify-center md:mt-4">
 				<button
-					class="relative my-1 h-full w-full cursor-pointer border-r-3 px-4 py-2 text-left font-bold transition-all hover:bg-c-neutral dark:hover:bg-s-dark-3"
+					class="relative my-1 h-full w-full cursor-pointer border-r-3 px-4 py-2 text-left transition-all hover:bg-c-neutral dark:hover:bg-s-dark-3"
 					class:bg-c-neutral={contacts.activeAddressBook === null}
 					class:dark:bg-s-dark-3={contacts.activeAddressBook === null}
 					class:border-c-border!={contacts.activeAddressBook}
@@ -59,7 +58,7 @@
 						handleNavigation();
 					}}
 				>
-					All
+					{ts.get.contacts.all}
 					<Badge
 						i={contacts.contactTotal}
 						color="var(--color-c-btn-hover)"
@@ -70,7 +69,7 @@
 				{#each contacts.addressBooks as addressBook (addressBook.id)}
 					{#if !contacts.isAddressBookHidden(addressBook.id)}
 						<button
-							class="relative my-1 flex h-full w-full cursor-pointer items-center gap-2 border-r-3 px-4 py-2 text-left font-bold transition-all hover:bg-c-neutral dark:hover:bg-s-dark-3"
+							class="relative my-1 flex h-full w-full cursor-pointer items-center gap-2 border-r-3 px-4 py-2 text-left transition-all hover:bg-c-neutral dark:hover:bg-s-dark-3"
 							class:bg-c-neutral={addressBook.id === contacts.activeAddressBook?.id}
 							class:dark:bg-s-dark-3={addressBook.id === contacts.activeAddressBook?.id}
 							class:border-c-border!={addressBook.id !== contacts.activeAddressBook?.id}

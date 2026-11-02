@@ -1,11 +1,14 @@
 <script lang="ts">
 	import type { Editor } from '@tiptap/core';
-	import TableRowInsertBefore from '@lucide/svelte/icons/between-vertical-start';
-	import TableRowInsertAfter from '@lucide/svelte/icons/between-vertical-end';
-	import TableColInsertBefore from '@lucide/svelte/icons/between-horizontal-start';
-	import TableColInsertAfter from '@lucide/svelte/icons/between-horizontal-end';
+	import TableRowInsertBefore from '@lucide/svelte/icons/panel-top-dashed';
+	import TableRowInsertAfter from '@lucide/svelte/icons/panel-bottom-dashed';
+	import TableColInsertBefore from '@lucide/svelte/icons/panel-left-dashed';
+	import TableColInsertAfter from '@lucide/svelte/icons/panel-right-dashed';
 	import TableIcon from '@lucide/svelte/icons/table';
 	import Trash from '@lucide/svelte/icons/trash-2';
+	import { getTranslation } from '$lib/state/Translation.svelte';
+
+	const ts = getTranslation();
 
 	let {
 		editor,
@@ -20,21 +23,21 @@
 		<button
 			onclick={() => editor?.chain().focus().addRowBefore().run()}
 			class="toolbar-btn"
-			title="Add row above"
+			title={ts.get.notes.table_add_row_above}
 		>
 			<TableRowInsertBefore size={14} />
 		</button>
 		<button
 			onclick={() => editor?.chain().focus().addRowAfter().run()}
 			class="toolbar-btn"
-			title="Add row below"
+			title={ts.get.notes.table_add_row_below}
 		>
 			<TableRowInsertAfter size={14} />
 		</button>
 		<button
 			onclick={() => editor?.chain().focus().deleteRow().run()}
 			class="toolbar-btn text-s-delete hover:bg-red-50 dark:hover:bg-red-950/30"
-			title="Delete row"
+			title={ts.get.notes.table_delete_row}
 		>
 			<Trash size={14} />
 		</button>
@@ -44,21 +47,21 @@
 		<button
 			onclick={() => editor?.chain().focus().addColumnBefore().run()}
 			class="toolbar-btn"
-			title="Add column left"
+			title={ts.get.notes.table_add_column_left}
 		>
 			<TableColInsertBefore size={14} />
 		</button>
 		<button
 			onclick={() => editor?.chain().focus().addColumnAfter().run()}
 			class="toolbar-btn"
-			title="Add column right"
+			title={ts.get.notes.table_add_column_right}
 		>
 			<TableColInsertAfter size={14} />
 		</button>
 		<button
 			onclick={() => editor?.chain().focus().deleteColumn().run()}
 			class="toolbar-btn text-s-delete hover:bg-red-50 dark:hover:bg-red-950/30"
-			title="Delete column"
+			title={ts.get.notes.table_delete_column}
 		>
 			<Trash size={14} />
 		</button>
@@ -68,7 +71,7 @@
 		<button
 			onclick={() => editor?.chain().focus().deleteTable().run()}
 			class="toolbar-btn text-s-delete hover:bg-red-50 dark:hover:bg-red-950/30"
-			title="Delete table"
+			title={ts.get.notes.table_delete}
 		>
 			<TableIcon size={14} />
 		</button>

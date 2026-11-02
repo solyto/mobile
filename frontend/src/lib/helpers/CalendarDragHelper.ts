@@ -3,7 +3,7 @@ import type { CalendarDrag, CalendarDragGhost } from '$lib/state/CalendarDrag.sv
 import type { CalendarDropTarget } from '$lib/services/CalendarDragService';
 
 export type DraggableEventOptions = {
-	enabled: () => boolean;
+	enabled: (item: CalendarEvent) => boolean;
 	sourceDateSlug: () => string;
 	computeTarget: (
 		x: number,
@@ -79,7 +79,7 @@ export function createDraggableEvent(
 		}
 
 		function onPointerDown(e: PointerEvent): void {
-			if (!options.enabled()) return;
+			if (!options.enabled(item)) return;
 			if (e.pointerType === 'touch') return;
 			if (e.pointerType === 'mouse' && e.button !== 0) return;
 			const rect = node.getBoundingClientRect();

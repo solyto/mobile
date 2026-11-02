@@ -52,4 +52,5 @@ export interface LibraryConfig {
 	hasReleases: boolean;
 	hasShelf: boolean;
 	entriesAreLinks: boolean;
+	hasSmallForm: boolean;
 }

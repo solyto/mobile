@@ -98,30 +98,12 @@ afterEach(() => {
 
 describe('Notes store', () => {
 	describe('newest / last updated / favorites', () => {
-		it('getNewestNotes returns the five most recently created notes', () => {
+		it('getLastUpdatedNotes returns the ten most recently updated notes', () => {
 			const n = new NotesSvelte();
-			n.notes = [
-				note({ id: '1', created_at: '2026-01-01T00:00:00' }),
-				note({ id: '2', created_at: '2026-03-01T00:00:00' }),
-				note({ id: '3', created_at: '2026-02-01T00:00:00' }),
-				note({ id: '4', created_at: '2026-05-01T00:00:00' }),
-				note({ id: '5', created_at: '2026-04-01T00:00:00' }),
-				note({ id: '6', created_at: '2026-06-01T00:00:00' })
-			];
-			expect(n.getNewestNotes().map((x) => x.id)).toEqual(['6', '4', '5', '2', '3']);
-		});
-
-		it('getLastUpdatedNotes returns the five most recently updated notes', () => {
-			const n = new NotesSvelte();
-			n.notes = [
-				note({ id: '1', updated_at: '2026-01-01T00:00:00' }),
-				note({ id: '2', updated_at: '2026-03-01T00:00:00' }),
-				note({ id: '3', updated_at: '2026-02-01T00:00:00' }),
-				note({ id: '4', updated_at: '2026-05-01T00:00:00' }),
-				note({ id: '5', updated_at: '2026-04-01T00:00:00' }),
-				note({ id: '6', updated_at: '2026-06-01T00:00:00' })
-			];
-			expect(n.getLastUpdatedNotes().map((x) => x.id)).toEqual(['6', '4', '5', '2', '3']);
+			n.notes = Array.from({ length: 11 }, (_, i) =>
+				note({ id: String(i + 1), updated_at: `2026-${String(i + 1).padStart(2, '0')}-01T00:00:00` })
+			);
+			expect(n.getLastUpdatedNotes().map((x) => x.id)).toEqual(['11', '10', '9', '8', '7', '6', '5', '4', '3', '2']);
 		});
 
 		it('getFavorites returns only favourite notes', () => {
@@ -499,7 +481,6 @@ describe('Notes store', () => {
 			];
 
 			expect(n.getVisibleNotes().map((x) => x.id)).toEqual(['o1']);
-			expect(n.getNewestNotes().map((x) => x.id)).toEqual(['o1']);
 			expect(n.getLastUpdatedNotes().map((x) => x.id)).toEqual(['o1']);
 			expect(n.getFavorites()).toEqual([]);
 			expect(n.getNotesForCategory(null).map((x) => x.id)).toEqual(['o1']);
@@ -534,11 +515,10 @@ describe('Notes store', () => {
 			// Worst case: the notes resolve before the categories, so the journal
 			// flag is still unknown when `load()` snapshots the overview.
 			await n.load();
-			expect(n.newestNotes.map((x) => x.id)).toContain('j1');
+			expect(n.lastUpdatedNotes.map((x) => x.id)).toContain('j1');
 
 			await n.loadCategories();
 
-			expect(n.newestNotes.map((x) => x.id)).toEqual(['o1']);
 			expect(n.lastUpdatedNotes.map((x) => x.id)).toEqual(['o1']);
 			expect(n.favoriteNotes).toEqual([]);
 		});

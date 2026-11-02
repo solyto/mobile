@@ -1,10 +1,14 @@
 <script lang="ts">
-	import { getCalendarMonth, getUrlFormat } from '$lib/helpers/DateHelper';
+	import { getCalendarMonth, getUrlFormat, getWeekdayOrder } from '$lib/helpers/DateHelper';
 	import { getTranslation } from '$lib/state/Translation.svelte';
+	import { getAuth } from '$lib/state/Auth.svelte';
 	import IconChevronLeft from '@lucide/svelte/icons/chevron-left';
 	import IconChevronRight from '@lucide/svelte/icons/chevron-right';
 
 	const ts = getTranslation();
+	const auth = getAuth();
+	const weekStart = auth.getWeekStart();
+	const weekdays = getWeekdayOrder(weekStart);
 
 	let { selectedDate, markedDates, onSelect }: {
 		selectedDate: Date;
@@ -19,7 +23,7 @@
 	let viewYear = $state(selectedDate.getFullYear());
 	let viewMonth = $state(selectedDate.getMonth());
 
-	let days = $derived(getCalendarMonth(viewYear, viewMonth));
+	let days = $derived(getCalendarMonth(viewYear, viewMonth, weekStart));
 	let selectedKey = $derived(getUrlFormat(selectedDate));
 
 	// Only today and earlier are reachable, so the calendar never advances past
@@ -88,7 +92,7 @@
 	</div>
 
 	<div class="grid grid-cols-7 gap-1 text-center">
-		{#each [1, 2, 3, 4, 5, 6, 7] as weekday (weekday)}
+		{#each weekdays as weekday (weekday)}
 			<span class="text-xs text-c-neutral-4 dark:text-c-neutral-5">
 				{ts.get.calendar.weekdays_short[
 					weekday as keyof typeof ts.get.calendar.weekdays_short

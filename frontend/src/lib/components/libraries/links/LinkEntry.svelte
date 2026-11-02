@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { fade } from 'svelte/transition';
 	import type { Link } from '$lib/types/library_link';
 	import { LinkLibrary } from '$lib/state/LinkLibrary.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
@@ -6,14 +7,17 @@
 	import { grabFaviconFromUrl } from '$lib/helpers/ImageHelper';
 	import TagFlexList from '$lib/components/tags/TagFlexList.svelte';
 	import StarButton from '$lib/components/ui/buttons/StarButton.svelte';
-	import InlineDeleteButton from '$lib/components/ui/buttons/InlineDeleteButton.svelte';
+	import DeleteButton from '$lib/components/ui/buttons/DeleteButton.svelte';
 
-	let { entry, library }: {
+	let { entry, library, showCategory }: {
 		entry: Link;
 		library: LinkLibrary;
+		showCategory: boolean;
 	} = $props();
 
 	const loadingIndicator = getLoadingIndicator();
+
+	const ON_ROW_HOVER = 'md:group-hover/row:opacity-100 md:group-focus-within/row:opacity-100';
 
 	async function onStar(e: MouseEvent) {
 		e.preventDefault();
@@ -33,7 +37,7 @@
 <a
 	href={entry.url}
 	target="_blank"
-	class="flex h-full w-full min-w-0 items-center"
+	class="group/row isolate flex w-full min-w-0 items-center gap-3 rounded-sm border-c-neutral-1 px-2 py-2 transition-colors hover:bg-c-neutral dark:border-s-dark dark:hover:bg-s-dark-3"
 	draggable="true"
 	ondragstart={() => {
 		library.draggedEntry = entry;
@@ -42,37 +46,31 @@
 		library.draggedEntry = null;
 		library.dragTarget = null;
 	}}
+	in:fade
 >
-	<div
-		class="ml-1 h-9/10 w-1 flex-shrink-0 rounded-full"
-		style="background-color: {entry.category?.color ?? '#1dbda5'};"
-	></div>
-	<img
-		src={grabFaviconFromUrl(entry.url)}
-		alt="Favicon"
-		class="mx-1 ml-3 h-6 w-6 max-md:hidden"
-	/>
-	<div class="ml-4 max-w-8/12 min-w-0 text-left">
-		<div class="truncate font-bold">{entry.title}</div>
-		<div class="truncate text-sm">{entry.url}</div>
+	<img src={grabFaviconFromUrl(entry.url)} alt="" class="h-5 w-5 shrink-0" />
+	<div class="min-w-0 flex-1 text-left">
+		<div class="truncate">{entry.title}</div>
+		<div class="truncate text-sm text-c-neutral-5 dark:text-c-neutral-4">{entry.url}</div>
 	</div>
-	<div class="mr-1 h-full ml-auto flex flex-row items-center gap-4 self-start">
-		<div
-			class="relative flex items-center bg-c-neutral px-2 py-1 text-sm max-md:hidden dark:bg-s-dark-2"
-		>
-			{entry.category?.title ?? 'Uncategorized'}
-		</div>
-		{#if library.view === 'list'}
-			<div class="max-md:hidden">
-				<TagFlexList tags={entry.tags} />
-			</div>
-		{/if}
-		<div class="text-sm max-md:hidden">
-			{formatDate(entry.created_at)}
-		</div>
-		<div class="flex gap-1">
+	<div class="max-md:hidden">
+		<TagFlexList tags={entry.tags} />
+	</div>
+	{#if showCategory}
+		<span class="flex w-32 shrink-0 items-center gap-1.5 text-sm text-c-neutral-5 max-md:hidden dark:text-c-neutral-4">
+			{#if entry.category}
+				<span class="size-2 shrink-0 rounded-full" style="background-color: {entry.category.color ?? 'var(--color-s-teal)'};"></span>
+				<span class="truncate">{entry.category.title}</span>
+			{/if}
+		</span>
+	{/if}
+	<div class="flex shrink-0 items-center gap-1">
+		<div class={ON_ROW_HOVER} class:md:opacity-0={!entry.is_favorite}>
 			<StarButton onClick={(e: MouseEvent) => onStar(e)} selected={entry.is_favorite} />
-			<InlineDeleteButton onClick={(e: MouseEvent) => onDelete(e)} />
+		</div>
+		<div class="md:opacity-0 {ON_ROW_HOVER}">
+			<DeleteButton onClick={(e: MouseEvent) => onDelete(e)} inModal={false} buttonStyle="fill-on-hover" />
 		</div>
 	</div>
+	<span class="shrink-0 text-sm text-c-neutral-5 tabular-nums max-md:hidden dark:text-c-neutral-4">{formatDate(entry.created_at)}</span>
 </a>

@@ -22,6 +22,20 @@ describe('getInitials', () => {
 		expect(getInitials('John', 'Doe (Jr)')).toBe('JD');
 	});
 
+	it('uses the first letter of a bracketed or quoted last name', () => {
+		expect(getInitials('Anna', '[Julian F.]')).toBe('AJ');
+		expect(getInitials('Adem', '(Prag)')).toBe('AP');
+		expect(getInitials('Eva', '"Evi"')).toBe('EE');
+	});
+
+	it('uses letters from any alphabet', () => {
+		expect(getInitials('Özge', 'Ünal')).toBe('ÖÜ');
+	});
+
+	it('skips a name part without any letter', () => {
+		expect(getInitials('Anna', '[22]')).toBe('A');
+	});
+
 	it('returns an empty string when both names are missing', () => {
 		expect(getInitials(null, null)).toBe('');
 		expect(getInitials('', '')).toBe('');

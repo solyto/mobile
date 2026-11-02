@@ -48,7 +48,6 @@
 			titleValue = '';
 			urlValue = '';
 			library.closeCreateModal();
-			await library.load();
 		} else {
 			notifications.error(ts.get.libraries.links.create_error);
 		}

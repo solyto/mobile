@@ -6,6 +6,7 @@
 	import type { Note } from '$lib/types/note';
 	import { onMount } from 'svelte';
 	import { getAuth } from '$lib/state/Auth.svelte';
+	import { getNavigation } from '$lib/state/Navigation.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { apiRoutes } from '$lib/config/apiRoutes';
 	import MusicReleasesWidget from '$lib/components/dashboard/widgets/MusicReleasesWidget.svelte';
@@ -16,6 +17,7 @@
 	import EmptyState from '$lib/components/ui/EmptyState.svelte';
 
 	const auth = getAuth();
+	const nav = getNavigation();
 	const ts = getTranslation();
 	const apiService = auth.apiService;
 
@@ -27,6 +29,12 @@
 	let notesLoaded = $state<boolean>(false);
 
 	onMount(() => {
+		if (nav.features.libraries) loadLibraries();
+		if (nav.features.notes) loadNotes();
+		else notesLoaded = true;
+	});
+
+	function loadLibraries(): void {
 		apiService.get(apiRoutes.libraries.quotes.getRandom, null).then((res) => {
 			if (res) quote = res.data as Quote;
 		});
@@ -36,6 +44,12 @@
 		apiService.list(apiRoutes.libraries.books.releases).then((res) => {
 			if (res) bookReleases = (res.data as BookRelease[]).slice(0, 5);
 		});
+		apiService.list(apiRoutes.libraries.links.newest).then((res) => {
+			if (res) newestLinks = res.data as Link[];
+		});
+	}
+
+	function loadNotes(): void {
 		apiService.list(apiRoutes.notes.list).then((res) => {
 			if (res) {
 				newestNotes = (res.data as Note[])
@@ -48,10 +62,7 @@
 			}
 			notesLoaded = true;
 		});
-		apiService.list(apiRoutes.libraries.links.newest).then((res) => {
-			if (res) newestLinks = res.data as Link[];
-		});
-	});
+	}
 </script>
 
 <div class="flex flex-col gap-12">

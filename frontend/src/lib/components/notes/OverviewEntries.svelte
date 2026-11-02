@@ -18,15 +18,6 @@
 		title: string;
 	} = $props();
 
-	const ACCENT_COLORS = [
-		'#1dbda5', '#4e1f90', '#14a5cd', '#fc9427', '#ec3a41', '#61d96a', '#992f8c', '#1c68c3'
-	];
-
-	function getAccentColor(categoryId: number | null): string {
-		if (!categoryId) return '#9ca3af';
-		return ACCENT_COLORS[categoryId % ACCENT_COLORS.length];
-	}
-
 	function getContentPreview(content: string): string {
 		const stripped = content
 			.replace(/<[^>]*>/g, ' ')
@@ -40,7 +31,7 @@
 			.replace(/[>~]/g, '')
 			.replace(/\s+/g, ' ')
 			.trim();
-		return stripped.length > 100 ? stripped.slice(0, 100) + '…' : stripped;
+		return stripped;
 	}
 </script>
 
@@ -57,7 +48,6 @@
 			>
 				<div
 					class="relative flex md:min-h-[10rem] w-full flex-col gap-2 rounded-md bg-c-bg-surface p-3 shadow-sm transition-all hover:bg-c-neutral"
-					style="border-left: 3px solid {getAccentColor(note.category_id)}"
 				>
 					{#if note.is_favorite}
 						<span class="absolute top-2 right-2 text-c-action">
@@ -66,7 +56,7 @@
 					{/if}
 					<h3 class="pr-5 font-bold leading-tight">{note.title}</h3>
 					{#if note.content}
-						<p class="text-xs leading-relaxed text-c-neutral-5 dark:text-c-neutral-4">
+						<p class="line-clamp-3 text-sm leading-relaxed text-c-neutral-5 dark:text-c-neutral-4">
 							{getContentPreview(note.content)}
 						</p>
 					{/if}
@@ -86,21 +76,14 @@
 								{/if}
 							</div>
 						{/if}
-						<div class="flex flex-col gap-0.5 text-xs text-c-neutral-5 dark:text-c-neutral-4">
-							<div class="flex items-center gap-1.5">
-								<IconFolder size={12} />
-								<span
-									>{note.category_id
-										? notes.getCategoryTitle(note.category_id)
-										: '-'}</span
-								>
-							</div>
-							<span
-								>{ts.get.notes.updated_days_ago.replace(
-									'%d',
-									daysSince(note.updated_at).toString()
-								)}</span
-							>
+						<div class="flex items-center justify-between gap-3 text-xs text-c-neutral-5 dark:text-c-neutral-4">
+							{#if note.category_id}
+								<span class="flex min-w-0 items-center gap-1.5">
+									<IconFolder size={12} class="shrink-0" />
+									<span class="truncate">{notes.getCategoryTitle(note.category_id)}</span>
+								</span>
+							{/if}
+							<span class="ml-auto shrink-0">{ts.get.notes.updated_days_ago.replace('%d', daysSince(note.updated_at).toString())}</span>
 						</div>
 					</div>
 				</div>

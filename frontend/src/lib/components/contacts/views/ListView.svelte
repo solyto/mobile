@@ -39,51 +39,43 @@
 		{/if}
 		{#each Object.entries(contacts.contactsAZ) as [letter, entries] (letter)}
 			{#if entries.length > 0}
-				<div class="w-full py-4 text-2xl font-bold" bind:this={sectionRefs[letter]}>
-					<span class="rounded-full bg-c-heading px-4 py-1 text-white dark:bg-c-primary"
-						>{letter}</span
-					>
+				<div class="flex w-full items-center gap-4 pt-4" bind:this={sectionRefs[letter]}>
+					<span class="text-2xl font-bold text-c-neutral-5 dark:text-c-neutral-4">{letter}</span>
+					<span class="h-px flex-1 bg-c-neutral-1 dark:bg-s-dark-3"></span>
 				</div>
-				<div class="flex w-full flex-wrap gap-4">
+				<div class="grid w-full grid-cols-[repeat(auto-fill,minmax(min(20rem,100%),1fr))] gap-x-4 gap-y-1">
 					{#each entries as contact (contact.address_book_id + '-' + contact.uid)}
 						<button
 							type="button"
-							class="cursor-pointer transition-all max-md:w-full"
+							class="flex w-full min-w-0 cursor-pointer items-center gap-4 rounded-lg px-2 py-2 text-left transition-colors hover:bg-c-neutral dark:hover:bg-s-dark-3"
 							onclick={() => contacts.openDetailModal(contact)}
 						>
-							<div
-								class="relative h-full w-full rounded-lg bg-c-bg-surface px-2 py-3 shadow-sm transition-all hover:bg-c-bg-elevated md:w-96"
-							>
-								{#if contact.groups}
-									<div
-										class="absolute top-0 right-0 rounded-tr-lg rounded-bl-lg bg-c-neutral px-2 py-1 text-xs text-c-neutral-5 dark:bg-s-dark-3 dark:text-c-neutral-4"
-									>
-										{contact.groups.join(', ')}
-									</div>
-								{/if}
-								<div class="flex h-full w-full items-center gap-4">
-									<div
-										class="ml-1 h-full w-1 flex-shrink-0 rounded-full"
-										style="background-color: {contacts.getAddressBookColor(contact.address_book_id)}"
-									></div>
-									{#if contacts.contactPhotos[contact.uri]}
-										<img
-											src={contacts.contactPhotos[contact.uri]}
-											alt="{contact.first_name} {contact.last_name}"
-											class="size-12 rounded-full object-cover shadow-xs"
-										/>
-									{:else}
-										<div
-											class="flex size-12 items-center justify-center rounded-full bg-c-neutral-2 text-xl font-bold text-c-btn shadow-xs dark:bg-s-dark-3"
-										>
-											{getInitials(contact.first_name, contact.last_name)}
-										</div>
-									{/if}
-									<div class="text-lg">
-										{contact.first_name}
-										{contact.last_name}
-									</div>
+							{#if contacts.contactPhotos[contact.uri]}
+								<img
+									src={contacts.contactPhotos[contact.uri]}
+									alt="{contact.first_name} {contact.last_name}"
+									class="size-12 shrink-0 rounded-full object-cover shadow-xs"
+								/>
+							{:else}
+								<div
+									class="flex size-12 shrink-0 items-center justify-center rounded-full bg-c-neutral-2 text-xl font-bold text-c-btn shadow-xs dark:bg-s-dark-3"
+								>
+									{getInitials(contact.first_name, contact.last_name)}
 								</div>
+							{/if}
+							<div class="min-w-0">
+								<div class="flex items-center gap-2">
+									{#if contacts.activeAddressBook === null}
+										<span
+											class="size-2 shrink-0 rounded-full"
+											style="background-color: {contacts.getAddressBookColor(contact.address_book_id)};"
+										></span>
+									{/if}
+									<span class="truncate text-lg">{contact.first_name} {contact.last_name}</span>
+								</div>
+								{#if contact.groups}
+									<div class="truncate text-sm text-c-neutral-5 dark:text-c-neutral-4" class:pl-4={contacts.activeAddressBook === null}>{contact.groups.join(', ')}</div>
+								{/if}
 							</div>
 						</button>
 					{/each}

@@ -52,6 +52,14 @@
 		<AddNoteButton onClick={() => notes.openModal('note')} />
 		<AddFolderButton onClick={() => notes.openModal('category')} />
 	</div>
+	<a
+		href={resolve(urls.notes)}
+		class="mb-4 flex cursor-pointer items-center space-x-2 rounded-lg px-2 py-1 hover:bg-c-neutral dark:hover:bg-s-dark-3"
+		class:bg-c-neutral-1={page.url.pathname === urls.notes}
+		class:dark:bg-s-dark-3={page.url.pathname === urls.notes}
+	>
+		<span>{ts.get.notes.dashboard}</span>
+	</a>
 	{#if auth.user?.settings?.journal_enabled}
 		<div class="mb-4 flex flex-col gap-1">
 			<NavHeading title={ts.get.notes.journal} class="mb-1" />

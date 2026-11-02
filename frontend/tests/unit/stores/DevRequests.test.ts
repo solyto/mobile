@@ -28,4 +28,25 @@ describe('DevRequests store', () => {
 			expect(api.list).not.toHaveBeenCalled();
 		});
 	});
+
+	describe('update', () => {
+		it('reloads the entries and reports success', async () => {
+			const store = new DevRequests();
+			store.entries = [devRequest()];
+			api.update.mockResolvedValue(true);
+			api.list.mockResolvedValue({ data: [devRequest({ fixed_in_version: '1.2.0' })] });
+
+			expect(await store.update(store.entries[0], { fixed_in_version: '1.2.0' })).toBe(true);
+			expect(store.entries[0].fixed_in_version).toBe('1.2.0');
+		});
+
+		it('reports failure and keeps the entries when the save fails', async () => {
+			const store = new DevRequests();
+			store.entries = [devRequest()];
+			api.update.mockResolvedValue(false);
+
+			expect(await store.update(store.entries[0], { fixed_in_version: '1.2.0' })).toBe(false);
+			expect(api.list).not.toHaveBeenCalled();
+		});
+	});
 });

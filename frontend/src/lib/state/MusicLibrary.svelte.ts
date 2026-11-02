@@ -35,7 +35,8 @@ export class MusicLibrary {
 		hasExternalLinks: true,
 		hasReleases: true,
 		hasShelf: true,
-		entriesAreLinks: false
+		entriesAreLinks: false,
+		hasSmallForm: false
 	};
 	loaded = $state<boolean>(false);
 	entries = $state<Music[]>([]);

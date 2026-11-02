@@ -28,6 +28,10 @@
 
 		return Object.entries(groups).map(([date, entries]) => ({ date, entries }));
 	}
+
+	function totalMinutes(entries: TimeTrackingEntry[]): number {
+		return entries.reduce((sum, entry) => sum + entry.duration_minutes, 0);
+	}
 </script>
 
 {#if editingEntry}
@@ -45,16 +49,19 @@
 						{group.date}
 					</span>
 					<div class="h-px flex-1 bg-c-neutral-2 dark:bg-s-dark-3"></div>
+					<span class="text-sm tabular-nums text-c-neutral-5 dark:text-c-neutral-4">{tt.formatDuration(totalMinutes(group.entries))}</span>
 				</div>
-				{#each group.entries as entry (entry.id)}
-					<Entry
-						{entry}
-						showProject
-						showEdit
-						showDelete
-						onEdit={(e) => (editingEntry = e)}
-					/>
-				{/each}
+				<div class="flex flex-col divide-y">
+					{#each group.entries as entry (entry.id)}
+						<Entry
+							{entry}
+							showProject
+							showEdit
+							showDelete
+							onEdit={(e) => (editingEntry = e)}
+						/>
+					{/each}
+				</div>
 			</div>
 		{/each}
 	</div>

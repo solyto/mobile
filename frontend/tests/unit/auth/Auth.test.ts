@@ -224,14 +224,14 @@ describe('Auth store', () => {
 
 	describe('login', () => {
 		it('stores the session and fetches additional user data on success', async () => {
-			api.post.mockResolvedValue({ data: loginResponse() });
+			api.postRaw.mockResolvedValue({ success: true, data: loginResponse() });
 			api.get.mockResolvedValue({ data: user({ name: 'Loaded' }) });
 
 			const auth = new Auth();
-			const ok = await auth.login('test@solyto.app', 'secret');
+			const result = await auth.login('test@solyto.app', 'secret');
 
-			expect(ok).toBe(true);
-			expect(api.post).toHaveBeenCalledWith(expect.stringContaining('/login'), {
+			expect(result).toEqual({ success: true });
+			expect(api.postRaw).toHaveBeenCalledWith(expect.stringContaining('/login'), {
 				email: 'test@solyto.app',
 				password: 'secret',
 				platform: 'web'
@@ -244,15 +244,35 @@ describe('Auth store', () => {
 			expect(storage.setJson).toHaveBeenCalled();
 		});
 
-		it('returns false and keeps the store logged out on failure', async () => {
-			api.post.mockResolvedValue(null);
+		it('reports failure and keeps the store logged out when the API refuses', async () => {
+			api.postRaw.mockResolvedValue(null);
 
 			const auth = new Auth();
-			const ok = await auth.login('test@solyto.app', 'wrong');
+			const result = await auth.login('test@solyto.app', 'wrong');
 
-			expect(ok).toBe(false);
+			expect(result.success).toBe(false);
 			expect(auth.loggedIn).toBe(false);
 			expect(storage.setJson).not.toHaveBeenCalled();
+		});
+
+		it('passes the API error codes through on failure', async () => {
+			api.postRaw.mockResolvedValue({ success: false, errors: ['email_unverified'] });
+
+			const auth = new Auth();
+			const result = await auth.login('test@solyto.app', 'secret');
+
+			expect(result).toEqual({ success: false, errors: ['email_unverified'] });
+			expect(auth.loggedIn).toBe(false);
+		});
+
+		it('drops validation errors that are not error codes', async () => {
+			api.postRaw.mockResolvedValue({ success: false, errors: { email: ['The email field must be a valid email address.'] } });
+
+			const auth = new Auth();
+			const result = await auth.login('not-an-email', 'secret');
+
+			expect(result).toEqual({ success: false, errors: undefined });
+			expect(auth.loggedIn).toBe(false);
 		});
 	});
 
@@ -451,7 +471,7 @@ describe('Auth store', () => {
 
 	describe('logout', () => {
 		it('clears the session and removes the stored auth', async () => {
-			api.post.mockResolvedValue({ data: loginResponse() });
+			api.postRaw.mockResolvedValue({ success: true, data: loginResponse() });
 			const auth = new Auth();
 			await auth.login('a@b.c', 'p');
 			expect(auth.loggedIn).toBe(true);

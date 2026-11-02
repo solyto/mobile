@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { fade } from 'svelte/transition';
 	import type { Todo, TodoStatus } from '$lib/types/todo';
 	import { getTodos } from '$lib/state/Todos.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
@@ -27,7 +28,6 @@
 	async function handleStatusChange(todo: Todo, status: TodoStatus): Promise<void> {
 		loadingIndicator.start();
 		await todos.changeStatus(todo.id, status);
-		await todos.load();
 
 		toggleStatusMenu();
 		loadingIndicator.stop();
@@ -77,7 +77,11 @@
 			class="flex cursor-pointer items-center gap-1.5 2xl:gap-2 text-sm transition-all hover:opacity-80"
 			onclick={toggleStatusMenu}
 		>
-			{@render label(todo.status)}
+			{#key todo.status}
+				<span class="flex items-center gap-1.5 2xl:gap-2" in:fade={{ duration: 250 }}>
+					{@render label(todo.status)}
+				</span>
+			{/key}
 		</button>
 		{#if statusMenuVisible}
 			<QuickSelectOverlay

@@ -5,10 +5,12 @@
 	import CardsView from '$lib/components/libraries/shared/CardsView.svelte';
 	import ListView from '$lib/components/libraries/shared/ListView.svelte';
 	import QuotesView from '$lib/components/libraries/shared/QuotesView.svelte';
+	import LinksView from '$lib/components/libraries/shared/LinksView.svelte';
 	import type { Library } from '$lib/types/library';
 	import type { MusicLibrary } from '$lib/state/MusicLibrary.svelte';
 	import type { BookLibrary } from '$lib/state/BookLibrary.svelte';
 	import type { QuoteLibrary } from '$lib/state/QuoteLibrary.svelte';
+	import type { LinkLibrary } from '$lib/state/LinkLibrary.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 
 	const ts = getTranslation();
@@ -17,11 +19,13 @@
 </script>
 
 {#if library.loaded && library.entries.length === 0}
-	<EmptyState title={ts.get.libraries.no_entries} description={ts.get.libraries.no_entries_desc} />
+	<EmptyState title={ts.get.libraries.no_entries} description={ts.get.libraries.no_entries_desc} py={6} />
 {:else if library.loaded && library.filteredEntries.length === 0}
-	<EmptyState title={ts.get.libraries.no_results} description={ts.get.libraries.no_results_desc} />
+	<EmptyState title={ts.get.libraries.no_results} description={ts.get.libraries.no_results_desc} py={6} />
 {:else if library.config.type === 'quotes'}
 	<QuotesView library={library as QuoteLibrary} />
+{:else if library.config.type === 'links'}
+	<LinksView library={library as LinkLibrary} />
 {:else if library.view === 'shelf'}
 	<ShelfView library={library as MusicLibrary | BookLibrary} />
 {:else if library.view === 'spine'}

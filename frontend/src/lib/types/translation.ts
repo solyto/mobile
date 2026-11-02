@@ -1,4 +1,4 @@
-export type Language = 'en' | 'de' | 'fr' | 'es' | 'it';
+export type Language = 'en' | 'de' | 'fr' | 'es' | 'it' | 'ru';
 
 export interface LayoutRecords {
 	modal_explanation: string;
@@ -73,6 +73,7 @@ export interface SettingsRecords {
 	french: string;
 	spanish: string;
 	italian: string;
+	russian: string;
 	tags: string;
 	new_tag: string;
 	localization: string;
@@ -439,6 +440,32 @@ export interface WidgetRecords {
 
 export interface NoteRecords {
 	notebook: string;
+	dashboard: string;
+	table_add_row_above: string;
+	table_add_row_below: string;
+	table_delete_row: string;
+	table_add_column_left: string;
+	table_add_column_right: string;
+	table_delete_column: string;
+	table_delete: string;
+	editor_undo: string;
+	editor_redo: string;
+	editor_heading_1: string;
+	editor_heading_2: string;
+	editor_heading_3: string;
+	editor_bold: string;
+	editor_italic: string;
+	editor_strikethrough: string;
+	editor_inline_code: string;
+	editor_bullet_list: string;
+	editor_ordered_list: string;
+	editor_blockquote: string;
+	editor_code_block: string;
+	editor_horizontal_rule: string;
+	editor_insert_link: string;
+	editor_insert_table: string;
+	editor_insert_image: string;
+	editor_formatting: string;
 	no_notes: string;
 	no_notes_desc: string;
 	new_note: string;
@@ -449,7 +476,6 @@ export interface NoteRecords {
 	delete_note: string;
 	delete_folder: string;
 	editor: string;
-	output: string;
 	create_note_success: string;
 	create_folder_success: string;
 	create_error: string;
@@ -460,7 +486,6 @@ export interface NoteRecords {
 	export: string;
 	created_days_ago: string;
 	updated_days_ago: string;
-	new_notes: string;
 	last_updated: string;
 	enter_note_title: string;
 	enter_folder_title: string;
@@ -749,6 +774,7 @@ export interface DevRecords {
 		status_completed: string;
 		status_cancelled: string;
 		validation_error: string;
+		save_error: string;
 		priority_1: string;
 		priority_2: string;
 		priority_3: string;
@@ -807,6 +833,7 @@ export interface FeedRecords {
 	add_feed: string;
 	edit_feed: string;
 	delete_feed: string;
+	delete_feed_description: string;
 	title: string;
 	url: string;
 	keywords: string;
@@ -904,6 +931,15 @@ export interface CalendarRecords {
 		3: string;
 		4: string;
 	};
+	// Optional grammatical variants for "on the <ordinal> <weekday>", for languages
+	// where the weekday is inflected there or the ordinal agrees with it (ru).
+	// Falls back to `weekdays` / `recurrence_ordinals` when not set.
+	recurrence_weekdays?: {
+		[key: number]: string;
+	};
+	recurrence_ordinals_by_weekday?: {
+		[weekday: number]: { [ordinal: number]: string };
+	};
 	choose_calendar: string;
 	request_sync: string;
 	sync_success: string;
@@ -959,6 +995,7 @@ export interface CalendarRecords {
 }
 
 export interface ContactRecords {
+	all: string;
 	add_contact: string;
 	no_contacts: string;
 	no_contacts_desc: string;

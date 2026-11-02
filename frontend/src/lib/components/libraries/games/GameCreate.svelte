@@ -146,7 +146,6 @@
 			selectedTags = [];
 			isWishlist = false;
 			library.closeCreateModal();
-			await library.load();
 		}
 
 		loadingIndicator.stop();
@@ -175,7 +174,6 @@
 		const ok = await library.update(activeEntry!, request);
 		if (ok) {
 			library.closeCreateModal();
-			await library.load();
 		}
 
 		loadingIndicator.stop();

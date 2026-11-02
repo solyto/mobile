@@ -5,30 +5,46 @@
 		onClick,
 		title = '',
 		inModal = true,
-		buttonStyle = 'default'
+		buttonStyle = 'default',
+		iconClass = 'size-5'
 	}: {
-		onClick: () => void;
+		onClick: (e: MouseEvent) => void;
 		title?: string;
 		inModal?: boolean;
-		buttonStyle?: 'default' | 'plain' | 'minimal';
+		buttonStyle?: 'default' | 'plain' | 'minimal' | 'fill-on-hover';
+		iconClass?: string;
 	} = $props();
 </script>
 
-<button
-	class="z-40 flex cursor-pointer items-center justify-center rounded-full drop-shadow-md transition-all hover:drop-shadow-xl"
-	class:bg-c-btn={buttonStyle === 'default'}
-	class:text-white={buttonStyle === 'default'}
-	class:size-[34px]={buttonStyle === 'default'}
-	class:text-c-btn={buttonStyle === 'plain'}
-	class:text-c-neutral-3={buttonStyle === 'minimal'}
-	class:drop-shadow-none={buttonStyle === 'minimal'}
-	class:hover:text-c-btn={buttonStyle === 'minimal'}
-	class:hover:text-c-heading={buttonStyle !== 'minimal'}
-	class:absolute={inModal}
-	class:top-20={inModal}
-	class:right-4={inModal}
-	onclick={onClick}
-	{title}
->
-	<IconPen class="size-5" />
-</button>
+{#if buttonStyle === 'fill-on-hover'}
+	<button
+		type="button"
+		class="group relative flex size-[34px] cursor-pointer items-center justify-center rounded-full text-c-neutral-3"
+		onclick={onClick}
+		{title}
+		aria-label={title || undefined}
+	>
+		<span class="absolute h-0 w-0 rounded-full bg-c-btn transition-all group-hover:h-full group-hover:w-full group-focus-visible:h-full group-focus-visible:w-full"></span>
+		<IconPen class="relative {iconClass} transition-colors group-hover:text-white group-focus-visible:text-white" />
+	</button>
+{:else}
+	<button
+		class="z-40 flex cursor-pointer items-center justify-center rounded-full drop-shadow-md transition-all hover:drop-shadow-xl"
+		class:bg-c-btn={buttonStyle === 'default'}
+		class:text-white={buttonStyle === 'default'}
+		class:size-[34px]={buttonStyle === 'default'}
+		class:text-c-btn={buttonStyle === 'plain'}
+		class:text-c-neutral-3={buttonStyle === 'minimal'}
+		class:drop-shadow-none={buttonStyle === 'minimal'}
+		class:hover:text-c-btn={buttonStyle === 'minimal'}
+		class:hover:text-c-heading={buttonStyle !== 'minimal'}
+		class:absolute={inModal}
+		class:top-20={inModal}
+		class:right-4={inModal}
+		onclick={onClick}
+		{title}
+		aria-label={title || undefined}
+	>
+		<IconPen class={iconClass} />
+	</button>
+{/if}

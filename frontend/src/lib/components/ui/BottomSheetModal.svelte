@@ -102,7 +102,9 @@
 		out:fly|global={{ y: 400, duration: 250 }}
 	>
 		{#if onClose}
-			<CloseButton onClick={onClose} />
+			<div class="absolute right-4 z-40" class:top-6={title} class:top-4={!title}>
+				<CloseButton onClick={onClose} inModal={false} />
+			</div>
 		{/if}
 		{#if onComplete}
 			<div class="absolute top-20 right-4 z-40">

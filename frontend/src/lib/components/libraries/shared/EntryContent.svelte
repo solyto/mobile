@@ -1,7 +1,6 @@
 <script lang="ts">
 	import BookEntry from '$lib/components/libraries/books/BookEntry.svelte';
 	import MusicEntry from '$lib/components/libraries/music/MusicEntry.svelte';
-	import LinkEntry from '$lib/components/libraries/links/LinkEntry.svelte';
 	import RecipeEntry from '$lib/components/libraries/recipes/RecipeEntry.svelte';
 	import MovieEntry from '$lib/components/libraries/movies/MovieEntry.svelte';
 	import GameEntry from '$lib/components/libraries/games/GameEntry.svelte';
@@ -16,7 +15,6 @@
 	import type { Plant } from '$lib/types/library_plant';
 	import type { MusicLibrary } from '$lib/state/MusicLibrary.svelte';
 	import type { BookLibrary } from '$lib/state/BookLibrary.svelte';
-	import type { LinkLibrary } from '$lib/state/LinkLibrary.svelte';
 	import type { RecipeLibrary } from '$lib/state/RecipeLibrary.svelte';
 	import type { MovieLibrary } from '$lib/state/MovieLibrary.svelte';
 	import type { GameLibrary } from '$lib/state/GameLibrary.svelte';
@@ -32,8 +30,6 @@
 	<MusicEntry entry={entry as Music} library={library as MusicLibrary} />
 {:else if library.config.type === 'books'}
 	<BookEntry entry={entry as Book} library={library as BookLibrary} />
-{:else if library.config.type === 'links'}
-	<LinkEntry entry={entry as Link} library={library as LinkLibrary} />
 {:else if library.config.type === 'recipes'}
 	<RecipeEntry entry={entry as Recipe} library={library as RecipeLibrary} />
 {:else if library.config.type === 'movies'}

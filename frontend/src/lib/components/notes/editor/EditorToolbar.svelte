@@ -5,6 +5,7 @@
 	import ToolbarDivider from '$lib/components/notes/editor/ToolbarDivider.svelte';
 	import { fly } from 'svelte/transition';
 	import { clickOutside } from '$lib/helpers/ClickHelper';
+	import { getTranslation } from '$lib/state/Translation.svelte';
 	import Bold from '@lucide/svelte/icons/bold';
 	import Italic from '@lucide/svelte/icons/italic';
 	import Strikethrough from '@lucide/svelte/icons/strikethrough';
@@ -40,6 +41,8 @@
 	}
 
 	let { editor, activeStates }: { editor: Editor; activeStates: ActiveStates } = $props();
+
+	const ts = getTranslation();
 
 
 	let imageModalOpen = $state(false);
@@ -77,10 +80,10 @@
 </script>
 
 {#snippet toolbarContent()}
-	<button onclick={() => editor.chain().focus().undo().run()} class="toolbar-btn cursor-pointer" title="Undo">
+	<button onclick={() => editor.chain().focus().undo().run()} class="toolbar-btn cursor-pointer" title={ts.get.notes.editor_undo}>
 		<Undo size={15} />
 	</button>
-	<button onclick={() => editor.chain().focus().redo().run()} class="toolbar-btn cursor-pointer" title="Redo">
+	<button onclick={() => editor.chain().focus().redo().run()} class="toolbar-btn cursor-pointer" title={ts.get.notes.editor_redo}>
 		<Redo size={15} />
 	</button>
 
@@ -90,7 +93,7 @@
 		onclick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
 		class="toolbar-btn cursor-pointer"
 		class:toolbar-btn-active={activeStates.h1}
-		title="Heading 1"
+		title={ts.get.notes.editor_heading_1}
 	>
 		<Heading1 size={15} />
 	</button>
@@ -98,7 +101,7 @@
 		onclick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
 		class="toolbar-btn cursor-pointer"
 		class:toolbar-btn-active={activeStates.h2}
-		title="Heading 2"
+		title={ts.get.notes.editor_heading_2}
 	>
 		<Heading2 size={15} />
 	</button>
@@ -106,7 +109,7 @@
 		onclick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
 		class="toolbar-btn cursor-pointer"
 		class:toolbar-btn-active={activeStates.h3}
-		title="Heading 3"
+		title={ts.get.notes.editor_heading_3}
 	>
 		<Heading3 size={15} />
 	</button>
@@ -117,7 +120,7 @@
 		onclick={() => editor.chain().focus().toggleBold().run()}
 		class="toolbar-btn cursor-pointer"
 		class:toolbar-btn-active={activeStates.bold}
-		title="Bold"
+		title={ts.get.notes.editor_bold}
 	>
 		<Bold size={15} />
 	</button>
@@ -125,7 +128,7 @@
 		onclick={() => editor.chain().focus().toggleItalic().run()}
 		class="toolbar-btn cursor-pointer"
 		class:toolbar-btn-active={activeStates.italic}
-		title="Italic"
+		title={ts.get.notes.editor_italic}
 	>
 		<Italic size={15} />
 	</button>
@@ -133,7 +136,7 @@
 		onclick={() => editor.chain().focus().toggleStrike().run()}
 		class="toolbar-btn cursor-pointer"
 		class:toolbar-btn-active={activeStates.strike}
-		title="Strikethrough"
+		title={ts.get.notes.editor_strikethrough}
 	>
 		<Strikethrough size={15} />
 	</button>
@@ -141,7 +144,7 @@
 		onclick={() => editor.chain().focus().toggleCode().run()}
 		class="toolbar-btn cursor-pointer"
 		class:toolbar-btn-active={activeStates.code}
-		title="Inline code"
+		title={ts.get.notes.editor_inline_code}
 	>
 		<Code size={15} />
 	</button>
@@ -152,7 +155,7 @@
 		onclick={() => editor.chain().focus().toggleBulletList().run()}
 		class="toolbar-btn cursor-pointer"
 		class:toolbar-btn-active={activeStates.bulletList}
-		title="Bullet list"
+		title={ts.get.notes.editor_bullet_list}
 	>
 		<List size={15} />
 	</button>
@@ -160,7 +163,7 @@
 		onclick={() => editor.chain().focus().toggleOrderedList().run()}
 		class="toolbar-btn cursor-pointer"
 		class:toolbar-btn-active={activeStates.orderedList}
-		title="Ordered list"
+		title={ts.get.notes.editor_ordered_list}
 	>
 		<ListOrdered size={15} />
 	</button>
@@ -171,7 +174,7 @@
 		onclick={() => editor.chain().focus().toggleBlockquote().run()}
 		class="toolbar-btn cursor-pointer"
 		class:toolbar-btn-active={activeStates.blockquote}
-		title="Blockquote"
+		title={ts.get.notes.editor_blockquote}
 	>
 		<Quote size={15} />
 	</button>
@@ -179,14 +182,14 @@
 		onclick={() => editor.chain().focus().toggleCodeBlock().run()}
 		class="toolbar-btn cursor-pointer"
 		class:toolbar-btn-active={activeStates.codeBlock}
-		title="Code block"
+		title={ts.get.notes.editor_code_block}
 	>
 		<CodeXml size={15} />
 	</button>
 	<button
 		onclick={() => editor.chain().focus().setHorizontalRule().run()}
 		class="toolbar-btn cursor-pointer"
-		title="Horizontal rule"
+		title={ts.get.notes.editor_horizontal_rule}
 	>
 		<Minus size={15} />
 	</button>
@@ -197,14 +200,14 @@
 		onclick={openLinkModal}
 		class="toolbar-btn cursor-pointer"
 		class:toolbar-btn-active={activeStates.link}
-		title="Insert link"
+		title={ts.get.notes.editor_insert_link}
 	>
 		<Link2 size={15} />
 	</button>
-	<button onclick={insertTable} class="toolbar-btn cursor-pointer" title="Insert table">
+	<button onclick={insertTable} class="toolbar-btn cursor-pointer" title={ts.get.notes.editor_insert_table}>
 		<TableIcon size={15} />
 	</button>
-	<button onclick={() => (imageModalOpen = true)} class="toolbar-btn cursor-pointer" title="Insert image">
+	<button onclick={() => (imageModalOpen = true)} class="toolbar-btn cursor-pointer" title={ts.get.notes.editor_insert_image}>
 		<ImageIcon size={15} />
 	</button>
 {/snippet}
@@ -220,7 +223,7 @@
 	class:text-s-teal={open}
 	class:text-c-neutral-6={!open}
 	onclick={() => (open = true)}
-	title="Formatting"
+	title={ts.get.notes.editor_formatting}
 >
 	<PenLine size={18} />
 </button>

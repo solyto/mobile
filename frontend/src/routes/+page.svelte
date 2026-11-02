@@ -36,9 +36,11 @@
 	let keyHandlers: { [key: string]: string | null } = { Enter: null };
 
 	onMount(async () => {
-		loadingIndicator.start();
-		await todos.load();
-		loadingIndicator.stop();
+		if (nav.features.todos) {
+			loadingIndicator.start();
+			await todos.load();
+			loadingIndicator.stop();
+		}
 
 		if (auth.user?.settings?.first_visit) {
 			showOnboardingModal = true;

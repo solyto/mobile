@@ -31,14 +31,20 @@
 	}
 
 	function ordinalOptions(): { label: string; value: string }[] {
+		const byWeekday = ts.get.calendar.recurrence_ordinals_by_weekday?.[weekdayNumber(selection.monthlyWeekday)];
 		return ORDINALS.map((ordinal) => ({
-			label: ts.get.calendar.recurrence_ordinals[ordinal],
+			label: byWeekday?.[ordinal] ?? ts.get.calendar.recurrence_ordinals[ordinal],
 			value: String(ordinal)
 		}));
 	}
 
 	function weekdayOptions(): { label: string; value: Weekday }[] {
-		return WEEKDAYS.map((day) => ({ label: ts.get.calendar.weekdays[weekdayNumber(day)], value: day }));
+		return WEEKDAYS.map((day) => ({
+			label:
+				ts.get.calendar.recurrence_weekdays?.[weekdayNumber(day)] ??
+				ts.get.calendar.weekdays[weekdayNumber(day)],
+			value: day
+		}));
 	}
 
 	function weekdayNumber(day: Weekday): number {

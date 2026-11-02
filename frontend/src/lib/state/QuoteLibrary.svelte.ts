@@ -19,7 +19,8 @@ export class QuoteLibrary {
 		hasExternalLinks: false,
 		hasReleases: false,
 		hasShelf: false,
-		entriesAreLinks: false
+		entriesAreLinks: false,
+		hasSmallForm: false
 	};
 	loaded = $state<boolean>(false);
 	entries = $state<Quote[]>([]);

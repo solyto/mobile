@@ -1,45 +1,42 @@
 <script lang="ts">
 	import { getLinkLibrary } from '$lib/state/LinkLibrary.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
+	import NavIndicator from '$lib/components/ui/NavIndicator.svelte';
 	import CategoryCreate from '$lib/components/libraries/links/CategoryCreate.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import IconTrash from '@lucide/svelte/icons/trash-2';
 
 	const library = getLinkLibrary();
 	const ts = getTranslation();
+
+	const TAB = 'relative cursor-pointer touch-manipulation gap-2 rounded-sm bg-c-bg-surface px-6 py-3 font-bold border-1 border-c-neutral-1 drop-shadow-sm transition-all hover:bg-c-neutral max-md:w-full dark:border-transparent dark:hover:bg-s-dark-2';
 </script>
 
-<div class="flex w-full items-center gap-4 overflow-x-auto p-2 pt-3 pb-4 max-md:hidden">
+<div class="flex flex-wrap items-center gap-x-4 gap-y-5 max-md:hidden">
 	<div
 		role="button"
 		tabindex="0"
-		class="relative cursor-pointer touch-manipulation gap-2 rounded-sm bg-c-bg-surface p-8 font-bold drop-shadow-sm transition-all not-dark:border-1 not-dark:border-c-neutral-1 hover:bg-c-neutral max-md:w-full dark:hover:bg-s-dark-2"
+		class={TAB}
 		onclick={() => library.filterByCategory(null)}
 	>
 		{ts.get.libraries.links.all}
 		<Badge i={library.getCategoryCount()} color="var(--color-c-btn-hover)" />
-		<div
-			class="absolute bottom-0 left-0 h-1 w-full rounded-lg bg-[var(--color-c-btn-hover)] opacity-0 transition-all"
-			class:opacity-100={library.activeFilter === null}
-		></div>
+		<NavIndicator active={library.activeFilter === null} edge="bottom" color="var(--color-c-btn-hover)" />
 	</div>
 	<div
 		role="button"
 		tabindex="0"
-		class="relative cursor-pointer touch-manipulation gap-2 rounded-sm bg-c-bg-surface p-8 font-bold drop-shadow-sm transition-all not-dark:border-1 not-dark:border-c-neutral-1 hover:bg-c-neutral max-md:w-full dark:hover:bg-s-dark-2"
+		class={TAB}
 		onclick={() => library.filterByFavorite()}
 	>
 		{ts.get.libraries.links.favorites}
 		<Badge i={library.getFavoriteCount()} color="var(--color-c-warning)" />
-		<div
-			class="absolute bottom-0 left-0 h-1 w-full rounded-lg bg-[var(--color-c-warning)] opacity-0 transition-all"
-			class:opacity-100={library.activeFilter === 'favorite'}
-		></div>
+		<NavIndicator active={library.activeFilter === 'favorite'} edge="bottom" color="var(--color-c-warning)" />
 	</div>
 	<div
 		role="button"
 		tabindex="0"
-		class="relative cursor-pointer touch-manipulation gap-2 rounded-sm bg-c-bg-surface p-8 font-bold drop-shadow-sm transition-all not-dark:border-1 not-dark:border-c-neutral-1 hover:bg-c-neutral max-md:w-full dark:hover:bg-s-dark-2"
+		class={TAB}
 		class:ring-2={library.dragTarget === 0}
 		style={library.dragTarget === 0 ? `--tw-ring-color: var(--color-c-btn);` : ''}
 		ondragover={(e: DragEvent) => {
@@ -57,16 +54,13 @@
 	>
 		{ts.get.libraries.links.uncategorized}
 		<Badge i={library.getCategoryCount(null)} color="var(--color-c-btn)" />
-		<div
-			class="absolute bottom-0 left-0 h-1 w-full rounded-lg bg-[var(--color-c-btn)] opacity-0 transition-all"
-			class:opacity-100={library.activeFilter === 0}
-		></div>
+		<NavIndicator active={library.activeFilter === 0} edge="bottom" color="var(--color-c-btn)" />
 	</div>
 	{#each library.categories as category, i (category.id)}
 		<div
 			role="button"
 			tabindex="0"
-			class="relative group cursor-pointer touch-manipulation gap-2 rounded-sm bg-c-bg-surface p-8 font-bold drop-shadow-sm transition-all not-dark:border-1 not-dark:border-c-neutral-1 hover:bg-c-neutral max-md:w-full dark:hover:bg-s-dark-2"
+			class="group {TAB}"
 			class:ring-2={library.dragTarget === category.id}
 			style={library.dragTarget === category.id
 				? `--tw-ring-color: ${category.color ?? 'var(--color-c-primary)'};`
@@ -89,18 +83,17 @@
 				i={library.getCategoryCount(category.id)}
 				color={category.color ?? 'var(--color-c-primary)'}
 			/>
-			<div
-				class="absolute bottom-0 left-0 h-1 w-full rounded-lg opacity-0 transition-all"
-				style="background-color: {category.color ?? 'var(--color-c-primary)'};"
-				class:opacity-100={library.activeFilter === category.id}
-			></div>
+			<NavIndicator active={library.activeFilter === category.id} edge="bottom" color={category.color ?? 'var(--color-c-primary)'} />
 			<div
 				class="absolute right-[-9px] bottom-[-4px] opacity-0 transition-all group-hover:opacity-100"
 			>
 				<button
 					type="button"
 					class="z-40 flex size-[24px] cursor-pointer items-center justify-center rounded-full bg-c-danger text-white drop-shadow-md transition-all hover:text-c-heading hover:drop-shadow-xl"
-					onclick={() => library.deleteCategory(category)}
+					onclick={(e) => {
+						e.stopPropagation();
+						library.deleteCategory(category);
+					}}
 				>
 					<IconTrash class="size-4" />
 				</button>

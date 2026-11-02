@@ -28,7 +28,7 @@
 	function getDefaultLanguage(): string {
 		if (auth.user?.settings?.language) return auth.user.settings.language;
 		const browserLang = navigator.language?.split('-')[0] || 'en';
-		if (['en', 'de', 'fr', 'es', 'it'].includes(browserLang)) return browserLang;
+		if (['en', 'de', 'fr', 'es', 'it', 'ru'].includes(browserLang)) return browserLang;
 		return 'en';
 	}
 

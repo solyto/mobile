@@ -11,7 +11,7 @@
 	import { getCalendarDrag } from '$lib/state/CalendarDrag.svelte';
 	import type { CalendarDropTarget } from '$lib/services/CalendarDragService';
 	import { createDraggableEvent, findCalendarDayElement } from '$lib/helpers/CalendarDragHelper';
-	import { getCalendarEventKey } from '$lib/helpers/CalendarEventHelper';
+	import { getCalendarEventKey, startsOnDate } from '$lib/helpers/CalendarEventHelper';
 	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
@@ -32,7 +32,7 @@
 		hours.map((hour) => ({
 			hour: parseInt(hour),
 			entries: entries.filter(
-				(entry) => !entry.is_all_day && entry.start_date?.getHours() === parseInt(hour)
+				(entry) => !entry.is_all_day && getSegment(entry).start.getHours() === parseInt(hour)
 			)
 		}))
 	);
@@ -41,12 +41,33 @@
 		return isMobile && isOffHour(hour);
 	}
 
+	// The part of an event that falls on this column's day, so multi-day events stay inside the grid.
+	function getSegment(entry: CalendarEvent): { start: Date; end: Date } {
+		const dayStart = new Date(date);
+		dayStart.setHours(0, 0, 0, 0);
+		const dayEnd = new Date(dayStart);
+		dayEnd.setDate(dayEnd.getDate() + 1);
+
+		return {
+			start: entry.start_date > dayStart ? entry.start_date : dayStart,
+			end: entry.end_date < dayEnd ? entry.end_date : dayEnd
+		};
+	}
+
+	// Percentages resolve against the hour row's inner height, which excludes its 1px border-t,
+	// so one hour of grid spacing is 100% + 1px.
+	function hoursToRowSpan(hours: number): string {
+		return `calc(${hours} * (100% + 1px))`;
+	}
+
 	function getTop(entry: CalendarEvent): string {
-		if (entry.start_date?.getMinutes() === 0) {
+		const minutes = getSegment(entry).start.getMinutes();
+
+		if (minutes === 0) {
 			return '0';
 		}
 
-		return entry.start_date?.getMinutes() + '%';
+		return hoursToRowSpan(minutes / 60);
 	}
 
 	function getHeight(entry: CalendarEvent): string {
@@ -54,9 +75,10 @@
 			return '65%';
 		}
 
-		const h = getDateDiffInMinutes(entry.start_date, entry.end_date) / 0.6;
+		const segment = getSegment(entry);
+		const hours = getDateDiffInMinutes(segment.start, segment.end) / 60;
 
-		return h > 65 ? h + '%' : '65%';
+		return hours > 0.65 ? hoursToRowSpan(hours) : '65%';
 	}
 
 	const dragEnabled = !isMobile;
@@ -79,7 +101,8 @@
 		const durationMinutes = item.end_date
 			? (item.end_date.getTime() - item.start_date.getTime()) / 60000
 			: 60;
-		return Math.max((durationMinutes / 60) * (1 / 27) * 100, 2);
+		const height = Math.max((durationMinutes / 60) * (1 / 27) * 100, 2);
+		return Math.min(height, 100 - getIndicatorTop());
 	}
 
 	function computeTarget(
@@ -129,7 +152,8 @@
 	}
 
 	const draggableEvent = createDraggableEvent(drag, {
-		enabled: () => dragEnabled,
+		// Multi-day timed events can only be dragged from their start day.
+		enabled: (item) => dragEnabled && (item.is_all_day || startsOnDate(item, date)),
 		sourceDateSlug: () => dateSlug,
 		computeTarget,
 		onDrop: commitMove

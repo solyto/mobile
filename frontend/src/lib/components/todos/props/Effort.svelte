@@ -26,7 +26,6 @@
 	async function handleEffortChange(todo: Todo, effort: TodoEffort): Promise<void> {
 		loadingIndicator.start();
 		await todos.changeEffort(todo, effort);
-		await todos.load();
 
 		toggleEffortMenu();
 		loadingIndicator.stop();
@@ -55,7 +54,7 @@
 	class:p-4={(todos.view === 'list' || todos.view === 'grouped') && !compact}
 >
 	{#if changeEffort}
-		<IconClock class="cursor-pointer {getColor(todo.effort)}" onclick={toggleEffortMenu} />
+		<IconClock class="cursor-pointer transition-colors duration-300 {getColor(todo.effort)}" onclick={toggleEffortMenu} />
 		{#if effortMenuVisible}
 			<QuickSelectOverlay onClose={() => (effortMenuVisible = false)} {portal} target={trigger}>
 				<IconClock

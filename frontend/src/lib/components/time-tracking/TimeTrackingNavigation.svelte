@@ -6,9 +6,9 @@
 	import IconLayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
 	import IconList from '@lucide/svelte/icons/list';
 	import IconChartPie from '@lucide/svelte/icons/chart-pie';
-	import IconPlus from '@lucide/svelte/icons/plus';
-	import IconPen from '@lucide/svelte/icons/pen';
-	import IconTrash from '@lucide/svelte/icons/trash-2';
+	import AddButton from '$lib/components/ui/buttons/AddButton.svelte';
+	import EditButton from '$lib/components/ui/buttons/EditButton.svelte';
+	import DeleteButton from '$lib/components/ui/buttons/DeleteButton.svelte';
 	import ColorPicker from 'svelte-awesome-color-picker';
 	import { getTimeTracking } from '$lib/state/TimeTracking.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
@@ -180,16 +180,14 @@
 				<span class="mb-1 mt-2 text-base font-bold 2xl:text-2xl 2xl:font-normal">
 					{ts.get.timeTracking.projects}
 				</span>
-				<button
-					aria-label={ts.get.timeTracking.add_project}
-					class="cursor-pointer rounded-full p-1.5 text-c-neutral-4 transition-colors hover:bg-c-neutral-1 hover:text-c-primary dark:hover:bg-s-dark-3"
-					onclick={() => {
+				<AddButton
+					title={ts.get.timeTracking.add_project}
+					colorOnHover
+					onClick={() => {
 						onCreateProject();
 						handleNavigation();
 					}}
-				>
-					<IconPlus class="size-4" />
-				</button>
+				/>
 			</div>
 			{#each tt.projects as project (project.id)}
 				<div
@@ -207,30 +205,30 @@
 							{tt.formatDuration(project.total_duration ?? 0)}
 						</span>
 					</a>
-					<div class="flex flex-row items-center gap-0.5">
-						<button
-							aria-label={ts.get.timeTracking.edit_project}
-							class="cursor-pointer rounded-full p-1.5 text-c-neutral-4 transition-colors hover:bg-c-neutral-2 hover:text-c-primary dark:hover:bg-s-dark-2"
-							onclick={(e) => {
+					<div class="flex flex-row items-center gap-2">
+						<EditButton
+							title={ts.get.timeTracking.edit_project}
+							onClick={(e) => {
 								e.preventDefault();
 								e.stopPropagation();
 								onEditProject(project.id);
 								handleNavigation();
 							}}
-						>
-							<IconPen class="size-3.5" />
-						</button>
-						<button
-							aria-label={ts.get.timeTracking.deletion_title}
-							class="cursor-pointer rounded-full p-1.5 text-c-neutral-4 transition-colors hover:bg-c-neutral-2 hover:text-c-danger dark:hover:bg-s-dark-2"
-							onclick={(e) => {
+							inModal={false}
+							buttonStyle="minimal"
+							iconClass="size-4"
+						/>
+						<DeleteButton
+							title={ts.get.timeTracking.deletion_title}
+							onClick={(e) => {
 								e.preventDefault();
 								e.stopPropagation();
 								confirmDeleteProjectId = project.id;
 							}}
-						>
-							<IconTrash class="size-3.5" />
-						</button>
+							inModal={false}
+							buttonStyle="minimal"
+							iconClass="size-4"
+						/>
 					</div>
 				</div>
 			{/each}
@@ -241,17 +239,15 @@
 				<span class="mb-1 mt-2 text-base font-bold 2xl:text-2xl 2xl:font-normal">
 					{ts.get.timeTracking.categories}
 				</span>
-				<button
-					aria-label={ts.get.timeTracking.add_category}
-					class="cursor-pointer rounded-full p-1.5 text-c-neutral-4 transition-colors hover:bg-c-neutral-1 hover:text-c-primary dark:hover:bg-s-dark-3"
-					onclick={async () => {
+				<AddButton
+					title={ts.get.timeTracking.add_category}
+					colorOnHover
+					onClick={async () => {
 						startAddCategory();
 						await tick();
 						addCategoryInput?.focus();
 					}}
-				>
-					<IconPlus class="size-4" />
-				</button>
+				/>
 			</div>
 			{#if addingCategory}
 				<div class="flex flex-row items-center space-x-2">
@@ -288,23 +284,23 @@
 							<span class="text-sm">{category.title}</span>
 						{/if}
 					</div>
-					<div class="flex flex-row items-center gap-0.5">
+					<div class="flex flex-row items-center gap-2">
 						{#if editingCategoryId !== category.id}
-							<button
-								aria-label={ts.get.timeTracking.edit_category}
-								class="cursor-pointer rounded-full p-1.5 text-c-neutral-4 transition-colors hover:bg-c-neutral-2 hover:text-c-primary dark:hover:bg-s-dark-2"
-								onclick={() => startEditCategory(category.id, category.title)}
-							>
-								<IconPen class="size-3.5" />
-							</button>
+							<EditButton
+								title={ts.get.timeTracking.edit_category}
+								onClick={() => startEditCategory(category.id, category.title)}
+								inModal={false}
+								buttonStyle="minimal"
+								iconClass="size-4"
+							/>
 						{/if}
-						<button
-							aria-label={ts.get.timeTracking.category_deletion_title}
-							class="cursor-pointer rounded-full p-1.5 text-c-neutral-4 transition-colors hover:bg-c-neutral-2 hover:text-c-danger dark:hover:bg-s-dark-2"
-							onclick={() => (confirmDeleteCategoryId = category.id)}
-						>
-							<IconTrash class="size-3.5" />
-						</button>
+						<DeleteButton
+							title={ts.get.timeTracking.category_deletion_title}
+							onClick={() => { confirmDeleteCategoryId = category.id; }}
+							inModal={false}
+							buttonStyle="minimal"
+							iconClass="size-4"
+						/>
 					</div>
 				</div>
 			{/each}

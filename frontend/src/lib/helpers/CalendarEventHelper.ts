@@ -1,7 +1,12 @@
 import type { CalendarEvent } from '$lib/types/calendar';
+import { formatDate } from '$lib/helpers/DateHelper';
 
 export function getCalendarEventKey(item: CalendarEvent): string {
 	return item.uri + '-' + (item.original_start_date ?? item.start_date)?.getTime();
+}
+
+export function startsOnDate(item: CalendarEvent, date: Date): boolean {
+	return formatDate(item.start_date) === formatDate(date);
 }
 
 export function combineDateAndTime(date: Date, hours: number, minutes: number): Date {

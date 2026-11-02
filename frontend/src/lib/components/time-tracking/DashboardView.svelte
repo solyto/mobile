@@ -69,9 +69,11 @@
 	{#if recentEntries.length > 0}
 		<div class="flex flex-col gap-2">
 			<Heading title={ts.get.timeTracking.recent_entries} my={0} />
-			{#each recentEntries as entry (entry.id)}
-				<Entry {entry} showProject showDate showEdit onEdit={(e) => (editingEntry = e)} />
-			{/each}
+			<div class="flex flex-col divide-y">
+				{#each recentEntries as entry (entry.id)}
+					<Entry {entry} showProject showDate showEdit onEdit={(e) => (editingEntry = e)} />
+				{/each}
+			</div>
 		</div>
 	{/if}
 </div>

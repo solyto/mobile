@@ -65,7 +65,6 @@
 			quoteValue = '';
 			sourceValue = '';
 			library.closeCreateModal();
-			await library.load();
 		} else {
 			notifications.error(ts.get.libraries.quotes.create_error);
 		}
@@ -86,7 +85,6 @@
 		const ok = await library.update(activeEntry!, request);
 		if (ok) {
 			library.closeCreateModal();
-			await library.load();
 		} else {
 			notifications.error(ts.get.libraries.quotes.update_error);
 		}

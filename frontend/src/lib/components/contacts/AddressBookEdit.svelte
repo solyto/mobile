@@ -44,19 +44,22 @@
 			--cp-border-color="var(--color-c-neutral-2)"
 		/>
 	</div>
-	<span class="w-60 text-lg">{addressBook.name}</span>
+	<span class="min-w-0 flex-1">{addressBook.name}</span>
 	<div class="flex items-center gap-1">
 		<button
-			class="cursor-pointer transition-all"
+			type="button"
+			class="group relative flex size-[34px] cursor-pointer items-center justify-center rounded-full drop-shadow-md transition-all hover:drop-shadow-xl"
 			class:text-c-primary={!contacts.isAddressBookHidden(addressBook.id)}
 			class:text-c-neutral-3={contacts.isAddressBookHidden(addressBook.id)}
 			title={ts.get.layout.toggle}
+			aria-label={ts.get.layout.toggle}
 			onclick={() => contacts.toggleAddressBook(addressBook.id)}
 		>
+			<span class="absolute inset-0 rounded-full bg-c-primary opacity-0 transition-all group-hover:opacity-100 group-focus-visible:opacity-100"></span>
 			{#if contacts.isAddressBookHidden(addressBook.id)}
-				<IconEyeOff />
+				<IconEyeOff class="relative size-5 group-hover:text-white group-focus-visible:text-white" />
 			{:else}
-				<IconEye />
+				<IconEye class="relative size-5 group-hover:text-white group-focus-visible:text-white" />
 			{/if}
 		</button>
 		<InlineDeleteButton onClick={onDelete} />

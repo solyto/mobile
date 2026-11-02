@@ -831,4 +831,35 @@ describe('LinkLibrary', () => {
 		s.filterByFavorite();
 		expect(s.getActiveCategoryId()).toBeNull();
 	});
+
+	it('switches back to all and reloads the links after deleting the active category', async () => {
+		const work = linkCategory(1, 'Work');
+		const s = new LinkLibrary();
+		s.entries = [link({ id: '1', category: work })];
+		s.filterByCategory(1);
+
+		api.delete.mockResolvedValue(true);
+		api.list.mockImplementation(async (route: string) =>
+			route.includes('categor') ? { data: [] } : { data: [link({ id: '1', category: null })] }
+		);
+
+		await s.deleteCategory(work);
+
+		expect(s.activeFilter).toBeNull();
+		expect(s.getActiveCategoryId()).toBeNull();
+		expect(s.filteredEntries.map((l) => l.category)).toEqual([null]);
+	});
+
+	it('keeps the active filter when deleting another category', async () => {
+		const work = linkCategory(1, 'Work');
+		const s = new LinkLibrary();
+		s.filterByCategory(2);
+
+		api.delete.mockResolvedValue(true);
+		api.list.mockResolvedValue({ data: [] });
+
+		await s.deleteCategory(work);
+
+		expect(s.activeFilter).toBe(2);
+	});
 });

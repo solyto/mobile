@@ -191,9 +191,11 @@
 							<span class="text-sm font-medium text-c-neutral-5 dark:text-c-neutral-4">
 								{group.date}
 							</span>
-							{#each group.entries as entry (entry.id)}
-								<Entry {entry} showEdit showDelete onEdit={(e) => (editingEntry = e)} />
-							{/each}
+							<div class="flex flex-col divide-y">
+								{#each group.entries as entry (entry.id)}
+									<Entry {entry} showEdit showDelete onEdit={(e) => (editingEntry = e)} />
+								{/each}
+							</div>
 						</div>
 					{/each}
 				</div>

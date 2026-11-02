@@ -24,7 +24,6 @@ export class NotesSvelte {
 
 	loaded = $state<boolean>(false);
 	notes = $state<Note[]>([]);
-	newestNotes = $state<Note[]>([]);
 	lastUpdatedNotes = $state<Note[]>([]);
 	favoriteNotes = $state<Note[]>([]);
 	categories = $state<NoteCategory[]>([]);
@@ -73,7 +72,6 @@ export class NotesSvelte {
 		if (res && hiddenRes) {
 			this.loaded = true;
 			this.notes = [...(res.data as Note[]), ...(hiddenRes.data as Note[])];
-			this.newestNotes = this.getNewestNotes();
 			this.lastUpdatedNotes = this.getLastUpdatedNotes();
 			this.favoriteNotes = this.getFavorites();
 			this.checkUrlForActiveNote();
@@ -110,7 +108,6 @@ export class NotesSvelte {
 			);
 			this.journalCategory = this.journalService.findJournalCategory(all);
 			this.categories = all.filter((c) => !c.is_system);
-			this.newestNotes = this.getNewestNotes();
 			this.lastUpdatedNotes = this.getLastUpdatedNotes();
 			this.favoriteNotes = this.getFavorites();
 		}
@@ -199,16 +196,7 @@ export class NotesSvelte {
 				(a, b) =>
 					new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
 			)
-			.slice(0, 5);
-	}
-
-	getNewestNotes(): Note[] {
-		return this.getVisibleNotes()
-			.sort(
-				(a, b) =>
-					new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-			)
-			.slice(0, 5);
+			.slice(0, 10);
 	}
 
 	getFavorites(): Note[] {

@@ -132,13 +132,35 @@ describe('CalendarEventService', () => {
 			expect(Object.keys(service.groupByDay([singleDay]))).toEqual(['10.08.2026']);
 		});
 
-		it('does not expand a timed event spanning more than one day', () => {
+		it('expands a timed event onto every day it touches', () => {
 			const longTimed = loadedEvent({
-				start_date: new Date('2026-08-10T10:00:00Z'),
-				end_date: new Date('2026-08-12T10:00:00Z')
+				start_date: new Date('2026-08-10T12:00:00Z'),
+				end_date: new Date('2026-08-12T13:00:00Z')
 			});
 
-			expect(Object.keys(service.groupByDay([longTimed]))).toEqual(['10.08.2026']);
+			expect(Object.keys(service.groupByDay([longTimed]))).toEqual([
+				'10.08.2026',
+				'11.08.2026',
+				'12.08.2026'
+			]);
+		});
+
+		it('expands a short timed event that crosses midnight', () => {
+			const overnight = loadedEvent({
+				start_date: new Date('2026-08-10T23:00:00Z'),
+				end_date: new Date('2026-08-11T01:00:00Z')
+			});
+
+			expect(Object.keys(service.groupByDay([overnight]))).toEqual(['10.08.2026', '11.08.2026']);
+		});
+
+		it('does not put a timed event ending exactly at midnight on the next day', () => {
+			const untilMidnight = loadedEvent({
+				start_date: new Date('2026-08-10T20:00:00Z'),
+				end_date: new Date('2026-08-11T00:00:00Z')
+			});
+
+			expect(Object.keys(service.groupByDay([untilMidnight]))).toEqual(['10.08.2026']);
 		});
 
 		it('keeps the input order of events on the same day', () => {

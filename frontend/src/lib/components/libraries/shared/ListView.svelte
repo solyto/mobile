@@ -10,9 +10,7 @@
 <div class="flex w-full flex-col flex-wrap gap-2 md:p-2">
 	{#each library.filteredEntries as entry (entry.id)}
 		<button
-			onclick={() => {
-				if (library.config.type !== 'links') (library as { openDetailModal(entry: LibraryEntry): void }).openDetailModal(entry as LibraryEntry);
-			}}
+			onclick={() => (library as { openDetailModal(entry: LibraryEntry): void }).openDetailModal(entry as LibraryEntry)}
 			class="max-w-full cursor-pointer max-md:w-full"
 		>
 			<div

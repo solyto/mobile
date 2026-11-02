@@ -179,9 +179,7 @@ describe('CoverImage', () => {
 
 	it('renders the preview and the full image once both have loaded', () => {
 		vi.stubGlobal('Image', FakeImage);
-		const { container } = render(CoverImage, {
-			props: { src: 'full.jpg', previewSrc: 'preview.jpg', alt: 'cover' }
-		});
+		const { container } = renderWithContext(CoverImage, { src: 'full.jpg', previewSrc: 'preview.jpg', alt: 'cover' });
 		const images = container.querySelectorAll('img');
 		expect(images).toHaveLength(2);
 		expect(images[0]).toHaveAttribute('src', 'preview.jpg');
@@ -191,7 +189,22 @@ describe('CoverImage', () => {
 
 	it('renders only the full image when there is no preview', () => {
 		vi.stubGlobal('Image', FakeImage);
-		const { container } = render(CoverImage, { props: { src: 'full.jpg', alt: 'cover' } });
+		const { container } = renderWithContext(CoverImage, { src: 'full.jpg', alt: 'cover' });
+		const images = container.querySelectorAll('img');
+		expect(images).toHaveLength(1);
+		expect(images[0]).toHaveAttribute('src', 'full.jpg');
+		vi.unstubAllGlobals();
+	});
+
+	it('shows an already loaded cover straight away, without waiting for it to load again', () => {
+		class NeverLoadingImage {
+			onload: (() => void) | null = null;
+			src = '';
+		}
+		vi.stubGlobal('Image', NeverLoadingImage);
+		const { container } = renderWithContext(CoverImage, { src: 'full.jpg', alt: 'cover' }, {
+			stores: { loadedCovers: { sources: new Set(['full.jpg']) } }
+		});
 		const images = container.querySelectorAll('img');
 		expect(images).toHaveLength(1);
 		expect(images[0]).toHaveAttribute('src', 'full.jpg');

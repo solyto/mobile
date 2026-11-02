@@ -126,7 +126,8 @@ export class Auth {
 			throw error;
 		}
 
-		if (!res?.data) return { success: false, errors: res?.errors };
+		// A 422 carries field errors as an object, not error codes: treat it as a plain failed login.
+		if (!res?.data) return { success: false, errors: Array.isArray(res?.errors) ? res.errors : undefined };
 		const login = res.data;
 
 		this.user = login.user;

@@ -306,6 +306,12 @@
 		font-weight: 600;
 	}
 
+	:global(.tiptap-editor th p),
+	:global(.tiptap-editor td p) {
+		margin: 0;
+		line-height: 1.5;
+	}
+
 	:global(.tiptap-editor .selectedCell::after) {
 		background: rgba(29, 189, 165, 0.15);
 		content: '';

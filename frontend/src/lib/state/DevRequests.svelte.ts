@@ -62,9 +62,9 @@ export class DevRequests {
 	}
 
 	async update(entry: DevRequest, request: UpdateDevRequestRequest): Promise<boolean> {
-		const res = await this.apiService.update(apiRoutes.dev.requests.update, entry.id, request);
-		if (res) await this.load();
-		return Promise.resolve(res !== null);
+		const ok = await this.apiService.update(apiRoutes.dev.requests.update, entry.id, request);
+		if (ok) await this.load();
+		return ok;
 	}
 
 	async vote(entry: DevRequest, vote: DevRequestVote): Promise<boolean> {

@@ -7,6 +7,7 @@
 	import { getCalendarDrag } from '$lib/state/CalendarDrag.svelte';
 	import type { CalendarDropTarget } from '$lib/services/CalendarDragService';
 	import { createDraggableEvent, findCalendarDayElement } from '$lib/helpers/CalendarDragHelper';
+	import { startsOnDate } from '$lib/helpers/CalendarEventHelper';
 	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
@@ -20,6 +21,7 @@
 	let { item, date }: { item: CalendarEvent; date: Date } = $props();
 
 	const dateSlug = $derived(formatDate(date));
+	const isStartDay = $derived(startsOnDate(item, date));
 
 	function computeTarget(x: number, y: number): CalendarDropTarget | null {
 		const cell = findCalendarDayElement(x, y);
@@ -45,7 +47,8 @@
 	}
 
 	const draggableEvent = createDraggableEvent(drag, {
-		enabled: () => true,
+		// Multi-day timed events can only be dragged from their start day.
+		enabled: () => item.is_all_day || isStartDay,
 		sourceDateSlug: () => dateSlug,
 		computeTarget,
 		onDrop: commitMove
@@ -70,7 +73,7 @@
 		use:draggableEvent={item}
 		transition:blur
 	>
-		{#if !item.is_all_day}
+		{#if !item.is_all_day && isStartDay}
 			<span class="mr-2">{formatTime(item.start_date)}</span>
 		{/if}
 		<span class="text-left">{item.title}</span>

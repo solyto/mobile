@@ -121,7 +121,6 @@
 			selectedGenres = [];
 			isWishlist = false;
 			library.closeCreateModal();
-			await library.load();
 		} else {
 			notifications.error(ts.get.libraries.movies.create_error);
 		}
@@ -148,7 +147,6 @@
 		const ok = await library.update(activeEntry!, request);
 		if (ok) {
 			library.closeCreateModal();
-			await library.load();
 		} else {
 			notifications.error(ts.get.libraries.movies.update_error);
 		}

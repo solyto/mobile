@@ -69,26 +69,27 @@
 			return;
 		}
 
-		if (entry) {
-			await devRequests.update(entry, formService.changes(entry, form));
-			loadingIndicator.stop();
-			onClose();
+		const ok = entry
+			? await devRequests.update(entry, formService.changes(entry, form))
+			: await devRequests.create({
+					title: form.title,
+					description: form.description,
+					screenshot: form.screenshot != '' ? form.screenshot : null,
+					screenshot_name: form.screenshot_name != '' ? form.screenshot_name : null,
+					priority: parseInt(form.priority) as DevRequestPriority,
+					url: form.url,
+					type: form.type as DevRequestType,
+					created_by_user_id: auth.user?.id ?? null
+				});
+		loadingIndicator.stop();
+
+		// Keep the modal and the input open so nothing typed is lost.
+		if (!ok) {
+			notifications.error(ts.get.dev.requests.save_error);
 			return;
 		}
 
-		const res = await devRequests.create({
-			title: form.title,
-			description: form.description,
-			screenshot: form.screenshot != '' ? form.screenshot : null,
-			screenshot_name: form.screenshot_name != '' ? form.screenshot_name : null,
-			priority: parseInt(form.priority) as DevRequestPriority,
-			url: form.url,
-			type: form.type as DevRequestType,
-			created_by_user_id: auth.user?.id ?? null
-		});
-		form = formService.empty();
-		if (res) await devRequests.load();
-		loadingIndicator.stop();
+		if (!entry) form = formService.empty();
 		onClose();
 	}
 </script>

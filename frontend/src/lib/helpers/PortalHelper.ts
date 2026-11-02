@@ -18,14 +18,20 @@ export function portalToBody(
 
 	document.body.appendChild(node);
 
+	// Scrolling inside the portalled node itself (e.g. a long list) must not close it
+	const onScroll = (event: Event) => {
+		if (event.target instanceof Node && node.contains(event.target)) return;
+		onClose?.();
+	};
+
 	if (closeOnScroll && onClose) {
-		window.addEventListener('scroll', onClose, true);
+		window.addEventListener('scroll', onScroll, true);
 	}
 
 	return {
 		destroy() {
 			if (closeOnScroll && onClose) {
-				window.removeEventListener('scroll', onClose, true);
+				window.removeEventListener('scroll', onScroll, true);
 			}
 			if (node.isConnected) node.remove();
 		}

@@ -81,6 +81,7 @@
 				{rounded ? 'md:rounded-' + rounded : ''}
 				{p ? 'md:p-' + p : 'md:p-4'}
 				{width ? 'md:w-' + width : ''}
+				{transparent ? '' : 'max-md:h-[calc(100dvh-4rem)]'}
 			"
 			class:z-30={!higherZIndex}
 			class:z-40={higherZIndex}

@@ -17,6 +17,7 @@
 	let { workspace }: { workspace: TodoWorkspace } = $props();
 
 	let findCategoryMenuVisible = $state<boolean>(false);
+	let findCategoryAnchor = $state<HTMLDivElement | null>(null);
 	let deleteModalOpen = $state<boolean>(false);
 	let isHideable = $state<boolean>(workspace.is_hideable);
 
@@ -85,17 +86,16 @@
 				</button>
 			</div>
 		{/each}
-		<div class="relative">
+		<div class="relative" bind:this={findCategoryAnchor}>
 			<button
 				class="cursor-pointer py-1.5 text-base text-c-neutral-4 transition-all hover:text-c-neutral-7 md:py-0 md:text-xs dark:hover:text-white"
 				onclick={openFindCategoryMenu}
 			>
 				+ {ts.get.todos.category}
 			</button>
-			{#if findCategoryMenuVisible}
+			{#if findCategoryMenuVisible && findCategoryAnchor}
 				<FindCategoryMenu
-					x={0}
-					y={0}
+					target={findCategoryAnchor}
 					categories={todos.categories}
 					onclick={attachCategory}
 					close={closeFindCategoryMenu}

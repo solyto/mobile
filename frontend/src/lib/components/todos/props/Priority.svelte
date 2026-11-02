@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { scale } from 'svelte/transition';
 	import type { Todo, TodoPriority } from '$lib/types/todo';
 	import IconUp from '@lucide/svelte/icons/circle-arrow-up';
 	import IconRight from '@lucide/svelte/icons/circle-arrow-right';
@@ -42,7 +43,6 @@
 		loadingIndicator.start();
 		togglePriorityMenu();
 		await todos.changePriority(todo, priority);
-		await todos.load();
 
 		loadingIndicator.stop();
 	}
@@ -71,22 +71,26 @@
 	class:rounded-br-md={expanded}
 >
 	{#if changePriority}
-		{#if todo.priority === 'high'}
-			<IconUp
-				class={getIconClass('text-c-danger')}
-				onclick={togglePriorityMenu}
-			/>
-		{:else if todo.priority === 'medium'}
-			<IconRight
-				class={getIconClass('text-c-btn')}
-				onclick={togglePriorityMenu}
-			/>
-		{:else if todo.priority === 'low'}
-			<IconDown
-				class={getIconClass('text-c-success')}
-				onclick={togglePriorityMenu}
-			/>
-		{/if}
+		{#key todo.priority}
+			<span class="flex" in:scale={{ start: 0.6, duration: 250 }}>
+				{#if todo.priority === 'high'}
+					<IconUp
+						class={getIconClass('text-c-danger')}
+						onclick={togglePriorityMenu}
+					/>
+				{:else if todo.priority === 'medium'}
+					<IconRight
+						class={getIconClass('text-c-btn')}
+						onclick={togglePriorityMenu}
+					/>
+				{:else if todo.priority === 'low'}
+					<IconDown
+						class={getIconClass('text-c-success')}
+						onclick={togglePriorityMenu}
+					/>
+				{/if}
+			</span>
+		{/key}
 		{#if priorityMenuVisible}
 			<QuickSelectOverlay onClose={() => (priorityMenuVisible = false)} {portal} target={trigger}>
 				<IconUp

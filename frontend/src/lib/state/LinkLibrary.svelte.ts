@@ -24,7 +24,8 @@ export class LinkLibrary {
 		hasExternalLinks: false,
 		hasReleases: false,
 		hasShelf: false,
-		entriesAreLinks: true
+		entriesAreLinks: true,
+		hasSmallForm: true
 	};
 	loaded = $state<boolean>(false);
 	entries = $state<Link[]>([]);
@@ -199,7 +200,12 @@ export class LinkLibrary {
 			apiRoutes.libraries.links.deleteCategory,
 			category.id
 		);
-		if (res) await this.loadCategories();
+		if (res) {
+			// The deleted category's links are now uncategorised. Leaving it as the
+			// active filter would also send its id with the next new link.
+			if (this.activeFilter === category.id) this.activeFilter = null;
+			await this.load();
+		}
 		return Promise.resolve(res !== null);
 	}
 }

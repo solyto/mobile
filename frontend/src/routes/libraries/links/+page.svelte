@@ -9,8 +9,9 @@
 </script>
 
 <div class="h-full max-h-full w-full overflow-y-auto p-4">
-	<Header {library} />
-	<CategoryHeader />
+	<Header {library}>
+		<CategoryHeader />
+	</Header>
 	{#if library.createModalVisible}
 		<LinkCreate />
 	{/if}

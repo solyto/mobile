@@ -2,7 +2,7 @@
 	import { blur } from 'svelte/transition';
 	import { formatDate, formatTime } from '$lib/helpers/DateHelper';
 	import { getEventBackgroundColor, getEventBorderColor } from '$lib/helpers/ColorHelper';
-	import { getCalendarEventKey } from '$lib/helpers/CalendarEventHelper';
+	import { getCalendarEventKey, startsOnDate } from '$lib/helpers/CalendarEventHelper';
 	import { getCalendars } from '$lib/state/Calendars.svelte';
 	import TodoEntry from '$lib/components/calendars/TodoEntry.svelte';
 
@@ -55,7 +55,7 @@
 					}}
 					transition:blur
 				>
-					{#if !item.is_all_day}
+					{#if !item.is_all_day && startsOnDate(item, day)}
 						<span class="mr-2">{formatTime(item.start_date)}</span>
 					{/if}
 					<span class="text-left">{item.title}</span>

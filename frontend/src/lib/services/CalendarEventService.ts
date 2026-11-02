@@ -7,6 +7,21 @@ function spansMoreThanOneDay(event: CalendarEvent): boolean {
 	return getDateDiffInMinutes(event.start_date, event.end_date) > MINUTES_PER_DAY;
 }
 
+// Calendar days after the start day that a timed event still runs into.
+function followingDaysTouched(event: CalendarEvent): Date[] {
+	const days: Date[] = [];
+	const current = new Date(event.start_date);
+	current.setHours(0, 0, 0, 0);
+	current.setDate(current.getDate() + 1);
+
+	while (current < event.end_date) {
+		days.push(new Date(current));
+		current.setDate(current.getDate() + 1);
+	}
+
+	return days;
+}
+
 export default class CalendarEventService {
 	fromApi(response: CalendarEventResponse): CalendarEvent {
 		return {
@@ -28,6 +43,12 @@ export default class CalendarEventService {
 
 			if (event.is_all_day && spansMoreThanOneDay(event)) {
 				for (const day of eachDayBetween(event.start_date, event.end_date)) {
+					(byDay[formatDate(day)] ??= []).push(event);
+				}
+			}
+
+			if (!event.is_all_day) {
+				for (const day of followingDaysTouched(event)) {
 					(byDay[formatDate(day)] ??= []).push(event);
 				}
 			}

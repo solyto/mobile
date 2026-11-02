@@ -18,10 +18,12 @@
 	import confetti from 'canvas-confetti';
 	import { createConfettiOptions } from '$lib/effects/confetti';
 	import { getAuth } from '$lib/state/Auth.svelte';
+	import { getNavigation } from '$lib/state/Navigation.svelte';
 
 	const todos = getTodos();
 	const calendars = getCalendars();
 	const auth = getAuth();
+	const nav = getNavigation();
 	const ts = getTranslation();
 	const loadingIndicator = getLoadingIndicator();
 	const filterService = new TodoFilterService();
@@ -71,10 +73,27 @@
 	});
 
 	onMount(() => {
+		if (!nav.features.calendar) return;
 		calendars.getWidgetEvents().then((events) => {
 			if (events) allEvents = events;
 		});
 	});
+
+	function isLoaded(): boolean {
+		return todos.loaded || !nav.features.todos;
+	}
+
+	function hasNothingToday(): boolean {
+		return todayEvents.length === 0 && visibleDueTodos().length === 0 && visibleScoredTodos().length === 0 && upcomingEvents.length === 0;
+	}
+
+	function visibleDueTodos(): Todo[] {
+		return nav.features.todos ? dueTodos : [];
+	}
+
+	function visibleScoredTodos(): Todo[] {
+		return nav.features.todos ? scoredTodos : [];
+	}
 
 	async function handleCheck(event: Event, todo: Todo): Promise<void> {
 		loadingIndicator.start();
@@ -96,25 +115,25 @@
 <div class="flex flex-col gap-12">
 	<WeatherWidget {ts} {auth} />
 
-	{#if todos.loaded}
+	{#if isLoaded() && (nav.features.todos || nav.features.calendar)}
 		<div in:blur>
 			{#if todayEvents.length > 0}
 				<EventsTodayWidget {todayEvents} {ts} />
 			{/if}
 
-			{#if dueTodos.length > 0}
-				<DueTodosWidget {dueTodos} {handleCheck} {ts} mt={todayEvents.length > 0} />
+			{#if visibleDueTodos().length > 0}
+				<DueTodosWidget dueTodos={visibleDueTodos()} {handleCheck} {ts} mt={todayEvents.length > 0} />
 			{/if}
 
-			{#if scoredTodos.length > 0}
-				<ScoredTodosWidget {scoredTodos} {handleCheck} {ts} mt={todayEvents.length > 0 || dueTodos.length > 0} />
+			{#if visibleScoredTodos().length > 0}
+				<ScoredTodosWidget scoredTodos={visibleScoredTodos()} {handleCheck} {ts} mt={todayEvents.length > 0 || visibleDueTodos().length > 0} />
 			{/if}
 
 			{#if upcomingEvents.length > 0}
-				<UpcomingEventsWidget {upcomingEvents} {ts} {auth} mt={todayEvents.length > 0 || dueTodos.length > 0 || scoredTodos.length > 0} />
+				<UpcomingEventsWidget {upcomingEvents} {ts} {auth} mt={todayEvents.length > 0 || visibleDueTodos().length > 0 || visibleScoredTodos().length > 0} />
 			{/if}
 
-			{#if todayEvents.length === 0 && dueTodos.length === 0 && scoredTodos.length === 0 && upcomingEvents.length === 0}
+			{#if hasNothingToday()}
 				<p class="text-sm text-c-neutral-4 dark:text-c-neutral-5">{ts.get.home.nothing_today}</p>
 			{/if}
 		</div>

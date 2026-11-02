@@ -15,7 +15,8 @@
 		{ value: 'de', label: ts.get.settings.german },
 		{ value: 'fr', label: ts.get.settings.french },
 		{ value: 'es', label: ts.get.settings.spanish },
-		{ value: 'it', label: ts.get.settings.italian }
+		{ value: 'it', label: ts.get.settings.italian },
+		{ value: 'ru', label: ts.get.settings.russian }
 	];
 
 	const timezoneOptions = getTimeZones()

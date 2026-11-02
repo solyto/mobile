@@ -19,7 +19,8 @@
 		{ value: 'de', label: ts.get.settings.german },
 		{ value: 'fr', label: ts.get.settings.french },
 		{ value: 'es', label: ts.get.settings.spanish },
-		{ value: 'it', label: ts.get.settings.italian }
+		{ value: 'it', label: ts.get.settings.italian },
+		{ value: 'ru', label: ts.get.settings.russian }
 	];
 
 	const dateFormats = [
@@ -69,7 +70,7 @@
 			<span class="mb-2 block text-sm font-medium text-c-neutral-7 dark:text-c-neutral-3">
 				{ts.get.settings.language}
 			</span>
-			<div class="grid grid-cols-4 gap-2">
+			<div class="grid grid-cols-3 gap-2">
 				{#each languages as lang (lang.value)}
 					<button
 						class="cursor-pointer rounded-lg border-2 px-3 py-2 text-sm font-medium transition-all

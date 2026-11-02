@@ -262,7 +262,7 @@ describe('Calendars store', () => {
 			expect(Object.keys(c.sortedEvents)).toEqual(['10.08.2026']);
 		});
 
-		it('does not expand timed events spanning more than one day', async () => {
+		it('expands timed events onto every day they touch', async () => {
 			const c = await loadAugust([
 				apiEvent({
 					start_date: '2026-08-10T10:00:00Z',
@@ -270,7 +270,7 @@ describe('Calendars store', () => {
 				})
 			]);
 
-			expect(Object.keys(c.sortedEvents)).toEqual(['10.08.2026']);
+			expect(Object.keys(c.sortedEvents)).toEqual(['10.08.2026', '11.08.2026', '12.08.2026']);
 		});
 
 		it('puts the loaded event into every sortedEvents bucket it spans', async () => {

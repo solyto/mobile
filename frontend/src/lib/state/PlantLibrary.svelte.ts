@@ -19,7 +19,8 @@ export class PlantLibrary {
 		hasExternalLinks: true,
 		hasReleases: false,
 		hasShelf: false,
-		entriesAreLinks: false
+		entriesAreLinks: false,
+		hasSmallForm: false
 	};
 	loaded = $state<boolean>(false);
 	entries = $state<Plant[]>([]);
