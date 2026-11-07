@@ -6,6 +6,7 @@ import android.appwidget.AppWidgetProvider;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.format.DateFormat;
@@ -26,6 +27,19 @@ public class CheckInWidgetProvider extends AppWidgetProvider {
     private static final int REQUEST_HEADER = 7;
     private static final int REQUEST_ROW_TEMPLATE = 8;
     private static final int BUSY_ALPHA = 90;
+    /** Per-value icons (1-5) for the trackers the app draws as a fill level, in the app's own colors. */
+    private static final int[] WATER_ICONS = {
+            R.drawable.ic_widget_checkin_water_1, R.drawable.ic_widget_checkin_water_2,
+            R.drawable.ic_widget_checkin_water_3, R.drawable.ic_widget_checkin_water_4,
+            R.drawable.ic_widget_checkin_water_5};
+    private static final int[] FOOD_AMOUNT_ICONS = {
+            R.drawable.ic_widget_checkin_food_amount_1, R.drawable.ic_widget_checkin_food_amount_2,
+            R.drawable.ic_widget_checkin_food_amount_3, R.drawable.ic_widget_checkin_food_amount_4,
+            R.drawable.ic_widget_checkin_food_amount_5};
+    private static final int[] MENSTRUATION_ICONS = {
+            R.drawable.ic_widget_checkin_menstruation_1, R.drawable.ic_widget_checkin_menstruation_2,
+            R.drawable.ic_widget_checkin_menstruation_3, R.drawable.ic_widget_checkin_menstruation_4,
+            R.drawable.ic_widget_checkin_menstruation_5};
     private static final int[] OPTION_VIEWS = {
         R.id.widget_option_1, R.id.widget_option_2, R.id.widget_option_3,
         R.id.widget_option_4, R.id.widget_option_5, R.id.widget_option_6,
@@ -187,7 +201,7 @@ public class CheckInWidgetProvider extends AppWidgetProvider {
     }
 
     /**
-     * One option button: its icon tinted with the server's color, highlighted
+     * One option button: its icon tinted with the server's color (level icons keep their own), highlighted
      * when selected, dimmed and disabled while the row's action is active. The
      * fill-in is always set; the receiver ignores taps on active rows.
      */
@@ -202,8 +216,11 @@ public class CheckInWidgetProvider extends AppWidgetProvider {
                 .putExtra(WidgetActionReceiver.EXTRA_ACTION_ID, item.id)
                 .putExtra(WidgetActionReceiver.EXTRA_ACTION_VALUE, option.value);
 
-        row.setImageViewResource(viewId, iconRes(option.icon));
-        row.setInt(viewId, "setColorFilter", option.color);
+        int levelIcon = levelIconRes(option.icon, option.value);
+        row.setImageViewResource(viewId, levelIcon != 0 ? levelIcon : iconRes(option.icon));
+        // Option views are reused, so the filter is always set. A transparent SRC_ATOP filter leaves
+        // the level icons' own colors unchanged.
+        row.setInt(viewId, "setColorFilter", levelIcon != 0 ? Color.TRANSPARENT : option.color);
         row.setInt(viewId, "setBackgroundResource", selected ? R.drawable.widget_check_in_option_selected : 0);
         row.setContentDescription(viewId, context.getString(
                 selected ? R.string.widget_check_in_option_selected : R.string.widget_check_in_option,
@@ -214,7 +231,22 @@ public class CheckInWidgetProvider extends AppWidgetProvider {
         row.setViewVisibility(viewId, View.VISIBLE);
     }
 
-    /** The drawable for one of {@link WidgetPayload#OPTION_ICONS}. */
+    /**
+     * Water, food amount and menstruation show their value in the app (a glass filling up, more
+     * pizza, a droplet filling up), so they get one drawable per value; 0 for every other icon.
+     */
+    private static int levelIconRes(String icon, int value) {
+        int[] levels;
+        switch (icon) {
+            case "water": levels = WATER_ICONS; break;
+            case "food_amount": levels = FOOD_AMOUNT_ICONS; break;
+            case "menstruation": levels = MENSTRUATION_ICONS; break;
+            default: return 0;
+        }
+        return levels[Math.max(1, Math.min(levels.length, value)) - 1];
+    }
+
+    /** The drawable for one of {@link WidgetPayload#OPTION_ICONS} that is not a level icon. */
     private static int iconRes(String icon) {
         switch (icon) {
             case "mood_1": return R.drawable.ic_widget_checkin_mood_1;
@@ -231,10 +263,7 @@ public class CheckInWidgetProvider extends AppWidgetProvider {
             case "sleep": return R.drawable.ic_widget_checkin_sleep;
             case "dreams": return R.drawable.ic_widget_checkin_dreams;
             case "food_quality": return R.drawable.ic_widget_checkin_food_quality;
-            case "food_amount": return R.drawable.ic_widget_checkin_food_amount;
-            case "water": return R.drawable.ic_widget_checkin_water;
             case "work": return R.drawable.ic_widget_checkin_work;
-            case "menstruation": return R.drawable.ic_widget_checkin_menstruation;
             case "alcohol": return R.drawable.ic_widget_checkin_alcohol;
             case "smoking": return R.drawable.ic_widget_checkin_smoking;
             default: return R.drawable.ic_widget_checkin_social_life;

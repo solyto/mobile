@@ -111,35 +111,35 @@
         android:left="16dp"
         android:top="130dp" />
     <item
-        android:drawable="@drawable/ic_widget_checkin_water"
+        android:drawable="@drawable/ic_widget_checkin_water_1"
         android:gravity="top|start"
         android:width="22dp"
         android:height="22dp"
         android:left="18dp"
         android:top="146dp" />
     <item
-        android:drawable="@drawable/ic_widget_checkin_water"
+        android:drawable="@drawable/ic_widget_checkin_water_2"
         android:gravity="top|start"
         android:width="22dp"
         android:height="22dp"
         android:left="56dp"
         android:top="146dp" />
     <item
-        android:drawable="@drawable/ic_widget_checkin_water"
+        android:drawable="@drawable/ic_widget_checkin_water_3"
         android:gravity="top|start"
         android:width="22dp"
         android:height="22dp"
         android:left="94dp"
         android:top="146dp" />
     <item
-        android:drawable="@drawable/ic_widget_checkin_water"
+        android:drawable="@drawable/ic_widget_checkin_water_4"
         android:gravity="top|start"
         android:width="22dp"
         android:height="22dp"
         android:left="132dp"
         android:top="146dp" />
     <item
-        android:drawable="@drawable/ic_widget_checkin_water"
+        android:drawable="@drawable/ic_widget_checkin_water_5"
         android:gravity="top|start"
         android:width="22dp"
         android:height="22dp"

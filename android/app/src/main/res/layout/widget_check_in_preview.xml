@@ -180,8 +180,7 @@
             android:layout_weight="1"
             android:padding="6dp"
             android:importantForAccessibility="no"
-            android:src="@drawable/ic_widget_checkin_water"
-            android:tint="#EF4444" />
+            android:src="@drawable/ic_widget_checkin_water_1" />
 
         <ImageView
             android:layout_width="0dp"
@@ -190,8 +189,7 @@
             android:layout_weight="1"
             android:padding="6dp"
             android:importantForAccessibility="no"
-            android:src="@drawable/ic_widget_checkin_water"
-            android:tint="#F97316" />
+            android:src="@drawable/ic_widget_checkin_water_2" />
 
         <ImageView
             android:layout_width="0dp"
@@ -201,8 +199,7 @@
             android:padding="6dp"
             android:importantForAccessibility="no"
             android:background="@drawable/widget_check_in_option_selected"
-            android:src="@drawable/ic_widget_checkin_water"
-            android:tint="#3B82F6" />
+            android:src="@drawable/ic_widget_checkin_water_3" />
 
         <ImageView
             android:layout_width="0dp"
@@ -211,8 +208,7 @@
             android:layout_weight="1"
             android:padding="6dp"
             android:importantForAccessibility="no"
-            android:src="@drawable/ic_widget_checkin_water"
-            android:tint="#86EFAC" />
+            android:src="@drawable/ic_widget_checkin_water_4" />
 
         <ImageView
             android:layout_width="0dp"
@@ -221,7 +217,6 @@
             android:layout_weight="1"
             android:padding="6dp"
             android:importantForAccessibility="no"
-            android:src="@drawable/ic_widget_checkin_water"
-            android:tint="#22C55E" />
+            android:src="@drawable/ic_widget_checkin_water_5" />
     </LinearLayout>
 </LinearLayout>

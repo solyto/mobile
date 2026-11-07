@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The app's IconWater at value 5 (full), in its own colors. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="50"
+    android:viewportHeight="50">
+    <path
+        android:pathData="M4,0 H46 V34 A16,16 0 0,1 30,50 H20 A16,16 0 0,1 4,34 Z M5,1 H45 V34 A15,15 0 0,1 30,49 H20 A15,15 0 0,1 5,34 Z"
+        android:fillColor="#D1D5DC"
+        android:fillType="evenOdd" />
+    <path
+        android:pathData="M5,1 H45 V37 A12,12 0 0,1 33,49 H17 A12,12 0 0,1 5,37 Z"
+        android:fillColor="#8EC5FF" />
+</vector>
