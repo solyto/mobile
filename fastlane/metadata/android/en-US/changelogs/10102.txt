@@ -5,4 +5,5 @@ Redesigned Libraries, Feeds, Contacts, Notes and Time Tracking.
 Multi-day events show on every day they cover.
 Resend your confirmation email from the login screen.
 The navbar hides while the keyboard is open.
+Dev requests show if your version has the fix.
 For self-hosters: please update your server first.
