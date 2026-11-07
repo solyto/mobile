@@ -495,6 +495,7 @@ const notes: NoteRecords = {
 	no_folders_desc: 'Create one with the folder button.',
 	delete_note: 'Delete Note',
 	delete_folder: 'Delete Folder',
+	folder_deletion_description: 'Are you sure you want to delete this folder? All notes and subfolders in it will be deleted too.',
 	edit_folder: 'Change Folder Name',
 	editor: 'Editor',
 	create_note_success: 'Note was successfully created.',

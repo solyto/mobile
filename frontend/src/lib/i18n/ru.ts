@@ -494,6 +494,7 @@ const notes: NoteRecords = {
 	no_folders_desc: 'Создайте папку соответствующей кнопкой.',
 	delete_note: 'Удалить заметку',
 	delete_folder: 'Удалить папку',
+	folder_deletion_description: 'Удалить эту папку? Все заметки и вложенные папки в ней также будут удалены.',
 	edit_folder: 'Переименовать папку',
 	editor: 'Редактор',
 	create_note_success: 'Заметка создана.',

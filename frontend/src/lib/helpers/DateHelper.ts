@@ -433,6 +433,39 @@ export function isOffHour(hour: string): boolean {
 	return parseInt(hour) < 6 || parseInt(hour) >= 22;
 }
 
+/** Height of one hour row in the mobile day and week grids, in rem. Off hours are compressed. */
+export function getMobileHourHeightRem(hour: string): number {
+	return isOffHour(hour) ? 1.5 : 3.5;
+}
+
+/** The `grid-template-rows` tracks for the 24 hour rows of the mobile day and week grids. */
+export function getMobileHourRows(): string {
+	return getHoursOfDay()
+		.map((hour) => `${getMobileHourHeightRem(hour)}rem`)
+		.join(' ');
+}
+
+/**
+ * Distance in rem from 00:00 to a time of day in the mobile grid, where `hourOfDay` is a
+ * fractional hour from 0 to 24 (e.g. 16.5 for 16:30, 24 for the end of the day).
+ * Rows have different heights, so this adds up the actual rows instead of multiplying.
+ */
+export function getMobileTimeOffsetRem(hourOfDay: number): number {
+	const hours = getHoursOfDay();
+	const fullHours = Math.min(Math.floor(hourOfDay), 24);
+	let offset = 0;
+
+	for (let i = 0; i < fullHours; i++) {
+		offset += getMobileHourHeightRem(hours[i]);
+	}
+
+	if (fullHours < 24) {
+		offset += (hourOfDay - fullHours) * getMobileHourHeightRem(hours[fullHours]);
+	}
+
+	return offset;
+}
+
 /** The days after `start`, one day apart, up to and including the first one that reaches `end`. */
 export function eachDayBetween(start: Date, end: Date): Date[] {
 	const days: Date[] = [];

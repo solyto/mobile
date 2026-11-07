@@ -495,6 +495,7 @@ const notes: NoteRecords = {
 	no_folders_desc: 'Creane una con il pulsante cartella.',
 	delete_note: 'Elimina nota',
 	delete_folder: 'Elimina cartella',
+	folder_deletion_description: 'Vuoi davvero eliminare questa cartella? Verranno eliminate anche tutte le note e le sottocartelle al suo interno.',
 	edit_folder: 'Cambia nome cartella',
 	editor: 'Editor',
 	create_note_success: 'Nota creata con successo.',

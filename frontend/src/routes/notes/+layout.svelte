@@ -22,6 +22,8 @@
 	let { children } = $props();
 
 	let edit = $state<boolean>(false);
+	// Set from the right-click menu; the store keeps the right-clicked id.
+	let pendingDelete = $state<'note' | 'category' | null>(null);
 
 	const rightClickMenuCategoryEntries: RightClickMenuEntry[] = [
 		{
@@ -52,7 +54,7 @@
 			icon: 'delete',
 			label: ts.get.notes.delete_folder,
 			action: () => {
-				notes.deleteCategory();
+				pendingDelete = 'category';
 				edit = false;
 			}
 		}
@@ -63,7 +65,7 @@
 			icon: 'delete',
 			label: ts.get.notes.delete_note,
 			action: () => {
-				notes.delete();
+				pendingDelete = 'note';
 			}
 		}
 	];
@@ -79,6 +81,15 @@
 	async function createNote(): Promise<void> {
 		loadingIndicator.start();
 		await notes.create();
+		loadingIndicator.stop();
+	}
+
+	async function confirmDelete(): Promise<void> {
+		const type = pendingDelete;
+		pendingDelete = null;
+		loadingIndicator.start();
+		if (type === 'note') await notes.delete();
+		else if (type === 'category') await notes.deleteCategory();
 		loadingIndicator.stop();
 	}
 
@@ -141,4 +152,14 @@
 			entries={rightClickMenuCategoryEntries}
 		/>
 	{/if}
+{/if}
+
+{#if pendingDelete}
+	<ConfirmationModal
+		title={pendingDelete === 'note' ? ts.get.notes.delete_confirm_label : ts.get.notes.delete_folder}
+		description={pendingDelete === 'note' ? ts.get.notes.delete_confirm_message : ts.get.notes.folder_deletion_description}
+		type="confirm-delete"
+		onConfirm={confirmDelete}
+		onCancel={() => (pendingDelete = null)}
+	/>
 {/if}

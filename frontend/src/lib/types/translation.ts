@@ -475,6 +475,7 @@ export interface NoteRecords {
 	edit_folder: string;
 	delete_note: string;
 	delete_folder: string;
+	folder_deletion_description: string;
 	editor: string;
 	create_note_success: string;
 	create_folder_success: string;

@@ -22,6 +22,9 @@ import {
 	daysSince,
 	getHoursOfDay,
 	isOffHour,
+	getMobileHourHeightRem,
+	getMobileHourRows,
+	getMobileTimeOffsetRem,
 	eachDayBetween,
 	parseDateSlug,
 	parseUrlFormat,
@@ -279,6 +282,51 @@ describe('isOffHour', () => {
 	it('is true from 22:00 on', () => {
 		expect(isOffHour('22')).toBe(true);
 		expect(isOffHour('23')).toBe(true);
+	});
+});
+
+describe('getMobileHourRows', () => {
+	it('matches the rows the mobile views used to build', () => {
+		const legacy = getHoursOfDay()
+			.map((hour) => (isOffHour(hour) ? '1.5rem' : '3.5rem'))
+			.join(' ');
+		expect(getMobileHourRows()).toBe(legacy);
+	});
+
+	it('uses the same heights as getMobileHourHeightRem', () => {
+		expect(getMobileHourHeightRem('05')).toBe(1.5);
+		expect(getMobileHourHeightRem('06')).toBe(3.5);
+		expect(getMobileHourHeightRem('22')).toBe(1.5);
+	});
+});
+
+describe('getMobileTimeOffsetRem', () => {
+	it('is 0 at midnight', () => {
+		expect(getMobileTimeOffsetRem(0)).toBe(0);
+	});
+
+	it('adds up the compressed off hours before 06:00', () => {
+		expect(getMobileTimeOffsetRem(6)).toBe(9);
+	});
+
+	it('covers the whole day at 24', () => {
+		// 6 + 2 off hours at 1.5rem, 16 regular hours at 3.5rem
+		expect(getMobileTimeOffsetRem(24)).toBe(68);
+	});
+
+	it('places partial hours within the row they fall in', () => {
+		expect(getMobileTimeOffsetRem(16)).toBe(9 + 10 * 3.5);
+		expect(getMobileTimeOffsetRem(16.5)).toBe(9 + 10.5 * 3.5);
+		expect(getMobileTimeOffsetRem(5.5)).toBe(5.5 * 1.5);
+	});
+
+	it('gives the spans of a multi-day event (day 1 12:00 to day 3 16:00)', () => {
+		// day 1: 12:00 to midnight
+		expect(getMobileTimeOffsetRem(24) - getMobileTimeOffsetRem(12)).toBe(10 * 3.5 + 2 * 1.5);
+		// day 2: the whole day
+		expect(getMobileTimeOffsetRem(24) - getMobileTimeOffsetRem(0)).toBe(68);
+		// day 3: midnight to 16:00
+		expect(getMobileTimeOffsetRem(16) - getMobileTimeOffsetRem(0)).toBe(44);
 	});
 });
 

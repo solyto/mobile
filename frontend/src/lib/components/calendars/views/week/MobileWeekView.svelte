@@ -2,15 +2,13 @@
 	import { onMount } from 'svelte';
 	import { getCalendars } from '$lib/state/Calendars.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
-	import { formatDateWithoutYear, getCalendarWeek, isDateToday, getHoursOfDay, isOffHour } from '$lib/helpers/DateHelper';
+	import { formatDateWithoutYear, getCalendarWeek, isDateToday, getHoursOfDay, isOffHour, getMobileHourRows } from '$lib/helpers/DateHelper';
 	import Day from '$lib/components/calendars/views/week/Day.svelte';
 
 	const calendars = getCalendars();
 	const ts = getTranslation();
 	const hours = getHoursOfDay();
-	const mobileRows = `minmax(4rem, auto) ${hours
-		.map((hour) => (isOffHour(hour) ? '1.5rem' : '3.5rem'))
-		.join(' ')}`;
+	const mobileRows = `minmax(4rem, auto) ${getMobileHourRows()}`;
 
 	const columnWidth = 'calc((100vw - 2rem) / 3)';
 

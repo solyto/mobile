@@ -2,7 +2,7 @@
 	import { blur } from 'svelte/transition';
 	import IconPlus from '@lucide/svelte/icons/plus';
 	import { getCalendars } from '$lib/state/Calendars.svelte';
-	import { formatDate, getDateDiffInMinutes, getHoursOfDay, isOffHour, parseDateSlug } from '$lib/helpers/DateHelper';
+	import { formatDate, getDateDiffInMinutes, getHoursOfDay, getMobileTimeOffsetRem, isOffHour, parseDateSlug } from '$lib/helpers/DateHelper';
 	import { getEventBackgroundColor, getEventBorderColor } from '$lib/helpers/ColorHelper';
 	import type { CalendarEvent, NewEventPreset } from '$lib/types/calendar';
 	import type { ClassValue } from 'svelte/elements';
@@ -78,7 +78,29 @@
 		const segment = getSegment(entry);
 		const hours = getDateDiffInMinutes(segment.start, segment.end) / 60;
 
-		return hours > 0.65 ? hoursToRowSpan(hours) : '65%';
+		if (hours <= 0.65) {
+			return '65%';
+		}
+
+		return isMobile ? getMobileHeight(segment) : hoursToRowSpan(hours);
+	}
+
+	// Mobile hour rows have different heights (off hours are compressed), so a multiple of the
+	// start row's height is wrong there. Measure the actual rows between start and end instead.
+	function getMobileHeight(segment: { start: Date; end: Date }): string {
+		const start = toHourOfDay(segment.start);
+		const end = toHourOfDay(segment.end);
+
+		return `${getMobileTimeOffsetRem(end) - getMobileTimeOffsetRem(start)}rem`;
+	}
+
+	// A segment that runs to the end of this column's day ends at the next midnight, which is 24 here.
+	function toHourOfDay(time: Date): number {
+		if (formatDate(time) !== dateSlug) {
+			return 24;
+		}
+
+		return time.getHours() + time.getMinutes() / 60;
 	}
 
 	const dragEnabled = !isMobile;

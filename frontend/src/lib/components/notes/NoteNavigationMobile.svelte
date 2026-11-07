@@ -16,6 +16,9 @@
 	import JournalArchivePicker from '$lib/components/notes/journal/JournalArchivePicker.svelte';
 	import CloseButton from '$lib/components/ui/buttons/CloseButton.svelte';
 	import HamburgerButton from '$lib/components/ui/buttons/HamburgerButton.svelte';
+	import DeleteButton from '$lib/components/ui/buttons/DeleteButton.svelte';
+	import ConfirmationModal from '$lib/components/ui/ConfirmationModal.svelte';
+	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 
 	const notes = getNotes();
 	const ts = getTranslation();
@@ -68,6 +71,26 @@
 	function goBack(): void {
 		direction = 'back';
 		stack = stack.slice(0, -1);
+	}
+
+	let deleteModalOpen = $state<boolean>(false);
+	const loadingIndicator = getLoadingIndicator();
+
+	// Reuses the desktop right-click delete, which targets rightClickId.
+	async function deleteCurrentFolder(): Promise<void> {
+		if (current === null || typeof current === 'string') return;
+		deleteModalOpen = false;
+		notes.rightClickType = 'category';
+		notes.rightClickId = current.id;
+		loadingIndicator.start();
+		const ok = await notes.deleteCategory();
+		loadingIndicator.stop();
+		// The stack holds pre-reload folder objects, so a parent level would
+		// still list the deleted folder. Return to the (live) root instead.
+		if (ok) {
+			direction = 'back';
+			stack = [];
+		}
 	}
 </script>
 
@@ -231,6 +254,7 @@
 								<span class="text-xl font-semibold">{current.title}</span>
 							</div>
 							<div class="flex gap-1">
+								<DeleteButton onClick={() => { deleteModalOpen = true; }} inModal={false} title={ts.get.notes.delete_folder} />
 								<AddNoteButton onClick={() => notes.openCreateNoteModal(current.id)} />
 								<CloseButton onClick={close} inModal={false} />
 							</div>
@@ -263,4 +287,14 @@
 			{/key}
 		</div>
 	</div>
+{/if}
+
+{#if deleteModalOpen}
+	<ConfirmationModal
+		title={ts.get.notes.delete_folder}
+		description={ts.get.notes.folder_deletion_description}
+		type="confirm-delete"
+		onConfirm={deleteCurrentFolder}
+		onCancel={() => (deleteModalOpen = false)}
+	/>
 {/if}

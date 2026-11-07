@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { getHoursOfDay, isOffHour } from '$lib/helpers/DateHelper';
+	import { getHoursOfDay, isOffHour, getMobileHourRows } from '$lib/helpers/DateHelper';
 	import { getCalendars } from '$lib/state/Calendars.svelte';
 	import { SwipeNavigate } from '$lib/helpers/SwipeNavigate.svelte';
 	import CalendarWeekDay from '$lib/components/calendars/views/week/Day.svelte';
@@ -8,9 +8,7 @@
 
 	const calendars = getCalendars();
 	const hours = getHoursOfDay();
-	const mobileRows = `minmax(4rem, auto) ${hours
-		.map((hour) => (isOffHour(hour) ? '1.5rem' : '3.5rem'))
-		.join(' ')}`;
+	const mobileRows = `minmax(4rem, auto) ${getMobileHourRows()}`;
 
 	const swipe = new SwipeNavigate({
 		onLeft: () => calendars.nextDay(),

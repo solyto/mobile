@@ -459,8 +459,17 @@ export class NotesSvelte {
 			return false;
 		}
 
+		const activeId = this.activeNote?.id;
+		const activeWasSaved = this.notes.some((n) => n.id === activeId);
+
 		const ok = await this.apiService.delete(apiRoutes.notes.deleteCategory, this.rightClickId);
-		if (ok) await this.loadCategories();
+		if (ok) {
+			// The API also deletes every note in the folder and its subfolders.
+			await Promise.all([this.loadCategories(), this.load()]);
+			if (activeWasSaved && !this.notes.some((n) => n.id === activeId)) {
+				await goto(resolve(urls.notes));
+			}
+		}
 		this.closeRightClickMenu();
 		return ok;
 	}
