@@ -3,7 +3,6 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { fade } from 'svelte/transition';
-	import IconArrowLeft from '@lucide/svelte/icons/arrow-left';
 	import { getTimeTracking } from '$lib/state/TimeTracking.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
@@ -115,16 +114,31 @@
 {#if project}
 	<div class="flex h-full flex-1 flex-col" in:fade>
 		<div
-			class="flex-shrink-0 border-b border-c-neutral-1 bg-c-bg-surface/80 px-4 py-4 backdrop-blur-sm lg:px-8 dark:border-s-dark-3"
+			class="flex-shrink-0 border-b border-c-neutral-1 bg-c-bg-surface/80 px-4 pt-6 pb-4 backdrop-blur-sm lg:px-8 lg:py-4 dark:border-s-dark-3"
 		>
-			<div class="flex w-full flex-row items-center justify-between">
+			<!-- Below lg: the actions in a bar beside the menu button, the heading beneath it. -->
+			<div class="flex w-full flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+				<div class="flex h-10 flex-row items-center justify-end max-lg:ml-14 lg:order-last">
+					<div class="flex flex-row items-center gap-2">
+						<TextButton
+							title={ts.get.timeTracking.add_entry}
+							onclick={() => (showEntryCreate = true)}
+						/>
+						<InlineEditButton
+							label={ts.get.timeTracking.edit_project}
+							onClick={() => {
+								editModal = true;
+							}}
+						/>
+						<InlineDeleteButton
+							label={ts.get.timeTracking.deletion_title}
+							onClick={() => {
+								deleteModal = true;
+							}}
+						/>
+					</div>
+				</div>
 				<div class="flex flex-row items-center gap-4">
-					<a
-						href={resolve(urls.timeTracking)}
-						class="flex size-9 items-center justify-center rounded-lg text-c-neutral-4 transition-all hover:bg-c-neutral-1 hover:text-c-neutral-6 lg:hidden dark:hover:bg-s-dark-3 dark:hover:text-white"
-					>
-						<IconArrowLeft class="size-5" />
-					</a>
 					<div class="flex flex-col">
 						<Heading title={project.title} my={0} />
 						{#if project.description}
@@ -148,24 +162,6 @@
 							</div>
 						{/if}
 					</div>
-				</div>
-				<div class="flex flex-row items-center gap-2">
-					<TextButton
-						title={ts.get.timeTracking.add_entry}
-						onclick={() => (showEntryCreate = true)}
-					/>
-					<InlineEditButton
-						label={ts.get.timeTracking.edit_project}
-						onClick={() => {
-							editModal = true;
-						}}
-					/>
-					<InlineDeleteButton
-						label={ts.get.timeTracking.deletion_title}
-						onClick={() => {
-							deleteModal = true;
-						}}
-					/>
 				</div>
 			</div>
 		</div>

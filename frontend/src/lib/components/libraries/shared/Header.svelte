@@ -44,12 +44,12 @@
 			{/if}
 			{#if library.config.hasGenres}
 				<TextButton title={ts.get.libraries.edit_genres} onclick={() => (library as GenreLibrary).openGenreModal()} type="slight" class="max-md:hidden" />
-				<IconButton type="slight" onclick={() => (library as GenreLibrary).openGenreModal()} class="md:hidden">
+				<IconButton type="slight" onclick={() => (library as GenreLibrary).openGenreModal()} class="max-md:px-2 md:hidden">
 					<IconTag />
 				</IconButton>
 			{/if}
 			<TextButton title={ts.get.libraries.create} onclick={() => library.openCreateModal()} class="max-md:hidden" />
-			<IconButton onclick={() => library.openCreateModal()} class="md:hidden">
+			<IconButton onclick={() => library.openCreateModal()} class="max-md:px-2 md:hidden">
 				<IconPlus />
 			</IconButton>
 		</div>

@@ -46,7 +46,7 @@
 </script>
 
 <TextButton title={ts.get.libraries.releases} type="primary" onclick={toggleModal} class="max-md:hidden" />
-<IconButton type="primary" onclick={toggleModal} class="md:hidden">
+<IconButton type="primary" onclick={toggleModal} class="max-md:px-2 md:hidden">
 	<IconNewspaper />
 </IconButton>
 

@@ -23,7 +23,7 @@
 	});
 </script>
 
-<div class="flex flex-col gap-4">
+<div class="flex flex-col gap-4 pb-8">
 	<div class="flex flex-col md:flex-row md:items-center md:justify-between">
 		<h2 class="order-2 mt-2 pl-4 pb-2 text-2xl font-normal text-c-neutral-7 dark:text-c-neutral-3 md:order-1 md:mt-4">
 			{ts.get.dev.requests.current_requests}

@@ -16,7 +16,7 @@
 </script>
 
 <div
-	class="flex w-full flex-col items-start gap-4 rounded-lg border-1 border-c-neutral-1 bg-c-bg-surface p-4 text-left shadow-sm md:flex-row dark:border-s-dark-2"
+	class="flex w-full flex-col items-start gap-4 text-left md:flex-row"
 	in:scale
 >
 	<div class="flex flex-col gap-4 md:flex-row">

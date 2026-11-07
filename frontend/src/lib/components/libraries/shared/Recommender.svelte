@@ -76,7 +76,7 @@
 </script>
 
 <div class="relative">
-	<IconButton type="action" onclick={toggleChat}>
+	<IconButton type="action" onclick={toggleChat} class="max-md:px-2">
 		<IconBot />
 		<span class="max-md:hidden">{ts.get.libraries.recommend}</span>
 	</IconButton>

@@ -44,7 +44,7 @@
 </script>
 
 <div class="flex flex-col gap-8">
-	<div class="max-lg:ml-14">
+	<div class="max-lg:mt-1 max-lg:ml-14">
 		<Heading title={ts.get.timeTracking.dashboard} my={0} />
 	</div>
 

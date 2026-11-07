@@ -41,7 +41,7 @@
 </script>
 
 <div
-	class="flex w-full flex-col gap-4 rounded-lg border-1 border-c-neutral-1 bg-c-bg-surface p-4 shadow-sm md:flex-row dark:border-s-dark-2"
+	class="flex w-full flex-col gap-4 md:flex-row"
 >
 	<div class="flex justify-center">
 		{#if release.cover === null || release.cover === undefined || release.cover === ''}
