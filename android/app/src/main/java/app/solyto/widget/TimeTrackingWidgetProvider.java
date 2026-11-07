@@ -293,10 +293,15 @@ public class TimeTrackingWidgetProvider extends AppWidgetProvider {
         row.setViewVisibility(R.id.widget_row_button, View.VISIBLE);
     }
 
+    /**
+     * Opens the app on the time tracking page (header and message). Without a login the app
+     * ignores the route and just opens.
+     */
     private static PendingIntent openAppIntent(Context context) {
         Intent intent = new Intent(context, MainActivity.class)
-                .setAction(Intent.ACTION_MAIN)
-                .addCategory(Intent.CATEGORY_LAUNCHER);
+                .setAction(MainActivity.ACTION_WIDGET_ROUTE)
+                .putExtra(MainActivity.EXTRA_WIDGET_ROUTE_KEY, "time_tracking")
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         return PendingIntent.getActivity(context, REQUEST_HEADER, intent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
     }
