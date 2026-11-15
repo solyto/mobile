@@ -2,7 +2,7 @@ Connect calendars from your own CalDAV server, like Nextcloud or iCloud.
 Import feeds from an OPML file.
 Todos remember your view, separately on phone and desktop.
 Faster calendar, feeds, library covers and time tracking.
-Finance charts show amounts in euros.
+Finance charts show cleanly formatted amounts.
 Calendar invites can only be answered by the person invited.
 Fixes for IMDb import, library genres and tags, and dark themes.
 For self-hosters: please update your server first.
