@@ -5,6 +5,7 @@
 	import { grabFaviconFromUrl } from '$lib/helpers/ImageHelper';
 	import { stripHtml, hasMeaningfulDescription } from '$lib/helpers/FormatHelper';
 	import SaveToLibraryButton from '$lib/components/feeds/SaveToLibraryButton.svelte';
+	import { safeHref } from '$lib/helpers/UrlHelper';
 
 	let { item, source }: {
 		item: FeedItem;
@@ -12,11 +13,12 @@
 	} = $props();
 
 	let faviconUrl = grabFaviconFromUrl(item.link);
+	let href = safeHref(item.link);
 	let imageLoaded = $state(false);
 	let imageFailed = $state(false);
 </script>
 
-<a href={item.link} class="group w-full" target="_blank" rel="external" in:fade>
+<svelte:element this={href ? 'a' : 'div'} {href} class="group w-full" target="_blank" rel="external" in:fade>
 	<div class="flex h-full w-full flex-col">
 		<div
 			class="relative aspect-video w-full overflow-hidden rounded-sm bg-c-neutral-1 drop-shadow-sm transition-all not-dark:border-1 not-dark:border-c-neutral-1 group-hover:drop-shadow-xl dark:bg-s-dark-3"
@@ -55,4 +57,4 @@
 			</span>
 		</div>
 	</div>
-</a>
+</svelte:element>

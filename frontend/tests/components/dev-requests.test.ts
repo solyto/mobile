@@ -1,16 +1,17 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/svelte';
+import { screen, waitFor } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
+import Comments from '$lib/components/dev-requests/Comments.svelte';
 import DevRequestEntry from '$lib/components/dev-requests/DevRequestEntry.svelte';
 import DevRequestEdit from '$lib/components/dev-requests/DevRequestEdit.svelte';
 import FixedIn from '$lib/components/dev-requests/FixedIn.svelte';
 import Priority from '$lib/components/dev-requests/Priority.svelte';
 import Status from '$lib/components/dev-requests/Status.svelte';
 import Type from '$lib/components/dev-requests/Type.svelte';
-import VersionInput from '$lib/components/forms/VersionInput.svelte';
 import { renderWithContext } from './helpers/context';
 import { devRequest } from '../unit/helpers/factories';
 import type { DevRequest } from '$lib/types/dev_request';
+import type { KeyManager } from '$lib/state/KeyManager.svelte';
 
 const ADMIN = { id: 'admin', name: 'Admin', role: 'admin' };
 const MEMBER = { id: 'member', name: 'Member', role: 'user' };
@@ -36,15 +37,6 @@ function renderEdit(entry?: DevRequest) {
 	return { devRequests, error, onClose };
 }
 
-describe('VersionInput', () => {
-	it('shows the label and one number box per version part', () => {
-		render(VersionInput, { props: { value: { major: 1, minor: 2, patch: 3 }, label: 'Fixed in version' } });
-
-		expect(screen.getByText('Fixed in version')).toBeInTheDocument();
-		expect(screen.getAllByRole('spinbutton').map((input) => (input as HTMLInputElement).value)).toEqual(['1', '2', '3']);
-	});
-});
-
 describe('display-only badges', () => {
 	it('render Priority, Status and Type without buttons', () => {
 		const entry = devRequest({ priority: 3, status: 'cancelled', type: 'feature' });
@@ -58,6 +50,11 @@ describe('display-only badges', () => {
 	it('labels the priority dot with the priority name', () => {
 		renderWithContext(Priority, { entry: devRequest({ priority: 5 }) });
 		expect(screen.getByRole('img', { name: 'Critical Priority' })).toBeInTheDocument();
+	});
+
+	it('shows waiting-for-deployment with its label', () => {
+		renderWithContext(Status, { entry: devRequest({ status: 'waiting-for-deployment' }) });
+		expect(screen.getByText('Waiting for Deployment')).toBeInTheDocument();
 	});
 
 	it('shows cancelled as Rejected', () => {
@@ -147,9 +144,9 @@ describe('DevRequestEdit, edit', () => {
 		const user = userEvent.setup();
 		renderEdit(devRequest());
 
-		expect(screen.queryAllByRole('spinbutton')).toHaveLength(0);
+		expect(screen.queryByPlaceholderText('Fixed in version')).toBeNull();
 		await user.selectOptions(screen.getByDisplayValue('Pending'), 'completed');
-		expect(screen.getAllByRole('spinbutton')).toHaveLength(3);
+		expect(screen.getByPlaceholderText('Fixed in version')).toBeInTheDocument();
 	});
 
 	it('saves only the changed fields, including the version', async () => {
@@ -161,10 +158,7 @@ describe('DevRequestEdit, edit', () => {
 		await user.clear(title);
 		await user.type(title, 'Login broken');
 		await user.selectOptions(screen.getByDisplayValue('Pending'), 'completed');
-		const [major, minor, patch] = screen.getAllByRole('spinbutton');
-		await user.type(major, '1');
-		await user.type(minor, '2');
-		await user.type(patch, '0');
+		await user.type(screen.getByPlaceholderText('Fixed in version'), '1.2.0');
 		await user.click(screen.getByRole('button', { name: 'Save' }));
 
 		await waitFor(() => expect(onClose).toHaveBeenCalled());
@@ -184,6 +178,47 @@ describe('DevRequestEdit, edit', () => {
 		expect(devRequests.update).toHaveBeenCalledWith(entry, { status: 'cancelled', fixed_in_version: null });
 	});
 
+	it('rejects a version that is not X.X.X and keeps the modal open', async () => {
+		const user = userEvent.setup();
+		const { devRequests, error, onClose } = renderEdit(devRequest());
+
+		await user.selectOptions(screen.getByDisplayValue('Pending'), 'completed');
+		await user.type(screen.getByPlaceholderText('Fixed in version'), '1.2');
+		await user.click(screen.getByRole('button', { name: 'Save' }));
+
+		expect(error).toHaveBeenCalledWith('Please enter the version as X.X.X, e.g. 1.2.0');
+		expect(devRequests.update).not.toHaveBeenCalled();
+		expect(onClose).not.toHaveBeenCalled();
+	});
+
+	it('saves other changes when an unchanged stored version is not X.X.X', async () => {
+		const user = userEvent.setup();
+		const entry = devRequest({ status: 'completed', fixed_in_version: '1.2' });
+		const { devRequests, error, onClose } = renderEdit(entry);
+
+		const title = screen.getByDisplayValue('Login fails');
+		await user.clear(title);
+		await user.type(title, 'Login broken');
+		await user.click(screen.getByRole('button', { name: 'Save' }));
+
+		await waitFor(() => expect(onClose).toHaveBeenCalled());
+		expect(error).not.toHaveBeenCalled();
+		expect(devRequests.update).toHaveBeenCalledWith(entry, { title: 'Login broken' });
+	});
+
+	it('saves the waiting-for-deployment status', async () => {
+		const user = userEvent.setup();
+		const entry = devRequest({ status: 'in-progress' });
+		const { devRequests, onClose } = renderEdit(entry);
+
+		await user.selectOptions(screen.getByDisplayValue('In Progress'), 'waiting-for-deployment');
+		expect(screen.queryByPlaceholderText('Fixed in version')).toBeNull();
+		await user.click(screen.getByRole('button', { name: 'Save' }));
+
+		await waitFor(() => expect(onClose).toHaveBeenCalled());
+		expect(devRequests.update).toHaveBeenCalledWith(entry, { status: 'waiting-for-deployment' });
+	});
+
 	it('rejects an empty title like on create', async () => {
 		const user = userEvent.setup();
 		const { devRequests, error, onClose } = renderEdit(devRequest());
@@ -194,5 +229,62 @@ describe('DevRequestEdit, edit', () => {
 		expect(error).toHaveBeenCalledWith('Please add a title and a description');
 		expect(devRequests.update).not.toHaveBeenCalled();
 		expect(onClose).not.toHaveBeenCalled();
+	});
+});
+
+describe('Comments', () => {
+	function renderComments() {
+		const devRequests = { ...devRequestsStub(), createComment: vi.fn().mockResolvedValue(true) };
+		let keyManager!: KeyManager;
+		renderWithContext(
+			Comments,
+			{ entry: devRequest() },
+			{ stores: { auth: { user: MEMBER }, devRequests }, onReady: (stores) => (keyManager = stores.keyManager as KeyManager) }
+		);
+		const textarea = screen.getByPlaceholderText('Add a comment...') as HTMLTextAreaElement;
+		return { devRequests, keyManager, textarea };
+	}
+
+	// The app layout forwards window keydowns to the KeyManager; do the same here.
+	function press(keyManager: KeyManager, key: string, shift = false) {
+		if (shift) keyManager.handleKeyDown(new KeyboardEvent('keydown', { key: 'Shift' }));
+		keyManager.handleKeyDown(new KeyboardEvent('keydown', { key, shiftKey: shift }));
+		if (shift) keyManager.handleKeyUp(new KeyboardEvent('keyup', { key: 'Shift' }));
+	}
+
+	it('inserts a newline at the cursor on Shift+Enter without submitting', async () => {
+		const user = userEvent.setup();
+		const { devRequests, keyManager, textarea } = renderComments();
+
+		await user.type(textarea, 'ab');
+		textarea.setSelectionRange(1, 1);
+		press(keyManager, 'Enter', true);
+
+		await waitFor(() => expect(textarea.value).toBe('a\nb'));
+		expect(textarea.selectionStart).toBe(2);
+		expect(devRequests.createComment).not.toHaveBeenCalled();
+	});
+
+	it('submits the comment, including newlines, on Enter', async () => {
+		const user = userEvent.setup();
+		const { devRequests, keyManager, textarea } = renderComments();
+
+		await user.type(textarea, 'a');
+		press(keyManager, 'Enter', true);
+		await waitFor(() => expect(textarea.value).toBe('a\n'));
+		await user.type(textarea, 'b');
+		press(keyManager, 'Enter');
+
+		await waitFor(() => expect(devRequests.createComment).toHaveBeenCalledWith(expect.anything(), 'a\nb'));
+	});
+
+	it('leaves Shift+Enter to other handlers when the comment box is not focused', () => {
+		const { keyManager } = renderComments();
+		const other = vi.fn();
+		keyManager.registerKeyDown('Enter', other, { priority: 0 });
+
+		press(keyManager, 'Enter', true);
+
+		expect(other).toHaveBeenCalled();
 	});
 });

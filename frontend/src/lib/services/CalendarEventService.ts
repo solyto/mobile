@@ -1,7 +1,14 @@
 import { eachDayBetween, formatDate, getDateDiffInMinutes } from '$lib/helpers/DateHelper';
-import type { CalendarEvent, CalendarEventResponse } from '$lib/types/calendar';
+import type { CalendarEvent, CalendarEventResponse, EventWriteResult } from '$lib/types/calendar';
+import type { StatusResponse } from '$lib/types/api';
 
 const MINUTES_PER_DAY = 1440;
+
+const WRITE_ERRORS: Record<string, EventWriteResult> = {
+	external_event_changed: 'changed_on_server',
+	external_event_unreadable: 'unreadable',
+	external_server_unavailable: 'server_unavailable'
+};
 
 function spansMoreThanOneDay(event: CalendarEvent): boolean {
 	return getDateDiffInMinutes(event.start_date, event.end_date) > MINUTES_PER_DAY;
@@ -23,6 +30,21 @@ function followingDaysTouched(event: CalendarEvent): Date[] {
 }
 
 export default class CalendarEventService {
+	writeResult(res: StatusResponse): EventWriteResult {
+		if (res.ok) return 'ok';
+		return WRITE_ERRORS[res.errors[0]] ?? 'failed';
+	}
+
+	findCurrentVersion(events: CalendarEvent[], entry: CalendarEvent): CalendarEvent | null {
+		const slot = entry.original_start_date?.getTime() ?? null;
+
+		return events.find((event) =>
+			Number(event.calendar_id) === Number(entry.calendar_id) &&
+			event.uri === entry.uri &&
+			(event.original_start_date?.getTime() ?? null) === slot
+		) ?? null;
+	}
+
 	fromApi(response: CalendarEventResponse): CalendarEvent {
 		return {
 			...response,

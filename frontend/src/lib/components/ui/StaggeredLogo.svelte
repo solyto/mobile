@@ -1,13 +1,12 @@
 <script lang="ts">
 	import { fly } from 'svelte/transition';
 	import { onMount } from 'svelte';
+	import logo from '$lib/assets/logo_cut_stagger.png';
 
 	const x = 7;
 	const y = 9;
 
 	let tiles = $state<number[]>([]);
-
-	let { path = null }: { path?: string | null } = $props();
 
 	onMount(() => {
 		for (let i = 0; i < x * y; i++) {
@@ -24,7 +23,7 @@
 	}
 
 	function tileBackgroundImage(): string {
-		return `url('${path || './'}logo_cut.png')`;
+		return `url('${logo}')`;
 	}
 
 	function tileBackgroundPosition(tile: number): string {

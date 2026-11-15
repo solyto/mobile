@@ -6,7 +6,7 @@
 	import { formatDate } from '$lib/helpers/DateHelper';
 	import TextInput from '$lib/components/forms/TextInput.svelte';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
-	import { onDestroy, onMount } from 'svelte';
+	import { onDestroy, onMount, tick } from 'svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import { getKeyManager } from '$lib/state/KeyManager.svelte';
 
@@ -20,7 +20,12 @@
 	let comments = $state<DevRequestComment[]>([]);
 	let newComment = $state<string>('');
 	let submitting = $state<boolean>(false);
-	let keyHandlers: { [key: string]: string | null } = { Enter: null, Escape: null };
+	let commentInput = $state<HTMLInputElement | HTMLTextAreaElement | null>(null);
+	let keyHandlers: { [key: string]: string | null } = {
+		Enter: null,
+		EnterNewLine: null,
+		Escape: null
+	};
 
 	onMount(async () => {
 		loadingIndicator.start();
@@ -29,6 +34,9 @@
 			loadingIndicator.stop();
 		}, 500);
 
+		keyHandlers.EnterNewLine = keyManager.registerKeyDown('Enter', insertNewLine, {
+			withHelperKey: 'Shift'
+		});
 		keyHandlers.Enter = keyManager.registerKeyDown('Enter', submitComment);
 	});
 
@@ -42,6 +50,17 @@
 		if (res) comments = await devRequests.loadComments(entry);
 		newComment = '';
 		submitting = false;
+	}
+
+	async function insertNewLine(): Promise<void> {
+		if (!commentInput || document.activeElement !== commentInput) return;
+
+		const start = commentInput.selectionStart ?? newComment.length;
+		const end = commentInput.selectionEnd ?? newComment.length;
+		newComment = newComment.slice(0, start) + '\n' + newComment.slice(end);
+
+		await tick();
+		commentInput.selectionStart = commentInput.selectionEnd = start + 1;
 	}
 
 	async function load(): Promise<void> {
@@ -60,7 +79,7 @@
 							<span class="font-medium">{comment.user.name}</span>
 							<span class="text-c-neutral-4">{formatDate(comment.created_at)}</span>
 						</div>
-						<p class="text-sm">{comment.content}</p>
+						<p class="text-sm whitespace-pre-line">{comment.content}</p>
 					</div>
 				{/each}
 			</div>
@@ -72,6 +91,8 @@
 			<TextInput
 				placeholder={ts.get.dev.requests.comments_placeholder}
 				bind:value={newComment}
+				bind:input={commentInput}
+				multiLine={true}
 			/>
 			<TextButton onclick={submitComment} title={ts.get.dev.requests.comments_submit} />
 		</div>

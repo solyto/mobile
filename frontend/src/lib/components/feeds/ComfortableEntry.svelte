@@ -5,6 +5,7 @@
 	import { grabFaviconFromUrl } from '$lib/helpers/ImageHelper';
 	import { stripHtml, hasMeaningfulDescription } from '$lib/helpers/FormatHelper';
 	import SaveToLibraryButton from '$lib/components/feeds/SaveToLibraryButton.svelte';
+	import { safeHref } from '$lib/helpers/UrlHelper';
 
 	let { item, source }: {
 		item: FeedItem;
@@ -12,6 +13,7 @@
 	} = $props();
 
 	let faviconUrl = grabFaviconFromUrl(item.link);
+	let href = safeHref(item.link);
 	let imageFailed = $state(false);
 
 	function hasImage(): boolean {
@@ -19,8 +21,9 @@
 	}
 </script>
 
-<a
-	href={item.link}
+<svelte:element
+	this={href ? 'a' : 'div'}
+	{href}
 	class="grid w-full grid-cols-[1fr_auto] gap-y-2 rounded-sm border-c-neutral-1 px-2 py-3 transition-colors md:gap-x-4 hover:bg-c-neutral dark:border-s-dark dark:hover:bg-s-dark-3"
 	class:gap-x-4={hasImage()}
 	target="_blank"
@@ -57,4 +60,4 @@
 		<span class="whitespace-nowrap tabular-nums">{formatDateTime(new Date(item.published_at))}</span>
 		<span class="ml-auto"><SaveToLibraryButton {item} /></span>
 	</span>
-</a>
+</svelte:element>

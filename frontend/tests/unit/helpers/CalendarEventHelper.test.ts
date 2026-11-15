@@ -2,8 +2,10 @@ import { describe, it, expect } from 'vitest';
 import {
 	adjustEventRange,
 	combineDateAndTime,
+	eventWriteErrorMessage,
 	getCalendarEventKey
 } from '$lib/helpers/CalendarEventHelper';
+import { en } from '$lib/i18n/en';
 import type { CalendarEvent } from '$lib/types/calendar';
 
 function makeEvent(overrides: Partial<CalendarEvent> = {}): CalendarEvent {
@@ -94,5 +96,17 @@ describe('adjustEventRange', () => {
 		const start = new Date('2026-10-15T10:00:00Z');
 		const end = new Date('2026-10-15T12:00:00Z');
 		expect(adjustEventRange('end', start, end, hour)).toEqual({ start, end });
+	});
+});
+
+describe('eventWriteErrorMessage', () => {
+	it('names the reason an external calendar refused the change', () => {
+		expect(eventWriteErrorMessage('changed_on_server', en.calendar, 'fallback')).toBe(en.calendar.event_changed_on_server);
+		expect(eventWriteErrorMessage('unreadable', en.calendar, 'fallback')).toBe(en.calendar.event_unreadable);
+		expect(eventWriteErrorMessage('server_unavailable', en.calendar, 'fallback')).toBe(en.calendar.event_server_unavailable);
+	});
+
+	it('falls back to the given message for any other failure', () => {
+		expect(eventWriteErrorMessage('failed', en.calendar, 'fallback')).toBe('fallback');
 	});
 });

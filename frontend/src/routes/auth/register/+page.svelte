@@ -86,7 +86,7 @@
 
 <div class="flex w-full max-w-xs flex-col items-center gap-12" class:animate-shake={error}>
 	<div style="width: 56px; height: 71px;">
-		<StaggeredLogo path="../" />
+		<StaggeredLogo />
 	</div>
 	<form
 		class="mb-4 flex flex-col gap-4 rounded-lg border-2 border-white/5 bg-c-bg-surface px-8 pt-6 pb-8 shadow-sm md:min-w-80"

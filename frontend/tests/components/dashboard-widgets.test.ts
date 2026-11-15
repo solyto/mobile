@@ -317,6 +317,21 @@ describe('NewestLinksWidget', () => {
 		expect(anchor).toHaveAttribute('href', 'https://solyto.app');
 		expect(anchor).toHaveAttribute('target', '_blank');
 	});
+
+	it('renders a link with an unsafe url as plain text', () => {
+		const { container } = renderWithContext(
+			NewestLinksWidget,
+			{},
+			{
+				prepare: (stores) => ({
+					newestLinks: [link({ title: 'Sneaky', url: 'javascript:alert(1)' })],
+					ts: stores.ts
+				})
+			}
+		);
+		expect(screen.getByText('Sneaky')).toBeInTheDocument();
+		expect(container.querySelector('a')).toBeNull();
+	});
 });
 
 describe('BookReleasesWidget', () => {

@@ -9,7 +9,8 @@
 	import type {
 		EventForm,
 		CreateEventRequest,
-		UpdateEventRequest
+		UpdateEventRequest,
+		EventWriteResult
 	} from '$lib/types/calendar';
 	import SvelteDateInput from '$lib/components/forms/SvelteDateInput.svelte';
 	import Toggle from '$lib/components/forms/Toggle.svelte';
@@ -21,7 +22,7 @@
 	import RecurrenceActionModal from '$lib/components/calendars/RecurrenceActionModal.svelte';
 	import EventAttachments from '$lib/components/calendars/EventAttachments.svelte';
 	import { formatFloatingDate } from '$lib/helpers/DateHelper';
-	import { adjustEventRange, combineDateAndTime } from '$lib/helpers/CalendarEventHelper';
+	import { adjustEventRange, combineDateAndTime, eventWriteErrorMessage } from '$lib/helpers/CalendarEventHelper';
 	import RecurrenceRuleService from '$lib/services/RecurrenceRuleService';
 	import type { RecurrenceSelection } from '$lib/services/RecurrenceRuleService';
 
@@ -168,7 +169,7 @@
 		loadingIndicator.start();
 		const request = buildRequest();
 
-		const ok = thisOccurrenceOnly
+		const result = thisOccurrenceOnly
 			? await calendars.updateOccurrence(
 					calendars.activeEvent!,
 					request as UpdateEventRequest,
@@ -179,29 +180,39 @@
 				: await calendars.createEvent(request as CreateEventRequest);
 
 		loadingIndicator.stop();
-		if (ok) {
+		if (result === 'ok') {
 			form = { ...emptyForm };
 			recurrence = recurrenceRuleService.parse(null, form.start_date);
 			calendars.hideSidebar();
 		} else {
-			notifications.error(ts.get.calendar.entry_create_error);
+			await handleWriteError(result, ts.get.calendar.entry_create_error);
 		}
 	}
 
 	async function doDelete(thisOccurrenceOnly: boolean): Promise<void> {
 		loadingIndicator.start();
 
-		if (thisOccurrenceOnly) {
-			await calendars.deleteOccurrence(
-				calendars.activeEvent!,
-				calendars.activeEvent!.original_start_date!
-			);
-		} else {
-			await calendars.deleteEvent(calendars.activeEvent!);
-		}
+		const result = thisOccurrenceOnly
+			? await calendars.deleteOccurrence(
+					calendars.activeEvent!,
+					calendars.activeEvent!.original_start_date!
+				)
+			: await calendars.deleteEvent(calendars.activeEvent!);
 
 		loadingIndicator.stop();
-		calendars.hideSidebar();
+		if (result === 'ok') {
+			calendars.hideSidebar();
+		} else {
+			await handleWriteError(result, ts.get.calendar.entry_delete_error);
+		}
+	}
+
+	async function handleWriteError(result: EventWriteResult, fallback: string): Promise<void> {
+		showRecurrenceModal = null;
+		notifications.error(eventWriteErrorMessage(result, ts.get.calendar, fallback));
+		if (result === 'changed_on_server' && calendars.activeEvent) {
+			await calendars.reopenEvent(calendars.activeEvent);
+		}
 	}
 </script>
 

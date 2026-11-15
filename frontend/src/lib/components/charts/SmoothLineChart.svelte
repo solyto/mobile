@@ -11,6 +11,7 @@
 		max,
 		filled = false,
 		color = '#61d96a',
+		valueFormatter,
 		class: extraClass = 'h-96'
 	}: {
 		title?: string;
@@ -20,6 +21,7 @@
 		max?: number;
 		filled?: boolean;
 		color?: string;
+		valueFormatter?: (value: number) => string;
 		class?: string;
 	} = $props();
 
@@ -63,7 +65,8 @@
 				text: title || ''
 			},
 			tooltip: {
-				trigger: 'axis'
+				trigger: 'axis',
+				valueFormatter: valueFormatter ? (value: unknown) => valueFormatter(Number(value)) : undefined
 			},
 			grid: {
 				top: title ? 60 : 8,

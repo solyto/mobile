@@ -58,10 +58,11 @@
 
 <div
 	bind:this={trigger}
-	class="
-		relative flex items-center rounded-l-md transition-all duration-300
-		max-2xl:rounded-full {filled ? getPriorityColorClass(todo.priority) : ''}
-	"
+	class={[
+		'relative flex items-center rounded-l-md transition-all duration-300 max-2xl:rounded-full',
+		filled && 'todo-priority-filled',
+		filled && getPriorityColorClass(todo.priority)
+	]}
 	class:justify-center={!left}
 	class:justify-start={left}
 	class:p-4={(todos.view === 'list' || todos.view === 'grouped') && !simple && !compact}

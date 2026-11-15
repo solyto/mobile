@@ -8,11 +8,13 @@ import type {
 	CreateEventRequest,
 	UpdateEventRequest,
 	CreateCalendarRequest,
-	NewEventPreset
+	NewEventPreset,
+	EventWriteResult
 } from '$lib/types/calendar';
 import { getContext, setContext, tick } from 'svelte';
 import { getAuth, type Auth } from '$lib/state/Auth.svelte';
 import ApiService from '$lib/services/ApiService';
+import type { StatusResponse } from '$lib/types/api';
 import { apiRoutes } from '$lib/config/apiRoutes';
 import {
 	formatDate,
@@ -36,6 +38,8 @@ export class Calendars {
 
 	calendars = $state<Calendar[]>([]);
 	events = $state<CalendarEvent[]>([]);
+	unavailableCalendarIds = $state<number[]>([]);
+	credentialsRejectedCalendarIds = $state<number[]>([]);
 	sortedEvents = $state<Record<string, CalendarEvent[]>>({});
 	todos = $state<Todo[]>([]);
 	month = $state<CalendarMonth>({ weeks: [] });
@@ -124,20 +128,40 @@ export class Calendars {
 	}
 
 	async loadEvents(): Promise<void> {
+		const year = this.currentYear;
+		const month = this.currentMonth;
 		const res = await this.apiService.list(
 			apiRoutes.calendars.listEvents.replace(
 				'%s',
-				this.currentYear.toString() + '-' + this.currentMonth.toString().padStart(2, '0')
+				year.toString() + '-' + month.toString().padStart(2, '0')
 			)
 		);
 
-		if (!res) return;
+		if (!res || !this.isCurrentMonth(year, month)) return;
 
 		const events = (res.data as CalendarEventResponse[]).map((item) =>
 			this.eventService.fromApi(item)
 		);
 		this.events = events;
 		this.sortedEvents = this.eventService.groupByDay(events);
+		this.unavailableCalendarIds = (res.meta?.unavailable_calendars as number[] | undefined) ?? [];
+		this.credentialsRejectedCalendarIds = (res.meta?.credentials_rejected_calendars as number[] | undefined) ?? [];
+	}
+
+	isCalendarUnavailable(id: number): boolean {
+		return this.unavailableCalendarIds.includes(Number(id));
+	}
+
+	isCalendarCredentialsRejected(id: number): boolean {
+		return this.credentialsRejectedCalendarIds.includes(Number(id));
+	}
+
+	unreachableCalendars(): Calendar[] {
+		return this.calendars.filter((calendar) => this.isCalendarUnavailable(calendar.id) && !this.isCalendarCredentialsRejected(calendar.id));
+	}
+
+	credentialsRejectedCalendars(): Calendar[] {
+		return this.calendars.filter((calendar) => this.isCalendarCredentialsRejected(calendar.id));
 	}
 
 	loadMarksConfig(): void {
@@ -164,6 +188,8 @@ export class Calendars {
 		const days = this.month.weeks.flatMap((week) => week.days.map((day) => day.date));
 		if (days.length === 0) return;
 
+		const year = this.currentYear;
+		const month = this.currentMonth;
 		const from = getUrlFormat(days[0]);
 		const to = getUrlFormat(days[days.length - 1]);
 
@@ -171,6 +197,8 @@ export class Calendars {
 			this.journalMarksEnabled ? this.apiService.list(`${apiRoutes.notes.journalMarks}?from=${from}&to=${to}`) : Promise.resolve(null),
 			this.checkInMarksEnabled ? this.apiService.list(`${apiRoutes.checkIn.marks}?from=${from}&to=${to}`) : Promise.resolve(null)
 		]);
+
+		if (!this.isCurrentMonth(year, month)) return;
 
 		this.journalMarks = (journalRes?.data as string[]) ?? [];
 		this.checkInMarks = (checkInRes?.data as string[]) ?? [];
@@ -197,9 +225,7 @@ export class Calendars {
 		} else {
 			this.currentMonth++;
 		}
-		this.loadMonth();
-		await this.loadEvents();
-		await this.loadMarks();
+		await this.reloadMonth();
 	}
 
 	async lastMonth(): Promise<void> {
@@ -209,9 +235,7 @@ export class Calendars {
 		} else {
 			this.currentMonth--;
 		}
-		this.loadMonth();
-		await this.loadEvents();
-		await this.loadMarks();
+		await this.reloadMonth();
 	}
 
 	nextWeek(): void {
@@ -253,9 +277,7 @@ export class Calendars {
 		this.currentYear = today.getFullYear();
 		this.mobileSelectedDate = new Date(today);
 		this.mobileWeekStart = new Date(today);
-		this.loadMonth();
-		await this.loadEvents();
-		await this.loadMarks();
+		await this.reloadMonth();
 	}
 
 	getEventsForDate(date: Date): CalendarEvent[] {
@@ -343,46 +365,51 @@ export class Calendars {
 		this.activeEventNotes = [];
 	}
 
-	async createEvent(request: CreateEventRequest): Promise<boolean> {
-		const res = await this.apiService.create(
+	async createEvent(request: CreateEventRequest): Promise<EventWriteResult> {
+		const res = await this.apiService.createWithStatus(
 			apiRoutes.calendars.createEvent.replace('%d', request.calendar_id.toString()),
 			request
 		);
-		if (res) await this.loadEvents();
-		if (res) this.auth.widgetBridge.notifyChanged();
-		return res !== null;
+		return this.afterEventWrite(res);
 	}
 
-	async updateEvent(entry: CalendarEvent, request: UpdateEventRequest): Promise<boolean> {
-		const res = await this.apiService.update(
-			apiRoutes.calendars.updateEvent.replace('%d', entry.calendar_id.toString()),
-			entry.uri,
+	async updateEvent(entry: CalendarEvent, request: UpdateEventRequest): Promise<EventWriteResult> {
+		const res = await this.apiService.putWithStatus(
+			apiRoutes.calendars.updateEvent
+				.replace('%d', entry.calendar_id.toString())
+				.replace('%s', entry.uri),
 			entry.is_recurring && entry.original_start_date !== null
 				? { ...request, occurrence_start_date: formatFloatingDate(entry.start_date) }
 				: request
 		);
-		if (res) await this.loadEvents();
-		if (res) this.auth.widgetBridge.notifyChanged();
-		return res;
+		return this.afterEventWrite(res);
 	}
 
-	async deleteEvent(entry: CalendarEvent): Promise<boolean> {
-		const res = await this.apiService.delete(
-			apiRoutes.calendars.deleteEvent.replace('%d', entry.calendar_id.toString()),
-			entry.uri
+	async deleteEvent(entry: CalendarEvent): Promise<EventWriteResult> {
+		const res = await this.apiService.deleteWithStatus(
+			apiRoutes.calendars.deleteEvent
+				.replace('%d', entry.calendar_id.toString())
+				.replace('%s', entry.uri)
 		);
-		if (res) await this.loadEvents();
-		if (res) this.auth.widgetBridge.notifyChanged();
-		return res;
+		return this.afterEventWrite(res);
 	}
 
-	async moveEvent(event: CalendarEvent, target: CalendarDropTarget): Promise<boolean> {
+	async reopenEvent(entry: CalendarEvent): Promise<void> {
+		const current = this.eventService.findCurrentVersion(this.events, entry);
+		if (current) {
+			await this.showSidebar(null, current);
+		} else {
+			this.hideSidebar();
+		}
+	}
+
+	async moveEvent(event: CalendarEvent, target: CalendarDropTarget): Promise<EventWriteResult> {
 		const request = this.dragService.buildMoveRequest(event, target);
-		if (request === null) return true;
+		if (request === null) return 'ok';
 
 		if (event.is_recurring && event.original_start_date !== null) {
 			this.pendingMove = { event, request };
-			return true;
+			return 'ok';
 		}
 
 		return this.applyEventMove(event, request, false);
@@ -392,20 +419,20 @@ export class Calendars {
 		event: CalendarEvent,
 		request: UpdateEventRequest,
 		thisOccurrenceOnly: boolean
-	): Promise<boolean> {
+	): Promise<EventWriteResult> {
 		if (thisOccurrenceOnly) {
 			return this.updateOccurrence(event, request, event.original_start_date!);
 		}
 		return this.updateEvent(event, request);
 	}
 
-	async resolvePendingMove(thisOccurrenceOnly: boolean): Promise<boolean> {
+	async resolvePendingMove(thisOccurrenceOnly: boolean): Promise<EventWriteResult> {
 		const pending = this.pendingMove;
-		if (!pending) return false;
+		if (!pending) return 'failed';
 
-		const ok = await this.applyEventMove(pending.event, pending.request, thisOccurrenceOnly);
+		const result = await this.applyEventMove(pending.event, pending.request, thisOccurrenceOnly);
 		this.pendingMove = null;
-		return ok;
+		return result;
 	}
 
 	cancelPendingMove(): void {
@@ -473,28 +500,24 @@ export class Calendars {
 		entry: CalendarEvent,
 		request: UpdateEventRequest,
 		occurrenceDate: Date
-	): Promise<boolean> {
+	): Promise<EventWriteResult> {
 		const occDateStr = occurrenceDate.toISOString();
 		const url = apiRoutes.calendars.updateOccurrence
 			.replace('%d', entry.calendar_id.toString())
 			.replace('%s', entry.uri)
 			.replace('%s', encodeURIComponent(occDateStr));
-		const res = await this.apiService.put(url, request);
-		if (res) await this.loadEvents();
-		if (res) this.auth.widgetBridge.notifyChanged();
-		return res;
+		const res = await this.apiService.putWithStatus(url, request);
+		return this.afterEventWrite(res);
 	}
 
-	async deleteOccurrence(entry: CalendarEvent, occurrenceDate: Date): Promise<boolean> {
-		const res = await this.apiService.delete(
+	async deleteOccurrence(entry: CalendarEvent, occurrenceDate: Date): Promise<EventWriteResult> {
+		const res = await this.apiService.deleteWithStatus(
 			apiRoutes.calendars.deleteOccurrence
 				.replace('%d', entry.calendar_id.toString())
-				.replace('%s', entry.uri),
-			encodeURIComponent(occurrenceDate.toISOString())
+				.replace('%s', entry.uri)
+				.replace('%s', encodeURIComponent(occurrenceDate.toISOString()))
 		);
-		if (res) await this.loadEvents();
-		if (res) this.auth.widgetBridge.notifyChanged();
-		return res;
+		return this.afterEventWrite(res);
 	}
 
 	async createCalendar(request: CreateCalendarRequest): Promise<boolean> {
@@ -541,6 +564,24 @@ export class Calendars {
 		if (res) await this.loadTodos();
 		if (res) this.auth.widgetBridge.notifyChanged();
 		return res;
+	}
+
+	private async afterEventWrite(res: StatusResponse): Promise<EventWriteResult> {
+		const result = this.eventService.writeResult(res);
+		if (result === 'ok' || result === 'changed_on_server' || result === 'server_unavailable') {
+			await this.loadEvents();
+		}
+		if (result === 'ok') this.auth.widgetBridge.notifyChanged();
+		return result;
+	}
+
+	private async reloadMonth(): Promise<void> {
+		this.loadMonth();
+		await Promise.all([this.loadEvents(), this.loadMarks()]);
+	}
+
+	private isCurrentMonth(year: number, month: number): boolean {
+		return year === this.currentYear && month === this.currentMonth;
 	}
 }
 

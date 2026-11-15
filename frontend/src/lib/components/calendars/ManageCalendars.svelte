@@ -4,6 +4,7 @@
 	import PendingCalendarInvite from '$lib/components/calendars/PendingCalendarInvite.svelte';
 	import IconChevronLeft from '@lucide/svelte/icons/chevron-left';
 	import CalendarCreate from '$lib/components/calendars/CalendarCreate.svelte';
+	import ExternalAccounts from '$lib/components/calendars/ExternalAccounts.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import Divider from '$lib/components/ui/Divider.svelte';
 	import { dndzone } from 'svelte-dnd-action';
@@ -73,4 +74,6 @@
 		{/each}
 	</div>
 	<CalendarCreate />
+	<Divider />
+	<ExternalAccounts />
 </div>

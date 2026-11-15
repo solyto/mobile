@@ -2,20 +2,32 @@
 	let {
 		isChecked = $bindable(false),
 		onchange,
+		disabled = false,
+		id,
+		ariaLabel,
 		class: customClass = ''
 	}: {
 		isChecked?: boolean;
 		onchange?: (event: Event) => void;
+		disabled?: boolean;
+		id?: string;
+		ariaLabel?: string;
 		class?: string;
 	} = $props();
 </script>
 
 <div class="inline-flex items-center {customClass}">
-	<label class="relative flex cursor-pointer items-center">
+	<label class="relative flex items-center" class:cursor-pointer={!disabled} class:cursor-not-allowed={disabled} class:opacity-40={disabled}>
 		<input
 			type="checkbox"
-			class="checkbox-box peer h-5 w-5 cursor-pointer appearance-none rounded border border-c-neutral-3 bg-c-bg-elevated shadow transition-all checked:border-c-success checked:bg-c-success hover:shadow-md dark:border-c-neutral-6 dark:checked:border-c-success"
+			{id}
+			aria-label={ariaLabel}
+			class="checkbox-box peer h-5 w-5 appearance-none rounded border border-c-neutral-3 bg-c-bg-elevated shadow transition-all checked:border-c-success checked:bg-c-success dark:border-c-neutral-6 dark:checked:border-c-success"
+			class:cursor-pointer={!disabled}
+			class:cursor-not-allowed={disabled}
+			class:hover:shadow-md={!disabled}
 			checked={isChecked}
+			{disabled}
 			{onchange}
 		/>
 		<span

@@ -25,13 +25,13 @@
 		tags.tags.map((tag) => ({ label: tag.name, value: tag.id.toString() }))
 	);
 
-	async function onCreateTag(data: { option: MultiSelectEntry }): Promise<void> {
-		const created = await tags.create(data.option.label.toString());
+	async function onCreateTag(label: string): Promise<string | null> {
+		const created = await tags.create(label);
 		if (!created) {
 			notifications.error(ts.get.libraries.tag_error);
-			return;
+			return null;
 		}
-		data.option.value = created.id.toString();
+		return created.id.toString();
 	}
 
 	async function onsubmit(): Promise<void> {
@@ -40,7 +40,7 @@
 		const request: CreateLinkRequest = {
 			title: titleValue || null,
 			url: urlValue,
-			tags: selectedTags.length > 0 ? selectedTags.map((tag) => Number(tag.value)) : undefined,
+			tags: selectedTags.length > 0 ? selectedTags.filter((tag) => tag.value).map((tag) => Number(tag.value)) : undefined,
 			category_id: library.getActiveCategoryId()
 		};
 		const ok = await library.create(request);

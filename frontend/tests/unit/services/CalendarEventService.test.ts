@@ -186,4 +186,39 @@ describe('CalendarEventService', () => {
 			expect(byDay['12.08.2026'][0]).toBe(multiDay);
 		});
 	});
+
+	describe('writeResult', () => {
+		it('maps the error codes of an external calendar', () => {
+			expect(service.writeResult({ ok: true, status: 200, errors: [] })).toBe('ok');
+			expect(service.writeResult({ ok: false, status: 412, errors: ['external_event_changed'] })).toBe('changed_on_server');
+			expect(service.writeResult({ ok: false, status: 503, errors: ['external_server_unavailable'] })).toBe('server_unavailable');
+			expect(service.writeResult({ ok: false, status: 422, errors: ['external_event_unreadable'] })).toBe('unreadable');
+		});
+
+		it('treats anything without a known code as a plain failure', () => {
+			expect(service.writeResult({ ok: false, status: 422, errors: [] })).toBe('failed');
+			expect(service.writeResult({ ok: false, status: 500, errors: ['something_else'] })).toBe('failed');
+		});
+	});
+
+	describe('findCurrentVersion', () => {
+		it('finds the same event by calendar and uri', () => {
+			const current = loadedEvent({ title: 'Server version' });
+			const events = [loadedEvent({ uri: 'other' }), loadedEvent({ calendar_id: 2 }), current];
+
+			expect(service.findCurrentVersion(events, loadedEvent({ title: 'Stale' }))).toBe(current);
+		});
+
+		it('finds the same occurrence of a series', () => {
+			const slot = new Date(2026, 7, 11, 10, 0);
+			const occurrence = loadedEvent({ original_start_date: new Date(slot) });
+			const events = [loadedEvent({ original_start_date: new Date(2026, 7, 10, 10, 0) }), occurrence];
+
+			expect(service.findCurrentVersion(events, loadedEvent({ original_start_date: new Date(slot) }))).toBe(occurrence);
+		});
+
+		it('returns null when the event is gone', () => {
+			expect(service.findCurrentVersion([], loadedEvent())).toBeNull();
+		});
+	});
 });

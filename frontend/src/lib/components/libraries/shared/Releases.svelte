@@ -51,7 +51,7 @@
 </IconButton>
 
 {#if modalOpen}
-	<ContentModal title={ts.get.libraries.releases} onClose={toggleModal} transparent={true}>
+	<ContentModal rounded="2xl" p="8" title={ts.get.libraries.releases} onClose={toggleModal}>
 		<div
 			class="flex w-full flex-col items-start gap-4 overflow-y-auto pt-6 pb-4 md:max-h-[80vh]"
 			in:scale

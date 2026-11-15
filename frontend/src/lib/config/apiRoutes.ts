@@ -255,7 +255,10 @@ export const apiRoutes = {
 		testFeed: API_URL + '/feeds/test',
 		available: API_URL + '/feeds/available',
 		search: API_URL + '/feeds/search',
-		friendFeeds: API_URL + '/feeds/friends'
+		friendFeeds: API_URL + '/feeds/friends',
+		importStart: API_URL + '/feeds/import',
+		importSelect: API_URL + '/feeds/import/select',
+		importState: API_URL + '/feeds/import/state'
 	},
 	shortcuts: {
 		list: API_URL + '/shortcuts',
@@ -356,7 +359,15 @@ export const apiRoutes = {
 		eventAttachmentTodos: API_URL + '/calendars/events/%d/attachments/todos',
 		eventAttachmentNotes: API_URL + '/calendars/events/%d/attachments/notes',
 		eventDetachTodo: API_URL + '/calendars/events/%d/attachments/todos/%s',
-		eventDetachNote: API_URL + '/calendars/events/%d/attachments/notes/%s'
+		eventDetachNote: API_URL + '/calendars/events/%d/attachments/notes/%s',
+		externalAccounts: {
+			list: API_URL + '/calendars/external/accounts',
+			create: API_URL + '/calendars/external/accounts',
+			update: API_URL + '/calendars/external/accounts/%d',
+			delete: API_URL + '/calendars/external/accounts/%d',
+			available: API_URL + '/calendars/external/accounts/%d/available',
+			connect: API_URL + '/calendars/external/accounts/%d/calendars'
+		}
 	},
 	contacts: {
 		listAddressBooks: API_URL + '/address-books',

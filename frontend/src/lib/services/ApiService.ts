@@ -1,4 +1,4 @@
-import type { CreateResponse, GetResponse, ListResponse, PostResponse } from '$lib/types/api';
+import type { CreateResponse, GetResponse, ListResponse, PostResponse, StatusResponse } from '$lib/types/api';
 import { apiRoutes } from '$lib/config/apiRoutes';
 import { CLIENT_VERSION, getApiUrl } from '$lib/config/platform';
 import { acceptsClientVersionHeader, isOlderVersion } from '$lib/helpers/VersionHelper';
@@ -44,6 +44,10 @@ export class RateLimitedError extends Error {
 		this.retryAfter = retryAfter;
 		this.code = code;
 	}
+}
+
+interface RawResponse {
+	success: boolean;
 }
 
 interface StoredServerVersion {
@@ -205,6 +209,11 @@ export default class ApiService {
 		return res.ok ? await res.json() : null;
 	}
 
+	async listRaw<T extends RawResponse = RawResponse>(endpoint: string): Promise<T> {
+		const res = await this.fetchWithRecovery(endpoint, {}, () => this.getApiHeader());
+		return this.readRaw<T>(res);
+	}
+
 	async get(endpoint: string, id: string | number | null): Promise<GetResponse | null> {
 		if (typeof id === 'string') {
 			endpoint = endpoint.replace('%s', id);
@@ -226,14 +235,14 @@ export default class ApiService {
 		return res.ok ? await res.json() : null;
 	}
 
-	async createWithStatus(endpoint: string, body: object): Promise<{ ok: boolean; status: number }> {
+	async createWithStatus(endpoint: string, body: object): Promise<StatusResponse> {
 		const res = await this.fetchWithRecovery(
 			endpoint,
 			{ method: 'POST', body: JSON.stringify(body) },
 			() => this.getApiHeaderWithBody()
 		);
 
-		return { ok: res.ok, status: res.status };
+		return this.withStatus(res);
 	}
 
 	async delete(endpoint: string, id: string | number): Promise<boolean> {
@@ -246,6 +255,12 @@ export default class ApiService {
 		);
 
 		return Promise.resolve(res.ok);
+	}
+
+	async deleteWithStatus(endpoint: string): Promise<StatusResponse> {
+		const res = await this.fetchWithRecovery(endpoint, { method: 'DELETE' }, () => this.getApiHeader());
+
+		return this.withStatus(res);
 	}
 
 	async update(endpoint: string, id: string | number, body: object): Promise<boolean> {
@@ -294,24 +309,24 @@ export default class ApiService {
 		return res.ok ? await res.json() : null;
 	}
 
-	async postRaw<T = object>(endpoint: string, body: FormData | object): Promise<T> {
+	async postRaw<T extends RawResponse = RawResponse>(endpoint: string, body: FormData | object): Promise<T> {
 		const res = await this.fetchWithRecovery(
 			endpoint,
 			{ method: 'POST', body: typeof body === 'object' ? JSON.stringify(body) : body },
 			() => (typeof body === 'object' ? this.getApiHeaderWithBody() : this.getApiHeader())
 		);
 
-		return await res.json() as Promise<T>;
+		return this.readRaw<T>(res);
 	}
 
-	async putRaw<T = object>(endpoint: string, body: object): Promise<T> {
+	async putRaw<T extends RawResponse = RawResponse>(endpoint: string, body: object): Promise<T> {
 		const res = await this.fetchWithRecovery(
 			endpoint,
 			{ method: 'PUT', body: JSON.stringify(body) },
 			() => this.getApiHeaderWithBody()
 		);
 
-		return await res.json() as Promise<T>;
+		return this.readRaw<T>(res);
 	}
 
 	async put(endpoint: string, body: FormData | object): Promise<boolean> {
@@ -322,6 +337,16 @@ export default class ApiService {
 		);
 
 		return res.ok;
+	}
+
+	async putWithStatus(endpoint: string, body: object): Promise<StatusResponse> {
+		const res = await this.fetchWithRecovery(
+			endpoint,
+			{ method: 'PUT', body: JSON.stringify(body) },
+			() => this.getApiHeaderWithBody()
+		);
+
+		return this.withStatus(res);
 	}
 
 	async postFormData(endpoint: string, body: FormData): Promise<boolean> {
@@ -355,6 +380,32 @@ export default class ApiService {
 			...this.getClientVersionHeader()
 		}));
 		return res.ok ? await res.blob() : null;
+	}
+
+	// A body that is not JSON (a proxy's HTML 502) reads as a failure without codes.
+	private async readRaw<T extends RawResponse>(res: Response): Promise<T> {
+		try {
+			return await res.json();
+		} catch {
+			return { success: false } as T;
+		}
+	}
+
+	// An error body that is not the API's envelope (a proxy's HTML page) has no codes.
+	private async withStatus(res: Response): Promise<StatusResponse> {
+		if (res.ok) return { ok: true, status: res.status, errors: [] };
+
+		try {
+			const body = await res.json();
+			const errors: unknown = body?.errors;
+			return {
+				ok: false,
+				status: res.status,
+				errors: Array.isArray(errors) ? errors.filter((code) => typeof code === 'string') : []
+			};
+		} catch {
+			return { ok: false, status: res.status, errors: [] };
+		}
 	}
 
 	private getAuthHeaderOnly(): HeadersInit {

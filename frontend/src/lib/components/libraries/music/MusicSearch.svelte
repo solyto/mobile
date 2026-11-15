@@ -4,7 +4,7 @@
 	import type { Translation } from '$lib/state/Translation.svelte';
 	import type { MusicRelease, MusicSearchResult } from '$lib/types/library_music';
 	import DeezerIcon from '$lib/assets/services/deezer_icon.svg';
-	import DiscogsIcon from '$lib/assets/services/discogs_icon.png';
+	import DiscogsIcon from '$lib/assets/services/discogs_icon.svg';
 	import SpotifyIcon from '$lib/assets/services/spotify_icon.svg';
 
 	let { library, ts, onSelect }: {

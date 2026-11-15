@@ -4,7 +4,8 @@ import {
 	isLightColor,
 	getReadableTextColor,
 	getEventBorderColor,
-	getEventBackgroundColor
+	getEventBackgroundColor,
+	getChartColor
 } from '$lib/helpers/ColorHelper';
 
 describe('lightenColor', () => {
@@ -91,5 +92,21 @@ describe('getEventBackgroundColor', () => {
 		expect(getEventBackgroundColor(null)).toBe('');
 		expect(getEventBackgroundColor(undefined)).toBe('');
 		expect(getEventBackgroundColor('')).toBe('');
+	});
+});
+
+describe('getChartColor', () => {
+	it('uses the given colour', () => {
+		expect(getChartColor(0, '#123456')).toBe('#123456');
+	});
+
+	it('falls back to the palette by index without a colour', () => {
+		expect(getChartColor(0)).toBe('#5070dd');
+		expect(getChartColor(1, null)).toBe('#b6d634');
+		expect(getChartColor(2, '')).toBe('#505372');
+	});
+
+	it('starts over after the last palette colour', () => {
+		expect(getChartColor(9)).toBe(getChartColor(0));
 	});
 });

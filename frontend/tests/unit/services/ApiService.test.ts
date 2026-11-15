@@ -115,7 +115,8 @@ describe('createWithStatus', () => {
 		vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(null, true, 201)));
 		await expect(new ApiService().createWithStatus('/todos', {})).resolves.toEqual({
 			ok: true,
-			status: 201
+			status: 201,
+			errors: []
 		});
 	});
 
@@ -123,8 +124,59 @@ describe('createWithStatus', () => {
 		vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(null, false, 400)));
 		await expect(new ApiService().createWithStatus('/todos', {})).resolves.toEqual({
 			ok: false,
-			status: 400
+			status: 400,
+			errors: []
 		});
+	});
+});
+
+describe('putWithStatus / deleteWithStatus', () => {
+	it('sends a PUT with the JSON body and reports the status and error codes', async () => {
+		const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ success: false, errors: ['external_event_changed'] }, false, 412));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(new ApiService('tok').putWithStatus('/events/a.ics', { title: 'x' })).resolves.toEqual({
+			ok: false,
+			status: 412,
+			errors: ['external_event_changed']
+		});
+		expect(fetchMock.mock.calls[0][0]).toBe('/events/a.ics');
+		expect(fetchMock.mock.calls[0][1]).toMatchObject({ method: 'PUT', body: JSON.stringify({ title: 'x' }) });
+		expect(fetchMock.mock.calls[0][1].headers['Content-Type']).toBe('application/json');
+	});
+
+	it('sends a DELETE to the given endpoint and reports the status', async () => {
+		const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ success: false, errors: ['external_server_unavailable'] }, false, 503));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await expect(new ApiService('tok').deleteWithStatus('/events/a.ics')).resolves.toEqual({
+			ok: false,
+			status: 503,
+			errors: ['external_server_unavailable']
+		});
+		expect(fetchMock.mock.calls[0][0]).toBe('/events/a.ics');
+		expect(fetchMock.mock.calls[0][1].method).toBe('DELETE');
+	});
+
+	it('reports no codes for field errors or a body that is not JSON', async () => {
+		vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({ success: false, errors: { title: ['required'] } }, false, 422)));
+		await expect(new ApiService('tok').putWithStatus('/x', {})).resolves.toEqual({ ok: false, status: 422, errors: [] });
+
+		vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 502, json: vi.fn().mockRejectedValue(new SyntaxError('html')) }));
+		await expect(new ApiService('tok').deleteWithStatus('/x')).resolves.toEqual({ ok: false, status: 502, errors: [] });
+	});
+});
+
+describe('listRaw', () => {
+	it('returns the parsed payload on failure too', async () => {
+		const errorBody = { success: false, errors: { password: ['rejected'] } };
+		vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(errorBody, false, 422)));
+		await expect(new ApiService('tok').listRaw('/x')).resolves.toEqual(errorBody);
+	});
+
+	it('reads a body that is not JSON as a failure without codes', async () => {
+		vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 504, json: vi.fn().mockRejectedValue(new SyntaxError('html')) }));
+		await expect(new ApiService('tok').listRaw('/x')).resolves.toEqual({ success: false });
 	});
 });
 
@@ -244,6 +296,13 @@ describe('post / postRaw / put', () => {
 		const errorBody = { success: false, errors: { current_password: ['wrong'] } };
 		vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(errorBody, false, 422)));
 		await expect(new ApiService('tok').putRaw('/x', {})).resolves.toEqual(errorBody);
+	});
+
+	it('postRaw and putRaw read a body that is not JSON as a failure without codes', async () => {
+		const html = () => ({ ok: false, status: 502, json: vi.fn().mockRejectedValue(new SyntaxError('html')) });
+		vi.stubGlobal('fetch', vi.fn().mockImplementation(async () => html()));
+		await expect(new ApiService('tok').postRaw('/x', {})).resolves.toEqual({ success: false });
+		await expect(new ApiService('tok').putRaw('/x', {})).resolves.toEqual({ success: false });
 	});
 
 	it('put returns the ok flag', async () => {

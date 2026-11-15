@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { getTranslation } from '$lib/state/Translation.svelte';
-	import GoodreadsIcon from '$lib/assets/services/goodreads_icon.png';
+	import GoodreadsIcon from '$lib/assets/services/goodreads_icon.svg';
 
 	const ts = getTranslation();
 

@@ -62,11 +62,11 @@ describe('Calendars store', () => {
 		it('notifies the widgets after a successful event change only', async () => {
 			const c = new Calendars();
 
-			api.delete.mockResolvedValueOnce(false);
+			api.deleteWithStatus.mockResolvedValueOnce({ ok: false, status: 500, errors: [] });
 			await c.deleteEvent(event());
 			expect(auth.widgetBridge.notifyChanged).not.toHaveBeenCalled();
 
-			api.delete.mockResolvedValueOnce(true);
+			api.deleteWithStatus.mockResolvedValueOnce({ ok: true, status: 200, errors: [] });
 			await c.deleteEvent(event());
 			expect(auth.widgetBridge.notifyChanged).toHaveBeenCalledTimes(1);
 		});
@@ -390,6 +390,69 @@ describe('Calendars store', () => {
 			);
 		});
 
+		it('requests marks without waiting for the events response', async () => {
+			let resolveEvents: (value: { data: [] }) => void = () => {};
+			api.list.mockImplementation((endpoint: string) =>
+				endpoint.includes('/calendars/events/')
+					? new Promise((resolve) => (resolveEvents = resolve))
+					: Promise.resolve({ data: ['2026-09-01'] })
+			);
+			const c = new Calendars();
+			c.journalMarksEnabled = true;
+			c.currentYear = 2026;
+			c.currentMonth = 8;
+
+			const navigation = c.nextMonth();
+			expect(api.list).toHaveBeenCalledWith(
+				expect.stringContaining(apiRoutes.notes.journalMarks)
+			);
+
+			resolveEvents({ data: [] });
+			await navigation;
+			expect(c.journalMarks).toEqual(['2026-09-01']);
+		});
+
+		it('ignores an events response for a month the user has already left', async () => {
+			const pending: Record<string, (value: { data: unknown[] }) => void> = {};
+			api.list.mockImplementation(
+				(endpoint: string) => new Promise((resolve) => (pending[endpoint.slice(-7)] = resolve))
+			);
+			const c = new Calendars();
+			c.currentYear = 2026;
+			c.currentMonth = 8;
+
+			const toSeptember = c.nextMonth();
+			const toOctober = c.nextMonth();
+			pending['2026-10']({ data: [] });
+			await toOctober;
+			pending['2026-09']({ data: [{ id: 1 }] });
+			await toSeptember;
+
+			expect(c.events).toEqual([]);
+		});
+
+		it('ignores a marks response for a month the user has already left', async () => {
+			const pending: ((value: { data: string[] }) => void)[] = [];
+			api.list.mockImplementation((endpoint: string) =>
+				endpoint.includes('/calendars/events/')
+					? Promise.resolve({ data: [] })
+					: new Promise((resolve) => pending.push(resolve))
+			);
+			const c = new Calendars();
+			c.journalMarksEnabled = true;
+			c.currentYear = 2026;
+			c.currentMonth = 8;
+
+			const toSeptember = c.nextMonth();
+			const toOctober = c.nextMonth();
+			pending[1]({ data: ['2026-10-01'] });
+			await toOctober;
+			pending[0]({ data: ['2026-09-01'] });
+			await toSeptember;
+
+			expect(c.journalMarks).toEqual(['2026-10-01']);
+		});
+
 		it('lastMonth wraps January to December of the previous year', async () => {
 			const c = new Calendars();
 			c.currentYear = 2026;
@@ -688,7 +751,10 @@ describe('Calendars store', () => {
 				order: 0,
 				is_shared: false,
 				share_owner: null,
-				share_token: null
+				share_token: null,
+				is_external: false,
+				is_unavailable: false,
+				is_credentials_rejected: false
 			};
 			const c = new Calendars();
 			c.calendars = [
@@ -754,12 +820,11 @@ describe('Calendars store', () => {
 		}
 
 		function sentBody(): UpdateEventRequest {
-			return api.update.mock.calls[0][2];
+			return api.putWithStatus.mock.calls[0][1];
 		}
 
 		beforeEach(() => {
-			api.update.mockResolvedValue(true);
-			api.put.mockResolvedValue(true);
+			api.putWithStatus.mockResolvedValue({ ok: true, status: 200, errors: [] });
 			api.list.mockResolvedValue({ data: [] });
 		});
 
@@ -818,14 +883,14 @@ describe('Calendars store', () => {
 			await c.moveEvent(occurrence(), { date: new SvelteDate(2030, 9, 16), hour: 10, minute: 0 });
 			await c.resolvePendingMove(true);
 
-			expect(api.update).not.toHaveBeenCalled();
-			expect(api.put.mock.calls[0][1]).not.toHaveProperty('occurrence_start_date');
+			expect(api.putWithStatus.mock.calls[0][0]).toContain('/occurrence/');
+			expect(sentBody()).not.toHaveProperty('occurrence_start_date');
 		});
 	});
 
 	describe('moveEvent', () => {
 		it('updates a non-recurring event with the new dates and reloads events', async () => {
-			api.update.mockResolvedValue(true);
+			api.putWithStatus.mockResolvedValue({ ok: true, status: 200, errors: [] });
 			api.list.mockResolvedValue({ data: [] });
 			const c = new Calendars();
 			c.currentYear = 2026;
@@ -834,10 +899,9 @@ describe('Calendars store', () => {
 			const e = event();
 			const ok = await c.moveEvent(e, { date: new SvelteDate(2026, 7, 14), hour: 14, minute: 30 });
 
-			expect(ok).toBe(true);
-			expect(api.update).toHaveBeenCalledWith(
-				expect.stringContaining('/calendars/1/events/'),
-				'event-1',
+			expect(ok).toBe('ok');
+			expect(api.putWithStatus).toHaveBeenCalledWith(
+				expect.stringContaining('/calendars/1/events/event-1'),
 				expect.objectContaining({
 					start_date: '2026-08-14T14:30:00',
 					end_date: '2026-08-14T15:30:00',
@@ -850,25 +914,25 @@ describe('Calendars store', () => {
 			);
 		});
 
-		it('returns false when the API update fails', async () => {
-			api.update.mockResolvedValue(false);
+		it('returns failed when the API update fails', async () => {
+			api.putWithStatus.mockResolvedValue({ ok: false, status: 500, errors: [] });
 			const c = new Calendars();
 			const ok = await c.moveEvent(event(), {
 				date: new SvelteDate(2026, 7, 14),
 				hour: 14,
 				minute: 30
 			});
-			expect(ok).toBe(false);
+			expect(ok).toBe('failed');
 		});
 
-		it('does nothing for a no-op drop on the same slot and returns true', async () => {
+		it('does nothing for a no-op drop on the same slot and returns ok', async () => {
 			const c = new Calendars();
 			const ok = await c.moveEvent(
 				event({ start_date: new SvelteDate(2026, 7, 10, 10, 0) }),
 				{ date: new SvelteDate(2026, 7, 10), hour: 10, minute: 0 }
 			);
-			expect(ok).toBe(true);
-			expect(api.update).not.toHaveBeenCalled();
+			expect(ok).toBe('ok');
+			expect(api.putWithStatus).not.toHaveBeenCalled();
 		});
 
 		it('defers recurring occurrences to the pending move decision instead of calling the API', async () => {
@@ -884,15 +948,14 @@ describe('Calendars store', () => {
 				minute: 0
 			});
 
-			expect(ok).toBe(true);
+			expect(ok).toBe('ok');
 			expect(c.pendingMove).not.toBeNull();
 			expect(c.pendingMove!.request.start_date).toBe('2026-08-14T10:00:00');
-			expect(api.update).not.toHaveBeenCalled();
-			expect(api.put).not.toHaveBeenCalled();
+			expect(api.putWithStatus).not.toHaveBeenCalled();
 		});
 
 		it('resolvePendingMove(true) updates only the occurrence via the original start date', async () => {
-			api.put.mockResolvedValue(true);
+			api.putWithStatus.mockResolvedValue({ ok: true, status: 200, errors: [] });
 			api.list.mockResolvedValue({ data: [] });
 			const c = new Calendars();
 			c.currentYear = 2026;
@@ -905,17 +968,17 @@ describe('Calendars store', () => {
 			await c.moveEvent(recurring, { date: new SvelteDate(2026, 7, 14), hour: 10, minute: 0 });
 			const ok = await c.resolvePendingMove(true);
 
-			expect(ok).toBe(true);
+			expect(ok).toBe('ok');
 			expect(c.pendingMove).toBeNull();
-			expect(api.put).toHaveBeenCalledWith(
+			expect(api.putWithStatus).toHaveBeenCalledTimes(1);
+			expect(api.putWithStatus).toHaveBeenCalledWith(
 				expect.stringContaining('/calendars/1/events/event-1/occurrence/'),
 				expect.objectContaining({ start_date: '2026-08-14T10:00:00' })
 			);
-			expect(api.update).not.toHaveBeenCalled();
 		});
 
 		it('resolvePendingMove(false) updates the whole series', async () => {
-			api.update.mockResolvedValue(true);
+			api.putWithStatus.mockResolvedValue({ ok: true, status: 200, errors: [] });
 			api.list.mockResolvedValue({ data: [] });
 			const c = new Calendars();
 			c.currentYear = 2026;
@@ -928,18 +991,15 @@ describe('Calendars store', () => {
 			await c.moveEvent(recurring, { date: new SvelteDate(2026, 7, 14), hour: 10, minute: 0 });
 			const ok = await c.resolvePendingMove(false);
 
-			expect(ok).toBe(true);
+			expect(ok).toBe('ok');
 			expect(c.pendingMove).toBeNull();
-			expect(api.update).toHaveBeenCalledWith(
-				expect.stringContaining('/calendars/1/events/'),
-				'event-1',
-				expect.objectContaining({ start_date: '2026-08-14T10:00:00' })
-			);
-			expect(api.put).not.toHaveBeenCalled();
+			expect(api.putWithStatus).toHaveBeenCalledTimes(1);
+			expect(api.putWithStatus.mock.calls[0][0]).toMatch(/\/calendars\/1\/events\/event-1$/);
+			expect(api.putWithStatus.mock.calls[0][1]).toMatchObject({ start_date: '2026-08-14T10:00:00' });
 		});
 
 		it('moves the series master (recurring without original start) directly', async () => {
-			api.update.mockResolvedValue(true);
+			api.putWithStatus.mockResolvedValue({ ok: true, status: 200, errors: [] });
 			api.list.mockResolvedValue({ data: [] });
 			const c = new Calendars();
 			c.currentYear = 2026;
@@ -952,9 +1012,9 @@ describe('Calendars store', () => {
 				minute: 0
 			});
 
-			expect(ok).toBe(true);
+			expect(ok).toBe('ok');
 			expect(c.pendingMove).toBeNull();
-			expect(api.update).toHaveBeenCalled();
+			expect(api.putWithStatus).toHaveBeenCalled();
 		});
 
 		it('cancelPendingMove clears the pending decision', async () => {
@@ -969,33 +1029,172 @@ describe('Calendars store', () => {
 
 			c.cancelPendingMove();
 			expect(c.pendingMove).toBeNull();
-			expect(api.update).not.toHaveBeenCalled();
+			expect(api.putWithStatus).not.toHaveBeenCalled();
 		});
 	});
 
 	describe('calendar deletes go through the shared ApiService', () => {
 		it('deleteOccurrence deletes the encoded occurrence and reloads events', async () => {
-			api.delete.mockResolvedValue(true);
+			api.deleteWithStatus.mockResolvedValue({ ok: true, status: 200, errors: [] });
 			api.list.mockResolvedValue({ data: [] });
 			const c = new Calendars();
 			const occurrence = new Date(Date.UTC(2026, 7, 10, 10, 0));
 
 			const ok = await c.deleteOccurrence(event(), occurrence);
 
-			expect(ok).toBe(true);
-			expect(api.delete).toHaveBeenCalledWith(
-				apiRoutes.calendars.deleteOccurrence.replace('%d', '1').replace('%s', 'event-1'),
-				encodeURIComponent('2026-08-10T10:00:00.000Z')
+			expect(ok).toBe('ok');
+			expect(api.deleteWithStatus).toHaveBeenCalledWith(
+				apiRoutes.calendars.deleteOccurrence
+					.replace('%d', '1')
+					.replace('%s', 'event-1')
+					.replace('%s', encodeURIComponent('2026-08-10T10:00:00.000Z'))
 			);
 			expect(api.list).toHaveBeenCalledWith(expect.stringContaining('/calendars/events/'));
 		});
 
 		it('deleteOccurrence does not reload events on failure', async () => {
-			api.delete.mockResolvedValue(false);
+			api.deleteWithStatus.mockResolvedValue({ ok: false, status: 500, errors: [] });
 			const c = new Calendars();
 
-			await expect(c.deleteOccurrence(event(), new Date())).resolves.toBe(false);
+			await expect(c.deleteOccurrence(event(), new Date())).resolves.toBe('failed');
 			expect(api.list).not.toHaveBeenCalled();
+		});
+	});
+
+	describe('external calendars', () => {
+		function calendar(overrides: Partial<Calendar> = {}): Calendar {
+			return {
+				id: 1,
+				name: 'Remote',
+				color: '#fff',
+				description: '',
+				timezone: 'UTC',
+				order: 0,
+				is_shared: false,
+				share_owner: null,
+				invite_status: null,
+				share_token: null,
+				is_external: true,
+				is_unavailable: false,
+				is_credentials_rejected: false,
+				...overrides
+			};
+		}
+
+		function inAugust(): Calendars {
+			const c = new Calendars();
+			c.currentYear = 2026;
+			c.currentMonth = 8;
+			return c;
+		}
+
+		it('keeps the calendars the event listing reports as unavailable', async () => {
+			api.list.mockResolvedValue({ data: [], meta: { unavailable_calendars: [2] } });
+			const c = inAugust();
+			c.calendars = [calendar({ id: 1 }), calendar({ id: 2, name: 'Work' })];
+
+			await c.loadEvents();
+
+			expect(c.isCalendarUnavailable(2)).toBe(true);
+			expect(c.isCalendarUnavailable(1)).toBe(false);
+			expect(c.unreachableCalendars().map((x) => x.name)).toEqual(['Work']);
+		});
+
+		it('tells a rejected app password apart from an unreachable server', async () => {
+			api.list.mockResolvedValue({ data: [], meta: { unavailable_calendars: [2, 3], credentials_rejected_calendars: [3] } });
+			const c = inAugust();
+			c.calendars = [calendar({ id: 1 }), calendar({ id: 2, name: 'Work' }), calendar({ id: 3, name: 'Family' })];
+
+			await c.loadEvents();
+
+			expect(c.isCalendarCredentialsRejected(3)).toBe(true);
+			expect(c.isCalendarCredentialsRejected(2)).toBe(false);
+			expect(c.unreachableCalendars().map((x) => x.name)).toEqual(['Work']);
+			expect(c.credentialsRejectedCalendars().map((x) => x.name)).toEqual(['Family']);
+		});
+
+		it('clears the unavailable calendars once the listing reports none', async () => {
+			const c = inAugust();
+			c.unavailableCalendarIds = [2];
+			c.credentialsRejectedCalendarIds = [2];
+			api.list.mockResolvedValue({ data: [], meta: { unavailable_calendars: [] } });
+
+			await c.loadEvents();
+
+			expect(c.isCalendarUnavailable(2)).toBe(false);
+			expect(c.isCalendarCredentialsRejected(2)).toBe(false);
+		});
+
+		it('ignores the unavailable calendars of a month the user has already left', async () => {
+			let resolve: (value: unknown) => void = () => {};
+			api.list.mockReturnValue(new Promise((r) => (resolve = r)));
+			const c = inAugust();
+
+			const loading = c.loadEvents();
+			c.currentMonth = 9;
+			resolve({ data: [], meta: { unavailable_calendars: [2] } });
+			await loading;
+
+			expect(c.unavailableCalendarIds).toEqual([]);
+		});
+
+		it('reloads events and reports a change on the server for a 412', async () => {
+			api.putWithStatus.mockResolvedValue({ ok: false, status: 412, errors: ['external_event_changed'] });
+			api.list.mockResolvedValue({ data: [] });
+			const c = inAugust();
+			c.calendars = [calendar()];
+
+			const result = await c.moveEvent(event(), { date: new SvelteDate(2026, 7, 14), hour: 10, minute: 0 });
+
+			expect(result).toBe('changed_on_server');
+			expect(api.list).toHaveBeenCalledWith(expect.stringContaining('/calendars/events/2026-08'));
+			expect(auth.widgetBridge.notifyChanged).not.toHaveBeenCalled();
+		});
+
+		it('reports an unavailable server for a 503 and reloads the events', async () => {
+			api.deleteWithStatus.mockResolvedValue({ ok: false, status: 503, errors: ['external_server_unavailable'] });
+			api.list.mockResolvedValue({ data: [], meta: { unavailable_calendars: [1] } });
+			const c = inAugust();
+			c.calendars = [calendar()];
+
+			await expect(c.deleteEvent(event())).resolves.toBe('server_unavailable');
+			expect(c.isCalendarUnavailable(1)).toBe(true);
+		});
+
+		it('reports an unreadable event by its error code', async () => {
+			api.putWithStatus.mockResolvedValue({ ok: false, status: 422, errors: ['external_event_unreadable'] });
+			const c = inAugust();
+
+			await expect(c.updateOccurrence(event(), {} as UpdateEventRequest, new Date())).resolves.toBe('unreadable');
+			expect(api.list).not.toHaveBeenCalled();
+		});
+
+		it('treats a validation 422 without a code as a plain failure', async () => {
+			api.putWithStatus.mockResolvedValue({ ok: false, status: 422, errors: [] });
+			const c = inAugust();
+
+			await expect(c.updateEvent(event(), {} as UpdateEventRequest)).resolves.toBe('failed');
+		});
+
+		it('reopens the edited event with the version from the server', async () => {
+			const c = inAugust();
+			const stale = event({ title: 'Old' });
+			c.events = [event({ id: 2, uri: 'other' }), event({ title: 'Changed elsewhere' })];
+
+			await c.reopenEvent(stale);
+
+			expect(c.editSidebar).toBe(true);
+			expect(c.activeEvent?.title).toBe('Changed elsewhere');
+		});
+
+		it('closes the sidebar when the edited event is gone from the server', async () => {
+			const c = inAugust();
+			c.editSidebar = true;
+			c.events = [];
+
+			await c.reopenEvent(event());
+
+			expect(c.editSidebar).toBe(false);
 		});
 	});
 });

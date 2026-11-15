@@ -8,6 +8,7 @@
 	import TagFlexList from '$lib/components/tags/TagFlexList.svelte';
 	import StarButton from '$lib/components/ui/buttons/StarButton.svelte';
 	import DeleteButton from '$lib/components/ui/buttons/DeleteButton.svelte';
+	import { safeHref } from '$lib/helpers/UrlHelper';
 
 	let { entry, library, showCategory }: {
 		entry: Link;
@@ -16,6 +17,8 @@
 	} = $props();
 
 	const loadingIndicator = getLoadingIndicator();
+
+	let href = $derived(safeHref(entry.url));
 
 	const ON_ROW_HOVER = 'md:group-hover/row:opacity-100 md:group-focus-within/row:opacity-100';
 
@@ -34,8 +37,9 @@
 	}
 </script>
 
-<a
-	href={entry.url}
+<svelte:element
+	this={href ? 'a' : 'div'}
+	{href}
 	target="_blank"
 	class="group/row isolate flex w-full min-w-0 items-center gap-3 rounded-sm border-c-neutral-1 px-2 py-2 transition-colors hover:bg-c-neutral dark:border-s-dark dark:hover:bg-s-dark-3"
 	draggable="true"
@@ -73,4 +77,4 @@
 		</div>
 	</div>
 	<span class="shrink-0 text-sm text-c-neutral-5 tabular-nums max-md:hidden dark:text-c-neutral-4">{formatDate(entry.created_at)}</span>
-</a>
+</svelte:element>

@@ -11,6 +11,9 @@ export interface Calendar {
 	share_owner: string | null;
 	invite_status: 'pending' | 'accepted' | null;
 	share_token: string | null;
+	is_external: boolean;
+	is_unavailable: boolean;
+	is_credentials_rejected: boolean;
 }
 
 export interface ShareCalendarRequest {
@@ -176,3 +179,61 @@ export interface ImportState {
 	events_count: number;
 	events_done: number;
 }
+
+export interface ExternalCalendarAccount {
+	id: number;
+	server_url: string;
+	username: string;
+	calendars: { id: number; remote_url: string }[];
+}
+
+export interface ExternalCalendarCandidate {
+	url: string;
+	name: string;
+	color: string;
+	is_connected: boolean;
+}
+
+export interface CreateExternalAccountRequest {
+	server_url: string;
+	username: string;
+	password: string;
+}
+
+export interface UpdateExternalAccountRequest {
+	username: string;
+	password: string;
+}
+
+export interface ExternalCalendarResponse<T> {
+	success: boolean;
+	message?: string;
+	data?: T;
+	errors?: string[] | Record<string, string[]>;
+}
+
+export type ExternalAccountField = 'server_url' | 'username' | 'password' | 'urls';
+
+export type ExternalAccountErrorReason =
+	| 'url_not_allowed'
+	| 'url_invalid'
+	| 'server_unreachable'
+	| 'no_calendars'
+	| 'credentials_rejected'
+	| 'rate_limited'
+	| 'failed';
+
+export interface ExternalAccountError {
+	field: ExternalAccountField | null;
+	reason: ExternalAccountErrorReason;
+	retryAfter: number | null;
+}
+
+export type ExternalAccountResult<T> = { ok: true; data: T } | { ok: false; error: ExternalAccountError };
+
+export type ExternalAccountDialog =
+	| { step: 'connect' }
+	| { step: 'calendars'; account: ExternalCalendarAccount }
+	| { step: 'credentials'; account: ExternalCalendarAccount; returnToCalendars?: boolean };
+
+export type EventWriteResult = 'ok' | 'changed_on_server' | 'unreadable' | 'server_unavailable' | 'failed';

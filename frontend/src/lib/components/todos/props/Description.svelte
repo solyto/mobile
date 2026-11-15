@@ -4,7 +4,7 @@
 	import { getTodos } from '$lib/state/Todos.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import { getKeyManager } from '$lib/state/KeyManager.svelte';
-	import { markdownToHtml } from '$lib/helpers/FormatHelper';
+	import { markdownToHtml } from '$lib/helpers/MarkdownHelper';
 	import { nl2br } from '$lib/helpers/FormatHelper.js';
 	import DOMPurify from 'dompurify';
 	import TextInput from '$lib/components/forms/TextInput.svelte';

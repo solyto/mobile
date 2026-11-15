@@ -401,4 +401,73 @@ describe('Todos store', () => {
 			expect(t.filteredCategories.map((c) => c.id)).toEqual([]);
 		});
 	});
+
+	describe('view persistence', () => {
+		const stored = (values: Record<string, string>) =>
+			storage.get.mockImplementation((key: string) => values[key] ?? null);
+
+		it('saves the view under the desktop key on desktop', () => {
+			const t = new Todos();
+			t.loadView(true);
+			t.changeView('kanban');
+
+			expect(t.view).toBe('kanban');
+			expect(storage.set).toHaveBeenCalledWith(Todos.LS_VIEW_KEY_DESKTOP, 'kanban');
+		});
+
+		it('saves the view under the mobile key on mobile', () => {
+			const t = new Todos();
+			t.loadView(false);
+			t.changeView('card');
+
+			expect(storage.set).toHaveBeenCalledWith(Todos.LS_VIEW_KEY_MOBILE, 'card');
+			expect(storage.set).not.toHaveBeenCalledWith(Todos.LS_VIEW_KEY_DESKTOP, expect.anything());
+		});
+
+		it('keeps desktop and mobile choices apart', () => {
+			stored({ [Todos.LS_VIEW_KEY_DESKTOP]: 'kanban', [Todos.LS_VIEW_KEY_MOBILE]: 'overview' });
+			const t = new Todos();
+
+			t.loadView(true);
+			expect(t.view).toBe('kanban');
+
+			t.loadView(false);
+			expect(t.view).toBe('overview');
+		});
+
+		it('falls back to the legacy key when the viewport key is unset', () => {
+			stored({ [Todos.LS_VIEW_KEY_LEGACY]: 'kanban' });
+			const t = new Todos();
+
+			t.loadView(true);
+			expect(t.view).toBe('kanban');
+
+			t.loadView(false);
+			expect(t.view).toBe('card');
+		});
+
+		it('ignores the legacy key once the viewport key is set', () => {
+			stored({ [Todos.LS_VIEW_KEY_LEGACY]: 'kanban', [Todos.LS_VIEW_KEY_DESKTOP]: 'overview' });
+			const t = new Todos();
+
+			t.loadView(true);
+			expect(t.view).toBe('overview');
+		});
+
+		it('falls back to the viewport default for invalid or disallowed views', () => {
+			const t = new Todos();
+
+			stored({ [Todos.LS_VIEW_KEY_MOBILE]: 'kanban' });
+			t.loadView(false);
+			expect(t.view).toBe('card');
+
+			stored({ [Todos.LS_VIEW_KEY_DESKTOP]: 'card' });
+			t.loadView(true);
+			expect(t.view).toBe('list');
+
+			stored({});
+			t.loadView(true);
+			expect(t.view).toBe('list');
+		});
+	});
 });

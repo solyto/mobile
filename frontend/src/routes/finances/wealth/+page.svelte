@@ -145,6 +145,7 @@
 					categories={statisticsService.getMonthLabels(statistics, auth.user?.settings?.date_format ?? null)}
 					values={getTotalSeriesData(statistics)}
 					min={statisticsService.getTrendMin(getTotalSeriesData(statistics))}
+					valueFormatter={europeanFormat}
 					filled={true}
 				/>
 			</div>
@@ -153,6 +154,7 @@
 				<StackedAreaChart
 					xCategories={statisticsService.getMonthLabels(statistics, auth.user?.settings?.date_format ?? null)}
 					dataPoints={getSeriesData(statistics)}
+					valueFormatter={europeanFormat}
 				/>
 			</div>
 		{/if}

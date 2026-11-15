@@ -7,7 +7,7 @@
 	import { getCalendarDrag } from '$lib/state/CalendarDrag.svelte';
 	import type { CalendarDropTarget } from '$lib/services/CalendarDragService';
 	import { createDraggableEvent, findCalendarDayElement } from '$lib/helpers/CalendarDragHelper';
-	import { startsOnDate } from '$lib/helpers/CalendarEventHelper';
+	import { eventWriteErrorMessage, startsOnDate } from '$lib/helpers/CalendarEventHelper';
 	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
@@ -39,10 +39,10 @@
 
 	async function commitMove(moved: CalendarEvent, target: CalendarDropTarget): Promise<void> {
 		loadingIndicator.start();
-		const ok = await calendars.moveEvent(moved, target);
+		const result = await calendars.moveEvent(moved, target);
 		loadingIndicator.stop();
-		if (!ok) {
-			notifications.error(ts.get.calendar.entry_move_error);
+		if (result !== 'ok') {
+			notifications.error(eventWriteErrorMessage(result, ts.get.calendar, ts.get.calendar.entry_move_error));
 		}
 	}
 

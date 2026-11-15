@@ -83,6 +83,7 @@
 						values={[finances.getBudgetIncomeTotal(), finances.getBudgetExpenseTotal()]}
 						colors={['var(--color-c-success)', 'var(--color-c-danger)']}
 						opacity={0.8}
+						valueFormatter={europeanFormat}
 					/>
 				</div>
 			</div>
@@ -113,6 +114,7 @@
 						categories={statisticsService.getMonthLabels(statistics, auth.user?.settings?.date_format ?? null)}
 						values={getTotalSeriesData(statistics)}
 						min={statisticsService.getTrendMin(getTotalSeriesData(statistics))}
+						valueFormatter={europeanFormat}
 						filled={true}
 					/>
 				</div>

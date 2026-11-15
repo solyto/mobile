@@ -50,6 +50,11 @@ if (!Element.prototype.scrollIntoView) {
 	Element.prototype.scrollIntoView = vi.fn();
 }
 
+// jsdom lacks getAnimations, which svelte-multiselect calls when it adds a selected entry
+if (!Element.prototype.getAnimations) {
+	Element.prototype.getAnimations = vi.fn(() => []);
+}
+
 // jsdom lacks matchMedia, which ViewPoint and some components use
 if (!window.matchMedia) {
 	window.matchMedia = vi.fn().mockImplementation((query: string) => ({

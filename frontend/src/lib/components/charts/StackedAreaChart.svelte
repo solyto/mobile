@@ -3,10 +3,11 @@
 	import type { ECharts } from './echarts';
 	import { onMount, onDestroy, tick } from 'svelte';
 
-	let { title, xCategories, dataPoints }: {
+	let { title, xCategories, dataPoints, valueFormatter }: {
 		title?: string;
 		xCategories: string[];
 		dataPoints: { title: string; values: number[] }[];
+		valueFormatter?: (value: number) => string;
 	} = $props();
 
 	let chartContainer: HTMLDivElement | null = null;
@@ -32,6 +33,10 @@
 		const options = {
 			title: {
 				text: title || ''
+			},
+			tooltip: {
+				trigger: 'axis',
+				valueFormatter: valueFormatter ? (value: unknown) => valueFormatter(Number(value)) : undefined
 			},
 			legend: {
 				type: 'scroll',

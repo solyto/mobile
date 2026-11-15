@@ -1,4 +1,7 @@
-import type { TodoPriority } from '$lib/types/todo';
+import type { TodoPriority, TodoView } from '$lib/types/todo';
+
+export const TODO_VIEWS_DESKTOP: TodoView[] = ['list', 'grouped', 'kanban', 'overview'];
+export const TODO_VIEWS_MOBILE: TodoView[] = ['card', 'grouped', 'overview'];
 
 export function getPriorityColorClass(priority: TodoPriority): string {
 	switch (priority) {

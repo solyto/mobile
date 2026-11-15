@@ -64,7 +64,7 @@
 
 <div class="flex w-full max-w-xs flex-col items-center gap-12">
 	<div style="width: 56px; height: 71px;">
-		<StaggeredLogo path="../" />
+		<StaggeredLogo />
 	</div>
 
 	{#if sent}

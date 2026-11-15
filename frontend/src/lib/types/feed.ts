@@ -55,3 +55,28 @@ export interface FriendFeed {
 }
 
 export type FeedEntrySize = 'compact' | 'comfortable' | 'card';
+
+export type FeedImportStage = 'parsed' | 'running' | 'finished';
+
+export type FeedImportStatus = 'pending' | 'subscribed' | 'already_subscribed' | 'unreachable' | 'not_a_feed' | 'limit_reached';
+
+export interface FeedImportEntry {
+	url: string;
+	title: string;
+	already_subscribed: boolean;
+	status: FeedImportStatus | null;
+}
+
+export interface FeedImportState {
+	stage: FeedImportStage;
+	total: number;
+	processed: number;
+	feeds: FeedImportEntry[];
+}
+
+export interface FeedImportResponse {
+	ok: boolean;
+	status: number;
+}
+
+export type FeedImportPollError = 'network' | 'rate_limited';

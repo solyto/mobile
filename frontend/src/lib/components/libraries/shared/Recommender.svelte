@@ -83,7 +83,7 @@
 </div>
 
 {#if modalVisible}
-	<ContentModal onClose={toggleChat} title={ts.get.libraries.recommend} transparent={true}>
+	<ContentModal rounded="2xl" p="8" onClose={toggleChat} title={ts.get.libraries.recommend}>
 		<div
 			class="flex flex-col items-start gap-2 overflow-x-hidden py-4 max-md:h-full max-md:justify-center md:h-92 md:w-112"
 		>

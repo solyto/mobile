@@ -2,7 +2,7 @@
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import TextInput from '$lib/components/forms/TextInput.svelte';
 	import DateInput from '$lib/components/forms/DateInput.svelte';
-	import MultiSelect, { type MultiSelectEntry } from '$lib/components/forms/MultiSelect.svelte';
+	import MultiSelect from '$lib/components/forms/MultiSelect.svelte';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
 	import type {
 		Book,
@@ -23,7 +23,7 @@
 	import CreateModalImport from '$lib/components/libraries/shared/CreateModalImport.svelte';
 	import BookSearch from '$lib/components/libraries/books/BookSearch.svelte';
 	import IconHardcover from '$lib/components/ui/icons/IconHardcover.svelte';
-	import GoodreadsIcon from '$lib/assets/services/goodreads_icon.png';
+	import GoodreadsIcon from '$lib/assets/services/goodreads_icon.svg';
 	import { getIntegrations } from '$lib/state/Integrations.svelte';
 
 	const ts = getTranslation();
@@ -99,22 +99,22 @@
 		tags.tags.map((tag) => ({ label: tag.name, value: tag.id.toString() }))
 	);
 
-	async function onCreateGenre(data: { option: MultiSelectEntry }): Promise<void> {
-		const created = await library.createGenre(data.option.label.toString());
+	async function onCreateGenre(label: string): Promise<string | null> {
+		const created = await library.createGenre(label);
 		if (!created) {
 			notifications.error(ts.get.libraries.genre_error);
-			return;
+			return null;
 		}
-		data.option.value = created.id.toString();
+		return created.id.toString();
 	}
 
-	async function onCreateTag(data: { option: MultiSelectEntry }): Promise<void> {
-		const created = await tags.create(data.option.label.toString());
+	async function onCreateTag(label: string): Promise<string | null> {
+		const created = await tags.create(label);
 		if (!created) {
 			notifications.error(ts.get.libraries.tag_error);
-			return;
+			return null;
 		}
-		data.option.value = created.id.toString();
+		return created.id.toString();
 	}
 
 	function buildRequestFields() {
@@ -132,8 +132,8 @@
 			finished_at: finishedAtValue !== '' ? finishedAtValue : null,
 			wishlist: isWishlist,
 			summary: summaryValue !== '' ? summaryValue : null,
-			genres: selectedGenres.map((g) => parseInt(g.value)),
-			tags: selectedTags.map((t) => parseInt(t.value)),
+			genres: selectedGenres.filter((g) => g.value).map((g) => parseInt(g.value)),
+			tags: selectedTags.filter((t) => t.value).map((t) => parseInt(t.value)),
 			rating: selectedRating > 0 ? selectedRating : null,
 			link: linkValue !== '' ? linkValue : null
 		};

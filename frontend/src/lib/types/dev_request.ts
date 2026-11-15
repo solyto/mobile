@@ -1,7 +1,5 @@
-import type { VersionParts } from '$lib/types/version';
-
 export type DevRequestType = 'feature' | 'bug';
-export type DevRequestStatus = 'backlog' | 'pending' | 'in-progress' | 'cancelled' | 'completed';
+export type DevRequestStatus = 'backlog' | 'pending' | 'in-progress' | 'waiting-for-deployment' | 'cancelled' | 'completed';
 export type DevRequestPriority = 1 | 2 | 3 | 4 | 5;
 
 export type DevRequestVote = 'up' | 'down';
@@ -71,5 +69,5 @@ export interface DevRequestForm {
 	screenshot: string;
 	screenshot_name: string;
 	url: string;
-	fixed_in_version: VersionParts;
+	fixed_in_version: string;
 }

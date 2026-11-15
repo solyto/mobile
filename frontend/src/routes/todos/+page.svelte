@@ -30,9 +30,7 @@
 	let view = $derived(todos.view);
 
 	onMount(async () => {
-		if (!viewPoint.isDesktop) {
-			todos.view = 'card';
-		}
+		todos.loadView(viewPoint.isDesktop);
 
 		loadingIndicator.start();
 		await todos.load();

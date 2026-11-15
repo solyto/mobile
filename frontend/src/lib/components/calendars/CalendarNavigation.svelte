@@ -34,8 +34,7 @@
 
 <div
 	class="absolute z-40 hidden h-full max-h-screen w-16 flex-col overflow-y-auto bg-c-bg-surface drop-shadow-xl transition-all lg:relative lg:flex"
-	class:lg:w-60={editMode}
-	class:lg:w-80={editMode}
+	class:lg:w-96={editMode}
 	in:fade
 >
 	{#if !editMode}

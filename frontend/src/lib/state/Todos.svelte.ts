@@ -33,9 +33,13 @@ import ApiService from '$lib/services/ApiService';
 import { apiRoutes } from '$lib/config/apiRoutes';
 import TodoRelevanceService from '$lib/services/TodoRelevanceService';
 import LocalStorageService from '$lib/services/LocalStorageService';
+import { TODO_VIEWS_DESKTOP, TODO_VIEWS_MOBILE } from '$lib/helpers/TodoHelper';
 
 export class Todos {
 	static readonly LS_HIDE_IT_KEY: string = 'todos_hideit';
+	static readonly LS_VIEW_KEY_DESKTOP: string = 'todos_view_desktop';
+	static readonly LS_VIEW_KEY_MOBILE: string = 'todos_view_mobile';
+	static readonly LS_VIEW_KEY_LEGACY: string = 'todos_view';
 
 	loaded = $state<boolean>(false);
 	todos = $state<Todo[]>([]);
@@ -57,6 +61,7 @@ export class Todos {
 
 	editingTodo = $derived(this.todos.find((t) => t.id === this.editingTodoId) ?? null);
 	quickCreateOpen = $state<boolean>(false);
+	private viewKey: string = Todos.LS_VIEW_KEY_DESKTOP;
 	auth: Auth;
 	apiService: ApiService;
 	localStorage: LocalStorageService;
@@ -125,6 +130,15 @@ export class Todos {
 
 	changeView(view: TodoView): void {
 		this.view = view;
+		this.saveView();
+	}
+
+	loadView(isDesktop: boolean): void {
+		const allowed = isDesktop ? TODO_VIEWS_DESKTOP : TODO_VIEWS_MOBILE;
+		this.viewKey = isDesktop ? Todos.LS_VIEW_KEY_DESKTOP : Todos.LS_VIEW_KEY_MOBILE;
+		const stored =
+			this.localStorage.get(this.viewKey) ?? this.localStorage.get(Todos.LS_VIEW_KEY_LEGACY);
+		this.view = allowed.find((view) => view === stored) ?? allowed[0];
 	}
 
 	openEdit(todoId: string): void {
@@ -558,6 +572,10 @@ export class Todos {
 		if (res) await this.load();
 		if (res) this.auth.widgetBridge.notifyChanged();
 		return res;
+	}
+
+	private saveView(): void {
+		this.localStorage.set(this.viewKey, this.view);
 	}
 }
 

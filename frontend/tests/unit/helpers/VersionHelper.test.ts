@@ -1,11 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import {
 	acceptsClientVersionHeader,
-	buildVersion,
 	compareVersions,
 	fixedInState,
 	isOlderVersion,
-	parseVersion
+	isVersion
 } from '$lib/helpers/VersionHelper';
 
 describe('compareVersions', () => {
@@ -76,33 +75,15 @@ describe('fixedInState', () => {
 	});
 });
 
-describe('parseVersion', () => {
-	it('splits a dotted version into its three parts', () => {
-		expect(parseVersion('1.2.3')).toEqual({ major: 1, minor: 2, patch: 3 });
+describe('isVersion', () => {
+	it('accepts three dotted numbers', () => {
+		expect(isVersion('1.2.3')).toBe(true);
+		expect(isVersion('2.10.0')).toBe(true);
 	});
 
-	it('leaves missing or non-numeric parts empty', () => {
-		expect(parseVersion(null)).toEqual({ major: null, minor: null, patch: null });
-		expect(parseVersion('1.2')).toEqual({ major: 1, minor: 2, patch: null });
-		expect(parseVersion('v1.2.3')).toEqual({ major: null, minor: 2, patch: 3 });
-	});
-});
-
-describe('buildVersion', () => {
-	it('joins the parts with dots', () => {
-		expect(buildVersion({ major: 1, minor: 2, patch: 3 })).toBe('1.2.3');
-	});
-
-	it('is null when every part is empty', () => {
-		expect(buildVersion({ major: null, minor: null, patch: null })).toBeNull();
-	});
-
-	it('fills empty parts with zero and drops fractions and signs', () => {
-		expect(buildVersion({ major: 1, minor: null, patch: null })).toBe('1.0.0');
-		expect(buildVersion({ major: 1.7, minor: -2, patch: 0 })).toBe('1.0.0');
-	});
-
-	it('round-trips a full version unchanged', () => {
-		expect(buildVersion(parseVersion('2.10.0'))).toBe('2.10.0');
+	it('rejects anything else', () => {
+		for (const value of ['', '1', '1.2', '1.2.3.4', 'v1.2.3', '1.2.x', '1..3', ' 1.2.3']) {
+			expect(isVersion(value)).toBe(false);
+		}
 	});
 });

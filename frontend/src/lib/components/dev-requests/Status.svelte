@@ -10,6 +10,7 @@
 		backlog: 'bg-c-neutral-4',
 		pending: 'bg-c-action',
 		'in-progress': 'bg-c-btn-hover',
+		'waiting-for-deployment': 'bg-c-warning',
 		completed: 'bg-c-success',
 		cancelled: 'bg-c-danger'
 	};
@@ -19,6 +20,7 @@
 			backlog: ts.get.dev.requests.status_backlog,
 			pending: ts.get.dev.requests.status_pending,
 			'in-progress': ts.get.dev.requests.status_in_progress,
+			'waiting-for-deployment': ts.get.dev.requests.status_waiting_for_deployment,
 			completed: ts.get.dev.requests.status_completed,
 			cancelled: ts.get.dev.requests.status_cancelled
 		};
@@ -26,7 +28,7 @@
 	}
 </script>
 
-<span class="flex items-center gap-1.5 text-sm 2xl:gap-2">
+<span class="flex items-center gap-1.5 text-sm md:whitespace-nowrap 2xl:gap-2">
 	<span class="size-2 shrink-0 rounded-full {DOT_COLORS[entry.status]}"></span>
 	{getLabel(entry.status)}
 </span>

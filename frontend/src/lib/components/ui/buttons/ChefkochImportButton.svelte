@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { getTranslation } from '$lib/state/Translation.svelte';
-	import ChefkochIcon from '$lib/assets/services/chefkoch_icon.png';
+	import ChefkochIcon from '$lib/assets/services/chefkoch_icon.ico';
 
 	const ts = getTranslation();
 

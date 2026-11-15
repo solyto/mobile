@@ -13,6 +13,7 @@
 	import CloudButton from '$lib/components/ui/buttons/CloudButton.svelte';
 	import BottomSheetModal from '$lib/components/ui/BottomSheetModal.svelte';
 	import ManageCalendars from '$lib/components/calendars/ManageCalendars.svelte';
+	import UnavailableCalendarsNotice from '$lib/components/calendars/UnavailableCalendarsNotice.svelte';
 	import { getCalendars } from '$lib/state/Calendars.svelte';
 	import { getCalendarImport } from '$lib/state/CalendarImport.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
@@ -157,6 +158,8 @@
 			</div>
 		</div>
 	{/if}
+
+	<UnavailableCalendarsNotice />
 
 	{#if calendars.view !== 'list'}
 		<div class="flex items-center justify-center gap-4">

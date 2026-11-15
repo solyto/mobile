@@ -772,6 +772,7 @@ export interface DevRecords {
 		status_backlog: string;
 		status_pending: string;
 		status_in_progress: string;
+		status_waiting_for_deployment: string;
 		status_completed: string;
 		status_cancelled: string;
 		validation_error: string;
@@ -796,6 +797,7 @@ export interface DevRecords {
 		fixed_in_included: string;
 		fixed_in_pending: string;
 		fixed_in_current_version: string;
+		version_validation_error: string;
 	};
 }
 
@@ -864,6 +866,32 @@ export interface FeedRecords {
 	no_feeds_desc: string;
 	no_items: string;
 	no_items_desc: string;
+	import_opml: string;
+	import_hint: string;
+	import_select_all: string;
+	import_select_none: string;
+	import_selected_singular: string;
+	import_selected_plural: string;
+	import_already_subscribed: string;
+	import_button: string;
+	import_progress: string;
+	import_result_added: string;
+	import_result_already_subscribed: string;
+	import_result_failed: string;
+	import_reason_unreachable: string;
+	import_reason_not_a_feed: string;
+	import_reason_limit_reached: string;
+	import_all_subscribed: string;
+	import_in_progress: string;
+	import_finished_singular: string;
+	import_finished_plural: string;
+	import_another: string;
+	import_close: string;
+	import_retry: string;
+	import_error_generic: string;
+	import_error_unreadable: string;
+	import_error_running: string;
+	import_error_rate_limited: string;
 }
 
 export interface CalendarRecords {
@@ -993,6 +1021,50 @@ export interface CalendarRecords {
 	search_note: string;
 	life_journal: string;
 	life_check_in: string;
+	entry_delete_error: string;
+	event_changed_on_server: string;
+	event_unreadable: string;
+	event_server_unavailable: string;
+	external_calendar: string;
+	external_unavailable: string;
+	external_unavailable_notice: string;
+	external_credentials_rejected: string;
+	external_credentials_rejected_notice: string;
+	calendar_with_status: string;
+	disconnect_title: string;
+	disconnect_description: string;
+	connected_accounts: string;
+	no_connected_accounts: string;
+	accounts_load_error: string;
+	connect_calendar: string;
+	connect_server_url: string;
+	connect_username: string;
+	connect_password: string;
+	connect_password_hint: string;
+	connect_submit: string;
+	connect_choose: string;
+	connect_already_connected: string;
+	connect_all_connected: string;
+	connect_selected: string;
+	connect_success: string;
+	connect_error_url_not_allowed: string;
+	connect_error_url_invalid: string;
+	connect_error_server_unreachable: string;
+	connect_error_no_calendars: string;
+	connect_error_credentials_rejected: string;
+	connect_error_failed: string;
+	account_calendars_singular: string;
+	account_calendars_plural: string;
+	account_add_calendars: string;
+	account_no_calendars_hint: string;
+	account_change_password: string;
+	account_change_password_hint: string;
+	account_password_updated: string;
+	account_remove: string;
+	account_remove_title: string;
+	account_remove_description: string;
+	account_remove_success: string;
+	account_remove_error: string;
 }
 
 export interface ContactRecords {

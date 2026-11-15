@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { getTranslation } from '$lib/state/Translation.svelte';
-	import DiscogsIcon from '$lib/assets/services/discogs_icon.png';
+	import DiscogsIcon from '$lib/assets/services/discogs_icon.svg';
 
 	const ts = getTranslation();
 

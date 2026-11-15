@@ -1,19 +1,25 @@
 <script lang="ts">
 	import { getFeeds } from '$lib/state/Feeds.svelte';
+	import { getFeedImport } from '$lib/state/FeedImport.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import FeedNavigation from '$lib/components/feeds/FeedNavigation.svelte';
 	import FeedView from '$lib/components/feeds/FeedView.svelte';
 	import ContentModal from '$lib/components/ui/ContentModal.svelte';
 	import EntryEdit from '$lib/components/feeds/EntryEdit.svelte';
 	import FeedBrowserModal from '$lib/components/feeds/FeedBrowserModal.svelte';
+	import FeedImportModal from '$lib/components/feeds/FeedImportModal.svelte';
 	import Header from '$lib/components/feeds/Header.svelte';
 
 	const feeds = getFeeds();
+	const feedImport = getFeedImport();
 	const ts = getTranslation();
 </script>
 
 {#if feeds.browseOpen}
 	<FeedBrowserModal />
+{/if}
+{#if feedImport.modalOpen}
+	<FeedImportModal />
 {/if}
 {#if feeds.modalOpen}
 	<ContentModal

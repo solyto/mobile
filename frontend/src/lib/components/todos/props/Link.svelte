@@ -10,6 +10,7 @@
 	import { goto } from '$app/navigation';
 	import { getViewPoint } from '$lib/state/Viewpoint.svelte';
 	import IconExternalLink from '@lucide/svelte/icons/external-link';
+	import { safeHref } from '$lib/helpers/UrlHelper';
 
 	const todos = getTodos();
 	const loadingIndicator = getLoadingIndicator();
@@ -26,6 +27,7 @@
 	let explanationBoxX = $state<number>(0);
 	let explanationBoxY = $state<number>(0);
 	let keyHandlers: { [key: string]: string | null } = { Enter: null, Escape: null };
+	let href = $derived(safeHref(todo.link));
 
 	async function toggleEdit(): Promise<void> {
 		editing = !editing;
@@ -65,12 +67,12 @@
 	}
 
 	function openLink(): void {
-		if (!todo.link) return;
-		if (todo.link.startsWith('/')) {
+		if (!href) return;
+		if (href.startsWith('/')) {
 			// eslint-disable-next-line svelte/no-navigation-without-resolve -- user-entered path, not a known route
-			goto(todo.link);
+			goto(href);
 		} else {
-			window.open(todo.link, '_blank', 'noopener,noreferrer');
+			window.open(href, '_blank', 'noopener,noreferrer');
 		}
 	}
 
@@ -95,7 +97,9 @@
 			onblur={() => (showExplanationBox = false)}
 			onmousemove={(e) => setExplanationBoxPosition(e)}
 		>
-			{#if todo.link && viewPoint.isMobile}
+			{#if todo.link && !href}
+				<span class="block max-w-full truncate text-sm">{todo.link}</span>
+			{:else if todo.link && viewPoint.isMobile}
 				<div class="flex items-center gap-2">
 					<span class="min-w-0 truncate text-sm text-c-action underline">{todo.link}</span>
 					<button

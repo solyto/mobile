@@ -14,7 +14,7 @@ describe('fromEntry', () => {
 			type: 'feature',
 			priority: '4',
 			status: 'completed',
-			fixed_in_version: { major: 1, minor: 2, patch: 3 }
+			fixed_in_version: '1.2.3'
 		});
 	});
 
@@ -22,7 +22,7 @@ describe('fromEntry', () => {
 		const form = service.fromEntry(devRequest({ priority: null }));
 
 		expect(form.priority).toBe('1');
-		expect(form.fixed_in_version).toEqual({ major: null, minor: null, patch: null });
+		expect(form.fixed_in_version).toBe('');
 	});
 });
 
@@ -47,21 +47,21 @@ describe('changes', () => {
 
 	it('sets the fixed-in version when completing a request', () => {
 		const entry = devRequest();
-		const form = { ...service.fromEntry(entry), status: 'completed', fixed_in_version: { major: 1, minor: 2, patch: 0 } };
+		const form = { ...service.fromEntry(entry), status: 'completed', fixed_in_version: '1.2.0' };
 
 		expect(service.changes(entry, form)).toEqual({ status: 'completed', fixed_in_version: '1.2.0' });
 	});
 
 	it('changes the version of an already completed request', () => {
 		const entry = devRequest({ status: 'completed', fixed_in_version: '1.2.0' });
-		const form = { ...service.fromEntry(entry), fixed_in_version: { major: 1, minor: 2, patch: 1 } };
+		const form = { ...service.fromEntry(entry), fixed_in_version: '1.2.1' };
 
 		expect(service.changes(entry, form)).toEqual({ fixed_in_version: '1.2.1' });
 	});
 
-	it('clears the version when all parts are emptied', () => {
+	it('clears the version when the input is emptied', () => {
 		const entry = devRequest({ status: 'completed', fixed_in_version: '1.2.0' });
-		const form = { ...service.fromEntry(entry), fixed_in_version: { major: null, minor: null, patch: null } };
+		const form = { ...service.fromEntry(entry), fixed_in_version: '  ' };
 
 		expect(service.changes(entry, form)).toEqual({ fixed_in_version: null });
 	});
@@ -75,7 +75,7 @@ describe('changes', () => {
 
 	it('ignores a version typed into a request that is not completed', () => {
 		const entry = devRequest();
-		const form = { ...service.fromEntry(entry), fixed_in_version: { major: 1, minor: 0, patch: 0 } };
+		const form = { ...service.fromEntry(entry), fixed_in_version: '1.0.0' };
 
 		expect(service.changes(entry, form)).toEqual({});
 	});

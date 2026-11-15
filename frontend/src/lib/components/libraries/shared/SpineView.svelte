@@ -8,6 +8,7 @@
 	import { API_USER_STORAGE_URL } from '$lib/config/apiRoutes';
 	import { getAuth } from '$lib/state/Auth.svelte';
 	import Spine from '$lib/components/libraries/shared/Spine.svelte';
+	import woodShelf from '$lib/assets/wood-shelf.jpg';
 
 	interface SpineEntry {
 		id: string;
@@ -132,7 +133,7 @@
 
 			<div
 				class="pointer-events-none absolute right-0 bottom-0 left-0"
-				style="height: 5px; background: url('/wood-shelf.jpg') center/cover; box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 2px 8px rgba(0,0,0,0.4);"
+				style="height: 5px; background: url('{woodShelf}') center/cover; box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 2px 8px rgba(0,0,0,0.4);"
 			></div>
 		</div>
 	{/each}

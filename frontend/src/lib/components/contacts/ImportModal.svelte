@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { fade } from 'svelte/transition';
 	import ContentModal from '$lib/components/ui/ContentModal.svelte';
+	import ProgressBar from '$lib/components/ui/ProgressBar.svelte';
 	import TextInput from '$lib/components/forms/TextInput.svelte';
 	import ModalFormRow from '$lib/components/ui/ModalFormRow.svelte';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
@@ -172,16 +173,8 @@
 						)}
 				</p>
 				{#if importState.contacts_count > 0}
-					<div
-						class="mt-2 h-4 w-full rounded-lg border-1 border-c-primary shadow-sm"
-						in:fade
-					>
-						<div
-							class="h-full rounded-lg bg-c-primary transition-all duration-1000"
-							style="width: {(importState?.contacts_done /
-								importState?.contacts_count) *
-								100}%;"
-						></div>
+					<div class="mt-2" in:fade>
+						<ProgressBar value={importState.contacts_done / importState.contacts_count} />
 					</div>
 				{/if}
 			</div>

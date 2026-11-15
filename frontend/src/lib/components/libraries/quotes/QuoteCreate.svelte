@@ -31,13 +31,13 @@
 		tags.tags.map((tag) => ({ label: tag.name, value: tag.id.toString() }))
 	);
 
-	async function onCreateTag(data: { option: MultiSelectEntry }): Promise<void> {
-		const created = await tags.create(data.option.label.toString());
+	async function onCreateTag(label: string): Promise<string | null> {
+		const created = await tags.create(label);
 		if (!created) {
 			notifications.error(ts.get.libraries.tag_error);
-			return;
+			return null;
 		}
-		data.option.value = created.id.toString();
+		return created.id.toString();
 	}
 
 	async function onsubmit(): Promise<void> {
@@ -56,7 +56,7 @@
 			summary: summaryValue !== '' ? summaryValue : null,
 			source: sourceValue !== '' ? sourceValue : null,
 			quote: quoteValue,
-			tags: selectedTags.map((v) => parseInt(v.value))
+			tags: selectedTags.filter((t) => t.value).map((v) => parseInt(v.value))
 		};
 		const ok = await library.create(request);
 		if (ok) {
@@ -80,7 +80,7 @@
 			summary: summaryValue !== '' ? summaryValue : null,
 			source: sourceValue !== '' ? sourceValue : null,
 			quote: quoteValue !== '' ? quoteValue : null,
-			tags: selectedTags.map((v) => parseInt(v.value))
+			tags: selectedTags.filter((t) => t.value).map((v) => parseInt(v.value))
 		};
 		const ok = await library.update(activeEntry!, request);
 		if (ok) {

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { HTMLInputAttributes } from 'svelte/elements';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import Eye from '@lucide/svelte/icons/eye';
 	import EyeOff from '@lucide/svelte/icons/eye-off';
@@ -10,7 +11,10 @@
 		showToggle = false,
 		onblur,
 		oninput,
-		tabindex = null
+		tabindex = null,
+		id,
+		autocomplete,
+		ariaDescribedby
 	}: {
 		input?: HTMLInputElement | null;
 		value: string;
@@ -19,6 +23,9 @@
 		onblur?: () => void;
 		oninput?: () => void;
 		tabindex?: number | null;
+		id?: string;
+		autocomplete?: HTMLInputAttributes['autocomplete'];
+		ariaDescribedby?: string;
 	} = $props();
 
 	const ts = getTranslation();
@@ -39,6 +46,9 @@
 		"
 		{placeholder}
 		{tabindex}
+		{id}
+		{autocomplete}
+		aria-describedby={ariaDescribedby}
 	/>
 	{#if showToggle}
 		<button

@@ -9,8 +9,11 @@ import GenreFlexList from '$lib/components/libraries/shared/GenreFlexList.svelte
 import TagFlexList from '$lib/components/tags/TagFlexList.svelte';
 import CoverImage from '$lib/components/libraries/shared/CoverImage.svelte';
 import NoTodos from '$lib/components/todos/NoTodos.svelte';
+import DeezerButton from '$lib/components/ui/buttons/DeezerButton.svelte';
+import HardcoverButton from '$lib/components/ui/buttons/HardcoverButton.svelte';
+import Link from '$lib/components/todos/props/Link.svelte';
 import { renderWithContext } from './helpers/context';
-import { tag } from '../unit/helpers/factories';
+import { tag, todo } from '../unit/helpers/factories';
 import type { BookGenre } from '$lib/types/library_book';
 
 describe('Rating', () => {
@@ -209,5 +212,36 @@ describe('CoverImage', () => {
 		expect(images).toHaveLength(1);
 		expect(images[0]).toHaveAttribute('src', 'full.jpg');
 		vi.unstubAllGlobals();
+	});
+});
+
+describe('DeezerButton / HardcoverButton', () => {
+	it.each([
+		['Deezer', DeezerButton],
+		['Hardcover', HardcoverButton]
+	])('%s links a safe url', (_, Button) => {
+		renderWithContext(Button, { link: 'https://example.com/album/1' });
+		expect(screen.getByRole('link')).toHaveAttribute('href', 'https://example.com/album/1');
+	});
+
+	it.each([
+		['Deezer', DeezerButton],
+		['Hardcover', HardcoverButton]
+	])('%s renders nothing for a rejected url', (_, Button) => {
+		const { container } = renderWithContext(Button, { link: 'javascript:alert(1)' });
+		expect(container.querySelector('a')).toBeNull();
+	});
+});
+
+describe('todo Link', () => {
+	it('opens a safe link from a button', () => {
+		const { container } = renderWithContext(Link, { todo: todo({ link: 'https://solyto.app' }) });
+		expect(container.querySelector('button')).not.toBeNull();
+	});
+
+	it('shows a rejected link as plain text', () => {
+		const { container } = renderWithContext(Link, { todo: todo({ link: 'javascript:alert(1)' }) });
+		expect(screen.getByText('javascript:alert(1)')).not.toHaveClass('underline');
+		expect(container.querySelector('button')).toBeNull();
 	});
 });

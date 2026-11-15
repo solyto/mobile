@@ -42,7 +42,7 @@ export const urls = {
 	gameLibrary: '/libraries/games',
 	plantLibrary: '/libraries/plants',
 	devRequests: '/dev-requests',
-	devRequest: '/dev-requests/[id]',
+	devRequest: '/dev-requests/[[id]]',
 	finances: '/finances',
 	wealth: '/finances/wealth',
 	budget: '/finances/budget',

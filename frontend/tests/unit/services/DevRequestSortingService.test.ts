@@ -66,6 +66,15 @@ describe('sort', () => {
 		expect(ids(service.sort(requests))).toEqual([4, 3, 2, 1]);
 	});
 
+	it('keeps waiting-for-deployment with the open requests', () => {
+		const requests = [
+			request({ id: 1, status: 'completed', score: 100 }),
+			request({ id: 2, status: 'cancelled', score: 50 }),
+			request({ id: 3, status: 'waiting-for-deployment', score: 1 })
+		];
+		expect(ids(service.sort(requests))).toEqual([3, 2, 1]);
+	});
+
 	it('orders by score within the completed and cancelled groups', () => {
 		const requests = [
 			request({ id: 1, status: 'completed', score: 1 }),

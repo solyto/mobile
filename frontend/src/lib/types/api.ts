@@ -19,3 +19,9 @@ export interface PostResponse {
 export interface PutResponse {
 	data: object;
 }
+
+export interface StatusResponse {
+	ok: boolean;
+	status: number;
+	errors: string[];
+}

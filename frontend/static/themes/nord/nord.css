@@ -90,3 +90,8 @@ html.dark {
 .bg-c-action.text-c-heading {
 	color: #2e3440;
 }
+
+/* Snow Storm icon is unreadable on the light Aurora green low-priority cell */
+.todo-priority-filled.bg-c-success svg {
+	color: var(--color-c-flag-text);
+}

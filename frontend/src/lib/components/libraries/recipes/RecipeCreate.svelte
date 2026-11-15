@@ -21,7 +21,7 @@
 	import CreateModalImport from '$lib/components/libraries/shared/CreateModalImport.svelte';
 	import AddButton from '$lib/components/ui/buttons/AddButton.svelte';
 	import InlineDeleteButton from '$lib/components/ui/buttons/InlineDeleteButton.svelte';
-	import ChefkochIcon from '$lib/assets/services/chefkoch_icon.png';
+	import ChefkochIcon from '$lib/assets/services/chefkoch_icon.ico';
 	import { fade } from 'svelte/transition';
 
 	const ts = getTranslation();

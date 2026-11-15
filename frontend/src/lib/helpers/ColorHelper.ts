@@ -41,3 +41,10 @@ export function getEventBorderColor(color: string | null | undefined): string {
 export function getEventBackgroundColor(color: string | null | undefined): string {
 	return color ? `color-mix(in srgb, ${color} 25%, var(--color-c-bg-elevated))` : '';
 }
+
+// echarts 6's default palette, so charts that pick colours here look as they did before.
+const CHART_COLORS = ['#5070dd', '#b6d634', '#505372', '#ff994d', '#0ca8df', '#ffd10a', '#fb628b', '#785db0', '#3fbe95'];
+
+export function getChartColor(index: number, color?: string | null): string {
+	return color || CHART_COLORS[index % CHART_COLORS.length];
+}

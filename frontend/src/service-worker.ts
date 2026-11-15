@@ -9,7 +9,15 @@ const sw = self as unknown as ServiceWorkerGlobalScope;
 import { build, files, version } from '$service-worker';
 
 const CACHE = `aj-cache-${version}`;
-const ASSETS = [...build, ...files];
+// Not needed by most users: cached on first use instead of precached.
+// Theme wallpapers and fonts are only used by opt-in themes; .woff is only
+// a fallback for browsers without .woff2, which can't run this service worker.
+const LAZY = [
+	/^\/themes\/.+\.jpg$/,
+	/\/(lora|press-start-2p|cinzel|share-tech-mono)-.+\.woff2$/,
+	/\.woff$/
+];
+const ASSETS = [...build, ...files].filter((path) => !LAZY.some((re) => re.test(path)));
 
 // 🧱 INSTALL: Precache app shell (static assets)
 sw.addEventListener('install', (event) => {
@@ -66,6 +74,9 @@ sw.addEventListener('fetch', (event) => {
 				return cachedResponse || fetch(event.request);
 			}
 
+			// Cache-first for lazy assets once they are cached
+			if (cachedResponse && LAZY.some((re) => re.test(url.pathname))) return cachedResponse;
+
 			// Stale-while-revalidate for everything else
 			try {
 				const networkResponse = await fetch(event.request);
@@ -98,8 +109,8 @@ sw.addEventListener('push', (event) => {
 
 		const options: NotificationOptions = {
 			body: data.body || 'You have a new notification',
-			icon: data.icon || '/icon.png',
-			badge: data.badge || '/badge.png',
+			icon: data.icon || '/android-chrome-192x192.png',
+			badge: data.badge,
 			data: data.data || {},
 			actions: data.actions || [],
 			tag: data.tag || 'default-notification',
@@ -114,7 +125,7 @@ sw.addEventListener('push', (event) => {
 		event.waitUntil(
 			sw.registration.showNotification('New Notification', {
 				body: 'You have a new notification',
-				icon: '/icon.png'
+				icon: '/android-chrome-192x192.png'
 			})
 		);
 	}

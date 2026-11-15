@@ -135,6 +135,7 @@
 			categories={history.chartCategories(values, dateFormat)}
 			values={history.chartValues(values)}
 			filled={true}
+			valueFormatter={europeanFormat}
 			class="h-56"
 		/>
 	{/if}

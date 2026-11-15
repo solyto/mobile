@@ -2,10 +2,10 @@
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import TextInput from '$lib/components/forms/TextInput.svelte';
 	import Select from '$lib/components/forms/Select.svelte';
-	import MultiSelect, { type MultiSelectEntry } from '$lib/components/forms/MultiSelect.svelte';
+	import MultiSelect from '$lib/components/forms/MultiSelect.svelte';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
 	import DeezerIcon from '$lib/assets/services/deezer_icon.svg';
-	import DiscogsIcon from '$lib/assets/services/discogs_icon.png';
+	import DiscogsIcon from '$lib/assets/services/discogs_icon.svg';
 	import SpotifyIcon from '$lib/assets/services/spotify_icon.svg';
 	import type {
 		CreateMusicRequest,
@@ -77,13 +77,13 @@
 		library.genres.map((genre) => ({ label: genre.title, value: genre.id.toString() }))
 	);
 
-	async function onCreateGenre(data: { option: MultiSelectEntry }): Promise<void> {
-		const created = await library.createGenre(data.option.label.toString());
+	async function onCreateGenre(label: string): Promise<string | null> {
+		const created = await library.createGenre(label);
 		if (!created) {
 			notifications.error(ts.get.libraries.genre_error);
-			return;
+			return null;
 		}
-		data.option.value = created.id.toString();
+		return created.id.toString();
 	}
 
 	const importDefs: Record<
@@ -141,7 +141,7 @@
 		const request: CreateMusicRequest = {
 			title: titleValue,
 			artist: artistValue,
-			genres: selectedGenres.map((g) => parseInt(g.value)),
+			genres: selectedGenres.filter((g) => g.value).map((g) => parseInt(g.value)),
 			type: typeValue !== '' ? typeValue : null,
 			format: formatValue !== '' ? formatValue : null,
 			condition: conditionValue != '' ? conditionValue : null,
@@ -180,7 +180,7 @@
 		const request: UpdateMusicRequest = {
 			title: titleValue,
 			artist: artistValue,
-			genres: selectedGenres.map((g) => parseInt(g.value)),
+			genres: selectedGenres.filter((g) => g.value).map((g) => parseInt(g.value)),
 			type: typeValue !== '' ? typeValue : null,
 			format: formatValue !== '' ? formatValue : null,
 			condition: conditionValue != '' ? conditionValue : null,

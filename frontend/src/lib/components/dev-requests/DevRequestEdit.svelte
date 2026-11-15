@@ -14,8 +14,8 @@
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import ContentModal from '$lib/components/ui/ContentModal.svelte';
 	import FileUpload from '$lib/components/forms/FileUpload.svelte';
-	import VersionInput from '$lib/components/forms/VersionInput.svelte';
 	import DevRequestFormService from '$lib/services/DevRequestFormService';
+	import { isVersion } from '$lib/helpers/VersionHelper';
 	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
 	import { getAuth } from '$lib/state/Auth.svelte';
 
@@ -50,6 +50,7 @@
 		{ value: 'backlog', label: ts.get.dev.requests.status_backlog },
 		{ value: 'pending', label: ts.get.dev.requests.status_pending },
 		{ value: 'in-progress', label: ts.get.dev.requests.status_in_progress },
+		{ value: 'waiting-for-deployment', label: ts.get.dev.requests.status_waiting_for_deployment },
 		{ value: 'completed', label: ts.get.dev.requests.status_completed },
 		{ value: 'cancelled', label: ts.get.dev.requests.status_cancelled }
 	];
@@ -66,6 +67,15 @@
 		if (form.title === '' || form.description === '') {
 			loadingIndicator.stop();
 			notifications.error(ts.get.dev.requests.validation_error);
+			return;
+		}
+
+		// Only a changed version is checked: older requests may hold e.g. `1.2`, which the API accepts.
+		const version = form.fixed_in_version.trim();
+		const versionChanged = version !== (entry?.fixed_in_version ?? '');
+		if (form.status === 'completed' && version !== '' && versionChanged && !isVersion(version)) {
+			loadingIndicator.stop();
+			notifications.error(ts.get.dev.requests.version_validation_error);
 			return;
 		}
 
@@ -108,7 +118,7 @@
 		{#if entry}
 			<Select bind:value={form.status} options={statusOptions} />
 			{#if form.status === 'completed'}
-				<VersionInput label={ts.get.dev.requests.fixed_in_version} bind:value={form.fixed_in_version} />
+				<TextInput placeholder={ts.get.dev.requests.fixed_in_version} bind:value={form.fixed_in_version} inputmode="decimal" />
 			{/if}
 		{:else}
 			<FileUpload

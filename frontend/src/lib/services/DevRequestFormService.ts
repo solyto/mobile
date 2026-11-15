@@ -6,7 +6,6 @@ import type {
 	DevRequestType,
 	UpdateDevRequestRequest
 } from '$lib/types/dev_request';
-import { buildVersion, parseVersion } from '$lib/helpers/VersionHelper';
 
 export default class DevRequestFormService {
 	empty(): DevRequestForm {
@@ -19,7 +18,7 @@ export default class DevRequestFormService {
 			screenshot: '',
 			screenshot_name: '',
 			url: '',
-			fixed_in_version: parseVersion(null)
+			fixed_in_version: ''
 		};
 	}
 
@@ -31,13 +30,13 @@ export default class DevRequestFormService {
 			type: entry.type,
 			priority: String(entry.priority ?? 1),
 			status: entry.status,
-			fixed_in_version: parseVersion(entry.fixed_in_version)
+			fixed_in_version: entry.fixed_in_version ?? ''
 		};
 	}
 
 	changes(entry: DevRequest, form: DevRequestForm): UpdateDevRequestRequest {
 		const request: UpdateDevRequestRequest = {};
-		const fixedInVersion = form.status === 'completed' ? buildVersion(form.fixed_in_version) : null;
+		const fixedInVersion = form.status === 'completed' ? form.fixed_in_version.trim() || null : null;
 
 		if (form.title !== entry.title) request.title = form.title;
 		if (form.description !== entry.description) request.description = form.description;

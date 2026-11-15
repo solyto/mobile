@@ -1,4 +1,5 @@
-import type { CalendarEvent } from '$lib/types/calendar';
+import type { CalendarEvent, EventWriteResult } from '$lib/types/calendar';
+import type { CalendarRecords } from '$lib/types/translation';
 import { formatDate } from '$lib/helpers/DateHelper';
 
 export function getCalendarEventKey(item: CalendarEvent): string {
@@ -28,4 +29,17 @@ export function adjustEventRange(
 		return { start: new Date(end.getTime() - duration), end };
 	}
 	return { start, end };
+}
+
+export function eventWriteErrorMessage(result: EventWriteResult, calendar: CalendarRecords, fallback: string): string {
+	switch (result) {
+		case 'changed_on_server':
+			return calendar.event_changed_on_server;
+		case 'unreadable':
+			return calendar.event_unreadable;
+		case 'server_unavailable':
+			return calendar.event_server_unavailable;
+		default:
+			return fallback;
+	}
 }

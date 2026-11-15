@@ -1,14 +1,15 @@
 <script lang="ts">
 	import IconTrash from '@lucide/svelte/icons/trash-2';
 
-	let { onClick, label = null }: {
+	let { onClick, label = null, class: customClass = '' }: {
 		onClick: (e: MouseEvent) => void | Promise<void>;
 		label?: string | null;
+		class?: string;
 	} = $props();
 </script>
 
 <div
-	class="group relative z-40 flex size-[34px] cursor-pointer items-center justify-center rounded-full border-c-neutral-3 text-c-danger drop-shadow-md transition-all hover:drop-shadow-xl"
+	class="group relative z-40 flex size-[34px] cursor-pointer items-center justify-center rounded-full border-c-neutral-3 text-c-danger drop-shadow-md transition-all hover:drop-shadow-xl {customClass}"
 >
 	<button
 		type="button"

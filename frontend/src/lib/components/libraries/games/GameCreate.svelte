@@ -2,7 +2,7 @@
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import TextInput from '$lib/components/forms/TextInput.svelte';
 	import DateInput from '$lib/components/forms/DateInput.svelte';
-	import MultiSelect, { type MultiSelectEntry } from '$lib/components/forms/MultiSelect.svelte';
+	import MultiSelect from '$lib/components/forms/MultiSelect.svelte';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
 	import { API_USER_STORAGE_URL } from '$lib/config/apiRoutes';
 	import { getAuth } from '$lib/state/Auth.svelte';
@@ -73,22 +73,22 @@
 		tags.tags.map((tag) => ({ label: tag.name, value: tag.id.toString() }))
 	);
 
-	async function onCreateGenre(data: { option: MultiSelectEntry }): Promise<void> {
-		const created = await library.createGenre(data.option.label.toString());
+	async function onCreateGenre(label: string): Promise<string | null> {
+		const created = await library.createGenre(label);
 		if (!created) {
 			notifications.error(ts.get.libraries.genre_error);
-			return;
+			return null;
 		}
-		data.option.value = created.id.toString();
+		return created.id.toString();
 	}
 
-	async function onCreateTag(data: { option: MultiSelectEntry }): Promise<void> {
-		const created = await tags.create(data.option.label.toString());
+	async function onCreateTag(label: string): Promise<string | null> {
+		const created = await tags.create(label);
 		if (!created) {
 			notifications.error(ts.get.libraries.tag_error);
-			return;
+			return null;
 		}
-		data.option.value = created.id.toString();
+		return created.id.toString();
 	}
 
 	const platformOptions: { label: string; value: string }[] = [
@@ -123,8 +123,8 @@
 			started_at: startedAtValue !== '' ? startedAtValue : null,
 			finished_at: finishedAtValue !== '' ? finishedAtValue : null,
 			wishlist: isWishlist,
-			genres: selectedGenres.map((g) => parseInt(g.value)),
-			tags: selectedTags.map((t) => parseInt(t.value)),
+			genres: selectedGenres.filter((g) => g.value).map((g) => parseInt(g.value)),
+			tags: selectedTags.filter((t) => t.value).map((t) => parseInt(t.value)),
 			rating: selectedRating > 0 ? selectedRating : null,
 			cover_path: coverValue != '' ? coverValue : null,
 			link: linkValue != '' ? linkValue : null
@@ -165,8 +165,8 @@
 			started_at: startedAtValue !== '' ? startedAtValue : null,
 			finished_at: finishedAtValue !== '' ? finishedAtValue : null,
 			wishlist: isWishlist,
-			genres: selectedGenres.map((g) => parseInt(g.value)),
-			tags: selectedTags.map((t) => parseInt(t.value)),
+			genres: selectedGenres.filter((g) => g.value).map((g) => parseInt(g.value)),
+			tags: selectedTags.filter((t) => t.value).map((t) => parseInt(t.value)),
 			rating: selectedRating > 0 ? selectedRating : null,
 			...(coverValue !== '' ? { cover_path: coverValue } : {}),
 			link: linkValue != '' ? linkValue : null

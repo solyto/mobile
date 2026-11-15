@@ -19,7 +19,6 @@
 		p = '8',
 		width = null,
 		title = null,
-		transparent = false,
 		higherZIndex = false,
 		showTitleOnMobile = false
 	}: {
@@ -34,7 +33,6 @@
 		p?: string;
 		width?: string | null;
 		title?: string | null;
-		transparent?: boolean;
 		higherZIndex?: boolean;
 		showTitleOnMobile?: boolean;
 	} = $props();
@@ -50,13 +48,9 @@
 	<div class="relative my-auto p-8 max-md:p-0 modal-container" in:scale|global={{ start: 0.75 }}>
 		{#if title}
 			<div
-				class="absolute text-2xl font-bold tracking-wide text-c-heading max-md:hidden dark:text-c-primary"
+				class="absolute text-2xl font-bold tracking-wide text-c-heading max-md:hidden dark:text-c-primary top-[-20px] left-12"
 				class:z-40={!higherZIndex}
 				class:z-50={higherZIndex}
-				class:top-[-20px]={!transparent}
-				class:left-12={!transparent}
-				class:top-3={transparent}
-				class:left-15={transparent}
 			>
 				<ModalTitle {title} {onRename} />
 			</div>
@@ -77,19 +71,14 @@
 		{/if}
 		<div
 			class="
-				relative max-h-dvh w-full max-w-screen overflow-y-auto p-4 not-dark:border-c-neutral-2 max-md:w-screen max-md:max-h-[calc(100dvh-4rem)]
+				relative max-h-dvh w-full max-w-screen overflow-y-auto p-4 not-dark:border-c-neutral-2 max-md:w-screen max-md:max-h-[calc(100dvh-4rem)] max-md:h-[calc(100dvh-4rem)] bg-c-bg-modal not-dark:border-1 shadow-md dark:shadow-s-dark-shadow
 				{rounded ? 'md:rounded-' + rounded : ''}
 				{p ? 'md:p-' + p : 'md:p-4'}
 				{width ? 'md:w-' + width : ''}
-				{transparent ? '' : 'max-md:h-[calc(100dvh-4rem)]'}
 			"
 			class:z-30={!higherZIndex}
 			class:z-40={higherZIndex}
 			class:md:min-w-120={!small && !width}
-			class:bg-c-bg-modal={!transparent}
-			class:not-dark:border-1={!transparent}
-			class:shadow-md={!transparent}
-			class:dark:shadow-s-dark-shadow={!transparent}
 			in:scale|global={{ start: 0.75 }}
 		>
 			{#if showTitleOnMobile && title}
