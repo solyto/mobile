@@ -2,13 +2,19 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { Finances } from '$lib/state/Finances.svelte';
 import { apiRoutes } from '$lib/config/apiRoutes';
 import { api, resetStoreMocks } from '../setup/storeMocks';
+import type { BudgetInterval } from '$lib/types/finance';
+import type { Tag } from '$lib/types/tag';
 
 beforeEach(() => {
 	resetStoreMocks();
 });
 
-function budget(type: 'income' | 'expense', value: number) {
-	return { id: type + value, type, value, title: type, created_at: '', updated_at: '' } as never;
+function budget(type: 'income' | 'expense', value: number, interval?: BudgetInterval, tags: Tag[] = []) {
+	return { id: type + value, type, value, interval, tags, title: type, created_at: '', updated_at: '' } as never;
+}
+
+function tag(id: number, name: string): Tag {
+	return { id, name, color: '', created_at: '', updated_at: '' };
 }
 
 describe('Finances store', () => {
@@ -25,6 +31,54 @@ describe('Finances store', () => {
 			expect(f.income.map((i) => i.value)).toEqual([100, 50]);
 			expect(f.expenses.map((e) => e.value)).toEqual([30]);
 		});
+
+		it('orders each section by monthly amount, largest first', async () => {
+			api.list.mockResolvedValue({
+				data: [budget('expense', 120, 'yearly'), budget('expense', 15), budget('expense', 60, 'quarterly')]
+			});
+
+			const f = new Finances();
+			await f.loadIncome();
+
+			expect(f.expenses.map((e) => e.value)).toEqual([60, 15, 120]);
+		});
+
+		it('marks tags as unsupported when the server omits them', async () => {
+			api.list.mockResolvedValue({
+				data: [{ id: 1, type: 'income', value: 10, title: 'Salary', created_at: '', updated_at: '' }]
+			});
+
+			const f = new Finances();
+			await f.loadIncome();
+
+			expect(f.tagsSupported).toBe(false);
+			expect(f.income[0].tags).toEqual([]);
+		});
+
+		it('clears the selected tag when no budget item carries it anymore', async () => {
+			const solidarity = tag(1, 'solidarity');
+			api.list.mockResolvedValue({ data: [budget('income', 50, undefined, [solidarity])] });
+			const f = new Finances();
+			await f.loadIncome();
+			f.selectedTagId = solidarity.id;
+
+			api.list.mockResolvedValue({ data: [budget('income', 50)] });
+			await f.loadIncome();
+
+			expect(f.selectedTagId).toBeNull();
+		});
+
+		it('keeps the selected tag while a budget item still carries it', async () => {
+			const solidarity = tag(1, 'solidarity');
+			api.list.mockResolvedValue({ data: [budget('expense', 20, undefined, [solidarity])] });
+			const f = new Finances();
+			await f.loadIncome();
+			f.selectedTagId = solidarity.id;
+
+			await f.loadIncome();
+
+			expect(f.selectedTagId).toBe(solidarity.id);
+		});
 	});
 
 	describe('budget totals', () => {
@@ -36,6 +90,69 @@ describe('Finances store', () => {
 			expect(f.getBudgetIncomeTotal()).toBe(150);
 			expect(f.getBudgetExpenseTotal()).toBe(50);
 			expect(f.getBudgetTotal()).toBe(100);
+		});
+
+		it('converts yearly and quarterly items to monthly amounts', () => {
+			const f = new Finances();
+			f.income = [budget('income', 300, 'quarterly'), budget('income', 50)];
+			f.expenses = [budget('expense', 120, 'yearly'), budget('expense', 10, 'monthly')];
+
+			expect(f.getBudgetIncomeTotal()).toBe(150);
+			expect(f.getBudgetExpenseTotal()).toBe(20);
+			expect(f.getBudgetTotal()).toBe(130);
+		});
+	});
+
+	describe('budget totals filtered by tag', () => {
+		const solidarity = tag(1, 'solidarity');
+		const servers = tag(2, 'servers');
+
+		function taggedFinances(): Finances {
+			const f = new Finances();
+			f.income = [budget('income', 50, 'monthly', [solidarity]), budget('income', 1000)];
+			f.expenses = [
+				budget('expense', 20, 'monthly', [solidarity, servers]),
+				budget('expense', 120, 'yearly', [servers]),
+				budget('expense', 400)
+			];
+			return f;
+		}
+
+		it('computes the totals from the items with the selected tag only', () => {
+			const f = taggedFinances();
+			f.selectedTagId = solidarity.id;
+
+			expect(f.filteredIncome().map((i) => i.value)).toEqual([50]);
+			expect(f.filteredExpenses().map((e) => e.value)).toEqual([20]);
+			expect(f.getBudgetIncomeTotal()).toBe(50);
+			expect(f.getBudgetExpenseTotal()).toBe(20);
+			expect(f.getBudgetTotal()).toBe(30);
+		});
+
+		it('counts an item with two tags under each of them, yearly items monthly', () => {
+			const f = taggedFinances();
+			f.selectedTagId = servers.id;
+
+			expect(f.filteredExpenses().map((e) => e.value)).toEqual([20, 120]);
+			expect(f.getBudgetIncomeTotal()).toBe(0);
+			expect(f.getBudgetExpenseTotal()).toBe(30);
+			expect(f.getBudgetTotal()).toBe(-30);
+		});
+
+		it('computes the totals from every item when no tag is selected', () => {
+			const f = taggedFinances();
+
+			expect(f.filteredIncome()).toHaveLength(2);
+			expect(f.filteredExpenses()).toHaveLength(3);
+			expect(f.getBudgetIncomeTotal()).toBe(1050);
+			expect(f.getBudgetExpenseTotal()).toBe(430);
+			expect(f.getBudgetTotal()).toBe(620);
+		});
+
+		it('offers only the tags used on a budget item', () => {
+			const f = taggedFinances();
+
+			expect(f.availableTags()).toEqual([servers, solidarity]);
 		});
 	});
 

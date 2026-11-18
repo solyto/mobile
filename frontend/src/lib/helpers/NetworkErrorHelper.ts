@@ -1,5 +1,5 @@
 import { NetworkError, RateLimitedError } from '$lib/services/ApiService';
-import type { LayoutRecords, SettingsRecords } from '$lib/types/translation';
+import type { ClipboardRecords, LayoutRecords, SettingsRecords } from '$lib/types/translation';
 
 const NOTIFY_INTERVAL_MS = 5000;
 
@@ -42,12 +42,28 @@ export function rateLimitedMessage(retryAfter: number | null, layout: LayoutReco
 }
 
 export function exportRateLimitedMessage(retryAfter: number | null, settings: SettingsRecords): string {
-	if (retryAfter === null) return settings.export_rate_limited;
+	return waitInHoursMessage(
+		retryAfter,
+		settings.export_rate_limited,
+		settings.export_rate_limited_hours_singular,
+		settings.export_rate_limited_hours_plural
+	);
+}
+
+export function clipboardFileLimitMessage(retryAfter: number | null, clipboard: ClipboardRecords): string {
+	return waitInHoursMessage(
+		retryAfter,
+		clipboard.file_limit_reached,
+		clipboard.file_limit_reached_hours_singular,
+		clipboard.file_limit_reached_hours_plural
+	);
+}
+
+function waitInHoursMessage(retryAfter: number | null, plain: string, singular: string, plural: string): string {
+	if (retryAfter === null) return plain;
 
 	const hours = waitInUnits(retryAfter, 3600);
-	return hours === 1
-		? settings.export_rate_limited_hours_singular
-		: settings.export_rate_limited_hours_plural.replace('{n}', String(hours));
+	return hours === 1 ? singular : plural.replace('{n}', String(hours));
 }
 
 // Rounded up so the user never retries too early.

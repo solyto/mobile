@@ -78,11 +78,14 @@ export class MusicLibrary {
 	}
 
 	async load(): Promise<void> {
-		const res = await this.apiService.list(apiRoutes.libraries.music.list);
+		const [res, genresRes] = await Promise.all([
+			this.apiService.list(apiRoutes.libraries.music.list),
+			this.apiService.list(apiRoutes.libraries.music.listGenres)
+		]);
+		if (genresRes) this.genres = genresRes.data as MusicGenre[];
 		if (res) {
 			this.entries = res.data as Music[];
 			this.reapplyFilter();
-			await this.loadGenres();
 			this.loaded = true;
 		}
 		await this.loadIntegrations();
@@ -236,13 +239,13 @@ export class MusicLibrary {
 			request
 		);
 		if (res) await this.load();
-		return Promise.resolve(res !== null);
+		return res;
 	}
 
 	async delete(entry: Music): Promise<boolean> {
 		const res = await this.apiService.delete(apiRoutes.libraries.music.delete, entry.id);
 		if (res) await this.load();
-		return Promise.resolve(res !== null);
+		return res;
 	}
 
 	async updateRating(entry: Music, rating: number): Promise<boolean> {
@@ -253,7 +256,7 @@ export class MusicLibrary {
 			request
 		);
 		if (res) await this.load();
-		return Promise.resolve(res !== null);
+		return res;
 	}
 
 	async createGenre(title: string): Promise<MusicGenre | null> {
@@ -266,7 +269,7 @@ export class MusicLibrary {
 	async deleteGenre(genre: MusicGenre): Promise<boolean> {
 		const res = await this.apiService.delete(apiRoutes.libraries.music.deleteGenre, genre.id);
 		if (res) await this.loadGenres();
-		return Promise.resolve(res !== null);
+		return res;
 	}
 
 	async searchAt(provider: string, query: string): Promise<MusicSearchResult[] | null> {

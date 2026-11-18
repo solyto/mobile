@@ -307,6 +307,7 @@ const todos: TodoRecords = {
 	workspace_hide_it: 'Masquer',
 	new_category: 'Nouvelle catégorie',
 	rename_category: 'Renommer la catégorie',
+	rename_workspace: 'Renommer l\'espace de travail',
 	no_categories: 'Tu n\'as pas encore de catégories.',
 	new_workspace: 'Nouvel espace',
 	no_workspaces: 'Tu n\'as pas encore d\'espaces de travail.',
@@ -515,6 +516,8 @@ const notes: NoteRecords = {
 	remove_from_favorites: 'Retirer des favoris',
 	no_entries: 'Il semble qu\'il n\'y ait pas encore de notes.',
 	note_not_found: 'Cette note n\'existe pas.',
+	no_search_results: 'Aucune note trouvée.',
+	search_shortcut_hint: 'Rechercher dans les notes (Ctrl+K)',
 	insert_image: 'Insérer une image',
 	insert_image_url: 'URL',
 	insert_image_clipboard: 'Presse-papiers',
@@ -531,7 +534,10 @@ const notes: NoteRecords = {
 	yesterday: 'Hier',
 	other: 'Autre',
 	journal_empty: "Il n'y a pas encore d'entrée pour ce jour.",
-	journal_create_error: "Échec de la création de l'entrée du journal."
+	journal_create_error: "Échec de la création de l'entrée du journal.",
+	move_note: 'Déplacer vers un dossier',
+	no_folder: 'Aucun dossier',
+	move_error: 'Échec du déplacement de la note.'
 };
 
 const libraries: LibraryRecords = {
@@ -622,6 +628,7 @@ const libraries: LibraryRecords = {
 		search_placeholder: 'Titre du film ou de la série...'
 	},
 	games: {
+		update_error: 'Impossible de modifier le jeu.',
 		title: 'Titre',
 		platform: 'Plateforme',
 		platform_pc: 'PC',
@@ -705,6 +712,7 @@ const libraries: LibraryRecords = {
 		update_error: 'Impossible de modifier la recette.'
 	},
 	plants: {
+		update_error: 'Impossible de modifier la plante.',
 		name: 'Nom',
 		latin_name: 'Nom latin',
 		location: 'Emplacement',
@@ -816,7 +824,9 @@ const dev: DevRecords = {
 		fixed_in: 'Corrigé dans %s',
 		fixed_in_included: 'Corrigé dans %s ✓',
 		fixed_in_pending: 'Corrigé dans %s · mise à jour en attente',
-		fixed_in_current_version: 'Ta version : %s'
+		fixed_in_current_version: 'Ta version : %s',
+		filter_all: 'Toutes',
+		filter_open: 'Ouvertes'
 	}
 };
 
@@ -845,7 +855,22 @@ const finances: FinanceRecords = {
 	delete_value_label: 'Supprimer l\'entrée',
 	delete_value_message: 'Veux-tu vraiment supprimer cette entrée ?',
 	delete_item: 'Supprimer %s',
-	delete_item_message: 'Veux-tu vraiment supprimer %s et toutes ses entrées ?'
+	delete_item_message: 'Veux-tu vraiment supprimer %s et toutes ses entrées ?',
+	interval: 'Fréquence',
+	interval_monthly: 'Mensuel',
+	interval_quarterly: 'Trimestriel',
+	interval_yearly: 'Annuel',
+	per_month: '/ mois',
+	per_quarter: '/ trimestre',
+	per_year: '/ an',
+	range_1y: '1 an',
+	range_3y: '3 ans',
+	range_5y: '5 ans',
+	range_all: 'Tout',
+	tags: 'Tags',
+	tag_error: "Le tag n'a pas pu être créé",
+	all_tags: 'Tous les tags',
+	tag_filter: 'Filtrer par tag'
 };
 
 
@@ -1140,7 +1165,16 @@ const clipboard: ClipboardRecords = {
 	image_too_large: 'L\'image n\'a pas pu être envoyée. Elle est peut-être trop volumineuse.',
 	image_reduce: 'Réduire la taille',
 	image_copy_success: 'Image copiée dans le presse-papiers',
-	image_copy_error: 'Échec de la copie de l\'image'
+	image_copy_error: 'Échec de la copie de l\'image',
+	file_save_success: 'Fichier enregistré',
+	file_save_error: 'Échec de l\'enregistrement du fichier',
+	file_too_large: 'Les fichiers ne peuvent pas dépasser 10 Mo.',
+	file_invalid_type: 'Ce type de fichier n\'est pas pris en charge.',
+	file_limit_reached: 'Tu peux envoyer 10 fichiers par jour.',
+	file_limit_reached_hours_singular: 'Tu peux envoyer 10 fichiers par jour. Réessaie dans 1 heure.',
+	file_limit_reached_hours_plural: 'Tu peux envoyer 10 fichiers par jour. Réessaie dans {n} heures.',
+	file_download_error: 'Échec du téléchargement du fichier',
+	image_load_error: "Impossible de charger l'image"
 };
 
 const dav: DavRecords = {

@@ -18,6 +18,7 @@
 		spellcheck,
 		autocomplete,
 		ariaDescribedby,
+		maxlength,
 		class: customClass = ''
 	}: {
 		input?: HTMLInputElement | HTMLTextAreaElement | null;
@@ -36,6 +37,7 @@
 		spellcheck?: boolean;
 		autocomplete?: HTMLInputAttributes['autocomplete'];
 		ariaDescribedby?: string;
+		maxlength?: number;
 		class?: string;
 	} = $props();
 </script>
@@ -58,6 +60,7 @@
 		{spellcheck}
 		{autocomplete}
 		aria-describedby={ariaDescribedby}
+		{maxlength}
 	/>
 {:else}
 	<textarea
@@ -76,5 +79,6 @@
 		{spellcheck}
 		{autocomplete}
 		aria-describedby={ariaDescribedby}
+		{maxlength}
 	></textarea>
 {/if}

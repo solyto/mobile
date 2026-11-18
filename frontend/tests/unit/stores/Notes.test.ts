@@ -83,6 +83,15 @@ function mockLists(lists: Lists): void {
 	});
 }
 
+// Like the real API, every call returns new objects, so local edits never leak into the "server" copy.
+function mockServerNotes(notes: Note[]): void {
+	api.list.mockImplementation((url: string) =>
+		Promise.resolve({
+			data: url.endsWith('/notes/hidden') ? [] : notes.map((n) => structuredClone(n))
+		})
+	);
+}
+
 beforeEach(() => {
 	resetStoreMocks();
 	pageState.pathname = '/notes';
@@ -187,6 +196,21 @@ describe('Notes store', () => {
 			expect(n.activeNote?.id).toBe('2');
 		});
 
+		it('selectNote takes the server content of a different note', async () => {
+			mockServerNotes([
+				note({ id: '1', content: '<p>one</p>' }),
+				note({ id: '2', content: '<p>two</p>' })
+			]);
+			const n = new NotesSvelte();
+			await n.load();
+			n.selectNote('1');
+			n.activeNote!.content = '<p>one, edited</p>';
+
+			n.selectNote('2');
+
+			expect(n.activeNote?.content).toBe('<p>two</p>');
+		});
+
 		it('selectNote clears the active note when the id is unknown', () => {
 			const n = new NotesSvelte();
 			n.notes = [note({ id: '1' })];
@@ -200,6 +224,172 @@ describe('Notes store', () => {
 			n.notes = [note({ id: 'n7' }), note({ id: 'n8' })];
 			n.checkUrlForActiveNote();
 			expect(n.activeNote?.id).toBe('n7');
+		});
+	});
+
+	describe('reload of the open note', () => {
+		const tag = { id: 4, name: 'work', color: '#000', created_at: '', updated_at: '' };
+
+		async function openNote(server: Note): Promise<NotesSvelte> {
+			pageState.params = { id: server.id };
+			mockServerNotes([server]);
+			const n = new NotesSvelte();
+			await n.load();
+			n.activeNote!.content = '<p>old</p><p>typed</p>';
+			api.update.mockResolvedValue(true);
+			return n;
+		}
+
+		it('updateFavoriteStatus keeps the local content and takes the server favourite', async () => {
+			const server = note({ content: '<p>old</p>' });
+			const n = await openNote(server);
+			server.is_favorite = true;
+
+			await n.updateFavoriteStatus(n.activeNote!, true);
+
+			expect(n.activeNote?.content).toBe('<p>old</p><p>typed</p>');
+			expect(n.activeNote?.is_favorite).toBe(true);
+		});
+
+		it('changeTitle keeps the local content and takes the server title', async () => {
+			const server = note({ content: '<p>old</p>' });
+			const n = await openNote(server);
+			server.title = 'Renamed';
+
+			await n.changeTitle('Renamed');
+
+			expect(n.activeNote?.content).toBe('<p>old</p><p>typed</p>');
+			expect(n.activeNote?.title).toBe('Renamed');
+		});
+
+		it('addTag keeps the local content and takes the server tags', async () => {
+			const server = note({ content: '<p>old</p>' });
+			const n = await openNote(server);
+			server.tags = [tag];
+
+			await n.addTag(tag.id);
+
+			expect(n.activeNote?.content).toBe('<p>old</p><p>typed</p>');
+			expect(n.activeNote?.tags).toEqual([tag]);
+		});
+
+		it('saveContent keeps content typed while the save is pending', async () => {
+			const server = note({ content: '<p>old</p>' });
+			const n = await openNote(server);
+			let resolveUpdate!: (value: boolean) => void;
+			api.update.mockReturnValueOnce(new Promise((resolve) => (resolveUpdate = resolve)));
+
+			const saving = n.saveContent();
+			n.activeNote!.content = '<p>old</p><p>typed</p><p>more</p>';
+			server.content = '<p>old</p><p>typed</p>';
+			resolveUpdate(true);
+			await saving;
+
+			expect(api.update).toHaveBeenCalledWith(expect.stringContaining('/notes'), 'n1', {
+				content: '<p>old</p><p>typed</p>'
+			});
+			expect(n.activeNote?.content).toBe('<p>old</p><p>typed</p><p>more</p>');
+		});
+	});
+
+	describe('search', () => {
+		function searchable(): NotesSvelte {
+			const n = new NotesSvelte();
+			n.journalCategory = category(9, 'Journal', { is_system: true });
+			n.notes = [
+				note({ id: '1', title: 'Milk prices' }),
+				note({ id: '2', title: 'Shopping', content: '<p>buy milk</p>' }),
+				note({ id: '3', title: '2026-01-01', content: '<p>milk</p>', category_id: 9 }),
+				note({ id: '4', title: 'Ideas' })
+			];
+			return n;
+		}
+
+		it('search fills the results from visible notes and resets the selection', () => {
+			const n = searchable();
+			n.searchIndex = 1;
+			n.searchTerm = 'milk';
+			n.search();
+
+			expect(n.searchResults.map((x) => x.id)).toEqual(['1', '2']);
+			expect(n.searchIndex).toBe(0);
+		});
+
+		it('search caps the results at the limit', () => {
+			const n = new NotesSvelte();
+			n.notes = Array.from({ length: 12 }, (_, i) => note({ id: String(i), title: `Note ${i}` }));
+			n.searchTerm = 'note';
+			n.search();
+
+			expect(n.searchResults).toHaveLength(NotesSvelte.SEARCH_RESULT_LIMIT);
+		});
+
+		it('moveSearchSelection stays within the results', () => {
+			const n = searchable();
+			n.searchTerm = 'milk';
+			n.search();
+
+			n.moveSearchSelection(-1);
+			expect(n.searchIndex).toBe(0);
+			n.moveSearchSelection(1);
+			expect(n.searchIndex).toBe(1);
+			n.moveSearchSelection(1);
+			expect(n.searchIndex).toBe(1);
+		});
+
+		it('moveSearchSelection keeps the index at 0 without results', () => {
+			const n = searchable();
+			n.moveSearchSelection(1);
+			expect(n.searchIndex).toBe(0);
+		});
+
+		it('closeSearch hides and clears the search', () => {
+			const n = searchable();
+			n.openSearch();
+			n.searchTerm = 'milk';
+			n.search();
+			n.moveSearchSelection(1);
+			n.closeSearch();
+
+			expect(n.searchVisible).toBe(false);
+			expect(n.searchTerm).toBe('');
+			expect(n.searchResults).toEqual([]);
+			expect(n.searchIndex).toBe(0);
+		});
+
+		it('openSearchResult opens the highlighted note and closes the search', async () => {
+			const n = searchable();
+			n.openSearch();
+			n.searchTerm = 'milk';
+			n.search();
+			n.moveSearchSelection(1);
+			await n.openSearchResult();
+
+			expect(n.activeNote?.id).toBe('2');
+			expect(n.searchVisible).toBe(false);
+			expect(n.searchTerm).toBe('');
+			expect(navigation.goto).toHaveBeenCalledWith('/notes/2');
+		});
+
+		it('openSearchResult opens the given note', async () => {
+			const n = searchable();
+			n.searchTerm = 'milk';
+			n.search();
+			await n.openSearchResult(n.searchResults[1]);
+
+			expect(n.activeNote?.id).toBe('2');
+			expect(navigation.goto).toHaveBeenCalledWith('/notes/2');
+		});
+
+		it('openSearchResult does nothing without results', async () => {
+			const n = searchable();
+			n.openSearch();
+			n.searchTerm = 'nothing';
+			n.search();
+			await n.openSearchResult();
+
+			expect(n.searchVisible).toBe(true);
+			expect(navigation.goto).not.toHaveBeenCalled();
 		});
 	});
 
@@ -221,6 +411,60 @@ describe('Notes store', () => {
 			expect(n.createParent).toBeNull();
 			expect(n.createType).toBe('note');
 			expect(n.modalOpen).toBe(true);
+		});
+	});
+
+	describe('move', () => {
+		it('openMoveNoteModal picks the note by id and closes the right-click menu', () => {
+			const n = new NotesSvelte();
+			n.notes = [note({ id: 'n1' }), note({ id: 'n2', category_id: 3 })];
+			n.rightClickMenuOpen = true;
+			n.openMoveNoteModal('n2');
+
+			expect(n.noteToMove?.id).toBe('n2');
+			expect(n.rightClickMenuOpen).toBe(false);
+		});
+
+		it('closeMoveNoteModal clears the note to move', () => {
+			const n = new NotesSvelte();
+			n.notes = [note({ id: 'n1' })];
+			n.openMoveNoteModal('n1');
+			n.closeMoveNoteModal();
+
+			expect(n.noteToMove).toBeNull();
+		});
+
+		it('moveToCategory sends the target folder and reloads', async () => {
+			api.update.mockResolvedValue(true);
+			mockLists({ notes: [note({ id: 'n1', category_id: 5 })], hiddenNotes: [] });
+
+			const n = new NotesSvelte();
+			await expect(n.moveToCategory('n1', 5)).resolves.toBe(true);
+
+			expect(api.update).toHaveBeenCalledWith(expect.stringContaining('/notes'), 'n1', {
+				category_id: 5
+			});
+			expect(n.notes[0].category_id).toBe(5);
+		});
+
+		it('moveToCategory sends null to move a note out of every folder', async () => {
+			api.update.mockResolvedValue(true);
+			mockLists({ notes: [], hiddenNotes: [] });
+
+			const n = new NotesSvelte();
+			await n.moveToCategory('n1', null);
+
+			expect(api.update).toHaveBeenCalledWith(expect.stringContaining('/notes'), 'n1', {
+				category_id: null
+			});
+		});
+
+		it('moveToCategory does not reload when the request fails', async () => {
+			api.update.mockResolvedValue(false);
+
+			const n = new NotesSvelte();
+			await expect(n.moveToCategory('n1', 5)).resolves.toBe(false);
+			expect(api.list).not.toHaveBeenCalled();
 		});
 	});
 

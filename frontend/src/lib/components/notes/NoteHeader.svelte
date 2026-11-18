@@ -8,6 +8,7 @@
 	import { getKeyManager } from '$lib/state/KeyManager.svelte';
 	import { onDestroy, onMount, tick } from 'svelte';
 	import IconStar from '@lucide/svelte/icons/star';
+	import IconFolderInput from '@lucide/svelte/icons/folder-input';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
 	import ConfirmationModal from '$lib/components/ui/ConfirmationModal.svelte';
 	import DeleteButton from '$lib/components/ui/buttons/DeleteButton.svelte';
@@ -20,6 +21,8 @@
 	const loadingIndicator = getLoadingIndicator();
 	const notifications = getUiNotifications();
 	const keyManager = getKeyManager();
+
+	const ICON_BUTTON = 'flex cursor-pointer items-center justify-center rounded-sm p-1.5 transition-all hover:bg-c-neutral dark:hover:bg-s-dark-3';
 
 	let { isJournal = false }: {
 		isJournal?: boolean;
@@ -66,6 +69,10 @@
 		loadingIndicator.start();
 		await notes.updateFavoriteStatus(note, !note.is_favorite);
 		loadingIndicator.stop();
+	}
+
+	function openMoveNoteModal(): void {
+		notes.openMoveNoteModal(notes.activeNote!.id);
 	}
 
 	async function toggleChangeTitle(): Promise<void> {
@@ -118,14 +125,12 @@
 		return auth.getTimeInUserPreferredFormat(date);
 	}
 
-	let deleteModalOpen = $state<boolean>(false);
-
 	async function onDeleteConfirm(): Promise<void> {
 		loadingIndicator.start();
 		const ok = await notes.deleteActiveNote();
 		if (ok) notifications.success(ts.get.notes.delete_success);
 		loadingIndicator.stop();
-		deleteModalOpen = false;
+		notes.deleteNoteModalOpen = false;
 	}
 
 	onMount(() => {
@@ -182,7 +187,14 @@
 			>
 				{#if !isJournal}
 					<button
-						class="flex cursor-pointer items-center justify-center rounded-sm p-1.5 transition-all hover:bg-c-neutral dark:hover:bg-s-dark-3"
+						class="{ICON_BUTTON} text-c-neutral-4"
+						title={ts.get.notes.move_note}
+						onclick={openMoveNoteModal}
+					>
+						<IconFolderInput size={16} />
+					</button>
+					<button
+						class={ICON_BUTTON}
 						class:text-c-action={notes.activeNote.is_favorite}
 						class:text-c-neutral-4={!notes.activeNote.is_favorite}
 						title={notes.activeNote.is_favorite
@@ -201,7 +213,7 @@
 				{#if !isDraft}
 					<DeleteButton
 						onClick={() => {
-							deleteModalOpen = true;
+							notes.deleteNoteModalOpen = true;
 						}}
 						inModal={false}
 						buttonStyle="plain"
@@ -216,14 +228,14 @@
 	</div>
 {/if}
 
-{#if deleteModalOpen}
+{#if notes.deleteNoteModalOpen}
 	<ConfirmationModal
 		title={ts.get.notes.delete_confirm_label}
 		description={ts.get.notes.delete_confirm_message}
 		type="confirm-delete"
 		onConfirm={onDeleteConfirm}
 		onCancel={() => {
-			deleteModalOpen = false;
+			notes.deleteNoteModalOpen = false;
 		}}
 	/>
 {/if}

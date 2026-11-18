@@ -9,6 +9,7 @@
 	import type { ExportStatus } from '$lib/types/export';
 	import { RateLimitedError } from '$lib/services/ApiService';
 	import { exportRateLimitedMessage } from '$lib/helpers/NetworkErrorHelper';
+	import { downloadBlob } from '$lib/helpers/DownloadHelper';
 
 	const ts = getTranslation();
 	const auth = getAuth();
@@ -110,11 +111,7 @@
 			uiNotifications.error(ts.get.settings.export_download_failed);
 			return;
 		}
-		const a = document.createElement('a');
-		a.href = URL.createObjectURL(blob);
-		a.download = 'export_' + exportStatus.id + '.zip';
-		a.click();
-		URL.revokeObjectURL(a.href);
+		downloadBlob(blob, 'export_' + exportStatus.id + '.zip');
 	}
 </script>
 

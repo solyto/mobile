@@ -23,3 +23,13 @@ export function hasMeaningfulDescription(html: string): boolean {
 	const links = body.querySelectorAll('a');
 	return links.length !== 1 || links[0].textContent?.trim() !== text;
 }
+
+export function formatFileSize(bytes: number, locale: string): string {
+	const [value, unit] = bytes < 1024 * 1024 ? [bytes / 1024, 'kilobyte'] : [bytes / (1024 * 1024), 'megabyte'];
+	return new Intl.NumberFormat(locale, { style: 'unit', unit, maximumFractionDigits: 1 }).format(value);
+}
+
+export function getFileExtension(fileName: string): string {
+	const dot = fileName.lastIndexOf('.');
+	return dot > 0 ? fileName.slice(dot + 1).toLowerCase() : '';
+}

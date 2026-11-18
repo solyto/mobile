@@ -32,6 +32,7 @@ export class Feeds {
 	browseOpen = $state<boolean>(false);
 	view = $state<FeedEntrySize>('compact');
 	inLibrary = $state<string[]>([]);
+	private generation = 0;
 	auth: Auth;
 	apiService: ApiService;
 	localStorage: LocalStorageService;
@@ -65,9 +66,7 @@ export class Feeds {
 
 		if (res) {
 			this.feeds = res.data as FeedSubscription[];
-			this.items = [];
-			this.offset = 0;
-			this.hasMore = true;
+			this.resetItems();
 
 			await this.loadMore();
 
@@ -78,11 +77,17 @@ export class Feeds {
 
 	async loadMore(): Promise<void> {
 		if (!this.hasMore || this.loadingMore) return;
+		const generation = this.generation;
 		this.loadingMore = true;
 
+		const feedFilter = this.activeFeed
+			? `&feed_id=${encodeURIComponent(this.activeFeed.feed_id)}`
+			: '';
 		const res = await this.apiService.list(
-			`${apiRoutes.feeds.listItems}?offset=${this.offset}&limit=${Feeds.ITEMS_PER_PAGE}`
+			`${apiRoutes.feeds.listItems}?offset=${this.offset}&limit=${Feeds.ITEMS_PER_PAGE}${feedFilter}`
 		);
+
+		if (generation !== this.generation) return;
 
 		if (res) {
 			const newItems = res.data as FeedItem[];
@@ -94,10 +99,6 @@ export class Feeds {
 
 		this.loadingMore = false;
 		this.filter();
-
-		if (this.activeFeed && this.filteredItems.length < Feeds.ITEMS_PER_PAGE && this.hasMore) {
-			await this.loadMore();
-		}
 	}
 
 	filter(): void {
@@ -111,11 +112,8 @@ export class Feeds {
 
 	selectFeed(feed: FeedSubscription | null): void {
 		this.activeFeed = feed;
-		this.filter();
-
-		if (feed && this.filteredItems.length < Feeds.ITEMS_PER_PAGE && this.hasMore) {
-			this.loadMore();
-		}
+		this.resetItems();
+		this.loadMore();
 	}
 
 	getFeedCount(feed: FeedSubscription): number {
@@ -171,7 +169,7 @@ export class Feeds {
 	async update(feed: FeedSubscription, request: UpdateFeedSubscriptionRequest): Promise<boolean> {
 		const res = await this.apiService.update(apiRoutes.feeds.update, feed.id, request);
 		if (res) await this.load();
-		return Promise.resolve(res !== null);
+		return res;
 	}
 
 	async delete(feed: FeedSubscription): Promise<boolean> {
@@ -208,6 +206,16 @@ export class Feeds {
 	async loadFriendFeeds(): Promise<FriendFeed[]> {
 		const res = await this.apiService.list(apiRoutes.feeds.friendFeeds);
 		return res ? (res.data as FriendFeed[]) : [];
+	}
+
+	// Bumping the generation makes loadMore() drop responses to requests started before the reset.
+	private resetItems(): void {
+		this.generation++;
+		this.items = [];
+		this.filteredItems = [];
+		this.offset = 0;
+		this.hasMore = true;
+		this.loadingMore = false;
 	}
 }
 

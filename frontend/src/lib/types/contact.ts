@@ -39,6 +39,7 @@ export interface Contact {
 	etag: string;
 	address_book_id: number;
 	address_book_color: string;
+	has_photo?: boolean;
 }
 
 export interface CreateContactForm {

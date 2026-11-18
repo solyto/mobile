@@ -1,6 +1,15 @@
 import type { WealthField } from '$lib/types/finance';
 import { formatMonth, getUrlFormat } from '$lib/helpers/DateHelper';
 
+export type WealthRange = number | 'all';
+
+export const wealthRanges = { '1y': 12, '3y': 36, '5y': 60, all: 'all' } as const satisfies Record<
+	string,
+	WealthRange
+>;
+
+export type WealthRangeKey = keyof typeof wealthRanges;
+
 export default class WealthStatisticsService {
 	data: WealthField[] = [];
 
@@ -8,40 +17,25 @@ export default class WealthStatisticsService {
 		this.data = data;
 	}
 
-	getGraphValues(): { date: string; values: { field: string; value: number }[] }[] {
-		const currentDate = new Date();
-		const lastValues: Record<number, number> = {};
-
-		for (const field of this.data) {
-			if (field.currentValue) {
-				lastValues[field.id] = field.currentValue.value;
-			} else {
-				lastValues[field.id] = 0;
-			}
-		}
+	getGraphValues(range: WealthRange): { date: string; values: { field: string; value: number }[] }[] {
+		const today = new Date();
+		const firstMonth = this.getFirstMonth(range, today);
+		const monthCount =
+			(today.getFullYear() - firstMonth.getFullYear()) * 12 + today.getMonth() - firstMonth.getMonth() + 1;
+		const firstMonthStr = getUrlFormat(firstMonth).substring(0, 7);
 
 		const refinedResult: { date: string; values: { field: string; value: number }[] }[] = [];
-
-		const startDate = new Date(currentDate);
-		startDate.setMonth(startDate.getMonth() - 11);
-
 		const currentFieldValues: Record<number, number> = {};
 
 		for (const field of this.data) {
-			const pastValues = field.values.filter((v) => new Date(v.date) < startDate);
-			pastValues.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-
-			if (pastValues.length > 0) {
-				currentFieldValues[field.id] = pastValues[0].value;
-			} else {
-				currentFieldValues[field.id] = 0;
-			}
+			const pastValues = field.values.filter((v) => v.date.substring(0, 7) < firstMonthStr);
+			pastValues.sort((a, b) => b.date.localeCompare(a.date));
+			currentFieldValues[field.id] = pastValues.length > 0 ? pastValues[0].value : 0;
 		}
 
-		for (let i = 11; i >= 0; i--) {
-			const date = new Date(currentDate);
-			date.setMonth(date.getMonth() - i);
-			const monthStr = getUrlFormat(date).substring(0, 7); // YYYY-MM
+		for (let i = 0; i < monthCount; i++) {
+			const date = new Date(firstMonth.getFullYear(), firstMonth.getMonth() + i, 1);
+			const monthStr = getUrlFormat(date).substring(0, 7);
 
 			const entry = {
 				date: getUrlFormat(date),
@@ -49,14 +43,10 @@ export default class WealthStatisticsService {
 			};
 
 			for (const field of this.data) {
-				const valuesInThisMonth = field.values.filter((v) =>
-					getUrlFormat(new Date(v.date)).startsWith(monthStr)
-				);
+				const valuesInThisMonth = field.values.filter((v) => v.date.startsWith(monthStr));
 
 				if (valuesInThisMonth.length > 0) {
-					valuesInThisMonth.sort(
-						(a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-					);
+					valuesInThisMonth.sort((a, b) => b.date.localeCompare(a.date));
 					currentFieldValues[field.id] = valuesInThisMonth[0].value;
 				}
 
@@ -66,6 +56,21 @@ export default class WealthStatisticsService {
 		}
 
 		return refinedResult;
+	}
+
+	private getFirstMonth(range: WealthRange, today: Date): Date {
+		if (range !== 'all') return new Date(today.getFullYear(), today.getMonth() - range + 1, 1);
+
+		const currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+		const earliest = this.data
+			.flatMap((field) => field.values.map((v) => v.date))
+			.reduce<string | null>((min, date) => (min === null || date < min ? date : min), null);
+		if (earliest === null) return currentMonth;
+
+		const [year, month] = earliest.split('-').map(Number);
+		const earliestMonth = new Date(year, month - 1, 1);
+		return earliestMonth < currentMonth ? earliestMonth : currentMonth;
 	}
 
 	// Points are dated `Y-m-d`; built as a local date so the month cannot shift with the timezone.

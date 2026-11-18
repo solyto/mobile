@@ -16,11 +16,13 @@ import { urls } from '$lib/config/urls';
 import { resolve } from '$app/paths';
 import ApiService from '$lib/services/ApiService';
 import JournalService from '$lib/services/JournalService';
+import NoteSearchService from '$lib/services/NoteSearchService';
 import LocalStorageService from '$lib/services/LocalStorageService';
 import { apiRoutes } from '$lib/config/apiRoutes';
 
 export class NotesSvelte {
 	static readonly LS_COLLAPSED_CATEGORIES_KEY: string = 'notes.collapsedCategories';
+	static readonly SEARCH_RESULT_LIMIT: number = 10;
 
 	loaded = $state<boolean>(false);
 	notes = $state<Note[]>([]);
@@ -31,6 +33,7 @@ export class NotesSvelte {
 	collapsedCategories = $state<number[]>([]);
 	activeNote = $state<Note | null>(null);
 	modalOpen = $state<boolean>(false);
+	deleteNoteModalOpen = $state<boolean>(false);
 	createType = $state<'note' | 'category'>('note');
 	createParent = $state<number | null>(null);
 	rightClickMenuOpen = $state<boolean>(false);
@@ -40,14 +43,20 @@ export class NotesSvelte {
 	rightClickId = $state<number | string | null>(null);
 	draggedNote = $state<Note | null>(null);
 	dragTarget = $state<NoteCategory | null>(null);
+	noteToMove = $state<Note | null>(null);
 	input = $state<HTMLInputElement | null>(null);
 	inputValue = $state<string>('');
+	searchVisible = $state<boolean>(false);
+	searchTerm = $state<string>('');
+	searchResults = $state<Note[]>([]);
+	searchIndex = $state<number>(0);
 	auth: Auth;
 	ts: Translation;
 	notifications: UiNotifications;
 	apiService: ApiService;
 	localStorage: LocalStorageService;
 	journalService = new JournalService();
+	searchService = new NoteSearchService();
 
 	constructor(
 		auth: Auth = getAuth(),
@@ -204,7 +213,43 @@ export class NotesSvelte {
 	}
 
 	selectNote(noteId: string): void {
+		// The editor is not remounted for the same id, so it still shows (and saves) its own content.
+		const localContent = this.activeNote?.id === noteId ? this.activeNote.content : null;
 		this.activeNote = this.notes.find((n) => n.id === noteId) ?? null;
+		if (this.activeNote !== null && localContent !== null) this.activeNote.content = localContent;
+	}
+
+	openSearch(): void {
+		this.searchVisible = true;
+	}
+
+	closeSearch(): void {
+		this.searchVisible = false;
+		this.searchTerm = '';
+		this.searchResults = [];
+		this.searchIndex = 0;
+	}
+
+	search(): void {
+		this.searchResults = this.searchService.search(
+			this.getVisibleNotes(),
+			this.searchTerm,
+			NotesSvelte.SEARCH_RESULT_LIMIT
+		);
+		this.searchIndex = 0;
+	}
+
+	moveSearchSelection(delta: number): void {
+		const last = Math.max(this.searchResults.length - 1, 0);
+		this.searchIndex = Math.min(Math.max(this.searchIndex + delta, 0), last);
+	}
+
+	async openSearchResult(note: Note | undefined = this.searchResults[this.searchIndex]): Promise<void> {
+		if (note === undefined) return;
+
+		this.selectNote(note.id);
+		this.closeSearch();
+		await goto(resolve(urls.note, { id: note.id }));
 	}
 
 	async openModal(type: 'note' | 'category', edit: boolean = false): Promise<void> {
@@ -232,12 +277,10 @@ export class NotesSvelte {
 		await this.openModal('note');
 	}
 
-	openRightClickMenu(event: MouseEvent, type: 'note' | 'category', id: number | string): void {
-		event.preventDefault();
-
+	openRightClickMenu(x: number, y: number, type: 'note' | 'category', id: number | string): void {
 		this.rightClickType = type;
-		this.rightClickMenuX = event.clientX;
-		this.rightClickMenuY = event.clientY;
+		this.rightClickMenuX = x;
+		this.rightClickMenuY = y;
 		this.rightClickId = id;
 		this.createParent = type === 'category' ? id as number : null;
 		this.rightClickMenuOpen = true;
@@ -247,19 +290,20 @@ export class NotesSvelte {
 		this.rightClickMenuOpen = false;
 	}
 
-	async dragToCategory(): Promise<void> {
-		if (this.draggedNote === null) return;
+	openMoveNoteModal(noteId: string): void {
+		this.noteToMove = this.notes.find((n) => n.id === noteId) ?? null;
+		this.closeRightClickMenu();
+	}
 
-		const request: UpdateNoteRequest = {
-			category_id: this.dragTarget ? this.dragTarget.id : null
-		};
-		const ok = await this.apiService.update(
-			apiRoutes.notes.update,
-			this.draggedNote.id,
-			request
-		);
+	closeMoveNoteModal(): void {
+		this.noteToMove = null;
+	}
+
+	async moveToCategory(noteId: string, categoryId: number | null): Promise<boolean> {
+		const request: UpdateNoteRequest = { category_id: categoryId };
+		const ok = await this.apiService.update(apiRoutes.notes.update, noteId, request);
 		if (ok) await this.load();
-		return Promise.resolve();
+		return ok;
 	}
 
 	async create(): Promise<Note | null> {

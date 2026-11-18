@@ -8,6 +8,7 @@ import { QuoteLibrary } from '$lib/state/QuoteLibrary.svelte';
 import { RecipeLibrary } from '$lib/state/RecipeLibrary.svelte';
 import { LinkLibrary } from '$lib/state/LinkLibrary.svelte';
 import { api, storage, resetStoreMocks } from '../setup/storeMocks';
+import { apiRoutes } from '$lib/config/apiRoutes';
 import type { Book, BookGenre } from '$lib/types/library_book';
 import type { Music, MusicGenre } from '$lib/types/library_music';
 import type { Movie, MovieGenre } from '$lib/types/library_movie';
@@ -189,6 +190,14 @@ const genre = (id: number, title: string): BookGenre & MusicGenre & MovieGenre &
 	created_at: '',
 	updated_at: ''
 });
+
+function deferListRequests(routes: string[]): Map<string, (value: unknown) => void> {
+	const pending = new Map<string, (value: unknown) => void>();
+	api.list.mockImplementation((route: string) =>
+		routes.includes(route) ? new Promise((resolve) => pending.set(route, resolve)) : Promise.resolve(null)
+	);
+	return pending;
+}
 
 beforeEach(() => {
 	resetStoreMocks();
@@ -861,5 +870,134 @@ describe('LinkLibrary', () => {
 		await s.deleteCategory(work);
 
 		expect(s.activeFilter).toBe(2);
+	});
+});
+
+describe('library mutations', () => {
+	const cases = [
+		{ name: 'BookLibrary.update', api: api.update, run: () => new BookLibrary().update(book(), {}) },
+		{ name: 'BookLibrary.delete', api: api.delete, run: () => new BookLibrary().delete(book()) },
+		{ name: 'BookLibrary.updateRating', api: api.update, run: () => new BookLibrary().updateRating(book(), 5) },
+		{ name: 'BookLibrary.deleteGenre', api: api.delete, run: () => new BookLibrary().deleteGenre(genre(1, 'Fantasy')) },
+		{ name: 'MovieLibrary.update', api: api.update, run: () => new MovieLibrary().update(movie(), {}) },
+		{ name: 'MovieLibrary.delete', api: api.delete, run: () => new MovieLibrary().delete(movie()) },
+		{ name: 'MovieLibrary.updateRating', api: api.update, run: () => new MovieLibrary().updateRating(movie(), 5) },
+		{ name: 'MovieLibrary.deleteGenre', api: api.delete, run: () => new MovieLibrary().deleteGenre(genre(1, 'Sci-Fi')) },
+		{ name: 'MusicLibrary.update', api: api.update, run: () => new MusicLibrary().update(music(), {}) },
+		{ name: 'MusicLibrary.delete', api: api.delete, run: () => new MusicLibrary().delete(music()) },
+		{ name: 'MusicLibrary.updateRating', api: api.update, run: () => new MusicLibrary().updateRating(music(), 5) },
+		{ name: 'MusicLibrary.deleteGenre', api: api.delete, run: () => new MusicLibrary().deleteGenre(genre(1, 'Rock')) },
+		{ name: 'GameLibrary.update', api: api.update, run: () => new GameLibrary().update(game(), {}) },
+		{ name: 'GameLibrary.delete', api: api.delete, run: () => new GameLibrary().delete(game()) },
+		{ name: 'GameLibrary.updateRating', api: api.update, run: () => new GameLibrary().updateRating(game(), 5) },
+		{ name: 'GameLibrary.deleteGenre', api: api.delete, run: () => new GameLibrary().deleteGenre(genre(1, 'RPG')) },
+		{ name: 'RecipeLibrary.update', api: api.update, run: () => new RecipeLibrary().update(recipe(), {}) },
+		{ name: 'RecipeLibrary.delete', api: api.delete, run: () => new RecipeLibrary().delete(recipe()) },
+		{ name: 'RecipeLibrary.updateRating', api: api.update, run: () => new RecipeLibrary().updateRating(recipe(), 5) },
+		{ name: 'PlantLibrary.update', api: api.update, run: () => new PlantLibrary().update(plant(), {}) },
+		{ name: 'PlantLibrary.delete', api: api.delete, run: () => new PlantLibrary().delete(plant()) },
+		{ name: 'QuoteLibrary.update', api: api.update, run: () => new QuoteLibrary().update(quote(), {}) },
+		{ name: 'QuoteLibrary.delete', api: api.delete, run: () => new QuoteLibrary().delete(quote()) },
+		{ name: 'LinkLibrary.update', api: api.update, run: () => new LinkLibrary().update(link(), {}) },
+		{ name: 'LinkLibrary.delete', api: api.delete, run: () => new LinkLibrary().delete(link()) },
+		{ name: 'LinkLibrary.deleteCategory', api: api.delete, run: () => new LinkLibrary().deleteCategory(linkCategory(1, 'Work')) }
+	];
+
+	it.each(cases)('$name returns false and does not reload when the request fails', async (c) => {
+		c.api.mockResolvedValue(false);
+		expect(await c.run()).toBe(false);
+		expect(api.list).not.toHaveBeenCalled();
+	});
+
+	it.each(cases)('$name returns true and reloads when the request succeeds', async (c) => {
+		c.api.mockResolvedValue(true);
+		expect(await c.run()).toBe(true);
+		expect(api.list).toHaveBeenCalled();
+	});
+});
+
+describe('library load', () => {
+	const routes = apiRoutes.libraries;
+	const cases = [
+		{ name: 'BookLibrary', create: () => new BookLibrary(), list: routes.books.list, genres: routes.books.listGenres, entry: book() },
+		{ name: 'MovieLibrary', create: () => new MovieLibrary(), list: routes.movies.list, genres: routes.movies.listGenres, entry: movie() },
+		{ name: 'MusicLibrary', create: () => new MusicLibrary(), list: routes.music.list, genres: routes.music.listGenres, entry: music() },
+		{ name: 'GameLibrary', create: () => new GameLibrary(), list: routes.games.list, genres: routes.games.listGenres, entry: game() }
+	];
+
+	it.each(cases)('$name requests the list and the genres at the same time', async (c) => {
+		const pending = deferListRequests([c.list, c.genres]);
+		const s = c.create();
+		const loading = s.load();
+
+		expect([...pending.keys()]).toEqual([c.list, c.genres]);
+
+		pending.get(c.genres)?.({ data: [genre(1, 'Genre')] });
+		pending.get(c.list)?.({ data: [c.entry] });
+		await loading;
+
+		expect(s.entries).toEqual([c.entry]);
+		expect(s.genres).toEqual([genre(1, 'Genre')]);
+		expect(s.loaded).toBe(true);
+	});
+
+	it.each(cases)('$name applies the genres when the list request fails', async (c) => {
+		const pending = deferListRequests([c.list, c.genres]);
+		const s = c.create();
+		const loading = s.load();
+
+		pending.get(c.list)?.(null);
+		pending.get(c.genres)?.({ data: [genre(1, 'Genre')] });
+		await loading;
+
+		expect(s.entries).toEqual([]);
+		expect(s.genres).toEqual([genre(1, 'Genre')]);
+		expect(s.loaded).toBe(false);
+	});
+
+	describe('LinkLibrary', () => {
+		const work = linkCategory(1, 'Work');
+		const newEntries = [link({ id: '1', category: work }), link({ id: '2', category: work })];
+
+		it('requests the links and the categories at the same time', async () => {
+			const pending = deferListRequests([routes.links.list, routes.links.listCategories]);
+			const s = new LinkLibrary();
+			const loading = s.load();
+
+			expect([...pending.keys()]).toEqual([routes.links.list, routes.links.listCategories]);
+
+			pending.get(routes.links.list)?.({ data: newEntries });
+			pending.get(routes.links.listCategories)?.({ data: [work] });
+			await loading;
+
+			expect(s.entries).toEqual(newEntries);
+			expect(s.categories).toEqual([work]);
+			expect(s.loaded).toBe(true);
+		});
+
+		it.each(['categories first', 'links first'])(
+			'counts the categories against the new links (%s)',
+			async (order) => {
+				const pending = deferListRequests([routes.links.list, routes.links.listCategories]);
+				const s = new LinkLibrary();
+				s.entries = [link({ id: 'old', category: null })];
+				const loading = s.load();
+
+				const resolveLinks = () => pending.get(routes.links.list)?.({ data: newEntries });
+				const resolveCategories = () => pending.get(routes.links.listCategories)?.({ data: [work] });
+				if (order === 'categories first') {
+					resolveCategories();
+					await Promise.resolve();
+					resolveLinks();
+				} else {
+					resolveLinks();
+					await Promise.resolve();
+					resolveCategories();
+				}
+				await loading;
+
+				expect(s.categoriesCount).toEqual([{ id: 1, count: 2 }]);
+			}
+		);
 	});
 });

@@ -308,6 +308,7 @@ const todos: TodoRecords = {
 	workspace_hide_it: 'Ocultar',
 	new_category: 'Nueva categoría',
 	rename_category: 'Renombrar categoría',
+	rename_workspace: 'Renombrar espacio de trabajo',
 	no_categories: 'Aún no tienes categorías.',
 	new_workspace: 'Nuevo espacio',
 	no_workspaces: 'Aún no tienes espacios de trabajo.',
@@ -516,6 +517,8 @@ const notes: NoteRecords = {
 	remove_from_favorites: 'Quitar de favoritos',
 	no_entries: 'Parece que aún no hay notas.',
 	note_not_found: 'Esta nota no existe.',
+	no_search_results: 'No se encontraron notas.',
+	search_shortcut_hint: 'Buscar notas (Ctrl+K)',
 	insert_image: 'Insertar imagen',
 	insert_image_url: 'URL',
 	insert_image_clipboard: 'Portapapeles',
@@ -532,7 +535,10 @@ const notes: NoteRecords = {
 	yesterday: 'Ayer',
 	other: 'Otro',
 	journal_empty: 'Todavía no hay una entrada para este día.',
-	journal_create_error: 'No se pudo crear la entrada del diario.'
+	journal_create_error: 'No se pudo crear la entrada del diario.',
+	move_note: 'Mover a carpeta',
+	no_folder: 'Sin carpeta',
+	move_error: 'No se pudo mover la nota.'
 };
 
 const libraries: LibraryRecords = {
@@ -623,6 +629,7 @@ const libraries: LibraryRecords = {
 		search_placeholder: 'Título de película o serie...'
 	},
 	games: {
+		update_error: 'No se pudo actualizar el juego.',
 		title: 'Título',
 		platform: 'Plataforma',
 		platform_pc: 'PC',
@@ -706,6 +713,7 @@ const libraries: LibraryRecords = {
 		update_error: 'No se pudo actualizar la receta.'
 	},
 	plants: {
+		update_error: 'No se pudo actualizar la planta.',
 		name: 'Nombre',
 		latin_name: 'Nombre latino',
 		location: 'Ubicación',
@@ -817,7 +825,9 @@ const dev: DevRecords = {
 		fixed_in: 'Corregido en %s',
 		fixed_in_included: 'Corregido en %s ✓',
 		fixed_in_pending: 'Corregido en %s · actualización pendiente',
-		fixed_in_current_version: 'Tu versión: %s'
+		fixed_in_current_version: 'Tu versión: %s',
+		filter_all: 'Todas',
+		filter_open: 'Abiertas'
 	}
 };
 
@@ -846,7 +856,22 @@ const finances: FinanceRecords = {
 	delete_value_label: 'Eliminar entrada',
 	delete_value_message: '¿Seguro que quieres eliminar esta entrada?',
 	delete_item: 'Eliminar %s',
-	delete_item_message: '¿Seguro que quieres eliminar %s y todas sus entradas?'
+	delete_item_message: '¿Seguro que quieres eliminar %s y todas sus entradas?',
+	interval: 'Frecuencia',
+	interval_monthly: 'Mensual',
+	interval_quarterly: 'Trimestral',
+	interval_yearly: 'Anual',
+	per_month: '/ mes',
+	per_quarter: '/ trimestre',
+	per_year: '/ año',
+	range_1y: '1 año',
+	range_3y: '3 años',
+	range_5y: '5 años',
+	range_all: 'Todo',
+	tags: 'Etiquetas',
+	tag_error: 'No se pudo crear la etiqueta',
+	all_tags: 'Todas las etiquetas',
+	tag_filter: 'Filtrar por etiqueta'
 };
 
 
@@ -1139,7 +1164,16 @@ const clipboard: ClipboardRecords = {
 	image_too_large: 'No se pudo subir la imagen. Puede que sea demasiado grande.',
 	image_reduce: 'Reducir tamaño',
 	image_copy_success: 'Imagen copiada al portapapeles',
-	image_copy_error: 'Error al copiar la imagen'
+	image_copy_error: 'Error al copiar la imagen',
+	file_save_success: 'Archivo guardado',
+	file_save_error: 'Error al guardar el archivo',
+	file_too_large: 'Los archivos pueden ocupar como máximo 10 MB.',
+	file_invalid_type: 'Este tipo de archivo no es compatible.',
+	file_limit_reached: 'Puedes subir 10 archivos al día.',
+	file_limit_reached_hours_singular: 'Puedes subir 10 archivos al día. Inténtalo de nuevo en 1 hora.',
+	file_limit_reached_hours_plural: 'Puedes subir 10 archivos al día. Inténtalo de nuevo en {n} horas.',
+	file_download_error: 'Error al descargar el archivo',
+	image_load_error: 'No se pudo cargar la imagen'
 };
 
 const dav: DavRecords = {

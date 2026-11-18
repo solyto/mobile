@@ -308,6 +308,7 @@ const todos: TodoRecords = {
 	workspace_hide_it: 'Nascondi',
 	new_category: 'Nuova categoria',
 	rename_category: 'Rinomina categoria',
+	rename_workspace: 'Rinomina spazio di lavoro',
 	no_categories: 'Non hai ancora nessuna categoria.',
 	new_workspace: 'Nuovo spazio di lavoro',
 	no_workspaces: 'Non hai ancora nessuno spazio di lavoro.',
@@ -516,6 +517,8 @@ const notes: NoteRecords = {
 	remove_from_favorites: 'Rimuovi dai preferiti',
 	no_entries: 'Sembra che non ci siano ancora note.',
 	note_not_found: 'Questa nota non esiste.',
+	no_search_results: 'Nessuna nota trovata.',
+	search_shortcut_hint: 'Cerca nelle note (Ctrl+K)',
 	insert_image: 'Inserisci immagine',
 	insert_image_url: 'URL',
 	insert_image_clipboard: 'Appunti',
@@ -532,7 +535,10 @@ const notes: NoteRecords = {
 	yesterday: 'Ieri',
 	other: 'Altro',
 	journal_empty: 'Non c\'è ancora nessuna voce per questo giorno.',
-	journal_create_error: 'Impossibile creare la voce del diario.'
+	journal_create_error: 'Impossibile creare la voce del diario.',
+	move_note: 'Sposta in cartella',
+	no_folder: 'Nessuna cartella',
+	move_error: 'Impossibile spostare la nota.'
 };
 
 const libraries: LibraryRecords = {
@@ -623,6 +629,7 @@ const libraries: LibraryRecords = {
 		search_placeholder: 'Titolo del film o della serie...'
 	},
 	games: {
+		update_error: 'Impossibile aggiornare il gioco.',
 		title: 'Titolo',
 		platform: 'Piattaforma',
 		platform_pc: 'PC',
@@ -706,6 +713,7 @@ const libraries: LibraryRecords = {
 		update_error: 'Impossibile aggiornare la ricetta.'
 	},
 	plants: {
+		update_error: 'Impossibile aggiornare la pianta.',
 		name: 'Nome',
 		latin_name: 'Nome latino',
 		location: 'Posizione',
@@ -817,7 +825,9 @@ const dev: DevRecords = {
 		fixed_in: 'Risolto in %s',
 		fixed_in_included: 'Risolto in %s ✓',
 		fixed_in_pending: 'Risolto in %s · aggiornamento in sospeso',
-		fixed_in_current_version: 'La tua versione: %s'
+		fixed_in_current_version: 'La tua versione: %s',
+		filter_all: 'Tutte',
+		filter_open: 'Aperte'
 	}
 };
 
@@ -846,7 +856,22 @@ const finances: FinanceRecords = {
 	delete_value_label: 'Elimina voce',
 	delete_value_message: 'Vuoi davvero eliminare questa voce?',
 	delete_item: 'Elimina %s',
-	delete_item_message: 'Vuoi davvero eliminare %s e tutte le sue voci?'
+	delete_item_message: 'Vuoi davvero eliminare %s e tutte le sue voci?',
+	interval: 'Frequenza',
+	interval_monthly: 'Mensile',
+	interval_quarterly: 'Trimestrale',
+	interval_yearly: 'Annuale',
+	per_month: '/ mese',
+	per_quarter: '/ trimestre',
+	per_year: '/ anno',
+	range_1y: '1 anno',
+	range_3y: '3 anni',
+	range_5y: '5 anni',
+	range_all: 'Tutto',
+	tags: 'Tag',
+	tag_error: 'Impossibile creare il tag',
+	all_tags: 'Tutti i tag',
+	tag_filter: 'Filtra per tag'
 };
 
 
@@ -1149,7 +1174,16 @@ const clipboard: ClipboardRecords = {
 	image_too_large: "Impossibile caricare l'immagine. Potrebbe essere troppo grande.",
 	image_reduce: 'Riduci dimensioni',
 	image_copy_success: 'Immagine copiata negli appunti',
-	image_copy_error: "Impossibile copiare l'immagine"
+	image_copy_error: "Impossibile copiare l'immagine",
+	file_save_success: 'File salvato',
+	file_save_error: 'Impossibile salvare il file',
+	file_too_large: 'I file possono pesare al massimo 10 MB.',
+	file_invalid_type: 'Questo tipo di file non è supportato.',
+	file_limit_reached: 'Puoi caricare 10 file al giorno.',
+	file_limit_reached_hours_singular: 'Puoi caricare 10 file al giorno. Riprova tra 1 ora.',
+	file_limit_reached_hours_plural: 'Puoi caricare 10 file al giorno. Riprova tra {n} ore.',
+	file_download_error: 'Impossibile scaricare il file',
+	image_load_error: "Impossibile caricare l'immagine"
 };
 
 const profile: ProfileRecords = {

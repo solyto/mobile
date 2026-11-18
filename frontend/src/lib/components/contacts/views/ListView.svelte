@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { getInitials } from '$lib/helpers/NameHelper';
-	import { onDestroy } from 'svelte';
 	import ContactHeader from '$lib/components/contacts/ContactHeader.svelte';
 	import { getContacts } from '$lib/state/Contacts.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
@@ -21,10 +20,6 @@
 	function hasVisibleContacts(): boolean {
 		return Object.values(contacts.contactsAZ).some((entries) => entries.length > 0);
 	}
-
-	onDestroy(() => {
-		Object.values(contacts.contactPhotos).forEach((url) => URL.revokeObjectURL(url));
-	});
 </script>
 
 {#if contacts.loaded}

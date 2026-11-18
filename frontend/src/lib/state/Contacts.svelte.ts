@@ -76,6 +76,8 @@ export class Contacts {
 		this.contacts.filter((c) => !this.isAddressBookHidden(c.address_book_id)).length
 	);
 	contactPhotos = $state<Record<string, string>>({});
+	private checkedPhotoUris = new Set<string>();
+	private photoRun: Promise<void> | null = null;
 	auth: Auth;
 	loaded = $state<boolean>(false);
 	contactPhotosLoaded = $state<boolean>(false);
@@ -119,11 +121,27 @@ export class Contacts {
 	}
 
 	async loadContactPhotos(): Promise<void> {
-		const contactsToFetch = this.contacts.filter((c) => !this.contactPhotos[c.uri]);
+		// A failed run is reported to the caller that started it; waiters start their own.
+		while (this.photoRun) await this.photoRun.catch(() => undefined);
+
+		this.photoRun = this.fetchContactPhotos(
+			// A missing has_photo (older API) means unknown, so it is still requested.
+			this.contacts.filter((c) => c.has_photo !== false && !this.checkedPhotoUris.has(c.uri))
+		);
+		try {
+			await this.photoRun;
+		} finally {
+			this.photoRun = null;
+		}
+
+		this.contactPhotosLoaded = true;
+	}
+
+	private async fetchContactPhotos(contacts: Contact[]): Promise<void> {
 		const batchSize = 10;
 
-		for (let i = 0; i < contactsToFetch.length; i += batchSize) {
-			const batch = contactsToFetch.slice(i, i + batchSize);
+		for (let i = 0; i < contacts.length; i += batchSize) {
+			const batch = contacts.slice(i, i + batchSize);
 			const payload = batch.map((c) => ({
 				address_book_id: c.address_book_id,
 				uri: c.uri
@@ -132,12 +150,11 @@ export class Contacts {
 			const res = await this.apiService.post(apiRoutes.contacts.getContactPhotos, {
 				contacts: payload
 			});
-			if (res?.data) {
-				this.contactPhotos = { ...this.contactPhotos, ...res.data };
-			}
-		}
+			if (!res) continue;
 
-		this.contactPhotosLoaded = true;
+			Object.assign(this.contactPhotos, res.data);
+			batch.forEach((c) => this.checkedPhotoUris.add(c.uri));
+		}
 	}
 
 	getContactPhoto(uri: string): string | null {
@@ -248,7 +265,10 @@ export class Contacts {
 			contact.uri,
 			request
 		);
-		if (res) await this.load();
+		if (res) {
+			this.checkedPhotoUris.delete(contact.uri);
+			await this.load();
+		}
 		return res;
 	}
 
@@ -319,7 +339,7 @@ export class Contacts {
 			await this.loadAddressBooks();
 			await this.loadContacts();
 		}
-		return res !== null;
+		return res;
 	}
 
 	async deleteAddressBook(addressBook: AddressBook): Promise<boolean> {
@@ -333,7 +353,7 @@ export class Contacts {
 		}
 		this.activeAddressBook = null;
 		this.deleteModal = false;
-		return res !== null;
+		return res;
 	}
 
 	async startImport(request: ImportRequest): Promise<boolean> {

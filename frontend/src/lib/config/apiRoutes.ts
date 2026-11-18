@@ -104,6 +104,7 @@ export const apiRoutes = {
 		update: API_URL + '/notes/%s',
 		delete: API_URL + '/notes/%s',
 		newest: API_URL + '/notes/newest',
+		recent: API_URL + '/notes/recent',
 		import: API_URL + '/notes/import',
 		export: API_URL + '/notes/export',
 		listCategories: API_URL + '/notes/categories',
@@ -298,10 +299,12 @@ export const apiRoutes = {
 		}
 	},
 	clipboard: {
-		list: API_URL + '/clipboard',
+		list: API_URL + '/clipboard?include_files=1',
 		create: API_URL + '/clipboard',
 		createImage: API_URL + '/clipboard/image',
 		getImage: API_URL + '/clipboard/%d/image',
+		createFile: API_URL + '/clipboard/file',
+		getFile: API_URL + '/clipboard/%d/file',
 		delete: API_URL + '/clipboard/%d'
 	},
 	timeTracking: {

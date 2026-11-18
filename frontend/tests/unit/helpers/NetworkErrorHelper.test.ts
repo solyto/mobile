@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import {
+	clipboardFileLimitMessage,
 	createNetworkErrorHandler,
 	exportRateLimitedMessage,
 	rateLimitedMessage
@@ -108,5 +109,16 @@ describe('exportRateLimitedMessage', () => {
 			'You can only export once every 24 hours. Try again in 2 hours.'
 		);
 		expect(exportRateLimitedMessage(600, en.settings)).toBe(en.settings.export_rate_limited_hours_singular);
+	});
+});
+
+describe('clipboardFileLimitMessage', () => {
+	it('keeps the plain message without a wait time', () => {
+		expect(clipboardFileLimitMessage(null, en.clipboard)).toBe(en.clipboard.file_limit_reached);
+	});
+
+	it('rounds the wait up to whole hours', () => {
+		expect(clipboardFileLimitMessage(7201, en.clipboard)).toBe('You can upload 10 files per day. Try again in 3 hours.');
+		expect(clipboardFileLimitMessage(60, en.clipboard)).toBe(en.clipboard.file_limit_reached_hours_singular);
 	});
 });

@@ -2,6 +2,7 @@
 	import { fade, slide } from 'svelte/transition';
 	import type { NoteCategory } from '$lib/types/note';
 	import { getNotes } from '$lib/state/Notes.svelte';
+	import { contextMenu } from '$lib/helpers/ContextMenuHelper';
 	import NoteNavigationCategoryRenderer from '$lib/components/notes/NoteNavigationCategoryRenderer.svelte';
 	import NoteNavigationNoteRenderer from '$lib/components/notes/NoteNavigationNoteRenderer.svelte';
 	import IconChevronRight from '@lucide/svelte/icons/chevron-right';
@@ -25,7 +26,7 @@
 	ondragleave={() => (notes.dragTarget = null)}
 	ondrop={(e: DragEvent) => {
 		e.preventDefault();
-		notes.dragToCategory();
+		if (notes.draggedNote) notes.moveToCategory(notes.draggedNote.id, category.id);
 	}}
 	transition:fade
 	role="region"
@@ -35,7 +36,7 @@
 		role="button"
 		tabindex="0"
 		onclick={() => {notes.toggleCollapseCategory(category.id);}}
-		oncontextmenu={(event: MouseEvent) => notes.openRightClickMenu(event, 'category', category.id)}
+		use:contextMenu={(x, y) => notes.openRightClickMenu(x, y, 'category', category.id)}
 	>
 		<div
 			class="flex cursor-pointer items-center space-x-2 rounded-lg px-2 py-1 hover:bg-c-neutral dark:hover:bg-s-dark-3"

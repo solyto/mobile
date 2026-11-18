@@ -6,6 +6,7 @@
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import { getReadableTextColor } from '$lib/helpers/ColorHelper';
+	import { portalToBody } from '$lib/helpers/PortalHelper';
 
 	const tt = getTimeTracking();
 	const ts = getTranslation();
@@ -24,6 +25,7 @@
 		existingProject?.categories.map((c) => c.id) ?? []
 	);
 	let showCategoryDropdown = $state<boolean>(false);
+	let categoryDropdownAnchor = $state<HTMLDivElement | null>(null);
 
 	let availableCategories = $derived(
 		tt.categories.filter((c) => !selectedCategoryIds.includes(c.id))
@@ -108,7 +110,7 @@
 					</span>
 				{/each}
 				{#if availableCategories.length > 0}
-					<div class="relative">
+					<div class="relative" bind:this={categoryDropdownAnchor}>
 						<button
 							aria-label={ts.get.timeTracking.add_category}
 							class="cursor-pointer rounded-md border-1 border-dashed border-c-neutral-3 px-2 py-1 text-xs text-c-neutral-5 transition-all hover:border-c-primary hover:text-c-primary dark:border-s-dark-3 dark:text-c-neutral-4"
@@ -116,8 +118,16 @@
 						>
 							+
 						</button>
-						{#if showCategoryDropdown}
-							<div class="absolute top-8 left-0 z-10 max-h-40 min-w-36 overflow-y-auto rounded-md border-1 border-c-neutral-2 bg-c-bg-modal shadow-md dark:border-s-dark-3">
+						{#if showCategoryDropdown && categoryDropdownAnchor}
+							<!-- Portalled to the body so the modal's scroll container doesn't clip it (as in the todo workspace picker). mt-8 keeps it below the + button. -->
+							<div
+								class="mt-8 max-h-40 min-w-36 overflow-y-auto rounded-md border-1 border-c-neutral-2 bg-c-bg-modal shadow-md dark:border-s-dark-3"
+								use:portalToBody={{
+									target: categoryDropdownAnchor,
+									closeOnScroll: true,
+									onClose: () => (showCategoryDropdown = false)
+								}}
+							>
 								{#each availableCategories as cat (cat.id)}
 									<button
 										class="flex w-full cursor-pointer flex-row items-center gap-2 px-3 py-2 text-left text-sm transition-all hover:bg-c-neutral-1 dark:hover:bg-s-dark-3"

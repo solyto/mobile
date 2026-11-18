@@ -13,8 +13,10 @@
 	import CreateModal from '$lib/components/libraries/shared/CreateModal.svelte';
 	import { getPlantLibrary } from '$lib/state/PlantLibrary.svelte';
 	import { resizeImage } from '$lib/services/ImageService';
+	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
 
 	const ts = getTranslation();
+	const notifications = getUiNotifications();
 	const library = getPlantLibrary();
 	const auth = getAuth();
 	const loadingIndicator = getLoadingIndicator();
@@ -159,6 +161,7 @@
 		}
 
 		if (ok) library.closeCreateModal();
+		else notifications.error(ts.get.libraries.plants.update_error);
 
 		loadingIndicator.stop();
 	}

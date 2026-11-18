@@ -113,25 +113,30 @@ export class FeedImport {
 		let delay = FeedImport.POLL_INTERVAL_MS;
 
 		try {
-			await this.refresh();
-			this.failedPolls = 0;
-			this.pollError = null;
+			if (await this.refresh()) {
+				this.failedPolls = 0;
+				this.pollError = null;
+			} else {
+				delay = this.backOff('network');
+			}
 		} catch (error) {
 			if (!(error instanceof NetworkError) && !(error instanceof RateLimitedError)) {
 				this.stall();
 				return;
 			}
-			delay = this.backOff(error);
+			delay =
+				error instanceof RateLimitedError
+					? this.backOff('rate_limited', (error.retryAfter ?? 0) * 1000)
+					: this.backOff('network');
 		}
 
 		this.continuePolling(delay);
 	}
 
-	private backOff(error: NetworkError | RateLimitedError): number {
+	private backOff(kind: FeedImportPollError, retryAfterMs = 0): number {
 		this.failedPolls++;
-		this.pollError = error instanceof RateLimitedError ? 'rate_limited' : 'network';
+		this.pollError = kind;
 
-		const retryAfterMs = error instanceof RateLimitedError ? (error.retryAfter ?? 0) * 1000 : 0;
 		const delay = Math.max(FeedImport.POLL_INTERVAL_MS * 2 ** this.failedPolls, retryAfterMs);
 		return Math.min(delay, FeedImport.MAX_POLL_INTERVAL_MS);
 	}

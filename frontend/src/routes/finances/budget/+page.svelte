@@ -8,25 +8,46 @@
 	import BudgetField from '$lib/components/finances/BudgetField.svelte';
 	import type {
 		Budget,
+		BudgetInterval,
 		FinanceValue,
 		StoreFinanceValueRequest,
 		UpdateFinanceValueRequest
 	} from '$lib/types/finance';
 	import { getTranslation } from '$lib/state/Translation.svelte';
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import ContentModal from '$lib/components/ui/ContentModal.svelte';
 	import FinanceHistory from '$lib/components/finances/FinanceHistory.svelte';
+	import Divider from '$lib/components/ui/Divider.svelte';
+	import BudgetTagPicker from '$lib/components/finances/BudgetTagPicker.svelte';
+	import type { MultiSelectEntry } from '$lib/components/forms/MultiSelect.svelte';
+	import { getTags } from '$lib/state/Tags.svelte';
+	import Select from '$lib/components/forms/Select.svelte';
 
 	const ts = getTranslation();
 	const loadingIndicator = getLoadingIndicator();
 	const finances = getFinances();
 	const auth = getAuth();
+	const tags = getTags();
 
 	let total = $derived(finances.getBudgetTotal());
 	let incomeTotal = $derived(finances.getBudgetIncomeTotal());
 	let expenseTotal = $derived(finances.getBudgetExpenseTotal());
 	let colorLoaded = $state<boolean>(false);
 	let historyBudget = $state<Budget | null>(null);
+
+	function tagFilterOptions(): { label: string; value: string }[] {
+		const options = finances.availableTags().map((tag) => ({ label: tag.name, value: tag.id.toString() }));
+		return [{ label: ts.get.finances.all_tags, value: '' }, ...options];
+	}
+
+	function selectTag(value: string): void {
+		finances.selectedTagId = value === '' ? null : Number(value);
+	}
+
+	function expenseShare(): number {
+		if (incomeTotal <= 0) return expenseTotal > 0 ? 100 : 0;
+		return Math.abs(expenseTotal / incomeTotal) * 100;
+	}
 
 	async function openHistory(budget: Budget): Promise<void> {
 		loadingIndicator.start();
@@ -54,6 +75,30 @@
 		loadingIndicator.stop();
 		if (ok) historyBudget = { ...historyBudget, title };
 		return ok;
+	}
+
+	async function changeHistoryInterval(value: string): Promise<void> {
+		if (historyBudget === null) return;
+		const interval = value as BudgetInterval;
+		loadingIndicator.start();
+		const ok = await finances.updateBudget(historyBudget, { interval });
+		loadingIndicator.stop();
+		if (ok) historyBudget = { ...historyBudget, interval };
+	}
+
+	function tagEntries(budget: Budget): MultiSelectEntry[] {
+		return budget.tags.map((tag) => ({ label: tag.name, value: tag.id.toString() }));
+	}
+
+	async function changeHistoryTags(entries: MultiSelectEntry[]): Promise<void> {
+		if (historyBudget === null) return;
+		const tagIds = entries.map((entry) => Number(entry.value));
+		loadingIndicator.start();
+		const ok = await finances.updateBudget(historyBudget, { tags: tagIds });
+		loadingIndicator.stop();
+		const savedTags = ok ? tags.tags.filter((tag) => tagIds.includes(tag.id)) : historyBudget.tags;
+		// A new object also resets the picker to the saved tags when the update failed.
+		historyBudget = { ...historyBudget, tags: savedTags };
 	}
 
 	async function addHistoryValue(request: StoreFinanceValueRequest): Promise<boolean> {
@@ -85,6 +130,11 @@
 			colorLoaded = true;
 		}, 100);
 	});
+
+	// The finances overview shares the store and always shows the whole budget.
+	onDestroy(() => {
+		finances.selectedTagId = null;
+	});
 </script>
 
 {#if finances.budgetLoaded}
@@ -92,8 +142,20 @@
 		<div
 			class="relative w-full rounded-md p-4 shadow-sm dark:shadow-s-dark-shadow md:dark:bg-s-dark-2"
 		>
-			<div class="flex w-full items-baseline justify-between">
-				<h2 class="text-2xl font-semibold">{ts.get.finances.total}</h2>
+			<div class="flex w-full items-center justify-between gap-4">
+				<div class="flex items-center gap-4">
+					<h2 class="text-2xl font-semibold">{ts.get.finances.total}</h2>
+					{#if finances.availableTags().length > 0}
+						<div class="w-40">
+							<Select
+								value={finances.selectedTagId?.toString() ?? ''}
+								options={tagFilterOptions()}
+								onchange={selectTag}
+								ariaLabel={ts.get.finances.tag_filter}
+							/>
+						</div>
+					{/if}
+				</div>
 				<div class="text-xl tabular-nums md:text-3xl">
 					{total > 0 ? '+ ' : '- '}{europeanFormat(Math.abs(total))}
 				</div>
@@ -102,7 +164,7 @@
 				{#if colorLoaded}
 					<div
 						class="relative flex h-full items-center justify-center rounded-full rounded-r-none bg-c-danger transition-all"
-						style="width: {Math.abs(expenseTotal / incomeTotal) * 100}%;"
+						style="width: {expenseShare()}%;"
 						in:slide={{ axis: 'x' }}
 					></div>
 				{/if}
@@ -117,10 +179,10 @@
 						<h2 class="text-2xl font-semibold">{ts.get.finances.income}</h2>
 						<span class="text-lg text-c-neutral-5 tabular-nums">+ {europeanFormat(incomeTotal)}</span>
 					</div>
-					<AddBudget type="income" />
+					<AddBudget type="income" showTags={finances.tagsSupported} />
 				</div>
 				<div class="flex w-full flex-col gap-1">
-					{#each finances.income as i (i.id)}
+					{#each finances.filteredIncome() as i (i.id)}
 						<BudgetField budget={i} sectionTotal={incomeTotal} onOpenHistory={openHistory} />
 					{/each}
 				</div>
@@ -133,10 +195,10 @@
 						<h2 class="text-2xl font-semibold">{ts.get.finances.expenses}</h2>
 						<span class="text-lg text-c-neutral-5 tabular-nums">- {europeanFormat(expenseTotal)}</span>
 					</div>
-					<AddBudget type="expense" />
+					<AddBudget type="expense" showTags={finances.tagsSupported} />
 				</div>
 				<div class="flex w-full flex-col gap-1">
-					{#each finances.expenses as e (e.id)}
+					{#each finances.filteredExpenses() as e (e.id)}
 						<BudgetField budget={e} sectionTotal={expenseTotal} onOpenHistory={openHistory} />
 					{/each}
 				</div>
@@ -146,6 +208,18 @@
 {/if}
 {#if historyBudget}
 	<ContentModal title={historyBudget.title} showTitleOnMobile={true} rounded="2xl" onClose={closeHistory} onRename={renameHistoryBudget}>
+		<div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+			<Select
+				value={finances.budgetIntervals.intervalOf(historyBudget)}
+				options={finances.budgetIntervals.options(ts.get.finances)}
+				onchange={changeHistoryInterval}
+				ariaLabel={ts.get.finances.interval}
+			/>
+			{#if finances.tagsSupported}
+				<BudgetTagPicker value={tagEntries(historyBudget)} onchange={changeHistoryTags} />
+			{/if}
+		</div>
+		<Divider my={8} />
 		<FinanceHistory
 			values={finances.budgetValues}
 			minValues={1}

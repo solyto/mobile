@@ -1,10 +1,14 @@
-import type { ClipboardEntry, CreateClipboardEntryRequest } from '$lib/types/clipboard';
+import type { ClipboardEntry, ClipboardUploadResult, CreateClipboardEntryRequest } from '$lib/types/clipboard';
 import { getContext, setContext } from 'svelte';
 import { getAuth, type Auth } from '$lib/state/Auth.svelte';
 import ApiService from '$lib/services/ApiService';
 import { apiRoutes } from '$lib/config/apiRoutes';
+import { getFileExtension } from '$lib/helpers/FormatHelper';
 
 export class Clipboard {
+	static readonly MAX_FILE_BYTES = 10 * 1024 * 1024;
+	static readonly FILE_EXTENSIONS = ['pdf', 'txt', 'md', 'csv', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx'];
+
 	loaded = $state<boolean>(false);
 	entries = $state<ClipboardEntry[]>([]);
 	auth: Auth;
@@ -43,6 +47,31 @@ export class Clipboard {
 			// A server aborting an oversized upload can surface as a network error.
 			return 'too_large';
 		}
+	}
+
+	async createFile(file: File): Promise<ClipboardUploadResult> {
+		// Checked before uploading because rejected uploads count toward the daily quota.
+		if (file.size > Clipboard.MAX_FILE_BYTES) return 'too_large';
+		if (!Clipboard.FILE_EXTENSIONS.includes(getFileExtension(file.name))) return 'invalid_type';
+
+		const formData = new FormData();
+		formData.append('file', file);
+		const res = await this.apiService.postWithStatus(apiRoutes.clipboard.createFile, formData);
+		if (res.ok) {
+			await this.load();
+			return 'ok';
+		}
+		if (res.status === 413) return 'too_large';
+		return res.status === 422 ? 'invalid_type' : 'error';
+	}
+
+	getImage(entry: ClipboardEntry): Promise<Blob | null> {
+		return this.apiService.image(apiRoutes.clipboard.getImage.replace('%d', entry.id.toString()));
+	}
+
+	getFile(entry: ClipboardEntry): Promise<Blob | null> {
+		const accept = entry.mime_type ?? 'application/octet-stream';
+		return this.apiService.download(apiRoutes.clipboard.getFile.replace('%d', entry.id.toString()), accept);
 	}
 
 	async delete(entry: ClipboardEntry): Promise<boolean> {

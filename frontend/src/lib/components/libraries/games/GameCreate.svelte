@@ -174,6 +174,8 @@
 		const ok = await library.update(activeEntry!, request);
 		if (ok) {
 			library.closeCreateModal();
+		} else {
+			notifications.error(ts.get.libraries.games.update_error);
 		}
 
 		loadingIndicator.stop();

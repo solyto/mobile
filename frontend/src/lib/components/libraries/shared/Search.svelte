@@ -68,7 +68,7 @@
 			{oninput}
 		/>
 		<button
-			class="pointer-events-auto z-20 ml-[-30px] cursor-pointer text-c-neutral-3 hover:text-c-neutral-5"
+			class="pointer-events-auto z-20 ml-[-30px] cursor-pointer text-c-neutral-5 hover:text-c-neutral-7 dark:text-c-neutral-3 dark:hover:text-c-neutral-5"
 			onclick={closeSearch}
 		>
 			<IconCircleX />

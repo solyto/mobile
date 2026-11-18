@@ -6,6 +6,7 @@
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import AddNoteButton from '$lib/components/notes/AddNoteButton.svelte';
 	import AddFolderButton from '$lib/components/notes/AddFolderButton.svelte';
+	import SearchNoteButton from '$lib/components/notes/SearchNoteButton.svelte';
 	import NoteNavigationFavoriteNoteRenderer from '$lib/components/notes/NoteNavigationFavoriteNoteRenderer.svelte';
 	import JournalArchivePicker from '$lib/components/notes/journal/JournalArchivePicker.svelte';
 	import { urls } from '$lib/config/urls';
@@ -49,12 +50,13 @@
 	class="hidden h-full max-h-screen w-full flex-col overflow-y-auto bg-c-bg p-2 text-sm drop-shadow-xl sm:relative sm:flex sm:min-w-72 max-w-72 sm:p-4 dark:border-r-1 dark:border-s-dark-2 dark:drop-shadow-sm dark:drop-shadow-s-dark-shadow"
 >
 	<div class="absolute top-4 right-4 flex gap-1">
+		<SearchNoteButton onClick={() => notes.openSearch()} />
 		<AddNoteButton onClick={() => notes.openModal('note')} />
 		<AddFolderButton onClick={() => notes.openModal('category')} />
 	</div>
 	<a
 		href={resolve(urls.notes)}
-		class="mb-4 flex cursor-pointer items-center space-x-2 rounded-lg px-2 py-1 hover:bg-c-neutral dark:hover:bg-s-dark-3"
+		class="mt-[3px] mb-4 flex cursor-pointer items-center space-x-2 rounded-lg px-2 py-1 hover:bg-c-neutral dark:hover:bg-s-dark-3"
 		class:bg-c-neutral-1={page.url.pathname === urls.notes}
 		class:dark:bg-s-dark-3={page.url.pathname === urls.notes}
 	>
@@ -118,7 +120,7 @@
 			ondragleave={() => (notes.dragTarget = null)}
 			ondrop={(e: DragEvent) => {
 				e.preventDefault();
-				notes.dragToCategory();
+				if (notes.draggedNote) notes.moveToCategory(notes.draggedNote.id, null);
 			}}
 			class:bg-d-lightblue={notes.draggedNote !== null && notes.dragTarget === null}
 			class:animate-pulse={notes.draggedNote !== null && notes.dragTarget === null}

@@ -4,12 +4,15 @@
 	import NoteNavigationMobile from '$lib/components/notes/NoteNavigationMobile.svelte';
 	import ConfirmationModal from '$lib/components/ui/ConfirmationModal.svelte';
 	import TextInput from '$lib/components/forms/TextInput.svelte';
-	import { onMount } from 'svelte';
+	import NoteSearch from '$lib/components/notes/NoteSearch.svelte';
+	import MoveNoteModal from '$lib/components/notes/MoveNoteModal.svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import { getTags, setTags } from '$lib/state/Tags.svelte';
 	import RightClickMenu from '$lib/components/ui/menus/RightClickMenu.svelte';
 	import type { RightClickMenuEntry } from '$lib/types/menu';
 	import { getTranslation } from '$lib/state/Translation.svelte';
+	import { getKeyManager } from '$lib/state/KeyManager.svelte';
 
 	setNotes();
 	setTags();
@@ -18,6 +21,7 @@
 	const notes = getNotes();
 	const tags = getTags();
 	const loadingIndicator = getLoadingIndicator();
+	const keyManager = getKeyManager();
 
 	let { children } = $props();
 
@@ -62,6 +66,11 @@
 
 	const rightClickMenuNoteEntries: RightClickMenuEntry[] = [
 		{
+			icon: 'move',
+			label: ts.get.notes.move_note,
+			action: () => notes.openMoveNoteModal(notes.rightClickId as string)
+		},
+		{
 			icon: 'delete',
 			label: ts.get.notes.delete_note,
 			action: () => {
@@ -70,11 +79,23 @@
 		}
 	];
 
+	let keyHandlers: { [key: string]: string | null } = { k: null };
+
 	onMount(async () => {
+		// Ctrl+K, not Ctrl+F: Ctrl+F stays with the browser's find in page, to search inside the open note.
+		keyHandlers.k = keyManager.registerKeyDown('k', openSearch, { withHelperKey: 'Control' });
 		loadingIndicator.start();
 		await Promise.all([notes.loadCategories(), notes.load(), tags.load()]);
 		loadingIndicator.stop();
 	});
+
+	onDestroy(() => keyManager.unregisterAll(keyHandlers));
+
+	function openSearch(event: KeyboardEvent): void {
+		if (notes.modalOpen || notes.deleteNoteModalOpen || pendingDelete !== null) return;
+
+		notes.openSearch();
+	}
 
 	// The store closes the modal on success only; on failure it stays open
 	// (with the user's input) and reports the error via a notification.
@@ -100,7 +121,10 @@
 	}
 </script>
 
-<div class="flex h-full w-full flex-row">
+<div class="relative flex h-full w-full flex-row">
+	{#if notes.searchVisible}
+		<NoteSearch />
+	{/if}
 	<NoteNavigationMobile />
 	<NoteNavigationDesktop />
 	{@render children?.()}
@@ -152,6 +176,10 @@
 			entries={rightClickMenuCategoryEntries}
 		/>
 	{/if}
+{/if}
+
+{#if notes.noteToMove}
+	<MoveNoteModal note={notes.noteToMove} />
 {/if}
 
 {#if pendingDelete}

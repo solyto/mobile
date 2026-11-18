@@ -308,6 +308,7 @@ const todos: TodoRecords = {
 	workspace_hide_it: 'Hide It',
 	new_category: 'New Category',
 	rename_category: 'Rename Category',
+	rename_workspace: 'Rename Workspace',
 	no_categories: 'You have no categories yet.',
 	new_workspace: 'New Workspace',
 	no_workspaces: 'You have no workspaces yet.',
@@ -516,6 +517,8 @@ const notes: NoteRecords = {
 	remove_from_favorites: 'Remove from Favorites',
 	no_entries: 'There seem to be no notes yet.',
 	note_not_found: 'This note does not exist.',
+	no_search_results: 'No notes found.',
+	search_shortcut_hint: 'Search notes (Ctrl+K)',
 	insert_image: 'Insert image',
 	insert_image_url: 'URL',
 	insert_image_clipboard: 'Clipboard',
@@ -532,7 +535,10 @@ const notes: NoteRecords = {
 	yesterday: 'Yesterday',
 	other: 'Other',
 	journal_empty: 'There is no entry for this day yet.',
-	journal_create_error: 'Failed to create the journal entry.'
+	journal_create_error: 'Failed to create the journal entry.',
+	move_note: 'Move to Folder',
+	no_folder: 'No Folder',
+	move_error: 'Failed to move note.'
 };
 
 const libraries: LibraryRecords = {
@@ -623,6 +629,7 @@ const libraries: LibraryRecords = {
 		search_placeholder: 'Movie or series title...'
 	},
 	games: {
+		update_error: 'Failed to update game.',
 		title: 'Title',
 		platform: 'Platform',
 		platform_pc: 'PC',
@@ -706,6 +713,7 @@ const libraries: LibraryRecords = {
 		update_error: 'Failed to update recipe.'
 	},
 	plants: {
+		update_error: 'Failed to update plant.',
 		name: 'Name',
 		latin_name: 'Latin Name',
 		location: 'Location',
@@ -817,7 +825,9 @@ const dev: DevRecords = {
 		fixed_in: 'Fixed in %s',
 		fixed_in_included: 'Fixed in %s ✓',
 		fixed_in_pending: 'Fixed in %s · update pending',
-		fixed_in_current_version: "You're on %s"
+		fixed_in_current_version: "You're on %s",
+		filter_all: 'All',
+		filter_open: 'Open'
 	}
 };
 
@@ -846,7 +856,22 @@ const finances: FinanceRecords = {
 	delete_value_label: 'Delete entry',
 	delete_value_message: 'Do you really want to delete this entry?',
 	delete_item: 'Delete %s',
-	delete_item_message: 'Do you really want to delete %s and all its entries?'
+	delete_item_message: 'Do you really want to delete %s and all its entries?',
+	interval: 'Interval',
+	interval_monthly: 'Monthly',
+	interval_quarterly: 'Quarterly',
+	interval_yearly: 'Yearly',
+	per_month: '/ month',
+	per_quarter: '/ quarter',
+	per_year: '/ year',
+	range_1y: '1 year',
+	range_3y: '3 years',
+	range_5y: '5 years',
+	range_all: 'All',
+	tags: 'Tags',
+	tag_error: 'Tag could not be created',
+	all_tags: 'All tags',
+	tag_filter: 'Filter by tag'
 };
 
 
@@ -1149,7 +1174,16 @@ const clipboard: ClipboardRecords = {
 	image_too_large: 'The image could not be uploaded. It may be too large.',
 	image_reduce: 'Reduce size',
 	image_copy_success: 'Image copied to clipboard',
-	image_copy_error: 'Failed to copy image'
+	image_copy_error: 'Failed to copy image',
+	file_save_success: 'File saved',
+	file_save_error: 'Failed to save file',
+	file_too_large: 'Files can be at most 10 MB.',
+	file_invalid_type: 'This file type is not supported.',
+	file_limit_reached: 'You can upload 10 files per day.',
+	file_limit_reached_hours_singular: 'You can upload 10 files per day. Try again in 1 hour.',
+	file_limit_reached_hours_plural: 'You can upload 10 files per day. Try again in {n} hours.',
+	file_download_error: 'Failed to download file',
+	image_load_error: 'Image could not be loaded'
 };
 
 const profile: ProfileRecords = {
@@ -1370,7 +1404,7 @@ const timeTracking: TimeTrackingRecords = {
 	resume: 'Resume',
 	skip: 'Skip',
 	reset: 'Reset',
-	filter_by_category: 'Filter by Category',
+	filter_by_category: 'Filter by category',
 	all_categories: 'All',
 	edit_entry: 'Edit Entry',
 	entry_deletion_title: 'Delete Entry',

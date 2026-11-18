@@ -76,11 +76,14 @@ export class BookLibrary {
 	}
 
 	async load(): Promise<void> {
-		const res = await this.apiService.list(apiRoutes.libraries.books.list);
+		const [res, genresRes] = await Promise.all([
+			this.apiService.list(apiRoutes.libraries.books.list),
+			this.apiService.list(apiRoutes.libraries.books.listGenres)
+		]);
+		if (genresRes) this.genres = genresRes.data as BookGenre[];
 		if (res) {
 			this.entries = res.data as Book[];
 			this.reapplyFilter();
-			await this.loadGenres();
 			this.loaded = true;
 		}
 	}
@@ -234,13 +237,13 @@ export class BookLibrary {
 			request
 		);
 		if (res) await this.load();
-		return Promise.resolve(res !== null);
+		return res;
 	}
 
 	async delete(entry: Book): Promise<boolean> {
 		const res = await this.apiService.delete(apiRoutes.libraries.books.delete, entry.id);
 		if (res) await this.load();
-		return Promise.resolve(res !== null);
+		return res;
 	}
 
 	async updateRating(entry: Book, rating: number): Promise<boolean> {
@@ -251,7 +254,7 @@ export class BookLibrary {
 			request
 		);
 		if (res) await this.load();
-		return Promise.resolve(res !== null);
+		return res;
 	}
 
 	async createGenre(title: string): Promise<BookGenre | null> {
@@ -264,7 +267,7 @@ export class BookLibrary {
 	async deleteGenre(genre: BookGenre): Promise<boolean> {
 		const res = await this.apiService.delete(apiRoutes.libraries.books.deleteGenre, genre.id);
 		if (res) await this.loadGenres();
-		return Promise.resolve(res !== null);
+		return res;
 	}
 
 	async searchAt(provider: string, query: string): Promise<BookSearchResult[] | null> {

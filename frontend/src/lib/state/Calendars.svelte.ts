@@ -539,7 +539,7 @@ export class Calendars {
 			await this.loadCalendars();
 			await this.loadEvents();
 		}
-		return res !== null;
+		return res;
 	}
 
 	async updateCalendarsOrder(orderedIds: number[]): Promise<boolean> {
@@ -555,7 +555,7 @@ export class Calendars {
 		}
 		this.selectedCalendar = null;
 		this.deletionModal = false;
-		return res !== null;
+		return res;
 	}
 
 	async changeTodoCompleted(todo: Todo, checked: boolean): Promise<boolean> {

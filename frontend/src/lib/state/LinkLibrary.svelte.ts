@@ -50,32 +50,36 @@ export class LinkLibrary {
 	}
 
 	async load(): Promise<void> {
-		const res = await this.apiService.list(apiRoutes.libraries.links.list);
+		const [res, categoriesRes] = await Promise.all([
+			this.apiService.list(apiRoutes.libraries.links.list),
+			this.apiService.list(apiRoutes.libraries.links.listCategories)
+		]);
 
 		if (res) {
 			this.entries = res.data as Link[];
-			await this.loadCategories();
 			this.reapplyFilter();
 			this.loaded = true;
 		}
+		if (categoriesRes) this.setCategories(categoriesRes.data as LinkCategory[]);
 	}
 
 	async loadCategories(): Promise<void> {
 		const res = await this.apiService.list(apiRoutes.libraries.links.listCategories);
+		if (res) this.setCategories(res.data as LinkCategory[]);
+	}
 
-		if (res) {
-			this.categories = res.data as LinkCategory[];
+	private setCategories(categories: LinkCategory[]): void {
+		this.categories = categories;
 
-			if (this.categoriesCount.length > 0) {
-				this.categoriesCount = [];
-			}
+		if (this.categoriesCount.length > 0) {
+			this.categoriesCount = [];
+		}
 
-			for (const category of this.categories) {
-				this.categoriesCount.push({
-					id: category.id,
-					count: this.entries.filter((link) => link.category?.id === category.id).length
-				});
-			}
+		for (const category of this.categories) {
+			this.categoriesCount.push({
+				id: category.id,
+				count: this.entries.filter((link) => link.category?.id === category.id).length
+			});
 		}
 	}
 
@@ -171,13 +175,13 @@ export class LinkLibrary {
 			request
 		);
 		if (res) await this.load();
-		return Promise.resolve(res !== null);
+		return res;
 	}
 
 	async delete(entry: Link): Promise<boolean> {
 		const res = await this.apiService.delete(apiRoutes.libraries.links.delete, entry.id);
 		if (res) await this.load();
-		return Promise.resolve(res !== null);
+		return res;
 	}
 
 	async deleteByLink(link: string): Promise<boolean> {
@@ -206,7 +210,7 @@ export class LinkLibrary {
 			if (this.activeFilter === category.id) this.activeFilter = null;
 			await this.load();
 		}
-		return Promise.resolve(res !== null);
+		return res;
 	}
 }
 

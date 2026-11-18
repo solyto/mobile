@@ -59,11 +59,14 @@ export class MovieLibrary {
 	}
 
 	async load(): Promise<void> {
-		const res = await this.apiService.list(apiRoutes.libraries.movies.list);
+		const [res, genresRes] = await Promise.all([
+			this.apiService.list(apiRoutes.libraries.movies.list),
+			this.apiService.list(apiRoutes.libraries.movies.listGenres)
+		]);
+		if (genresRes) this.genres = genresRes.data as MovieGenre[];
 		if (res) {
 			this.entries = res.data as Movie[];
 			this.reapplyFilter();
-			await this.loadGenres();
 			this.loaded = true;
 		}
 	}
@@ -185,13 +188,13 @@ export class MovieLibrary {
 			request
 		);
 		if (res) await this.load();
-		return Promise.resolve(res !== null);
+		return res;
 	}
 
 	async delete(entry: Movie): Promise<boolean> {
 		const res = await this.apiService.delete(apiRoutes.libraries.movies.delete, entry.id);
 		if (res) await this.load();
-		return Promise.resolve(res !== null);
+		return res;
 	}
 
 	async updateRating(entry: Movie, rating: number): Promise<boolean> {
@@ -202,7 +205,7 @@ export class MovieLibrary {
 			request
 		);
 		if (res) await this.load();
-		return Promise.resolve(res !== null);
+		return res;
 	}
 
 	async createGenre(title: string): Promise<MovieGenre | null> {
@@ -215,7 +218,7 @@ export class MovieLibrary {
 	async deleteGenre(genre: MovieGenre): Promise<boolean> {
 		const res = await this.apiService.delete(apiRoutes.libraries.movies.deleteGenre, genre.id);
 		if (res) await this.loadGenres();
-		return Promise.resolve(res !== null);
+		return res;
 	}
 
 	async loadReleases(): Promise<void> {

@@ -5,6 +5,7 @@
 	import IconFilePlus from '@lucide/svelte/icons/file-plus';
 	import IconTrash from '@lucide/svelte/icons/trash-2';
 	import IconPen from '@lucide/svelte/icons/pen';
+	import IconFolderInput from '@lucide/svelte/icons/folder-input';
 
 	let { icon, size }: { icon: MenuIcon; size: number } = $props();
 </script>
@@ -17,6 +18,8 @@
 	<IconFolderPlus {size} class="text-c-btn" />
 {:else if icon === 'edit'}
 	<IconPen {size} class="text-c-btn" />
+{:else if icon === 'move'}
+	<IconFolderInput {size} class="text-c-btn" />
 {:else if icon === 'delete'}
 	<IconTrash {size} class="text-c-danger" />
 {/if}

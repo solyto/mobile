@@ -56,11 +56,14 @@ export class GameLibrary {
 	}
 
 	async load(): Promise<void> {
-		const res = await this.apiService.list(apiRoutes.libraries.games.list);
+		const [res, genresRes] = await Promise.all([
+			this.apiService.list(apiRoutes.libraries.games.list),
+			this.apiService.list(apiRoutes.libraries.games.listGenres)
+		]);
+		if (genresRes) this.genres = genresRes.data as GameGenre[];
 		if (res) {
 			this.entries = res.data as Game[];
 			this.reapplyFilter();
-			await this.loadGenres();
 			this.loaded = true;
 		}
 	}
@@ -182,13 +185,13 @@ export class GameLibrary {
 			request
 		);
 		if (res) await this.load();
-		return Promise.resolve(res !== null);
+		return res;
 	}
 
 	async delete(entry: Game): Promise<boolean> {
 		const res = await this.apiService.delete(apiRoutes.libraries.games.delete, entry.id);
 		if (res) await this.load();
-		return Promise.resolve(res !== null);
+		return res;
 	}
 
 	async updateRating(entry: Game, rating: number): Promise<boolean> {
@@ -199,7 +202,7 @@ export class GameLibrary {
 			request
 		);
 		if (res) await this.load();
-		return Promise.resolve(res !== null);
+		return res;
 	}
 
 	async createGenre(title: string): Promise<GameGenre | null> {
@@ -212,7 +215,7 @@ export class GameLibrary {
 	async deleteGenre(genre: GameGenre): Promise<boolean> {
 		const res = await this.apiService.delete(apiRoutes.libraries.games.deleteGenre, genre.id);
 		if (res) await this.loadGenres();
-		return Promise.resolve(res !== null);
+		return res;
 	}
 
 	async searchAt(provider: string, query: string): Promise<GameSearchResult[] | null> {

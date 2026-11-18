@@ -14,13 +14,15 @@
 		options,
 		allowUserOptions = false,
 		placeholder = '',
-		oncreate
+		oncreate,
+		onchange
 	}: {
 		value: MultiSelectEntry[];
 		options: MultiSelectEntry[];
 		allowUserOptions?: boolean;
 		placeholder?: string;
 		oncreate?: (label: string) => Promise<string | null>;
+		onchange?: (value: MultiSelectEntry[]) => void;
 	} = $props();
 
 	function optionLabel(option: MultiSelectEntry | string | number): string {
@@ -37,6 +39,12 @@
 		value = created
 			? value.map((entry) => (isAwaitingValue(entry, label) ? { label, value: created } : entry))
 			: value.filter((entry) => !isAwaitingValue(entry, label));
+		if (created) notifyChange();
+	}
+
+	// A user-created option is reported once createOption has its value.
+	function notifyChange(): void {
+		if (value.every((entry) => typeof entry === 'object' && entry.value)) onchange?.(value);
 	}
 </script>
 
@@ -47,6 +55,7 @@
 		{allowUserOptions}
 		{placeholder}
 		oncreate={oncreate ? createOption : undefined}
+		onchange={notifyChange}
 		portal={{ active: true }}
 		ulOptionsStyle="z-index: 60;"
 	/>

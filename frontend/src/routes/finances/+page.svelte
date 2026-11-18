@@ -12,21 +12,20 @@
 	import DoughnutChart from '$lib/components/charts/DoughnutChart.svelte';
 	import BarChart from '$lib/components/charts/BarChart.svelte';
 	import SmoothLineChart from '$lib/components/charts/SmoothLineChart.svelte';
-	import WealthStatisticsService from '$lib/services/WealthStatisticsService';
+	import WealthStatisticsService, { wealthRanges, type WealthRangeKey } from '$lib/services/WealthStatisticsService';
+	import WealthRangeControl from '$lib/components/finances/WealthRangeControl.svelte';
 
 	const ts = getTranslation();
 	const finances = getFinances();
 	const auth = getAuth();
 
 	let colorLoaded = $state<boolean>(false);
+	let range = $state<WealthRangeKey>('1y');
 	const statisticsService = new WealthStatisticsService();
 	let statistics = $derived.by(() => {
 		if (!finances.wealthLoaded) return [];
 		statisticsService.setData(finances.wealth);
-		return statisticsService.getGraphValues() as unknown as {
-			date: string;
-			values: { field: string; value: number }[];
-		}[];
+		return statisticsService.getGraphValues(wealthRanges[range]);
 	});
 
 	onMount(() => {
@@ -108,7 +107,10 @@
 				class="relative w-full rounded-md p-4 shadow-sm dark:shadow-s-dark-shadow md:dark:bg-s-dark-2"
 				in:slide
 			>
-				<SubHeading title={ts.get.finances.wealth_trend} my={0} mb={8} />
+				<div class="mb-8 flex flex-wrap items-center justify-between gap-2">
+					<SubHeading title={ts.get.finances.wealth_trend} my={0} />
+					<WealthRangeControl bind:value={range} />
+				</div>
 				<div>
 					<SmoothLineChart
 						categories={statisticsService.getMonthLabels(statistics, auth.user?.settings?.date_format ?? null)}

@@ -37,10 +37,10 @@ export interface UpdateLinkRequest {
 
 export interface CreateLinkCategoryRequest {
 	title: string;
-	icon?: string | null;
+	color?: string | null;
 }
 
 export interface UpdateLinkCategoryRequest {
 	title?: string;
-	icon?: string | null;
+	color?: string;
 }

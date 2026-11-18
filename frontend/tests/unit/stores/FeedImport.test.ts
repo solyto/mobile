@@ -262,6 +262,27 @@ describe('FeedImport store', () => {
 			expect(s.polling).toBe(true);
 		});
 
+		it('backs off on error responses like on network errors, and clears the error once a poll succeeds', async () => {
+			const s = await startedStore();
+			api.get.mockResolvedValueOnce(null);
+			api.get.mockResolvedValueOnce(null);
+			api.get.mockResolvedValue(running(2));
+
+			s.startPolling();
+			await vi.advanceTimersByTimeAsync(1000);
+			expect(s.pollError).toBe('network');
+
+			await vi.advanceTimersByTimeAsync(1999);
+			expect(api.get).toHaveBeenCalledTimes(1);
+			await vi.advanceTimersByTimeAsync(1);
+			expect(api.get).toHaveBeenCalledTimes(2);
+
+			await vi.advanceTimersByTimeAsync(4000);
+			expect(api.get).toHaveBeenCalledTimes(3);
+			expect(s.pollError).toBeNull();
+			expect(s.polling).toBe(true);
+		});
+
 		it('reports a rate limit and waits at least as long as the server asks, up to the cap', async () => {
 			const s = await startedStore();
 			api.get.mockRejectedValueOnce(new RateLimitedError(3600, null));

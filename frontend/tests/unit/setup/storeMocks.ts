@@ -17,7 +17,8 @@ export const api = {
 	putWithStatus: vi.fn(),
 	postFormData: vi.fn(),
 	uploadFile: vi.fn(),
-	image: vi.fn()
+	image: vi.fn(),
+	download: vi.fn()
 };
 
 export const storage = {

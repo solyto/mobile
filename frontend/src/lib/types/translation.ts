@@ -278,6 +278,7 @@ export interface TodoRecords {
 	workspace_hide_it: string;
 	new_category: string;
 	rename_category: string;
+	rename_workspace: string;
 	no_categories: string;
 	new_workspace: string;
 	no_workspaces: string;
@@ -495,6 +496,8 @@ export interface NoteRecords {
 	remove_from_favorites: string;
 	no_entries: string;
 	note_not_found: string;
+	no_search_results: string;
+	search_shortcut_hint: string;
 	insert_image: string;
 	insert_image_url: string;
 	insert_image_clipboard: string;
@@ -512,6 +515,9 @@ export interface NoteRecords {
 	other: string;
 	journal_empty: string;
 	journal_create_error: string;
+	move_note: string;
+	no_folder: string;
+	move_error: string;
 }
 
 export interface LibraryRecords {
@@ -602,6 +608,7 @@ export interface LibraryRecords {
 		search_placeholder: string;
 	};
 	games: {
+		update_error: string;
 		title: string;
 		platform: string;
 		platform_pc: string;
@@ -685,6 +692,7 @@ export interface LibraryRecords {
 		update_error: string;
 	};
 	plants: {
+		update_error: string;
 		name: string;
 		latin_name: string;
 		location: string;
@@ -797,6 +805,8 @@ export interface DevRecords {
 		fixed_in_included: string;
 		fixed_in_pending: string;
 		fixed_in_current_version: string;
+		filter_all: string;
+		filter_open: string;
 		version_validation_error: string;
 	};
 }
@@ -827,6 +837,21 @@ export interface FinanceRecords {
 	delete_value_message: string;
 	delete_item: string;
 	delete_item_message: string;
+	interval: string;
+	interval_monthly: string;
+	interval_quarterly: string;
+	interval_yearly: string;
+	per_month: string;
+	per_quarter: string;
+	per_year: string;
+	range_1y: string;
+	range_3y: string;
+	range_5y: string;
+	range_all: string;
+	tags: string;
+	tag_error: string;
+	all_tags: string;
+	tag_filter: string;
 }
 
 
@@ -1141,6 +1166,15 @@ export interface ClipboardRecords {
 	image_reduce: string;
 	image_copy_success: string;
 	image_copy_error: string;
+	file_save_success: string;
+	file_save_error: string;
+	file_too_large: string;
+	file_invalid_type: string;
+	file_limit_reached: string;
+	file_limit_reached_hours_singular: string;
+	file_limit_reached_hours_plural: string;
+	file_download_error: string;
+	image_load_error: string;
 }
 
 export interface ProfileRecords {

@@ -139,13 +139,13 @@ export class PlantLibrary {
 	async update(entry: Plant, request: UpdatePlantRequest): Promise<boolean> {
 		const res = await this.apiService.update(apiRoutes.libraries.plants.update, entry.id, request);
 		if (res) await this.load();
-		return Promise.resolve(res !== null);
+		return res;
 	}
 
 	async delete(entry: Plant): Promise<boolean> {
 		const res = await this.apiService.delete(apiRoutes.libraries.plants.delete, entry.id);
 		if (res) await this.load();
-		return Promise.resolve(res !== null);
+		return res;
 	}
 }
 

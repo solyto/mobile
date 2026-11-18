@@ -2,6 +2,7 @@
 	import { fade } from 'svelte/transition';
 	import { flip } from 'svelte/animate';
 	import { getNotes } from '$lib/state/Notes.svelte';
+	import { contextMenu } from '$lib/helpers/ContextMenuHelper';
 	import { urls } from '$lib/config/urls';
 	import { resolve } from '$app/paths';
 	import type { Note } from '$lib/types/note';
@@ -22,7 +23,7 @@
 				notes.selectNote(note.id);
 				handleNavigation();
 			}}
-			oncontextmenu={(event: MouseEvent) => notes.openRightClickMenu(event, 'note', note.id)}
+			use:contextMenu={(x, y) => notes.openRightClickMenu(x, y, 'note', note.id)}
 			draggable="true"
 			ondragstart={() => (notes.draggedNote = note)}
 			ondragend={() => {

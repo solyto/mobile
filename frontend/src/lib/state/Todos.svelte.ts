@@ -401,7 +401,7 @@ export class Todos {
 			request
 		);
 		if (res) await this.loadWorkspaces();
-		return Promise.resolve(res !== null);
+		return res;
 	}
 
 	async changePriority(todo: Todo, priority: TodoPriority): Promise<boolean> {

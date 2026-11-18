@@ -109,25 +109,39 @@ describe('Feeds store', () => {
 			expect(s.feedCounts).toEqual({ 'feed-1': 3 });
 		});
 
-		it('recursively loads until the filtered window is full for the active feed', async () => {
-			api.list
-				.mockResolvedValueOnce({
-					data: [item({ id: 'a', feed_id: 'feed-other' })],
-					meta: { has_more: true }
-				})
-				.mockResolvedValueOnce({
-					data: [item({ id: 'c', feed_id: 'feed-1' })],
-					meta: { has_more: false }
-				});
+		it('filters by the active feed on the server and loads one page only', async () => {
+			api.list.mockResolvedValue({
+				data: [item({ id: 'a' })],
+				meta: { has_more: true }
+			});
 
 			const s = new Feeds();
 			s.activeFeed = feed();
 			await s.loadMore();
 
-			// second page loaded because the first page had no matching items
-			expect(api.list).toHaveBeenCalledTimes(2);
-			expect(s.items).toHaveLength(2);
-			expect(s.filteredItems.map((i) => i.id)).toEqual(['c']);
+			expect(api.list).toHaveBeenCalledTimes(1);
+			expect(api.list).toHaveBeenCalledWith(expect.stringContaining('feed_id=feed-1'));
+			expect(s.filteredItems.map((i) => i.id)).toEqual(['a']);
+		});
+
+		it('drops a response that arrives after load() reset the list', async () => {
+			let resolveStale: (value: unknown) => void = () => {};
+			api.list
+				.mockReturnValueOnce(new Promise((resolve) => (resolveStale = resolve)))
+				.mockResolvedValueOnce({ data: [feed()] })
+				.mockResolvedValueOnce({ data: [item({ id: 'fresh' })], meta: { has_more: false } });
+
+			const s = new Feeds();
+			s.offset = 100;
+			const stale = s.loadMore();
+			await s.load();
+			resolveStale({ data: [item({ id: 'stale' })], meta: { has_more: true } });
+			await stale;
+
+			expect(s.items.map((i) => i.id)).toEqual(['fresh']);
+			expect(s.offset).toBe(1);
+			expect(s.hasMore).toBe(false);
+			expect(s.loadingMore).toBe(false);
 		});
 	});
 
@@ -149,32 +163,33 @@ describe('Feeds store', () => {
 	});
 
 	describe('selectFeed', () => {
-		it('sets the active feed and re-filters', () => {
+		it('resets the list and loads the first page of the selected feed', async () => {
+			api.list.mockResolvedValue({ data: [item({ id: 'c' })], meta: { has_more: false } });
 			const s = new Feeds();
 			s.items = [item({ id: 'a' }), item({ id: 'b', feed_id: 'feed-2' })];
+			s.offset = 2;
+			s.hasMore = false;
+
 			s.selectFeed(feed());
+			await vi.waitFor(() => expect(s.loadingMore).toBe(false));
+
 			expect(s.activeFeed?.feed_id).toBe('feed-1');
-			expect(s.filteredItems.map((i) => i.id)).toEqual(['a']);
+			expect(api.list).toHaveBeenCalledTimes(1);
+			expect(api.list).toHaveBeenCalledWith(expect.stringMatching(/offset=0.*feed_id=feed-1/));
+			expect(s.filteredItems.map((i) => i.id)).toEqual(['c']);
 		});
 
-		it('clears the filter for a null feed', () => {
-			const s = new Feeds();
-			s.items = [item()];
-			s.selectFeed(null);
-			expect(s.activeFeed).toBeNull();
-			expect(s.filteredItems).toHaveLength(1);
-		});
-
-		it('loads more when the filtered window is short', async () => {
+		it('loads all feeds again for a null feed', async () => {
 			api.list.mockResolvedValue({ data: [item()], meta: { has_more: false } });
 			const s = new Feeds();
-			s.items = [item({ id: 'a' })];
-			s.hasMore = true;
-			// selectFeed fires loadMore() without awaiting it; waitFor flushes it
-			s.selectFeed(feed());
-			await vi.waitFor(() => expect(api.list).toHaveBeenCalled());
-			expect(s.items).toHaveLength(2);
-			expect(s.filteredItems.map((i) => i.id)).toEqual(['a', 'item-1']);
+			s.activeFeed = feed();
+
+			s.selectFeed(null);
+			await vi.waitFor(() => expect(s.loadingMore).toBe(false));
+
+			expect(s.activeFeed).toBeNull();
+			expect(api.list).toHaveBeenCalledWith(expect.not.stringContaining('feed_id'));
+			expect(s.filteredItems).toHaveLength(1);
 		});
 	});
 
@@ -290,6 +305,26 @@ describe('Feeds store', () => {
 			api.list.mockResolvedValue(null);
 			const s = new Feeds();
 			await expect(s.loadFriendFeeds()).resolves.toEqual([]);
+		});
+	});
+
+	describe('update', () => {
+		it('returns false and does not reload when the server rejects the update', async () => {
+			api.update.mockResolvedValue(false);
+			const s = new Feeds();
+			const load = vi.spyOn(s, 'load').mockResolvedValue();
+
+			await expect(s.update(feed(), { title: 'New' })).resolves.toBe(false);
+			expect(load).not.toHaveBeenCalled();
+		});
+
+		it('returns true and reloads after a successful update', async () => {
+			api.update.mockResolvedValue(true);
+			const s = new Feeds();
+			const load = vi.spyOn(s, 'load').mockResolvedValue();
+
+			await expect(s.update(feed(), { title: 'New' })).resolves.toBe(true);
+			expect(load).toHaveBeenCalled();
 		});
 	});
 });

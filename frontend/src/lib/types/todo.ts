@@ -113,7 +113,8 @@ export interface CreateTodoWorkspaceRequest {
 }
 
 export interface UpdateTodoWorkspaceRequest {
-	is_hideable: boolean;
+	title?: string;
+	is_hideable?: boolean;
 }
 
 export interface TodoSubtask {

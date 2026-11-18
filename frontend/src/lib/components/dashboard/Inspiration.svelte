@@ -50,16 +50,8 @@
 	}
 
 	function loadNotes(): void {
-		apiService.list(apiRoutes.notes.list).then((res) => {
-			if (res) {
-				newestNotes = (res.data as Note[])
-					.sort((a, b) => {
-						const aTime = Math.max(new Date(a.created_at).getTime(), new Date(a.updated_at).getTime());
-						const bTime = Math.max(new Date(b.created_at).getTime(), new Date(b.updated_at).getTime());
-						return bTime - aTime;
-					})
-					.slice(0, 5);
-			}
+		apiService.list(apiRoutes.notes.recent).then((res) => {
+			if (res) newestNotes = res.data as Note[];
 			notesLoaded = true;
 		});
 	}

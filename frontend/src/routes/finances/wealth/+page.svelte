@@ -14,7 +14,8 @@
 	import { europeanFormat } from '$lib/helpers/NumberHelper';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import DoughnutChart from '$lib/components/charts/DoughnutChart.svelte';
-	import WealthStatisticsService from '$lib/services/WealthStatisticsService';
+	import WealthStatisticsService, { wealthRanges, type WealthRangeKey } from '$lib/services/WealthStatisticsService';
+	import WealthRangeControl from '$lib/components/finances/WealthRangeControl.svelte';
 	import StackedAreaChart from '$lib/components/charts/StackedAreaChart.svelte';
 	import SmoothLineChart from '$lib/components/charts/SmoothLineChart.svelte';
 	import SubHeading from '$lib/components/ui/SubHeading.svelte';
@@ -27,9 +28,10 @@
 	const auth = getAuth();
 	const statisticsService = new WealthStatisticsService();
 
+	let range = $state<WealthRangeKey>('1y');
 	let statistics = $derived.by(() => {
 		statisticsService.setData(finances.wealth);
-		return statisticsService.getGraphValues();
+		return statisticsService.getGraphValues(wealthRanges[range]);
 	});
 	let historyFieldId = $state<number | null>(null);
 	let historyField = $derived(finances.wealth.find((field) => field.id === historyFieldId) ?? null);
@@ -138,7 +140,10 @@
 			</div>
 		</div>
 		{#if finances.wealth.length > 0}
-			<h2 class="mt-8 text-2xl">{ts.get.finances.history}</h2>
+			<div class="mt-8 flex flex-wrap items-center justify-between gap-2">
+				<h2 class="text-2xl">{ts.get.finances.history}</h2>
+				<WealthRangeControl bind:value={range} />
+			</div>
 			<div class="relative w-full rounded-md p-4 shadow-sm dark:shadow-s-dark-shadow md:dark:bg-s-dark-2">
 				<SubHeading title={ts.get.finances.history_development} my={0} mb={8} />
 				<SmoothLineChart

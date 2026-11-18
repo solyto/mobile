@@ -153,13 +153,13 @@ export class RecipeLibrary {
 			request
 		);
 		if (res) await this.load();
-		return Promise.resolve(res !== null);
+		return res;
 	}
 
 	async delete(entry: Recipe): Promise<boolean> {
 		const res = await this.apiService.delete(apiRoutes.libraries.recipes.delete, entry.id);
 		if (res) await this.load();
-		return Promise.resolve(res !== null);
+		return res;
 	}
 
 	async updateRating(entry: Recipe, rating: number): Promise<boolean> {
@@ -170,7 +170,7 @@ export class RecipeLibrary {
 			request
 		);
 		if (res) await this.load();
-		return Promise.resolve(res !== null);
+		return res;
 	}
 
 	async importFrom(provider: string, url: string): Promise<RecipeRelease | null> {

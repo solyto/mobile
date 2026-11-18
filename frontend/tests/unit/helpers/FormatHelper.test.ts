@@ -1,6 +1,13 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
-import { nl2br, truncate, stripHtml, hasMeaningfulDescription } from '$lib/helpers/FormatHelper';
+import {
+	nl2br,
+	truncate,
+	stripHtml,
+	hasMeaningfulDescription,
+	formatFileSize,
+	getFileExtension
+} from '$lib/helpers/FormatHelper';
 
 describe('nl2br', () => {
 	it('replaces newlines with <br>', () => {
@@ -79,5 +86,30 @@ describe('hasMeaningfulDescription', () => {
 
 	it('is true for several links', () => {
 		expect(hasMeaningfulDescription('<a href="#">Article</a> <a href="#">Comments</a>')).toBe(true);
+	});
+});
+
+describe('formatFileSize', () => {
+	it('shows kilobytes below one megabyte', () => {
+		expect(formatFileSize(1536, 'en')).toBe('1.5 kB');
+	});
+
+	it('shows megabytes from one megabyte', () => {
+		expect(formatFileSize(10 * 1024 * 1024, 'en')).toBe('10 MB');
+	});
+
+	it('uses the locale', () => {
+		expect(formatFileSize(1536, 'de')).toBe('1,5 kB');
+	});
+});
+
+describe('getFileExtension', () => {
+	it('returns the lowercased extension', () => {
+		expect(getFileExtension('Report.Final.PDF')).toBe('pdf');
+	});
+
+	it('is empty without an extension or for a dotfile', () => {
+		expect(getFileExtension('README')).toBe('');
+		expect(getFileExtension('.env')).toBe('');
 	});
 });

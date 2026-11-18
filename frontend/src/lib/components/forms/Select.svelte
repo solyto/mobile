@@ -3,18 +3,21 @@
 		input = $bindable(),
 		value = $bindable(),
 		options,
-		onchange
+		onchange,
+		ariaLabel
 	}: {
 		input?: HTMLSelectElement | null;
 		value: string;
 		options: { label: string; value: string }[];
 		onchange?: (value: string) => void;
+		ariaLabel?: string;
 	} = $props();
 </script>
 
 <select
 	class="h-10 w-full rounded-lg border-1 border-c-neutral-2 text-sm shadow-xs transition-all focus:ring-2 focus:ring-d-lightblue focus:outline-none dark:border-s-dark-3 dark:bg-inherit dark:text-white dark:focus:ring-c-primary"
 	bind:this={input}
+	aria-label={ariaLabel}
 	bind:value
 	onchange={() => onchange?.(value)}
 >

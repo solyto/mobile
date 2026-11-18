@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { init } from './echarts';
 	import type { ECharts } from './echarts';
-	import { onMount, onDestroy, tick } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 
 	let { title, xCategories, dataPoints, valueFormatter }: {
 		title?: string;
@@ -10,9 +10,8 @@
 		valueFormatter?: (value: number) => string;
 	} = $props();
 
-	let chartContainer: HTMLDivElement | null = null;
+	let chartContainer = $state<HTMLDivElement | null>(null);
 	let myChart: ECharts | null = null;
-	let isInitialized = false;
 
 	/*
 		Fields: categories
@@ -77,12 +76,9 @@
 		};
 
 		myChart.setOption(options);
-		isInitialized = true;
 	}
 
 	onMount(() => {
-		tick().then(createChart);
-
 		const handleResize = () => {
 			if (myChart) {
 				myChart.resize();
@@ -104,7 +100,7 @@
 	});
 
 	$effect(() => {
-		if (!isInitialized && chartContainer) {
+		if (chartContainer) {
 			createChart();
 		}
 	});

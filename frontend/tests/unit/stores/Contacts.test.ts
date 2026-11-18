@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Contacts } from '$lib/state/Contacts.svelte';
 import { api, storage, resetStoreMocks } from '../setup/storeMocks';
-import type { Contact, AddressBook } from '$lib/types/contact';
+import type { Contact, AddressBook, CreateContactRequest } from '$lib/types/contact';
 
 function contact(overrides: Partial<Contact> = {}): Contact {
 	return {
@@ -214,17 +214,121 @@ describe('Contacts store', () => {
 			expect(s.contactPhotosLoaded).toBe(true);
 		});
 
-		it('loadContactPhotos skips already-cached contacts', async () => {
+		it('loadContactPhotos does not request a contact again that had no photo', async () => {
 			const s = new Contacts();
 			s.contacts = [contact(), contact({ uri: 'c2' })];
-			s.contactPhotos = { 'contact-1': 'data:x' };
+			api.post.mockResolvedValue({ data: { 'contact-1': 'data:a' } });
+
+			await s.loadContactPhotos();
+			await s.loadContactPhotos();
+
+			expect(api.post).toHaveBeenCalledTimes(1);
+			expect(s.getContactPhoto('c2')).toBeNull();
+		});
+
+		it('loadContactPhotos skips contacts the list marks as having no photo', async () => {
+			const s = new Contacts();
+			s.contacts = [
+				contact({ uri: 'with', has_photo: true }),
+				contact({ uri: 'without', has_photo: false }),
+				contact({ uri: 'unknown' })
+			];
+			api.post.mockResolvedValue({ data: { with: 'data:a' } });
+
+			await s.loadContactPhotos();
+
+			expect(api.post).toHaveBeenCalledTimes(1);
+			const uris = (api.post.mock.calls[0][1] as { contacts: { uri: string }[] }).contacts.map(
+				(c) => c.uri
+			);
+			expect(uris).toEqual(['with', 'unknown']);
+			expect(s.contactPhotosLoaded).toBe(true);
+		});
+
+		it('loadContactPhotos sends no request when no contact has a photo', async () => {
+			const s = new Contacts();
+			s.contacts = [contact({ has_photo: false }), contact({ uri: 'c2', has_photo: false })];
+
+			await s.loadContactPhotos();
+
+			expect(api.post).not.toHaveBeenCalled();
+			expect(s.contactPhotosLoaded).toBe(true);
+		});
+
+		it('loadContactPhotos requests a contact whose has_photo turned true', async () => {
+			const s = new Contacts();
+			s.contacts = [contact({ has_photo: false })];
+			await s.loadContactPhotos();
+
+			s.contacts = [contact({ has_photo: true })];
+			api.post.mockResolvedValue({ data: { 'contact-1': 'data:a' } });
+			await s.loadContactPhotos();
+
+			expect(api.post).toHaveBeenCalledTimes(1);
+			expect(s.getContactPhoto('contact-1')).toBe('data:a');
+		});
+
+		it('loadContactPhotos requests a failed batch again next time', async () => {
+			const s = new Contacts();
+			s.contacts = [contact()];
+			api.post
+				.mockResolvedValueOnce(null)
+				.mockResolvedValueOnce({ data: { 'contact-1': 'data:a' } });
+
+			await s.loadContactPhotos();
+			await s.loadContactPhotos();
+
+			expect(api.post).toHaveBeenCalledTimes(2);
+			expect(s.contactPhotos['contact-1']).toBe('data:a');
+		});
+
+		it('loadContactPhotos sends 25 contacts in batches of 10, 10 and 5', async () => {
+			const s = new Contacts();
+			s.contacts = Array.from({ length: 25 }, (_, i) => contact({ uri: `c${i}` }));
 			api.post.mockResolvedValue({ data: {} });
 
 			await s.loadContactPhotos();
 
-			// only the uncached contact is requested
-			const payload = api.post.mock.calls[0][1] as { contacts: unknown[] };
-			expect(payload.contacts).toHaveLength(1);
+			const sizes = api.post.mock.calls.map(
+				(call) => (call[1] as { contacts: unknown[] }).contacts.length
+			);
+			expect(sizes).toEqual([10, 10, 5]);
+		});
+
+		it('concurrent loadContactPhotos calls request each contact once', async () => {
+			const s = new Contacts();
+			s.contacts = [contact(), contact({ uri: 'c2' })];
+			let resolveFirst!: (value: unknown) => void;
+			api.post
+				.mockReturnValueOnce(new Promise((resolve) => (resolveFirst = resolve)))
+				.mockResolvedValue({ data: {} });
+
+			const first = s.loadContactPhotos();
+			const second = s.loadContactPhotos();
+			resolveFirst({ data: {} });
+			await Promise.all([first, second]);
+
+			expect(api.post).toHaveBeenCalledTimes(1);
+			expect(s.contactPhotosLoaded).toBe(true);
+		});
+
+		it('update requests the photo of the updated contact again', async () => {
+			const c2 = contact({ uri: 'c2' });
+			const s = new Contacts();
+			s.contacts = [contact(), c2];
+			api.post.mockResolvedValue({ data: {} });
+			await s.loadContactPhotos();
+			api.post.mockClear();
+
+			api.update.mockResolvedValue(true);
+			api.list
+				.mockResolvedValueOnce({ data: [addressBook()] })
+				.mockResolvedValueOnce({ data: [contact(), c2] });
+			await s.update(c2, {} as CreateContactRequest);
+
+			expect(api.post).toHaveBeenCalledTimes(1);
+			const payload = api.post.mock.calls[0][1] as { contacts: { uri: string }[] };
+			expect(payload.contacts.map((c) => c.uri)).toEqual(['c2']);
 		});
 	});
 
@@ -242,7 +346,7 @@ describe('Contacts store', () => {
 			expect(s.loaded).toBe(true);
 			expect(s.addressBooks).toHaveLength(1);
 			expect(s.contacts).toHaveLength(1);
-			expect(s.contactPhotosLoaded).toBe(true);
+			await vi.waitFor(() => expect(s.contactPhotosLoaded).toBe(true));
 		});
 	});
 

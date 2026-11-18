@@ -113,14 +113,15 @@
 			multiLine={true}
 			height={150}
 		/>
-		<Select bind:value={form.type} options={typeOptions} />
 		<Select bind:value={form.priority} options={priorityOptions} />
 		{#if entry}
 			<Select bind:value={form.status} options={statusOptions} />
 			{#if form.status === 'completed'}
 				<TextInput placeholder={ts.get.dev.requests.fixed_in_version} bind:value={form.fixed_in_version} inputmode="decimal" />
 			{/if}
-		{:else}
+		{/if}
+		<Select bind:value={form.type} options={typeOptions} />
+		{#if !entry}
 			<FileUpload
 				label={ts.get.dev.requests.screenshot}
 				bind:value={form.screenshot}

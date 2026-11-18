@@ -92,13 +92,13 @@ export class QuoteLibrary {
 			request
 		);
 		if (res) await this.load();
-		return Promise.resolve(res !== null);
+		return res;
 	}
 
 	async delete(quote: Quote): Promise<boolean> {
 		const res = await this.apiService.delete(apiRoutes.libraries.quotes.delete, quote.id);
 		if (res) await this.load();
-		return Promise.resolve(res !== null);
+		return res;
 	}
 }
 

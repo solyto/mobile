@@ -3,6 +3,7 @@
 	import Badge from '$lib/components/ui/Badge.svelte';
 	import NavIndicator from '$lib/components/ui/NavIndicator.svelte';
 	import CategoryCreate from '$lib/components/libraries/links/CategoryCreate.svelte';
+	import CategoryNavigationMobile from '$lib/components/libraries/links/CategoryNavigationMobile.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import IconTrash from '@lucide/svelte/icons/trash-2';
 
@@ -101,4 +102,7 @@
 		</div>
 	{/each}
 	<CategoryCreate />
+</div>
+<div class="md:hidden">
+	<CategoryNavigationMobile />
 </div>

@@ -12,7 +12,19 @@
 		entries: RightClickMenuEntry[];
 	} = $props();
 
+	const VIEWPORT_MARGIN = 8;
+
 	let visible = $state<boolean>(false);
+	let menuWidth = $state<number>(0);
+	let menuHeight = $state<number>(0);
+
+	function left(): number {
+		return Math.max(VIEWPORT_MARGIN, Math.min(x, window.innerWidth - menuWidth - VIEWPORT_MARGIN));
+	}
+
+	function top(): number {
+		return Math.max(VIEWPORT_MARGIN, Math.min(y, window.innerHeight - menuHeight - VIEWPORT_MARGIN));
+	}
 
 	onMount(() => {
 		setTimeout(() => {
@@ -24,7 +36,9 @@
 {#if visible}
 	<div
 		class="fixed z-50 flex flex-col justify-start rounded-lg border-1 border-c-neutral-2 bg-c-bg-modal shadow-md dark:border-s-dark-3"
-		style="top: {y}px; left: {x}px;"
+		style="top: {top()}px; left: {left()}px;"
+		bind:offsetWidth={menuWidth}
+		bind:offsetHeight={menuHeight}
 		transition:fade
 		use:clickOutside={() => {
 			close();

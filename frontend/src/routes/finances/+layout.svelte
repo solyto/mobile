@@ -3,17 +3,20 @@
 	import FinanceNavigation from '$lib/components/finances/FinanceNavigation.svelte';
 	import { onMount } from 'svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
+	import { getTags, setTags } from '$lib/state/Tags.svelte';
 
 	let { children } = $props();
 
 	setFinances();
+	setTags();
 
 	const loadingIndicator = getLoadingIndicator();
 	const finances = getFinances();
+	const tags = getTags();
 
 	onMount(async () => {
 		loadingIndicator.start();
-		await Promise.all([finances.loadIncome(), finances.loadWealth()]);
+		await Promise.all([finances.loadIncome(), finances.loadWealth(), tags.load()]);
 		loadingIndicator.stop();
 	});
 </script>

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
-	import { getClipboard } from '$lib/state/Clipboard.svelte';
+	import { Clipboard, getClipboard } from '$lib/state/Clipboard.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
@@ -9,6 +9,10 @@
 	import CloseButton from '$lib/components/ui/buttons/CloseButton.svelte';
 	import Heading from '$lib/components/ui/Heading.svelte';
 	import IconImage from '@lucide/svelte/icons/image';
+	import IconPaperclip from '@lucide/svelte/icons/paperclip';
+	import { RateLimitedError } from '$lib/services/ApiService';
+	import { clipboardFileLimitMessage } from '$lib/helpers/NetworkErrorHelper';
+	import ClipboardFileInfo from '$lib/components/clipboard/ClipboardFileInfo.svelte';
 	import Toggle from '$lib/components/forms/Toggle.svelte';
 	import {
 		REDUCED_IMAGE_QUALITY,
@@ -29,6 +33,14 @@
 	let fileInput = $state<HTMLInputElement | null>(null);
 	let canReduce = $state<boolean>(false);
 	let reduce = $state<boolean>(false);
+	let selectedFile = $state<File | null>(null);
+	let documentInput = $state<HTMLInputElement | null>(null);
+
+	const PICKER_BUTTON = 'flex cursor-pointer items-center gap-2 rounded-md bg-c-btn px-4 py-2 text-white transition-opacity hover:opacity-90';
+	const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+	const IMAGE_ACCEPT = IMAGE_TYPES.join(',');
+	// The paperclip takes images too, so it is never the wrong button; the image button stays for the phone's gallery picker.
+	const DOCUMENT_ACCEPT = [...Clipboard.FILE_EXTENSIONS.map((extension) => '.' + extension), ...IMAGE_TYPES].join(',');
 
 	async function onSave(): Promise<void> {
 		loadingIndicator.start();
@@ -112,6 +124,48 @@
 		loadingIndicator.stop();
 	}
 
+	function onDocumentSelect(e: Event): void {
+		const input = e.target as HTMLInputElement;
+		if (!input.files || input.files.length === 0) return;
+
+		const file = input.files[0];
+		if (IMAGE_TYPES.includes(file.type)) {
+			// Reset now: the image flow only clears the image input, and the same file picked again must fire change.
+			input.value = '';
+			setImagePreview(file);
+			return;
+		}
+		selectedFile = file;
+	}
+
+	async function onSaveFile(): Promise<void> {
+		if (!selectedFile) return;
+		loadingIndicator.start();
+		try {
+			const res = await clipboard.createFile(selectedFile);
+			if (res === 'ok') {
+				notifications.success(ts.get.clipboard.file_save_success);
+				clearSelectedFile();
+			} else if (res === 'too_large') {
+				notifications.error(ts.get.clipboard.file_too_large);
+			} else if (res === 'invalid_type') {
+				notifications.error(ts.get.clipboard.file_invalid_type);
+			} else {
+				notifications.error(ts.get.clipboard.file_save_error);
+			}
+		} catch (e) {
+			if (!(e instanceof RateLimitedError)) throw e;
+			notifications.error(clipboardFileLimitMessage(e.retryAfter, ts.get.clipboard));
+		} finally {
+			loadingIndicator.stop();
+		}
+	}
+
+	function clearSelectedFile(): void {
+		selectedFile = null;
+		if (documentInput) documentInput.value = '';
+	}
+
 	function clearImagePreview(): void {
 		if (imagePreview) URL.revokeObjectURL(imagePreview);
 		imagePreview = null;
@@ -130,8 +184,9 @@
 		bind:this={fileInput}
 		onchange={onFileSelect}
 		class="hidden"
-		accept="image/jpeg,image/png,image/gif,image/webp"
+		accept={IMAGE_ACCEPT}
 	/>
+	<input type="file" bind:this={documentInput} onchange={onDocumentSelect} class="hidden" accept={DOCUMENT_ACCEPT} />
 
 	{#if imagePreview}
 		<div class="relative mb-4">
@@ -152,16 +207,26 @@
 			{/if}
 			<TextButton title={ts.get.clipboard.save} onclick={onSaveImage} />
 		</div>
+	{:else if selectedFile}
+		<div class="relative mb-4 rounded-md p-4 shadow-sm dark:shadow-s-dark-shadow md:dark:bg-s-dark-2">
+			<ClipboardFileInfo name={selectedFile.name} size={selectedFile.size} />
+			<div class="absolute top-[-10px] right-[-10px]">
+				<CloseButton onClick={clearSelectedFile} inModal={false} />
+			</div>
+		</div>
+		<div class="flex w-full justify-end">
+			<TextButton title={ts.get.clipboard.save} onclick={onSaveFile} />
+		</div>
 	{:else}
 		<div onpaste={onPasteEvent}>
 			<TextInput multiLine={true} bind:value height={200} />
 		</div>
 		<div class="mt-4 flex w-full justify-end gap-4">
-			<button
-				class="flex cursor-pointer items-center gap-2 rounded-md bg-c-btn px-4 py-2 text-white transition-opacity hover:opacity-90"
-				onclick={() => fileInput?.click()}
-			>
+			<button class={PICKER_BUTTON} onclick={() => fileInput?.click()}>
 				<IconImage class="size-4" />
+			</button>
+			<button class={PICKER_BUTTON} onclick={() => documentInput?.click()}>
+				<IconPaperclip class="size-4" />
 			</button>
 			<TextButton title={ts.get.clipboard.save} onclick={onSave} />
 		</div>

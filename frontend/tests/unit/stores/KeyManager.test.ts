@@ -18,7 +18,7 @@ describe('KeyManager', () => {
 		expect(event.preventDefault).toHaveBeenCalled();
 	});
 
-	it.each(['ArrowLeft', 'ArrowRight'] as const)('runs a registered %s handler', (key) => {
+	it.each(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'] as const)('runs a registered %s handler', (key) => {
 		const keyManager = new KeyManager();
 		const handler = vi.fn();
 		keyManager.registerKeyDown(key, handler);
@@ -30,7 +30,7 @@ describe('KeyManager', () => {
 		expect(event.preventDefault).toHaveBeenCalled();
 	});
 
-	it.each(['ArrowLeft', 'ArrowRight'] as const)(
+	it.each(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'] as const)(
 		'respects preventDefault: false for %s',
 		(key) => {
 			const keyManager = new KeyManager();
@@ -45,7 +45,7 @@ describe('KeyManager', () => {
 		}
 	);
 
-	it.each(['ArrowLeft', 'ArrowRight'] as const)('no longer runs %s after unregister', (key) => {
+	it.each(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'] as const)('no longer runs %s after unregister', (key) => {
 		const keyManager = new KeyManager();
 		const handler = vi.fn();
 		const id = keyManager.registerKeyDown(key, handler);
@@ -54,5 +54,21 @@ describe('KeyManager', () => {
 		keyManager.handleKeyDown(keydown(key));
 
 		expect(handler).not.toHaveBeenCalled();
+	});
+
+	it('runs a Control+K handler only while Control is held', () => {
+		const keyManager = new KeyManager();
+		const handler = vi.fn();
+		keyManager.registerKeyDown('k', handler, { withHelperKey: 'Control' });
+
+		keyManager.handleKeyDown(keydown('k'));
+		expect(handler).not.toHaveBeenCalled();
+
+		keyManager.handleKeyDown(keydown('Control'));
+		const event = keydown('k');
+		keyManager.handleKeyDown(event);
+
+		expect(handler).toHaveBeenCalledWith(event);
+		expect(event.preventDefault).toHaveBeenCalled();
 	});
 });
