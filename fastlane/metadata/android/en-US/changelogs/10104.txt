@@ -1,0 +1,8 @@
+Attach files to the clipboard: PDF, Office documents, text and more.
+Search your notes, and move notes to another folder.
+Budget items can be quarterly or yearly, and can be tagged and filtered.
+Choose the time range of the wealth charts.
+Rename todo workspaces.
+Faster feeds, contacts and library lists.
+Fixes for passkeys, unsaved note text, daily reminders and more.
+For self-hosters: please update your server first.
