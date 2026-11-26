@@ -20,7 +20,7 @@ public class WidgetActionReceiver extends BroadcastReceiver {
     static final String EXTRA_ACTION_TYPE = "app.solyto.extra.WIDGET_ACTION_TYPE";
     static final String EXTRA_ACTION_KEY = "app.solyto.extra.WIDGET_ACTION_KEY";
     static final String EXTRA_ACTION_ID = "app.solyto.extra.WIDGET_ACTION_ID";
-    /** The tapped option's value, for scale actions. */
+    /** The tapped option's value for scale actions, or the step (1 or -1) for counter actions. */
     static final String EXTRA_ACTION_VALUE = "app.solyto.extra.WIDGET_ACTION_VALUE";
 
     @Override
@@ -61,8 +61,13 @@ public class WidgetActionReceiver extends BroadcastReceiver {
             Integer value) {
         boolean check = WidgetPayload.ACTION_CHECK.equals(type);
         boolean scale = WidgetPayload.ACTION_SCALE.equals(type);
-        if (kind == null || !(check || scale || WidgetPayload.ACTION_BUTTON.equals(type))) return false;
+        boolean toggle = WidgetPayload.ACTION_TOGGLE.equals(type);
+        boolean counter = WidgetPayload.ACTION_COUNTER.equals(type);
+        if (kind == null || !(check || scale || toggle || counter || WidgetPayload.ACTION_BUTTON.equals(type))) {
+            return false;
+        }
         if (scale && value == null) return false;
+        if (counter && (value == null || (value != 1 && value != -1))) return false;
         if (!WidgetPayload.isValidActionKey(key) || !WidgetPayload.isValidRowId(id)) return false;
 
         // Only rows the widget currently shows with this action, and not already done.
@@ -78,6 +83,12 @@ public class WidgetActionReceiver extends BroadcastReceiver {
         if (scale) {
             // Tapping the selected value clears it; always the explicit target, so a retry cannot flip it.
             WidgetWork.runAction(context, kind, key, id, value.equals(row.actionValue) ? null : value);
+        } else if (toggle) {
+            // Yes clears, nothing sets yes; the explicit target, as for scales.
+            WidgetWork.runAction(context, kind, key, id, row.actionValue != null ? null : 1);
+        } else if (counter) {
+            // The server applies the step to the stored count, so a stale widget can't overwrite it.
+            WidgetWork.runAction(context, kind, key, id, value);
         } else {
             WidgetWork.runAction(context, kind, key, id);
         }

@@ -3,6 +3,7 @@
 <full-backup-content>
     <exclude domain="sharedpref" path="widget_token.xml" />
     <exclude domain="sharedpref" path="widget_cache.xml" />
+    <exclude domain="sharedpref" path="push_state.xml" />
     <!-- Widget list rows on Android 11 and lower (androidx.core:core-remoteviews). -->
     <exclude domain="sharedpref" path="androidx.core.widget.prefs.RemoteViewsCompat.xml" />
 </full-backup-content>

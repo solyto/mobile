@@ -6,6 +6,7 @@ import android.appwidget.AppWidgetProvider;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
@@ -27,6 +28,13 @@ public class CheckInWidgetProvider extends AppWidgetProvider {
     private static final int REQUEST_HEADER = 7;
     private static final int REQUEST_ROW_TEMPLATE = 8;
     private static final int BUSY_ALPHA = 90;
+    // The option buttons' icon area: 36dp high, minus 6dp padding on each side.
+    private static final int OPTION_ICON_DP = 24;
+    // Space between the rating rows and the yes/no and count rows below them, and
+    // the log rows' own bottom padding (both log row layouts), restated as
+    // setViewPadding sets all four sides.
+    private static final int LOG_ROWS_GAP_DP = 12;
+    private static final int LOG_ROW_PADDING_BOTTOM_DP = 4;
     /** Per-value icons (1-5) for the trackers the app draws as a fill level, in the app's own colors. */
     private static final int[] WATER_ICONS = {
             R.drawable.ic_widget_checkin_water_1, R.drawable.ic_widget_checkin_water_2,
@@ -113,16 +121,25 @@ public class CheckInWidgetProvider extends AppWidgetProvider {
                 ? payload.title : context.getString(R.string.widget_check_in_name));
         renderUpdatedAt(context, views, payload != null);
 
+        // Rating row, yes/no row or count row.
         RemoteViewsCompat.RemoteCollectionItems.Builder items =
                 new RemoteViewsCompat.RemoteCollectionItems.Builder()
                         .setHasStableIds(false)
-                        .setViewTypeCount(1);
+                        .setViewTypeCount(3);
         int rowCount = 0;
+        boolean afterRating = false;
         if (payload != null) {
             for (WidgetPayload.Item item : payload.items) {
                 // No section titles: the widget title is enough.
                 if (item.isHeader) continue;
-                items.addItem(rowCount++, itemView(context, item));
+                if (WidgetPayload.ACTION_TOGGLE.equals(item.actionType)
+                        || WidgetPayload.ACTION_COUNTER.equals(item.actionType)) {
+                    items.addItem(rowCount++, logRowView(context, item, afterRating));
+                    afterRating = false;
+                } else {
+                    items.addItem(rowCount++, itemView(context, item));
+                    afterRating = true;
+                }
             }
         }
         RemoteViewsCompat.setRemoteAdapter(context, views, appWidgetId, R.id.widget_list, items.build());
@@ -201,7 +218,57 @@ public class CheckInWidgetProvider extends AppWidgetProvider {
     }
 
     /**
-     * One option button: its icon tinted with the server's color (level icons keep their own), highlighted
+     * An own yes/no tracker (a check) or count tracker (minus, today's count, plus), with space
+     * above it when it follows a rating row.
+     */
+    private static RemoteViews logRowView(Context context, WidgetPayload.Item item, boolean afterRating) {
+        boolean toggle = WidgetPayload.ACTION_TOGGLE.equals(item.actionType);
+        RemoteViews row = new RemoteViews(context.getPackageName(),
+                toggle ? R.layout.widget_check_in_toggle_row : R.layout.widget_check_in_counter_row);
+        row.setTextViewText(R.id.widget_row_title, item.title);
+
+        float density = context.getResources().getDisplayMetrics().density;
+        row.setViewPadding(R.id.widget_log_row, 0, afterRating ? Math.round(LOG_ROWS_GAP_DP * density) : 0, 0,
+                Math.round(LOG_ROW_PADDING_BOTTOM_DP * density));
+
+        boolean busy = WidgetCache.isActionActive(context, KIND, item.id);
+
+        if (toggle) {
+            // Any stored value is "yes", as in the app.
+            boolean yes = item.actionValue != null;
+            row.setImageViewResource(R.id.widget_toggle, yes ? R.drawable.ic_widget_check_on : R.drawable.ic_widget_todo);
+            bindActionButton(row, R.id.widget_toggle, item, null, busy, context.getString(
+                    yes ? R.string.widget_check_in_yes_selected : R.string.widget_check_in_yes, item.title));
+        } else {
+            row.setTextViewText(R.id.widget_counter_value, String.valueOf(item.actionValue));
+            // Nothing to take away at 0, as in the app.
+            bindActionButton(row, R.id.widget_counter_minus, item, -1, busy || item.actionValue == 0,
+                    context.getString(R.string.widget_check_in_count_less, item.title));
+            bindActionButton(row, R.id.widget_counter_plus, item, 1, busy,
+                    context.getString(R.string.widget_check_in_count_more, item.title));
+        }
+        return row;
+    }
+
+    /** A yes/no or count button: dimmed and disabled while the row's action is active or it has nothing to do; the receiver checks again. */
+    private static void bindActionButton(RemoteViews row, int viewId, WidgetPayload.Item item, Integer step,
+            boolean disabled, String description) {
+        Intent fillIn = new Intent()
+                .putExtra(WidgetActionReceiver.EXTRA_ACTION_KIND, KIND.id)
+                .putExtra(WidgetActionReceiver.EXTRA_ACTION_TYPE, item.actionType)
+                .putExtra(WidgetActionReceiver.EXTRA_ACTION_KEY, item.actionKey)
+                .putExtra(WidgetActionReceiver.EXTRA_ACTION_ID, item.id);
+        if (step != null) fillIn.putExtra(WidgetActionReceiver.EXTRA_ACTION_VALUE, step.intValue());
+
+        row.setInt(viewId, "setImageAlpha", disabled ? BUSY_ALPHA : 255);
+        row.setBoolean(viewId, "setEnabled", !disabled);
+        row.setContentDescription(viewId, description);
+        row.setOnClickFillInIntent(viewId, fillIn);
+    }
+
+    /**
+     * One option button: its icon tinted with the server's color (level icons keep their own; an own
+     * tracker's level buttons show its icon, as in the app), highlighted
      * when selected, dimmed and disabled while the row's action is active. The
      * fill-in is always set; the receiver ignores taps on active rows.
      */
@@ -217,7 +284,12 @@ public class CheckInWidgetProvider extends AppWidgetProvider {
                 .putExtra(WidgetActionReceiver.EXTRA_ACTION_VALUE, option.value);
 
         int levelIcon = levelIconRes(option.icon, option.value);
-        row.setImageViewResource(viewId, levelIcon != 0 ? levelIcon : iconRes(option.icon));
+        Bitmap ownIcon = ownIcon(context, item, option);
+        if (ownIcon != null) {
+            row.setImageViewBitmap(viewId, ownIcon);
+        } else {
+            row.setImageViewResource(viewId, levelIcon != 0 ? levelIcon : iconRes(option.icon));
+        }
         // Option views are reused, so the filter is always set. A transparent SRC_ATOP filter leaves
         // the level icons' own colors unchanged.
         row.setInt(viewId, "setColorFilter", levelIcon != 0 ? Color.TRANSPARENT : option.color);
@@ -229,6 +301,13 @@ public class CheckInWidgetProvider extends AppWidgetProvider {
         row.setBoolean(viewId, "setEnabled", !busy);
         row.setOnClickFillInIntent(viewId, fillIn);
         row.setViewVisibility(viewId, View.VISIBLE);
+    }
+
+    /** An own tracker's icon for its level buttons, or null for other buttons and when it can't be drawn (the level dot then). */
+    private static Bitmap ownIcon(Context context, WidgetPayload.Item item, WidgetPayload.Option option) {
+        if (item.lucideIcon == null || !"level".equals(option.icon)) return null;
+        int sizePx = Math.round(OPTION_ICON_DP * context.getResources().getDisplayMetrics().density);
+        return LucideIcons.render(context, item.lucideIcon, sizePx);
     }
 
     /**
@@ -266,6 +345,7 @@ public class CheckInWidgetProvider extends AppWidgetProvider {
             case "work": return R.drawable.ic_widget_checkin_work;
             case "alcohol": return R.drawable.ic_widget_checkin_alcohol;
             case "smoking": return R.drawable.ic_widget_checkin_smoking;
+            case "level": return R.drawable.ic_widget_checkin_level;
             default: return R.drawable.ic_widget_checkin_social_life;
         }
     }

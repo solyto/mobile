@@ -1,5 +1,6 @@
 package app.solyto;
 
+import android.Manifest;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Color;
@@ -13,6 +14,8 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.webkit.WebView;
 import android.widget.FrameLayout;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.graphics.Insets;
@@ -31,6 +34,11 @@ public class MainActivity extends BridgeActivity {
     public static final String ACTION_WIDGET_ROUTE = "app.solyto.action.WIDGET_ROUTE";
     public static final String EXTRA_WIDGET_ROUTE_KEY = "app.solyto.extra.WIDGET_ROUTE_KEY";
     public static final String EXTRA_WIDGET_ROUTE_ID = "app.solyto.extra.WIDGET_ROUTE_ID";
+
+    /** Notification taps: the page to open, the path and query of an app URL (see PushNotifier). */
+    public static final String ACTION_OPEN_PATH = "app.solyto.action.OPEN_PATH";
+    public static final String EXTRA_OPEN_PATH = "app.solyto.extra.OPEN_PATH";
+    private static final int MAX_OPEN_PATH_LENGTH = 2048;
 
     // Only the format is checked here; the app maps keys to pages and validates ids.
     private static final Pattern ROUTE_KEY = Pattern.compile("[a-z][a-z0-9_.-]*");
@@ -56,6 +64,12 @@ public class MainActivity extends BridgeActivity {
     private Integer pageStatusBarColor = null;
     private Integer pageNavigationBarColor = null;
 
+    private final ActivityResultLauncher<String> notificationPermission = registerForActivityResult(
+            new ActivityResultContracts.RequestPermission(), granted -> {
+                WidgetBridgePlugin plugin = widgetBridge();
+                if (plugin != null) plugin.onNotificationPermissionResult();
+            });
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         registerPlugin(PullToRefreshPlugin.class);
@@ -65,7 +79,10 @@ public class MainActivity extends BridgeActivity {
         applyKeyboardInsets();
         setupPullToRefresh();
         handleShareIntent(getIntent());
-        if (savedInstanceState == null) handleWidgetIntent(getIntent());
+        if (savedInstanceState == null) {
+            handleWidgetIntent(getIntent());
+            handleOpenPathIntent(getIntent());
+        }
         applySystemBarAppearance();
         styleRefreshIndicator();
     }
@@ -75,6 +92,7 @@ public class MainActivity extends BridgeActivity {
         super.onNewIntent(intent);
         handleShareIntent(intent);
         handleWidgetIntent(intent);
+        handleOpenPathIntent(intent);
     }
 
     @Override
@@ -284,9 +302,39 @@ public class MainActivity extends BridgeActivity {
         if (key == null || key.length() > MAX_ROUTE_KEY_LENGTH || !ROUTE_KEY.matcher(key).matches()) return;
         if (id != null && (id.isEmpty() || id.length() > MAX_ROUTE_ID_LENGTH)) return;
 
-        PluginHandle handle = getBridge().getPlugin("WidgetBridge");
-        if (handle == null) return;
-        ((WidgetBridgePlugin) handle.getInstance()).openRoute(key, id);
+        WidgetBridgePlugin plugin = widgetBridge();
+        if (plugin != null) plugin.openRoute(key, id);
+    }
+
+    /** Like widget routes, the path is untrusted; the app also only opens its own pages. */
+    private void handleOpenPathIntent(Intent intent) {
+        if (intent == null || !ACTION_OPEN_PATH.equals(intent.getAction())) return;
+        if ((intent.getFlags() & Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0) return;
+
+        String path;
+        try {
+            path = intent.getStringExtra(EXTRA_OPEN_PATH);
+            intent.removeExtra(EXTRA_OPEN_PATH);
+        } catch (RuntimeException e) {
+            // Malformed extras bundle.
+            return;
+        }
+
+        if (path == null || path.length() > MAX_OPEN_PATH_LENGTH) return;
+        if (!path.startsWith("/") || path.startsWith("//") || path.contains("\\")) return;
+
+        WidgetBridgePlugin plugin = widgetBridge();
+        if (plugin != null) plugin.openPath(path);
+    }
+
+    /** Asks Android 13+ for the permission; the answer goes to WidgetBridgePlugin.onNotificationPermissionResult. */
+    void requestNotificationPermission() {
+        notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS);
+    }
+
+    private WidgetBridgePlugin widgetBridge() {
+        PluginHandle handle = getBridge() != null ? getBridge().getPlugin("WidgetBridge") : null;
+        return handle != null ? (WidgetBridgePlugin) handle.getInstance() : null;
     }
 
     /** Called by SystemBarsPlugin; null when the page has no matching colours. */

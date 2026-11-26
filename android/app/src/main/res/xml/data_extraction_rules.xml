@@ -4,11 +4,13 @@
     <cloud-backup>
         <exclude domain="sharedpref" path="widget_token.xml" />
         <exclude domain="sharedpref" path="widget_cache.xml" />
+        <exclude domain="sharedpref" path="push_state.xml" />
         <exclude domain="sharedpref" path="androidx.core.widget.prefs.RemoteViewsCompat.xml" />
     </cloud-backup>
     <device-transfer>
         <exclude domain="sharedpref" path="widget_token.xml" />
         <exclude domain="sharedpref" path="widget_cache.xml" />
+        <exclude domain="sharedpref" path="push_state.xml" />
         <exclude domain="sharedpref" path="androidx.core.widget.prefs.RemoteViewsCompat.xml" />
     </device-transfer>
 </data-extraction-rules>

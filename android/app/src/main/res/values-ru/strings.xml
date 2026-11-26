@@ -21,4 +21,17 @@
     <string name="widget_check_in_description">Пройдите ежедневный опрос за сегодня прямо с главного экрана</string>
     <string name="widget_check_in_option">%1$s: %2$d из %3$d</string>
     <string name="widget_check_in_option_selected">%1$s: %2$d из %3$d, выбрано</string>
+    <string name="widget_check_in_yes">%1$s: да</string>
+    <string name="widget_check_in_yes_selected">%1$s: да, выбрано</string>
+    <string name="widget_check_in_count_less">%1$s: на один меньше</string>
+    <string name="widget_check_in_count_more">%1$s: на один больше</string>
+
+    <!-- Notifications on the phone (polled; see PushPollWorker). -->
+    <string name="push_channel_name">Уведомления</string>
+    <plurals name="push_more">
+        <item quantity="one">Ещё %d уведомление</item>
+        <item quantity="few">Ещё %d уведомления</item>
+        <item quantity="many">Ещё %d уведомлений</item>
+        <item quantity="other">Ещё %d уведомления</item>
+    </plurals>
 </resources>

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    An own count tracker: name, then minus, today's count and plus. Laid out on
+    the rating rows' grid (five equal cells, 2dp margins each side): the name
+    takes two cells, so minus, count and plus sit under the last three rating
+    buttons.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_log_row"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:minHeight="40dp"
+    android:orientation="horizontal"
+    android:paddingBottom="4dp">
+
+    <!-- Two cells: their weight plus the margins of two buttons. -->
+    <TextView
+        android:id="@+id/widget_row_title"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:layout_weight="2"
+        android:ellipsize="end"
+        android:paddingStart="4dp"
+        android:paddingEnd="4dp"
+        android:singleLine="true"
+        android:textColor="@color/widget_text_secondary"
+        android:textSize="13sp" />
+
+    <ImageView
+        android:id="@+id/widget_counter_minus"
+        android:layout_width="0dp"
+        android:layout_height="36dp"
+        android:layout_marginHorizontal="2dp"
+        android:layout_weight="1"
+        android:padding="8dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_widget_minus"
+        android:tint="@color/widget_text_secondary" />
+
+    <TextView
+        android:id="@+id/widget_counter_value"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="2dp"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:singleLine="true"
+        android:textColor="@color/widget_text"
+        android:textSize="14sp" />
+
+    <ImageView
+        android:id="@+id/widget_counter_plus"
+        android:layout_width="0dp"
+        android:layout_height="36dp"
+        android:layout_marginHorizontal="2dp"
+        android:layout_weight="1"
+        android:padding="8dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_widget_plus"
+        android:tint="@color/widget_accent" />
+</LinearLayout>

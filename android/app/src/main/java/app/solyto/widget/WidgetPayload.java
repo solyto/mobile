@@ -25,16 +25,23 @@ final class WidgetPayload {
             "mood_1", "mood_2", "mood_3", "mood_4", "mood_5",
             "sport_dumbbell", "sport_bike", "sport_mountain", "sport_footprints", "sport_waves_ladder",
             "sport_yoga", "sleep", "dreams", "food_quality", "food_amount", "water", "work",
-            "menstruation", "alcohol", "smoking", "social_life"));
+            "menstruation", "alcohol", "smoking", "social_life", "level"));
     static final int MAX_OPTIONS = 6;
     private static final Pattern COLOR = Pattern.compile("#[0-9A-Fa-f]{6}");
-    private static final int MAX_ROWS_PER_SECTION = 20;
+    // Own check-in trackers (up to 50) plus the built-in ones; other kinds send at most 20.
+    private static final int MAX_ROWS_PER_SECTION = 64;
     private static final int MAX_TEXT_LENGTH = 500;
 
     /** Row action UI types native can render; rows with other types get no control. */
     static final String ACTION_CHECK = "check";
     static final String ACTION_BUTTON = "button";
     static final String ACTION_SCALE = "scale";
+    /** Yes/no: value 1 or null. */
+    static final String ACTION_TOGGLE = "toggle";
+    /** A count, changed by one per tap. */
+    static final String ACTION_COUNTER = "counter";
+    private static final String LUCIDE_PREFIX = "lucide:";
+    private static final Pattern LUCIDE_NAME = Pattern.compile("[a-z0-9-]{1,64}");
     static final int NO_COLOR = 0;
     private static final Pattern ACTION_KEY = Pattern.compile("[a-z][a-z0-9_.-]*");
     private static final int MAX_ACTION_KEY_LENGTH = 64;
@@ -85,6 +92,8 @@ final class WidgetPayload {
         final List<Option> options;
         /** The key of the section this header or row belongs to. */
         final String section;
+        /** An own tracker's Lucide icon name ({@code lucide:<name>}), drawn on its level buttons; or null. */
+        final String lucideIcon;
 
         /** Whether the value is one of this row's scale options. */
         boolean hasOption(int value) {
@@ -97,7 +106,7 @@ final class WidgetPayload {
         Item(boolean isHeader, String title, String subtitle, String timeLabel, String icon,
                 boolean liveElapsed, long at, int color, String routeKey, String routeId, String id,
                 String actionType, String actionKey, boolean actionChecked, String actionIcon,
-                Integer actionValue, List<Option> options, String section) {
+                Integer actionValue, List<Option> options, String section, String lucideIcon) {
             this.isHeader = isHeader;
             this.title = title;
             this.subtitle = subtitle;
@@ -116,6 +125,7 @@ final class WidgetPayload {
             this.actionValue = actionValue;
             this.options = options;
             this.section = section;
+            this.lucideIcon = lucideIcon;
         }
     }
 
@@ -191,7 +201,7 @@ final class WidgetPayload {
 
         String sectionTitle = text(section, "title");
         if (sectionTitle != null) items.add(new Item(true, sectionTitle, null, null, null, false, -1, NO_COLOR,
-                null, null, null, null, null, false, null, null, Collections.<Option>emptyList(), sectionKey));
+                null, null, null, null, null, false, null, null, Collections.<Option>emptyList(), sectionKey, null));
         items.addAll(sectionRows);
     }
 
@@ -201,6 +211,7 @@ final class WidgetPayload {
         if (title == null) return null;
 
         String icon = row.optString("icon", null);
+        String lucideIcon = lucideName(icon);
         if (!ICONS.contains(icon)) icon = null;
 
         String routeKey = null;
@@ -234,6 +245,17 @@ final class WidgetPayload {
                 actionType = type;
                 actionKey = key;
                 actionIcon = text(action, "icon");
+            } else if (ACTION_TOGGLE.equals(type) && isValidActionKey(key)) {
+                id = rowId;
+                actionType = type;
+                actionKey = key;
+                actionValue = integer(action.opt("value"));
+            } else if (ACTION_COUNTER.equals(type) && isValidActionKey(key)) {
+                Integer count = integer(action.opt("value"));
+                id = rowId;
+                actionType = type;
+                actionKey = key;
+                actionValue = count != null ? count : 0;
             } else if (ACTION_SCALE.equals(type) && isValidActionKey(key)) {
                 List<Option> scale = options(action.optJSONArray("options"));
                 if (!scale.isEmpty()) {
@@ -248,7 +270,15 @@ final class WidgetPayload {
 
         return new Item(false, title, text(row, "subtitle"), text(row, "time_label"), icon,
                 "elapsed".equals(text(row, "live")), IsoTime.parse(text(row, "at")), color(text(row, "color")),
-                routeKey, routeId, id, actionType, actionKey, actionChecked, actionIcon, actionValue, options, sectionKey);
+                routeKey, routeId, id, actionType, actionKey, actionChecked, actionIcon, actionValue, options, sectionKey,
+                lucideIcon);
+    }
+
+    /** The name in {@code lucide:<name>}, or null. */
+    private static String lucideName(String icon) {
+        if (icon == null || !icon.startsWith(LUCIDE_PREFIX)) return null;
+        String name = icon.substring(LUCIDE_PREFIX.length());
+        return LUCIDE_NAME.matcher(name).matches() ? name : null;
     }
 
     /** The valid options, at most {@link #MAX_OPTIONS}; options with an unknown icon or invalid color or value are skipped. */

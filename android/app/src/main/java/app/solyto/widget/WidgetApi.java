@@ -2,6 +2,7 @@ package app.solyto.widget;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,6 +33,7 @@ final class WidgetApi {
     }
 
     private static final String ACTIONS_PATH = "/api/v1/widgets/actions/";
+    private static final String NOTIFICATIONS_PATH = "/api/v1/widgets/notifications";
     private static final int TIMEOUT_MS = 15_000;
     private static final int MAX_BODY_BYTES = 1024 * 1024;
 
@@ -39,19 +41,55 @@ final class WidgetApi {
 
     /** Fetches the kind's data from its widget route. */
     static Result fetch(Context context, String apiUrl, String token, WidgetKind kind) {
+        return request(context, apiUrl + kind.path, "GET", token, null);
+    }
+
+    /** Registers this phone for notifications; the data holds the {@code cursor} to poll from. */
+    static Result registerDevice(Context context, String apiUrl, String token, String deviceId) {
+        String body;
+        try {
+            body = new JSONObject().put("device_id", deviceId).toString();
+        } catch (JSONException e) {
+            return new Result(Outcome.TEMPORARY_FAILURE, null);
+        }
+        return request(context, apiUrl + NOTIFICATIONS_PATH + "/devices", "POST", token, body);
+    }
+
+    /** The notifications queued for this phone after the cursor; the data holds {@code items} and the next {@code cursor}. */
+    static Result deviceNotifications(Context context, String apiUrl, String token, String deviceId, long after) {
+        return request(context, apiUrl + NOTIFICATIONS_PATH + "?device_id=" + Uri.encode(deviceId) + "&after=" + after,
+                "GET", token, null);
+    }
+
+    static Outcome unregisterDevice(Context context, String apiUrl, String token, String deviceId) {
+        return request(context, apiUrl + NOTIFICATIONS_PATH + "/devices/" + Uri.encode(deviceId), "DELETE", token, null)
+                .outcome;
+    }
+
+    /** A request whose 200 response carries the envelope's {@code data} object; 404 is {@link Outcome#NOT_FOUND}. */
+    private static Result request(Context context, String url, String method, String token, String jsonBody) {
         HttpURLConnection connection = null;
         try {
-            connection = open(context, apiUrl + kind.path, "GET", token);
+            connection = open(context, url, method, token);
+            if (jsonBody != null) {
+                byte[] body = jsonBody.getBytes(StandardCharsets.UTF_8);
+                connection.setDoOutput(true);
+                connection.setRequestProperty("Content-Type", "application/json");
+                connection.setFixedLengthStreamingMode(body.length);
+                try (OutputStream out = connection.getOutputStream()) {
+                    out.write(body);
+                }
+            }
 
             int status = connection.getResponseCode();
             if (status == 404) return new Result(Outcome.NOT_FOUND, null);
             if (status != 200) return new Result(outcome(status), null);
 
             JSONObject envelope = new JSONObject(readBody(connection.getInputStream()));
+            if (!envelope.optBoolean("success", false)) return new Result(Outcome.TEMPORARY_FAILURE, null);
+            // DELETE answers with data: null.
             JSONObject data = envelope.optJSONObject("data");
-            if (!envelope.optBoolean("success", false) || data == null) {
-                return new Result(Outcome.TEMPORARY_FAILURE, null);
-            }
+            if (data == null && !"DELETE".equals(method)) return new Result(Outcome.TEMPORARY_FAILURE, null);
             return new Result(Outcome.OK, data);
         } catch (IOException | JSONException | RuntimeException e) {
             return new Result(Outcome.TEMPORARY_FAILURE, null);

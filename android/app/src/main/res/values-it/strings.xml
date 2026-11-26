@@ -21,4 +21,15 @@
     <string name="widget_check_in_description">Il check-in di oggi dalla schermata Home</string>
     <string name="widget_check_in_option">%1$s: %2$d di %3$d</string>
     <string name="widget_check_in_option_selected">%1$s: %2$d di %3$d, selezionato</string>
+    <string name="widget_check_in_yes">%1$s: sì</string>
+    <string name="widget_check_in_yes_selected">%1$s: sì, selezionato</string>
+    <string name="widget_check_in_count_less">%1$s: uno in meno</string>
+    <string name="widget_check_in_count_more">%1$s: uno in più</string>
+
+    <!-- Notifications on the phone (polled; see PushPollWorker). -->
+    <string name="push_channel_name">Notifiche</string>
+    <plurals name="push_more">
+        <item quantity="one">%d altra notifica</item>
+        <item quantity="other">%d altre notifiche</item>
+    </plurals>
 </resources>
