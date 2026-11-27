@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { getTranslation } from '$lib/state/Translation.svelte';
+	import { createdEntryValue, selectedIds, tagEntries } from '$lib/helpers/MultiSelectHelper';
 	import TextInput from '$lib/components/forms/TextInput.svelte';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
-	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import { getTags } from '$lib/state/Tags.svelte';
 	import type { CreateQuoteRequest, Quote, UpdateQuoteRequest } from '$lib/types/library_quote';
 	import MultiSelect, { type MultiSelectEntry } from '$lib/components/forms/MultiSelect.svelte';
@@ -10,12 +10,13 @@
 	import CreateModal from '$lib/components/libraries/shared/CreateModal.svelte';
 	import { getQuoteLibrary } from '$lib/state/QuoteLibrary.svelte';
 	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
+	import { SaveAction } from '$lib/helpers/SaveAction.svelte';
 
 	const ts = getTranslation();
 	const library = getQuoteLibrary();
 	const tags = getTags();
-	const loadingIndicator = getLoadingIndicator();
 	const notifications = getUiNotifications();
+	const saving = new SaveAction(() => (activeEntry ? ts.get.libraries.quotes.update_error : ts.get.libraries.quotes.create_error));
 
 	let activeEntry = $state<Quote | null>(library.activeEntry);
 
@@ -23,80 +24,53 @@
 	let authorValue = $state<string>(activeEntry?.author ?? '');
 	let sourceValue = $state<string>(activeEntry?.source ?? '');
 	let quoteValue = $state<string>(activeEntry ? activeEntry.quote : '');
-	let selectedTags = $state<MultiSelectEntry[]>(
-		activeEntry ? activeEntry.tags.map((t) => ({ label: t.name, value: t.id.toString() })) : []
-	);
+	let selectedTags = $state<MultiSelectEntry[]>(tagEntries(activeEntry?.tags ?? []));
 
-	let tagOptions: MultiSelectEntry[] = $derived(
-		tags.tags.map((tag) => ({ label: tag.name, value: tag.id.toString() }))
-	);
-
-	async function onCreateTag(label: string): Promise<string | null> {
-		const created = await tags.create(label);
-		if (!created) {
-			notifications.error(ts.get.libraries.tag_error);
-			return null;
-		}
-		return created.id.toString();
+	function onCreateTag(label: string): Promise<string | null> {
+		return createdEntryValue(tags.create(label), () => notifications.error(ts.get.libraries.tag_error));
 	}
 
-	async function onsubmit(): Promise<void> {
-		if (activeEntry) {
-			return await update();
-		} else {
-			return await create();
-		}
-	}
-
-	async function create(): Promise<void> {
-		loadingIndicator.start();
-
-		const request: CreateQuoteRequest = {
+	function createRequest(): CreateQuoteRequest {
+		return {
 			author: authorValue !== '' ? authorValue : null,
 			summary: summaryValue !== '' ? summaryValue : null,
 			source: sourceValue !== '' ? sourceValue : null,
 			quote: quoteValue,
-			tags: selectedTags.filter((t) => t.value).map((v) => parseInt(v.value))
+			tags: selectedIds(selectedTags)
 		};
-		const ok = await library.create(request);
-		if (ok) {
-			authorValue = '';
-			summaryValue = '';
-			quoteValue = '';
-			sourceValue = '';
-			library.closeCreateModal();
-		} else {
-			notifications.error(ts.get.libraries.quotes.create_error);
-		}
-
-		loadingIndicator.stop();
 	}
 
-	async function update(): Promise<void> {
-		loadingIndicator.start();
-
-		const request: UpdateQuoteRequest = {
+	function updateRequest(): UpdateQuoteRequest {
+		return {
 			author: authorValue !== '' ? authorValue : null,
 			summary: summaryValue !== '' ? summaryValue : null,
 			source: sourceValue !== '' ? sourceValue : null,
 			quote: quoteValue !== '' ? quoteValue : null,
-			tags: selectedTags.filter((t) => t.value).map((v) => parseInt(v.value))
+			tags: selectedIds(selectedTags)
 		};
-		const ok = await library.update(activeEntry!, request);
-		if (ok) {
-			library.closeCreateModal();
-		} else {
-			notifications.error(ts.get.libraries.quotes.update_error);
-		}
+	}
 
-		loadingIndicator.stop();
+	function resetForm(): void {
+		authorValue = '';
+		summaryValue = '';
+		quoteValue = '';
+		sourceValue = '';
+	}
+
+	async function onsubmit(): Promise<void> {
+		const ok = await saving.run(() => (activeEntry ? library.update(activeEntry, updateRequest()) : library.create(createRequest())));
+		if (!ok) return;
+		if (!activeEntry) resetForm();
+		library.closeCreateModal();
+	}
+
+	function modalTitle(): string {
+		return activeEntry !== null ? ts.get.libraries.quotes.edit_quote : ts.get.libraries.quotes.add_quote;
 	}
 </script>
 
 <CreateModal
-	title={activeEntry !== null
-		? ts.get.libraries.quotes.edit_quote
-		: ts.get.libraries.quotes.add_quote}
+	title={modalTitle()}
 	{library}
 >
 	<ModalFormRow label={ts.get.libraries.quotes.author}>
@@ -106,7 +80,7 @@
 		<TextInput bind:value={quoteValue} multiLine={true} height={150} />
 	</ModalFormRow>
 	<ModalFormRow label={ts.get.libraries.tags}>
-		<MultiSelect bind:value={selectedTags} options={tagOptions} allowUserOptions oncreate={onCreateTag} />
+		<MultiSelect bind:value={selectedTags} options={tagEntries(tags.tags)} allowUserOptions oncreate={onCreateTag} />
 	</ModalFormRow>
 	<ModalFormRow label={ts.get.libraries.quotes.summary}>
 		<TextInput bind:value={summaryValue} multiLine={true} height={80} />

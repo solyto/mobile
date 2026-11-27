@@ -1,183 +1,130 @@
 <script lang="ts">
-	import { fade } from 'svelte/transition';
 	import ContentModal from '$lib/components/ui/ContentModal.svelte';
 	import ProgressBar from '$lib/components/ui/ProgressBar.svelte';
-	import TextInput from '$lib/components/forms/TextInput.svelte';
-	import ModalFormRow from '$lib/components/ui/ModalFormRow.svelte';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
-	import type {
-		ImportForm,
-		ImportRequest,
-		ImportState,
-		SelectImportAddressBooksRequest
-	} from '$lib/types/contact';
-	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
-	import IconLoaderCircle from '@lucide/svelte/icons/loader-circle';
-	import Checkbox from '$lib/components/forms/Checkbox.svelte';
-	import PasswordInput from '$lib/components/forms/PasswordInput.svelte';
-	import { getTranslation } from '$lib/state/Translation.svelte';
-	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
+	import SegmentedControl from '$lib/components/forms/SegmentedControl.svelte';
+	import CarddavForm from '$lib/components/contacts/import/CarddavForm.svelte';
+	import CarddavSelect from '$lib/components/contacts/import/CarddavSelect.svelte';
+	import FileForm from '$lib/components/contacts/import/FileForm.svelte';
+	import type { ContactImportError, ContactImportView } from '$lib/services/ContactImportService';
+	import type { ImportFileTarget, ImportRequest, ImportSource, ImportState } from '$lib/types/contact';
+	import { SaveAction } from '$lib/helpers/SaveAction.svelte';
 	import { getContacts } from '$lib/state/Contacts.svelte';
+	import { getContactImport } from '$lib/state/ContactImport.svelte';
+	import { getTranslation } from '$lib/state/Translation.svelte';
+
+	const MUTED = 'text-sm text-c-neutral-5 dark:text-c-neutral-4';
 
 	const contacts = getContacts();
-	const loadingIndicator = getLoadingIndicator();
-	const notifications = getUiNotifications();
+	const contactImport = getContactImport();
 	const ts = getTranslation();
 
-	let loading = $state<boolean>(false);
-	let form = $state<ImportForm>({
-		url: '',
-		username: '',
-		secret: ''
-	});
-	let selectedAddressBooks = $state<string[]>([]);
-	let importState = $state<ImportState | null>(null);
-	let error = $state<boolean>(false);
+	let source = $state<ImportSource>('carddav');
+	let error: ContactImportError | null = null;
+	const saving = new SaveAction(() => errorMessage(error));
 
-	async function initImport(): Promise<void> {
-		if (form.url === '' || form.username === '' || form.secret === '') return;
+	const sourceOptions = [
+		{ label: ts.get.contacts.import_source_carddav, value: 'carddav' },
+		{ label: ts.get.contacts.import_source_file, value: 'file' }
+	];
 
-		loadingIndicator.start();
-		loading = true;
+	function view(): ContactImportView {
+		return contactImport.stalled ? 'failed' : contactImport.service.view(contactImport.state, contactImport.awaitingState);
+	}
 
-		const request = form as ImportRequest;
-		const res = await contacts.startImport(request);
+	function changeSource(value: string): void {
+		source = value === 'file' ? 'file' : 'carddav';
+	}
 
-		loadingIndicator.stop();
+	async function run(action: () => Promise<ContactImportError | null>): Promise<void> {
+		await saving.runIfIdle(async () => {
+			error = await action();
+			return error === null;
+		});
+	}
 
-		if (!res) {
-			error = true;
-			loading = false;
-			return;
+	function startCarddav(request: ImportRequest): void {
+		run(() => contactImport.startCarddavImport(request));
+	}
+
+	function selectCarddav(selected: string[]): void {
+		run(() => contactImport.selectCarddavAddressBooks(selected));
+	}
+
+	function importFile(file: File, target: ImportFileTarget): void {
+		run(() => contactImport.importFile(file, target));
+	}
+
+	function errorMessage(error: ContactImportError | null): string {
+		switch (error) {
+			case 'invalid_file':
+				return ts.get.contacts.import_error_invalid_file;
+			case 'address_book_not_found':
+				return ts.get.contacts.import_error_address_book_not_found;
+			case 'already_running':
+				return ts.get.contacts.import_error_running;
+			case 'rate_limited':
+				return ts.get.contacts.import_error_rate_limited;
+			default:
+				return ts.get.contacts.import_error;
 		}
-
-		await loadState();
 	}
 
-	function selectCalendar(calendar: string): void {
-		if (selectedAddressBooks.includes(calendar)) {
-			selectedAddressBooks = selectedAddressBooks.filter((c) => c !== calendar);
-		} else {
-			selectedAddressBooks.push(calendar);
+	function progressLabel(state: ImportState): string {
+		switch (state.stage) {
+			case 'address-books':
+				return state.address_books_current
+					? ts.get.contacts.import_create_address_book.replace('%s', state.address_books_current)
+					: ts.get.contacts.import_address_books;
+			case 'contacts':
+				return ts.get.contacts.import_contacts_running
+					.replace('%s', state.address_books_current ?? '')
+					.replace('%d', state.contacts_count > 0 ? state.contacts_count + ' ' : '');
+			default:
+				return ts.get.contacts.import_start;
 		}
 	}
 
-	async function startImport(): Promise<void> {
-		if (selectedAddressBooks.length === 0) return;
-
-		loadingIndicator.start();
-		loading = true;
-
-		const request: SelectImportAddressBooksRequest = { address_books: selectedAddressBooks };
-		const res = await contacts.selectImportAddressBooks(request);
-
-		loadingIndicator.stop();
-
-		if (res) await loadState(true);
-	}
-
-	async function loadState(firstCall: boolean = false): Promise<void> {
-		setTimeout(async () => {
-			const state = await contacts.getImportState();
-
-			if (!state && !firstCall) {
-				return;
-			}
-
-			importState = state;
-
-			if (importState?.stage === 'select') loading = false;
-
-			if (importState?.stage === 'finished') {
-				notifications.success(ts.get.contacts.import_success);
-				await contacts.loadAddressBooks();
-				await contacts.loadContacts();
-				onClose();
-			}
-
-			if (loading) {
-				await loadState();
-			}
-		}, 1000);
-	}
-
-	function onClose(): void {
-		importState = null;
-		error = false;
-		loading = false;
-		contacts.importModal = false;
-		selectedAddressBooks = [];
+	function close(): void {
+		contactImport.close();
 	}
 </script>
 
-{#if contacts.importModal}
-	<ContentModal title={ts.get.contacts.import_contacts} rounded="2xl" {onClose}>
-		{#if loading}
-			<div
-				class="absolute top-[10px] right-[10px] z-20 rounded-full bg-c-primary p-1 text-white shadow-lg"
-			>
-				<IconLoaderCircle class="animate-spin" />
-			</div>
-		{/if}
-		{#if importState === null && !loading && !error}
-			<div class="flex flex-col gap-2">
-				<ModalFormRow label="URL">
-					<TextInput bind:value={form.url} />
-				</ModalFormRow>
-				<ModalFormRow label="Username">
-					<TextInput bind:value={form.username} />
-				</ModalFormRow>
-				<ModalFormRow label="Secret">
-					<PasswordInput bind:value={form.secret} />
-				</ModalFormRow>
-				<TextButton title="Import" onclick={initImport} class="mt-4" />
-			</div>
-		{:else if importState === null && loading}
-			<p>{ts.get.contacts.import_start}</p>
-		{:else if importState === null && error}
-			<p>{ts.get.contacts.import_error}</p>
-		{:else if importState?.stage === 'select'}
-			<div class="flex flex-col gap-2">
-				{#each importState?.address_books as calendar (calendar)}
-					<div class="flex w-full justify-between" in:fade>
-						<span>{calendar}</span>
-						<Checkbox
-							isChecked={false}
-							onchange={() => {
-								selectCalendar(calendar);
-							}}
-						/>
-					</div>
-				{/each}
-				<TextButton title="Import" onclick={startImport} class="mt-4" />
-			</div>
-		{:else if importState?.stage === 'address-books'}
-			{#if importState?.address_books_current}
-				<p>
-					{ts.get.contacts.import_create_address_book.replace(
-						'%s',
-						importState.address_books_current
-					)}
-				</p>
-			{:else}
-				<p>{ts.get.contacts.import_address_books}</p>
-			{/if}
-		{:else if importState?.stage === 'contacts'}
-			<div class="flex flex-col gap-2">
-				<p>
-					{ts.get.contacts.import_contacts_running
-						.replace('%s', importState.address_books_current ?? '')
-						.replace(
-							'%d',
-							importState.contacts_done > 0 ? importState.contacts_count + ' ' : ''
-						)}
-				</p>
-				{#if importState.contacts_count > 0}
-					<div class="mt-2" in:fade>
-						<ProgressBar value={importState.contacts_done / importState.contacts_count} />
-					</div>
+{#snippet count(label: string, value: number)}
+	<div class="flex justify-between">
+		<span class={MUTED}>{label}</span>
+		<span>{value}</span>
+	</div>
+{/snippet}
+
+{#if contactImport.importModal}
+	<ContentModal title={ts.get.contacts.import_contacts} rounded="2xl" onClose={close}>
+		<div class="flex flex-col gap-4">
+			{#if view() === 'start'}
+				<SegmentedControl value={source} options={sourceOptions} onchange={changeSource} />
+				{#if source === 'carddav'}
+					<CarddavForm busy={saving.busy} onsubmit={startCarddav} />
+				{:else}
+					<FileForm targets={contacts.addressBooks} busy={saving.busy} onsubmit={importFile} />
 				{/if}
-			</div>
-		{/if}
+			{:else if view() === 'select' && contactImport.state}
+				<CarddavSelect addressBooks={contactImport.state.address_books ?? []} busy={saving.busy} onsubmit={selectCarddav} />
+			{:else if view() === 'progress' && contactImport.state}
+				<p>{progressLabel(contactImport.state)}</p>
+				{#if contactImport.state.contacts_count > 0}
+					<ProgressBar value={contactImport.service.progress(contactImport.state)} label={progressLabel(contactImport.state)} />
+				{/if}
+			{:else if view() === 'finished' && contactImport.state}
+				<p>{ts.get.contacts.import_success}</p>
+				{@render count(ts.get.contacts.import_imported, contactImport.state.contacts_done)}
+				{#if contactImport.state.contacts_skipped > 0}
+					{@render count(ts.get.contacts.import_skipped, contactImport.state.contacts_skipped)}
+				{/if}
+				<TextButton type="primary" title={ts.get.layout.close} onclick={close} />
+			{:else if view() === 'failed'}
+				<p class="text-sm text-c-danger" role="alert">{ts.get.contacts.import_error}</p>
+				<TextButton type="primary" title={ts.get.layout.close} onclick={close} />
+			{/if}
+		</div>
 	</ContentModal>
 {/if}

@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { getTranslation } from '$lib/state/Translation.svelte';
+	import { createdEntryValue, genreEntries, selectedIds } from '$lib/helpers/MultiSelectHelper';
 	import TextInput from '$lib/components/forms/TextInput.svelte';
 	import Select from '$lib/components/forms/Select.svelte';
-	import MultiSelect from '$lib/components/forms/MultiSelect.svelte';
+	import MultiSelect, { type MultiSelectEntry } from '$lib/components/forms/MultiSelect.svelte';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
 	import DeezerIcon from '$lib/assets/services/deezer_icon.svg';
 	import DiscogsIcon from '$lib/assets/services/discogs_icon.svg';
@@ -13,23 +14,23 @@
 		Music,
 		UpdateMusicRequest
 	} from '$lib/types/library_music';
-	import { API_USER_STORAGE_URL } from '$lib/config/apiRoutes';
-	import { getAuth } from '$lib/state/Auth.svelte';
+	import { libraryCoverUrl } from '$lib/helpers/LibraryCoverHelper';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import NumberInput from '$lib/components/forms/NumberInput.svelte';
 	import ModalFormRow from '$lib/components/ui/ModalFormRow.svelte';
 	import { getMusicLibrary } from '$lib/state/MusicLibrary.svelte';
 	import CreateModal from '$lib/components/libraries/shared/CreateModal.svelte';
 	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
+	import { SaveAction } from '$lib/helpers/SaveAction.svelte';
 	import CreateModalImport from '$lib/components/libraries/shared/CreateModalImport.svelte';
 	import CreateModalSearchButton from '$lib/components/libraries/shared/CreateModalSearchButton.svelte';
 	import MusicSearch from '$lib/components/libraries/music/MusicSearch.svelte';
 
 	const ts = getTranslation();
 	const library = getMusicLibrary();
-	const auth = getAuth();
 	const loadingIndicator = getLoadingIndicator();
 	const notifications = getUiNotifications();
+	const saving = new SaveAction(() => (activeEntry ? ts.get.libraries.music.update_error : ts.get.libraries.music.create_error));
 
 	let activeEntry = $state<Music | null>(library.activeEntry);
 
@@ -43,9 +44,7 @@
 	let typeValue = $state<string>(activeEntry?.type ?? '');
 	let formatValue = $state<string>(activeEntry?.format ?? '');
 	let conditionValue = $state<string>(activeEntry?.condition ?? '');
-	let selectedGenres = $state<{ label: string; value: string }[]>(
-		activeEntry ? activeEntry.genres.map((g) => ({ label: g.title, value: g.id.toString() })) : []
-	);
+	let selectedGenres = $state<MultiSelectEntry[]>(genreEntries(activeEntry?.genres ?? []));
 	let selectedRating = $state(activeEntry?.rating ?? 0);
 	let isWishlist = $state<boolean>(activeEntry ? activeEntry.wishlist : false);
 	let linkInput = $state<HTMLInputElement | null>(null);
@@ -53,37 +52,28 @@
 	let importDropdownOpen = $state<boolean>(false);
 
 	const typeOptions: { label: string; value: string }[] = [
-		{ label: 'CD', value: 'cd' },
-		{ label: 'Vinyl', value: 'vinyl' },
-		{ label: 'Digital', value: 'digital' }
+		{ label: ts.get.libraries.music.type_cd, value: 'cd' },
+		{ label: ts.get.libraries.music.type_vinyl, value: 'vinyl' },
+		{ label: ts.get.libraries.music.type_digital, value: 'digital' }
 	];
 
 	const formatOptions: { label: string; value: string }[] = [
-		{ label: 'Album', value: 'album' },
-		{ label: 'Single', value: 'single' },
-		{ label: 'Compilation', value: 'compilation' }
+		{ label: ts.get.libraries.music.format_album, value: 'album' },
+		{ label: ts.get.libraries.music.format_single, value: 'single' },
+		{ label: ts.get.libraries.music.format_compilation, value: 'compilation' }
 	];
 
 	const conditionOptions: { label: string; value: string }[] = [
-		{ label: 'Mint', value: 'mint' },
-		{ label: 'Very Good', value: 'very-good' },
-		{ label: 'Good', value: 'good' },
-		{ label: 'Medium', value: 'medium' },
-		{ label: 'Poor', value: 'poor' },
-		{ label: 'Very Poor', value: 'very-poor' }
+		{ label: ts.get.libraries.music.condition_short_mint, value: 'mint' },
+		{ label: ts.get.libraries.music.condition_short_verygood, value: 'very-good' },
+		{ label: ts.get.libraries.music.condition_short_good, value: 'good' },
+		{ label: ts.get.libraries.music.condition_short_medium, value: 'medium' },
+		{ label: ts.get.libraries.music.condition_short_poor, value: 'poor' },
+		{ label: ts.get.libraries.music.condition_short_verypoor, value: 'very-poor' }
 	];
 
-	let genreOptions: { label: string; value: string }[] = $derived(
-		library.genres.map((genre) => ({ label: genre.title, value: genre.id.toString() }))
-	);
-
-	async function onCreateGenre(label: string): Promise<string | null> {
-		const created = await library.createGenre(label);
-		if (!created) {
-			notifications.error(ts.get.libraries.genre_error);
-			return null;
-		}
-		return created.id.toString();
+	function onCreateGenre(label: string): Promise<string | null> {
+		return createdEntryValue(library.createGenre(label), () => notifications.error(ts.get.libraries.genre_error));
 	}
 
 	const importDefs: Record<
@@ -127,21 +117,11 @@
 			)
 	);
 
-	async function onsubmit(): Promise<void> {
-		if (activeEntry) {
-			return await update();
-		} else {
-			return await create();
-		}
-	}
-
-	async function create(): Promise<void> {
-		loadingIndicator.start();
-
-		const request: CreateMusicRequest = {
+	function createRequest(): CreateMusicRequest {
+		return {
 			title: titleValue,
 			artist: artistValue,
-			genres: selectedGenres.filter((g) => g.value).map((g) => parseInt(g.value)),
+			genres: selectedIds(selectedGenres),
 			type: typeValue !== '' ? typeValue : null,
 			format: formatValue !== '' ? formatValue : null,
 			condition: conditionValue != '' ? conditionValue : null,
@@ -153,34 +133,13 @@
 			cover_path: coverValue != '' ? coverValue : null,
 			link: linkValue != '' ? linkValue : null
 		};
-		const ok = await library.create(request);
-		if (ok) {
-			titleValue = '';
-			artistValue = '';
-			selectedGenres = [];
-			typeValue = '';
-			formatValue = '';
-			conditionValue = '';
-			acquiredWhereValue = '';
-			additionalInfoValue = '';
-			coverValue = '';
-			linkValue = '';
-			isWishlist = false;
-			library.closeCreateModal();
-		} else {
-			notifications.error(ts.get.libraries.music.create_error);
-		}
-
-		loadingIndicator.stop();
 	}
 
-	async function update(): Promise<void> {
-		loadingIndicator.start();
-
-		const request: UpdateMusicRequest = {
+	function updateRequest(): UpdateMusicRequest {
+		return {
 			title: titleValue,
 			artist: artistValue,
-			genres: selectedGenres.filter((g) => g.value).map((g) => parseInt(g.value)),
+			genres: selectedIds(selectedGenres),
 			type: typeValue !== '' ? typeValue : null,
 			format: formatValue !== '' ? formatValue : null,
 			condition: conditionValue != '' ? conditionValue : null,
@@ -192,18 +151,34 @@
 			...(coverValue !== '' ? { cover_path: coverValue } : {}),
 			link: linkValue != '' ? linkValue : null
 		};
-		const ok = await library.update(activeEntry!, request);
-		if (ok) {
-			library.closeCreateModal();
-		} else {
-			notifications.error(ts.get.libraries.music.update_error);
-		}
+	}
 
-		loadingIndicator.stop();
+	function resetForm(): void {
+		titleValue = '';
+		artistValue = '';
+		selectedGenres = [];
+		typeValue = '';
+		formatValue = '';
+		conditionValue = '';
+		acquiredWhereValue = '';
+		additionalInfoValue = '';
+		coverValue = '';
+		linkValue = '';
+		isWishlist = false;
+	}
+
+	async function onsubmit(): Promise<void> {
+		const ok = await saving.run(() => (activeEntry ? library.update(activeEntry, updateRequest()) : library.create(createRequest())));
+		if (!ok) return;
+		if (!activeEntry) resetForm();
+		library.closeCreateModal();
 	}
 
 	async function importFrom(provider: string, domain: string, validationError: string): Promise<void> {
-		if (!linkValue) { linkInput?.focus(); return; }
+		if (!linkValue) {
+			linkInput?.focus();
+			return;
+		}
 
 		if (!linkValue.includes(domain)) {
 			notifications.error(validationError);
@@ -212,48 +187,44 @@
 
 		importLoading = true;
 		loadingIndicator.start();
-
-		const album = await library.importFrom(provider, linkValue);
-
-		if (!album) {
-			notifications.error(ts.get.libraries.music.import_error);
-		} else {
-			artistValue = album.artist;
-			titleValue = album.title;
-			coverValue = album.cover;
-			linkValue = album.url;
-			if (album.release_date) publicationYearValue = parseInt(album.release_date.slice(0, 4));
-			if (album.record_type) formatValue = album.record_type;
-			for (const genre of album.genres ?? []) {
-				const existing = library.genres.find((g) => g.title === genre);
-				if (existing) selectedGenres.push({ label: existing.title, value: existing.id.toString() });
-			}
+		try {
+			const album = await library.importFrom(provider, linkValue);
+			if (album) applyRelease(album);
+			else notifications.error(ts.get.libraries.music.import_error);
+		} finally {
+			loadingIndicator.stop();
+			importLoading = false;
 		}
-
-		loadingIndicator.stop();
-		importLoading = false;
 		importDropdownOpen = false;
 	}
 
 	function onSearchSelect(entry: MusicRelease): void {
-		artistValue = entry.artist;
-		titleValue = entry.title;
-		coverValue = entry.cover;
-		linkValue = entry.url;
-		if (entry.release_date) publicationYearValue = parseInt(entry.release_date.slice(0, 4));
-		if (entry.record_type) formatValue = entry.record_type;
-		for (const genre of entry.genres ?? []) {
-			const existing = library.genres.find((g) => g.title === genre);
-			if (existing) selectedGenres.push({ label: existing.title, value: existing.id.toString() });
-		}
+		applyRelease(entry);
 		library.closeExternalSearchModal();
 	}
+
+	function applyRelease(release: MusicRelease): void {
+		artistValue = release.artist;
+		titleValue = release.title;
+		coverValue = release.cover;
+		linkValue = release.url;
+		if (release.release_date) publicationYearValue = parseInt(release.release_date.slice(0, 4));
+		if (release.record_type) formatValue = release.record_type;
+		selectKnownGenres(release.genres ?? []);
+	}
+	function selectKnownGenres(titles: string[]): void {
+		for (const title of titles) {
+			const existing = library.genres.find((genre) => genre.title === title);
+			if (existing) selectedGenres.push(...genreEntries([existing]));
+		}
+	}
+
 </script>
 
 <CreateModal
 	title={activeEntry !== null ? ts.get.libraries.music.edit_album : ts.get.libraries.music.add_album}
 	{library}
-	existingCover={activeEntry && activeEntry.cover ? `${API_USER_STORAGE_URL}/${auth.user?.id}/${library.config.type}/${activeEntry.cover}` : null}
+	existingCover={activeEntry && activeEntry.cover ? libraryCoverUrl(library, activeEntry.cover) : null}
 	newCover={coverValue}
 	bind:selectedRating
 	bind:isWishlist
@@ -265,7 +236,7 @@
 		<TextInput bind:value={artistValue} />
 	</ModalFormRow>
 	<ModalFormRow label={ts.get.libraries.genres}>
-		<MultiSelect bind:value={selectedGenres} options={genreOptions} allowUserOptions oncreate={onCreateGenre} />
+		<MultiSelect bind:value={selectedGenres} options={genreEntries(library.genres)} allowUserOptions oncreate={onCreateGenre} />
 	</ModalFormRow>
 	<ModalFormRow label={ts.get.libraries.music.type}>
 		<Select bind:value={typeValue} options={typeOptions} />

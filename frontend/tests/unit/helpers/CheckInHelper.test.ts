@@ -1,70 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { getMeanValue, getScoreColor, getTotalMeanValue } from '$lib/helpers/CheckInHelper';
-import type { CheckIn } from '$lib/types/check_in';
-
-function checkIn(overrides: Partial<CheckIn> = {}): CheckIn {
-	return {
-		id: 1,
-		date: '2025-08-15',
-		mood: null,
-		sports: null,
-		water: null,
-		sleep: null,
-		dreams: null,
-		work: null,
-		food_quality: null,
-		food_amount: null,
-		menstruation: null,
-		alcohol: null,
-		smoking: null,
-		social_life: null,
-		created_at: '',
-		updated_at: '',
-		...overrides
-	};
-}
-
-describe('getMeanValue', () => {
-	it('returns NaN when there are no usable values', () => {
-		expect(getMeanValue([checkIn({ mood: null }), checkIn({ mood: 0 })], 'mood')).toBeNaN();
-	});
-
-	it('averages numeric tracker values', () => {
-		const data = [checkIn({ mood: 2 }), checkIn({ mood: 4 })];
-		expect(getMeanValue(data, 'mood')).toBe(3);
-	});
-
-	it('skips null and zero values', () => {
-		const data = [
-			checkIn({ mood: 1 }),
-			checkIn({ mood: null }),
-			checkIn({ mood: 0 }),
-			checkIn({ mood: 5 })
-		];
-		expect(getMeanValue(data, 'mood')).toBe(3);
-	});
-
-	it('maps food_amount scale values to amounts', () => {
-		const data = [checkIn({ food_amount: 1 }), checkIn({ food_amount: 4 })];
-		expect(getMeanValue(data, 'food_amount')).toBe(3.125); // (1.25 + 5) / 2
-	});
-});
-
-describe('getTotalMeanValue', () => {
-	it('returns 0 when every tracker mean is NaN', () => {
-		expect(getTotalMeanValue([checkIn()], ['mood', 'sleep'])).toBe(0);
-	});
-
-	it('averages the means of the given trackers', () => {
-		const data = [checkIn({ mood: 2, sleep: 4 }), checkIn({ mood: 4, sleep: 8 })];
-		expect(getTotalMeanValue(data, ['mood', 'sleep'])).toBe(4.5); // (3 + 6) / 2
-	});
-
-	it('ignores trackers with no data', () => {
-		const data = [checkIn({ mood: 2, sleep: null })];
-		expect(getTotalMeanValue(data, ['mood', 'sleep'])).toBe(2);
-	});
-});
+import { formatScore, getScoreColor, goalProgressText, scoreWidth, trackerLabel } from '$lib/helpers/CheckInHelper';
+import type { CheckInRecords } from '$lib/types/translation';
+import { checkInTracker as tracker, goal } from './factories';
 
 describe('getScoreColor', () => {
 	it.each([
@@ -80,5 +17,50 @@ describe('getScoreColor', () => {
 		[1, 'bg-c-danger']
 	])('colors %s as %s', (value, expected) => {
 		expect(getScoreColor(value)).toBe(expected);
+	});
+});
+
+describe('trackerLabel', () => {
+	const texts = { mood: 'Stimmung' } as CheckInRecords;
+
+	it('names built-in trackers by their translation', () => {
+		expect(trackerLabel(tracker({ key: 'mood', name: null, type: 'scale' }), texts)).toBe('Stimmung');
+	});
+
+	it('names own trackers by the name the user gave them', () => {
+		expect(trackerLabel(tracker(), texts)).toBe('Meditated');
+	});
+});
+
+describe('goalProgressText', () => {
+	const texts = { goal_today: 'today', goal_this_week: 'this week', goal_this_month: 'this month' } as CheckInRecords;
+
+	it('shows days or counts as whole numbers', () => {
+		expect(goalProgressText(goal({ target: 5 }), tracker(), { current: 3, met: false }, texts)).toBe('3 / 5 this week');
+	});
+
+	it('shows a 1–5 average with one decimal and marks an "at most" target', () => {
+		const g = goal({ period: 'month', comparison: 'at_most', target: 2 });
+
+		expect(goalProgressText(g, tracker({ type: 'scale' }), { current: 1.75, met: true }, texts)).toBe('1.8 / ≤ 2.0 this month');
+	});
+
+	it('shows a dash when there is nothing to measure yet', () => {
+		const g = goal({ period: 'day', target: 4 });
+
+		expect(goalProgressText(g, tracker({ type: 'scale' }), { current: null, met: false }, texts)).toBe('– / 4.0 today');
+	});
+});
+
+describe('formatScore and scoreWidth', () => {
+	it('shows a score with two decimals and as a share of 5', () => {
+		expect(formatScore(3.4)).toBe('3.40');
+		expect(scoreWidth(4)).toBe(80);
+		expect(scoreWidth(5)).toBe(100);
+	});
+
+	it('shows "-" and an empty bar without ratings', () => {
+		expect(formatScore(NaN)).toBe('-');
+		expect(scoreWidth(NaN)).toBe(0);
 	});
 });

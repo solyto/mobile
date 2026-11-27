@@ -1,7 +1,7 @@
 <script lang="ts">
-	import IconLoaderCircle from '@lucide/svelte/icons/loader-circle';
+	import IconLoaderCircle from '$lib/icons/lucide/loader-circle.svelte';
 	import type { Snippet } from 'svelte';
-	import type { NormalizedSearchResult } from '$lib/components/libraries/shared/LibrarySearchModal.svelte';
+	import type { NormalizedSearchResult } from '$lib/types/library';
 
 	let {
 		result,

@@ -1,18 +1,18 @@
 <script lang="ts">
-	import IconHouse from '@lucide/svelte/icons/house';
-	import IconCheckCheck from '@lucide/svelte/icons/check-check';
-	import IconSettings from '@lucide/svelte/icons/settings';
-	import IconGoal from '@lucide/svelte/icons/goal';
-	import IconNotebook from '@lucide/svelte/icons/notebook';
-	import IconBug from '@lucide/svelte/icons/bug';
-	import IconLibraryBig from '@lucide/svelte/icons/library-big';
-	import IconEuro from '@lucide/svelte/icons/euro';
-	import IconTimer from '@lucide/svelte/icons/timer';
-	import IconNewspaper from '@lucide/svelte/icons/newspaper';
-	import IconCalendar from '@lucide/svelte/icons/calendar';
-	import IconClipboardCopy from '@lucide/svelte/icons/clipboard-copy';
-	import IconContactRound from '@lucide/svelte/icons/contact-round';
-	import IconBell from '@lucide/svelte/icons/bell';
+	import IconHouse from '$lib/icons/lucide/house.svelte';
+	import IconCheckCheck from '$lib/icons/lucide/check-check.svelte';
+	import IconSettings from '$lib/icons/lucide/settings.svelte';
+	import IconGoal from '$lib/icons/lucide/goal.svelte';
+	import IconNotebook from '$lib/icons/lucide/notebook.svelte';
+	import IconBug from '$lib/icons/lucide/bug.svelte';
+	import IconLibraryBig from '$lib/icons/lucide/library-big.svelte';
+	import IconEuro from '$lib/icons/lucide/euro.svelte';
+	import IconTimer from '$lib/icons/lucide/timer.svelte';
+	import IconNewspaper from '$lib/icons/lucide/newspaper.svelte';
+	import IconCalendar from '$lib/icons/lucide/calendar.svelte';
+	import IconClipboardCopy from '$lib/icons/lucide/clipboard-copy.svelte';
+	import IconContactRound from '$lib/icons/lucide/contact-round.svelte';
+	import IconBell from '$lib/icons/lucide/bell.svelte';
 
 	let { type }: { type: string } = $props();
 </script>

@@ -1,29 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import CalendarDragService from '$lib/services/CalendarDragService';
 import type { CalendarEvent, UpdateEventRequest } from '$lib/types/calendar';
+import { calendarEvent } from '../helpers/factories';
 
 function event(overrides: Partial<CalendarEvent> = {}): CalendarEvent {
-	return {
-		id: 1,
-		uri: 'event-1',
-		title: 'Meeting',
-		description: '',
-		location: '',
-		start_date: new Date(2026, 7, 10, 10, 0),
-		end_date: new Date(2026, 7, 10, 11, 0),
-		is_all_day: false,
-		is_recurring: false,
-		recurrence_rule: null,
-		recurrence_end: null,
-		original_start_date: null,
-		created_at: null,
-		updated_at: null,
-		calendar_id: 1,
-		calendar_name: 'Personal',
-		calendar_color: '#fff',
-		etag: 'abc123',
-		...overrides
-	};
+	return calendarEvent({ title: 'Meeting', etag: 'abc123', ...overrides });
 }
 
 const service = new CalendarDragService();

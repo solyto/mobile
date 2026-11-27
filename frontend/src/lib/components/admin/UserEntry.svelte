@@ -2,35 +2,26 @@
 	import type { ManagedUser } from '$lib/types/managed_user';
 	import { getUserManagement } from '$lib/state/UserManagement.svelte';
 	import { getAuth } from '$lib/state/Auth.svelte';
-	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
-	import IconShield from '@lucide/svelte/icons/shield';
-	import IconShieldCheck from '@lucide/svelte/icons/shield-check';
-	import IconUser from '@lucide/svelte/icons/user';
-	import IconBadgeCheck from '@lucide/svelte/icons/badge-check';
+	import { SaveAction } from '$lib/helpers/SaveAction.svelte';
+	import IconShield from '$lib/icons/lucide/shield.svelte';
+	import IconShieldCheck from '$lib/icons/lucide/shield-check.svelte';
+	import IconUser from '$lib/icons/lucide/user.svelte';
+	import IconBadgeCheck from '$lib/icons/lucide/badge-check.svelte';
 
 	const userManagement = getUserManagement();
 	const auth = getAuth();
-	const loadingIndicator = getLoadingIndicator();
 	const notifications = getUiNotifications();
 	const ts = getTranslation();
+	const saving = new SaveAction(() => ts.get.admin.role_update_error);
 
 	let { user }: { user: ManagedUser } = $props();
 
 	const isSuperAdmin = auth.user?.role === 'super_admin';
 	const isCurrentUser = auth.user?.id === user.id;
 
-	const roleOptions: { value: ManagedUser['role']; label: string }[] = isSuperAdmin
-		? [
-				{ value: 'user', label: 'User' },
-				{ value: 'admin', label: 'Admin' },
-				{ value: 'super_admin', label: 'Super Admin' }
-			]
-		: [
-				{ value: 'user', label: 'User' },
-				{ value: 'admin', label: 'Admin' }
-			];
+	const assignableRoles: ManagedUser['role'][] = isSuperAdmin ? ['user', 'admin', 'super_admin'] : ['user', 'admin'];
 
 	async function handleRoleChange(event: Event): Promise<void> {
 		const target = event.target as HTMLSelectElement;
@@ -38,14 +29,18 @@
 
 		if (newRole === user.role) return;
 
-		loadingIndicator.start();
-		const success = await userManagement.updateRole(user, newRole);
-		loadingIndicator.stop();
+		const success = await saving.run(() => userManagement.updateRole(user, newRole));
+		if (success) notifications.success(ts.get.admin.role_update_success);
+	}
 
-		if (success) {
-			notifications.success(ts.get.admin.role_update_success);
-		} else {
-			notifications.error(ts.get.admin.role_update_error);
+	function roleLabel(role: ManagedUser['role']): string {
+		switch (role) {
+			case 'super_admin':
+				return ts.get.admin.role_super_admin;
+			case 'admin':
+				return ts.get.admin.role_admin;
+			default:
+				return ts.get.admin.role_user;
 		}
 	}
 
@@ -97,21 +92,13 @@
 				value={user.role}
 				onchange={handleRoleChange}
 			>
-				{#each roleOptions as option (option.value)}
-					<option value={option.value}>{option.label}</option>
+				{#each assignableRoles as role (role)}
+					<option value={role}>{roleLabel(role)}</option>
 				{/each}
 			</select>
 		{:else}
-			<span
-				class="rounded-lg px-3 py-1.5 text-sm {getRoleColor(
-					user.role
-				)} font-medium"
-			>
-				{user.role === 'super_admin'
-					? 'Super Admin'
-					: user.role === 'admin'
-						? 'Admin'
-						: 'User'}
+			<span class="rounded-lg px-3 py-1.5 text-sm {getRoleColor(user.role)} font-medium">
+				{roleLabel(user.role)}
 			</span>
 		{/if}
 	</div>

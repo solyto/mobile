@@ -7,7 +7,6 @@
 	} from '$lib/types/finance';
 	import FinanceHistoryService from '$lib/services/FinanceHistoryService';
 	import { formatDate, getUrlFormat } from '$lib/helpers/DateHelper';
-	import { europeanFormat } from '$lib/helpers/NumberHelper';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { getKeyManager } from '$lib/state/KeyManager.svelte';
 	import { onDestroy } from 'svelte';
@@ -16,8 +15,9 @@
 	import SaveButton from '$lib/components/ui/buttons/SaveButton.svelte';
 	import CloseButton from '$lib/components/ui/buttons/CloseButton.svelte';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
-	import IconPen from '@lucide/svelte/icons/pen';
-	import IconTrash from '@lucide/svelte/icons/trash-2';
+	import IconPen from '$lib/icons/lucide/pen.svelte';
+	import IconTrash from '$lib/icons/lucide/trash.svelte';
+	import GhostIconButton from '$lib/components/ui/buttons/GhostIconButton.svelte';
 	import ConfirmationModal from '$lib/components/ui/ConfirmationModal.svelte';
 	import SmoothLineChart from '$lib/components/charts/SmoothLineChart.svelte';
 
@@ -34,7 +34,8 @@
 		onAdd,
 		onUpdate,
 		onDelete,
-		onDeleteItem
+		onDeleteItem,
+		valueFormatter
 	}: {
 		values: FinanceValue[];
 		itemTitle: string;
@@ -44,6 +45,7 @@
 		onUpdate: (value: FinanceValue, request: UpdateFinanceValueRequest) => Promise<boolean>;
 		onDelete: (value: FinanceValue) => Promise<boolean>;
 		onDeleteItem: () => Promise<void>;
+		valueFormatter: (value: number) => string;
 	} = $props();
 
 	let today = getUrlFormat(new Date());
@@ -58,7 +60,7 @@
 
 	function replacesHint(): string | null {
 		const replaced = history.findByDate(values, addForm.date);
-		return replaced ? ts.get.finances.replaces_value.replace('%s', europeanFormat(replaced.value)) : null;
+		return replaced ? ts.get.finances.replaces_value.replace('%s', valueFormatter(replaced.value)) : null;
 	}
 
 	function isEditDateTaken(): boolean {
@@ -69,8 +71,8 @@
 		keyManager.unregisterAll(addKeyHandlers);
 		addForm = history.emptyForm(new Date());
 		addOpen = true;
-		addKeyHandlers.Enter = keyManager.registerKeyDown('Enter', () => add(), { priority: 3 });
-		addKeyHandlers.Escape = keyManager.registerKeyDown('Escape', () => closeAdd(), { priority: 3 });
+		addKeyHandlers.Enter = keyManager.registerKeyDown('Enter', add, { priority: 3 });
+		addKeyHandlers.Escape = keyManager.registerKeyDown('Escape', closeAdd, { priority: 3 });
 	}
 
 	function closeAdd(): void {
@@ -89,7 +91,7 @@
 		editForm = history.toForm(value);
 		editingId = value.id;
 		editKeyHandlers.Enter = keyManager.registerKeyDown('Enter', () => saveEdit(value), { priority: 2 });
-		editKeyHandlers.Escape = keyManager.registerKeyDown('Escape', () => cancelEdit(), { priority: 2 });
+		editKeyHandlers.Escape = keyManager.registerKeyDown('Escape', cancelEdit, { priority: 2 });
 	}
 
 	function cancelEdit(): void {
@@ -118,6 +120,18 @@
 		await onDelete(value);
 	}
 
+	function deleteItemLabel(): string {
+		return ts.get.finances.delete_item.replace('%s', itemTitle);
+	}
+
+	function askDeleteItem(): void {
+		deleteItemConfirmOpen = true;
+	}
+
+	function cancelDeleteItem(): void {
+		deleteItemConfirmOpen = false;
+	}
+
 	async function confirmDeleteItem(): Promise<void> {
 		deleteItemConfirmOpen = false;
 		await onDeleteItem();
@@ -135,7 +149,7 @@
 			categories={history.chartCategories(values, dateFormat)}
 			values={history.chartValues(values)}
 			filled={true}
-			valueFormatter={europeanFormat}
+			valueFormatter={valueFormatter}
 			class="h-56"
 		/>
 	{/if}
@@ -175,26 +189,14 @@
 					{:else}
 						<div class="flex items-center gap-4">
 							<span class="flex-1">{formatDate(history.toLocalDate(value), dateFormat)}</span>
-							<span>{europeanFormat(value.value)}</span>
-							<button
-								type="button"
-								class="cursor-pointer"
-								aria-label={ts.get.finances.edit_value}
-								title={ts.get.finances.edit_value}
-								onclick={() => startEdit(value)}
-							>
-								<IconPen class="size-5 text-c-neutral-3 transition-all hover:text-c-action" />
-							</button>
+							<span>{valueFormatter(value.value)}</span>
+							<GhostIconButton label={ts.get.finances.edit_value} onclick={() => startEdit(value)} color="text-c-neutral-3">
+								<IconPen class="size-5" />
+							</GhostIconButton>
 							{#if values.length > minValues}
-								<button
-									type="button"
-									class="cursor-pointer"
-									aria-label={ts.get.finances.delete_value_label}
-									title={ts.get.finances.delete_value_label}
-									onclick={() => askDelete(value)}
-								>
-									<IconTrash class="size-5 text-c-neutral-3 transition-all hover:text-c-danger" />
-								</button>
+								<GhostIconButton label={ts.get.finances.delete_value_label} onclick={() => askDelete(value)} color="text-c-neutral-3">
+									<IconTrash class="size-5" />
+								</GhostIconButton>
 							{/if}
 						</div>
 					{/if}
@@ -203,13 +205,7 @@
 		</ul>
 	{/if}
 	<div class="flex justify-center">
-		<button
-			type="button"
-			class="cursor-pointer text-sm text-c-neutral-5 transition-all hover:text-c-danger"
-			onclick={() => (deleteItemConfirmOpen = true)}
-		>
-			{ts.get.finances.delete_item.replace('%s', itemTitle)}
-		</button>
+		<TextButton title={deleteItemLabel()} type="plain" class="text-sm text-c-danger" onclick={askDeleteItem} />
 	</div>
 </div>
 {#if deleteCandidate}
@@ -223,10 +219,10 @@
 {/if}
 {#if deleteItemConfirmOpen}
 	<ConfirmationModal
-		title={ts.get.finances.delete_item.replace('%s', itemTitle)}
+		title={deleteItemLabel()}
 		description={ts.get.finances.delete_item_message.replace('%s', itemTitle)}
 		type="confirm-delete"
 		onConfirm={confirmDeleteItem}
-		onCancel={() => (deleteItemConfirmOpen = false)}
+		onCancel={cancelDeleteItem}
 	/>
 {/if}

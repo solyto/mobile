@@ -13,7 +13,7 @@
 	import { onDestroy, tick } from 'svelte';
 	import { dndzone } from 'svelte-dnd-action';
 	import { flip } from 'svelte/animate';
-	import IconGripVertical from '@lucide/svelte/icons/grip-vertical';
+	import IconGripVertical from '$lib/icons/lucide/grip-vertical.svelte';
 
 	const ts = getTranslation();
 	const loadingIndicator = getLoadingIndicator();
@@ -49,13 +49,16 @@
 			return;
 		}
 
-		loadingIndicator.start();
 		const request: CreateShortcutRequest = {
 			title: titleValue,
 			url: urlValue
 		};
-		await shortcuts.create(request);
-		loadingIndicator.stop();
+		loadingIndicator.start();
+		try {
+			await shortcuts.create(request);
+		} finally {
+			loadingIndicator.stop();
+		}
 		await toggleCreate();
 	}
 
@@ -107,18 +110,10 @@
 						placeholder={ts.get.widgets.shortcut_title}
 					/>
 					<TextInput bind:value={urlValue} placeholder={ts.get.widgets.shortcut_url} />
-					<SaveButton
-						onClick={() => {
-							onCreate();
-						}}
-					/>
+					<SaveButton onClick={onCreate} />
 				</div>
 			{:else}
-				<AddButton
-					onClick={() => {
-						toggleCreate();
-					}}
-				/>
+				<AddButton onClick={toggleCreate} />
 			{/if}
 		</div>
 	</div>

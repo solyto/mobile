@@ -1,29 +1,45 @@
 <script lang="ts">
 	import { getCheckInData } from '$lib/state/CheckInData.svelte';
-	import { getViewPoint } from '$lib/state/Viewpoint.svelte';
 	import { getDaysInMonth, getUrlFormat } from '$lib/helpers/DateHelper';
 	import { fade } from 'svelte/transition';
-	import type { CheckIn } from '$lib/types/check_in';
-	import OverviewDesktop from '$lib/components/check-in/overview/OverviewDesktop.svelte';
-	import OverviewMobile from '$lib/components/check-in/overview/OverviewMobile.svelte';
+	import CheckInCalendar from '$lib/components/check-in/overview/CheckInCalendar.svelte';
+	import Select from '$lib/components/forms/Select.svelte';
+	import { trackerLabel } from '$lib/helpers/CheckInHelper';
+	import type { CheckInTracker } from '$lib/types/check_in';
+	import { getTranslation } from '$lib/state/Translation.svelte';
+	import { getAuth } from '$lib/state/Auth.svelte';
 	import CheckInSummaries from '$lib/components/check-in/overview/CheckInSummaries.svelte';
 	import Averages from '$lib/components/check-in/stats/Averages.svelte';
-	import IconChevronLeft from '@lucide/svelte/icons/chevron-left';
-	import IconChevronRight from '@lucide/svelte/icons/chevron-right';
+	import IconChevronLeft from '$lib/icons/lucide/chevron-left.svelte';
+	import IconChevronRight from '$lib/icons/lucide/chevron-right.svelte';
 
-	const viewPoint = getViewPoint();
 	const checkInData = getCheckInData();
+	const ts = getTranslation();
+	const auth = getAuth();
+
+	let selected = $state<string>('all');
+	const shown = $derived(calendarTracker(selected));
+
+	function calendarTracker(value: string): CheckInTracker | 'total' | 'all' {
+		if (value === 'all' || value === 'total') return value;
+		return checkInData.activeTrackers.find((t) => String(t.id) === value) ?? 'all';
+	}
+
+	function trackerOptions(): { label: string; value: string }[] {
+		const options = [{ label: ts.get.checkIn.all_entries, value: 'all' }];
+		if (checkInData.scoredTrackers.length > 0) options.push({ label: ts.get.checkIn.total, value: 'total' });
+		options.push(...checkInData.activeTrackers.map((t) => ({ label: trackerLabel(t, ts.get.checkIn), value: String(t.id) })));
+		return options;
+	}
 
 	const dates = $derived(getDaysInMonth(checkInData.historyMonth.year, checkInData.historyMonth.month).reverse());
 
-	const monthData = $derived.by((): CheckIn[] => {
-		const dateStrings = new Set(dates.map((d) => getUrlFormat(d)));
-		return checkInData.data.filter((c) => dateStrings.has(c.date));
-	});
+	const monthDates = $derived(dates.map((d) => getUrlFormat(d)));
+	const builtInTrackers = $derived(checkInData.activeTrackers.flatMap((t) => (t.key === null ? [] : [t.key])));
 
 	const monthLabel = $derived(
 		new Date(checkInData.historyMonth.year, checkInData.historyMonth.month, 1)
-			.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
+			.toLocaleDateString(ts.locale, { month: 'long', year: 'numeric' })
 	);
 </script>
 
@@ -47,29 +63,20 @@
 		</button>
 	</div>
 
-	{#if viewPoint.isDesktop}
-		<div class="hidden 2xl:flex 2xl:flex-row 2xl:items-start gap-0">
-			<div class="w-3/4 2xl:w-[70%]">
-				<OverviewDesktop {dates} trackers={checkInData.activeTrackers} />
+	<div class="flex flex-col gap-6 2xl:flex-row 2xl:items-start 2xl:gap-0">
+		<div class="flex flex-col gap-2 2xl:w-[70%] 2xl:pr-6">
+			<div class="sm:w-64 sm:self-end">
+				<Select value={selected} options={trackerOptions()} onchange={(value) => (selected = value)} ariaLabel={ts.get.checkIn.history} />
 			</div>
-			<div class="w-1/4 2xl:w-[30%] flex flex-col 2xl:border-l-2 border-c-neutral-1 dark:border-s-dark 2xl:pl-6">
-				{#if checkInData.loaded}
-					<div transition:fade={{ duration: 150 }}>
-						<Averages data={monthData} activeTrackers={checkInData.activeTrackers} scoredTrackers={checkInData.scoredTrackers} />
-						<CheckInSummaries {dates} trackers={checkInData.activeTrackers} />
-					</div>
-				{/if}
-			</div>
+			<CheckInCalendar tracker={shown} weekStart={auth.getWeekStart()} />
 		</div>
-	{:else}
-		<div class="flex flex-col gap-6 2xl:hidden">
-			<OverviewMobile {dates} trackers={checkInData.activeTrackers} />
+		<div class="flex flex-col border-c-neutral-1 2xl:w-[30%] 2xl:border-l-2 2xl:pl-6 dark:border-s-dark">
 			{#if checkInData.loaded}
 				<div transition:fade={{ duration: 150 }}>
-					<Averages data={monthData} activeTrackers={checkInData.activeTrackers} scoredTrackers={checkInData.scoredTrackers} />
-					<CheckInSummaries {dates} trackers={checkInData.activeTrackers} />
+					<Averages dates={monthDates} />
+					<CheckInSummaries {dates} trackers={builtInTrackers} />
 				</div>
 			{/if}
 		</div>
-	{/if}
+	</div>
 </div>

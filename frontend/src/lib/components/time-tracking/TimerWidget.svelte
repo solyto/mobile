@@ -23,14 +23,17 @@
 
 	async function startTimer(): Promise<void> {
 		if (!timerProjectId) return;
-		loadingIndicator.start();
 		const request: StartTimerRequest = {
 			project_id: timerProjectId,
 			description: timerDescription.trim() || null
 		};
-		await tt.startTimer(request);
-		timerDescription = '';
-		loadingIndicator.stop();
+		loadingIndicator.start();
+		try {
+			await tt.startTimer(request);
+			timerDescription = '';
+		} finally {
+			loadingIndicator.stop();
+		}
 	}
 </script>
 
@@ -54,11 +57,7 @@
 				</span>
 				<TextInput bind:value={timerDescription} placeholder={ts.get.timeTracking.description} />
 			</label>
-			<TextButton
-				title={ts.get.timeTracking.start_timer}
-				onclick={startTimer}
-				disabled={!timerProjectId}
-			/>
+			<TextButton title={ts.get.timeTracking.start_timer} onclick={startTimer} disabled={!timerProjectId} />
 		</div>
 	{:else}
 		<p class="text-sm text-c-neutral-5 dark:text-c-neutral-4">

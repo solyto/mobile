@@ -88,8 +88,7 @@ export class TimeTracking {
 			apiRoutes.timeTracking.projects.create,
 			request
 		);
-		if (res) await this.loadProjects();
-		if (res) this.auth.widgetBridge.notifyChanged();
+		if (res) await this.reloadAndNotify(() => this.loadProjects());
 		return res !== null;
 	}
 
@@ -99,15 +98,13 @@ export class TimeTracking {
 			id,
 			request
 		);
-		if (res) await this.loadProjects();
-		if (res) this.auth.widgetBridge.notifyChanged();
+		if (res) await this.reloadAndNotify(() => this.loadProjects());
 		return res;
 	}
 
 	async deleteProject(id: string): Promise<boolean> {
 		const res = await this.apiService.delete(apiRoutes.timeTracking.projects.delete, id);
-		if (res) await Promise.all([this.loadProjects(), this.loadEntries()]);
-		if (res) this.auth.widgetBridge.notifyChanged();
+		if (res) await this.reloadAndNotify(() => this.loadProjects(), () => this.loadEntries());
 		return res;
 	}
 
@@ -116,29 +113,25 @@ export class TimeTracking {
 			apiRoutes.timeTracking.entries.create,
 			request
 		);
-		if (res) await Promise.all([this.loadEntries(), this.loadProjects()]);
-		if (res) this.auth.widgetBridge.notifyChanged();
+		if (res) await this.reloadAndNotify(() => this.loadEntries(), () => this.loadProjects());
 		return res !== null;
 	}
 
 	async updateEntry(id: string, request: UpdateTimeTrackingEntryRequest): Promise<boolean> {
 		const res = await this.apiService.update(apiRoutes.timeTracking.entries.update, id, request);
-		if (res) await Promise.all([this.loadEntries(), this.loadProjects()]);
-		if (res) this.auth.widgetBridge.notifyChanged();
+		if (res) await this.reloadAndNotify(() => this.loadEntries(), () => this.loadProjects());
 		return res;
 	}
 
 	async deleteEntry(id: string): Promise<boolean> {
 		const res = await this.apiService.delete(apiRoutes.timeTracking.entries.delete, id);
-		if (res) await Promise.all([this.loadEntries(), this.loadProjects()]);
-		if (res) this.auth.widgetBridge.notifyChanged();
+		if (res) await this.reloadAndNotify(() => this.loadEntries(), () => this.loadProjects());
 		return res;
 	}
 
 	async startTimer(request: StartTimerRequest): Promise<boolean> {
 		const res = await this.apiService.post(apiRoutes.timeTracking.entries.start, request);
-		if (res) await this.loadEntries();
-		if (res) this.auth.widgetBridge.notifyChanged();
+		if (res) await this.reloadAndNotify(() => this.loadEntries());
 		return res !== null;
 	}
 
@@ -147,25 +140,25 @@ export class TimeTracking {
 			apiRoutes.timeTracking.entries.stop.replace('%s', entryId),
 			{}
 		);
-		if (res) await Promise.all([this.loadEntries(), this.loadProjects()]);
-		if (res) this.auth.widgetBridge.notifyChanged();
+		if (res) await this.reloadAndNotify(() => this.loadEntries(), () => this.loadProjects());
 		return res !== null;
 	}
 
 	async loadStatistics(from: string, to: string, categoryIds: number[] = []): Promise<void> {
-		const params = [`from=${encodeURIComponent(from)}`, `to=${encodeURIComponent(to)}`];
-		if (categoryIds.length > 0) params.push(`category_ids=${categoryIds.join(',')}`);
-		const res = await this.apiService.list(
-			apiRoutes.timeTracking.entries.statistics + `?${params.join('&')}`
-		);
+		const res = await this.apiService.list(this.statisticsUrl(from, to, categoryIds));
 		if (res) this.statistics = res.data as unknown as TimeTrackingStatistics;
 	}
 
-	formatDuration(minutes: number): string {
-		const h = Math.floor(minutes / 60);
-		const m = minutes % 60;
-		if (h === 0) return `${m}m`;
-		return `${h}h ${m}m`;
+	private async reloadAndNotify(...reloads: (() => Promise<void>)[]): Promise<void> {
+		await Promise.all(reloads.map((reload) => reload()));
+		this.auth.widgetBridge.notifyChanged();
+	}
+
+	private statisticsUrl(from: string, to: string, categoryIds: number[]): string {
+		const query = new URLSearchParams({ from, to });
+		if (categoryIds.length > 0) query.set('category_ids', categoryIds.join(','));
+		// The API has always received the id list with a literal comma.
+		return `${apiRoutes.timeTracking.entries.statistics}?${query.toString().replaceAll('%2C', ',')}`;
 	}
 }
 

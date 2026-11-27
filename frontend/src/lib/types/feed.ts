@@ -30,6 +30,7 @@ export interface FeedItem {
 	feed_id: string;
 	link: string;
 	published_at: string;
+	saved_link_id: string | null;
 }
 
 export interface FeedTestItem {

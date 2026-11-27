@@ -9,6 +9,8 @@
 @import '@fontsource/lora';
 @import '@fontsource/press-start-2p';
 @plugin '@tailwindcss/forms';
+/* Icon names in the Lucide copy would otherwise become Tailwind classes (columns-2, text-wrap, ...). */
+@source not './lib/icons/lucide';
 
 @import './styles/default.css';
 @import './styles/tokens.css';

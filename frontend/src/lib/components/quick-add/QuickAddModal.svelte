@@ -3,25 +3,25 @@
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { getKeyManager } from '$lib/state/KeyManager.svelte';
 	import { onDestroy, onMount, tick } from 'svelte';
-	import IconLink from '@lucide/svelte/icons/link';
-	import IconArrowLeft from '@lucide/svelte/icons/arrow-left';
+	import IconLink from '$lib/icons/lucide/link.svelte';
+	import IconArrowLeft from '$lib/icons/lucide/arrow-left.svelte';
 	import ContentModal from '$lib/components/ui/ContentModal.svelte';
 	import BottomSheetModal from '$lib/components/ui/BottomSheetModal.svelte';
 	import { getViewPoint } from '$lib/state/Viewpoint.svelte';
 	import TextInput from '$lib/components/forms/TextInput.svelte';
 	import ModalFormRow from '$lib/components/ui/ModalFormRow.svelte';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
-	import IconBookOpen from '@lucide/svelte/icons/book-open';
-	import IconFilm from '@lucide/svelte/icons/film';
-	import IconMusic from '@lucide/svelte/icons/music';
-	import IconGamepad from '@lucide/svelte/icons/gamepad-2';
-	import IconChefHat from '@lucide/svelte/icons/chef-hat';
-	import IconLeaf from '@lucide/svelte/icons/leaf';
-	import IconQuote from '@lucide/svelte/icons/quote';
-	import IconListTodo from '@lucide/svelte/icons/list-todo';
-	import IconNotebookPen from '@lucide/svelte/icons/notebook-pen';
-	import IconRss from '@lucide/svelte/icons/rss';
-	import IconClipboard from '@lucide/svelte/icons/clipboard';
+	import IconBookOpen from '$lib/icons/lucide/book-open.svelte';
+	import IconFilm from '$lib/icons/lucide/film.svelte';
+	import IconMusic from '$lib/icons/lucide/eighth-notes.svelte';
+	import IconGamepad from '$lib/icons/lucide/gamepad-2.svelte';
+	import IconChefHat from '$lib/icons/lucide/chef-hat.svelte';
+	import IconLeaf from '$lib/icons/lucide/leaf.svelte';
+	import IconQuote from '$lib/icons/lucide/quote.svelte';
+	import IconListTodo from '$lib/icons/lucide/list-todo.svelte';
+	import IconNotebookPen from '$lib/icons/lucide/notebook-pen.svelte';
+	import IconRss from '$lib/icons/lucide/rss.svelte';
+	import IconClipboard from '$lib/icons/lucide/clipboard.svelte';
 	import { type QuickAddContentType } from '$lib/types/quick_add';
 	import QuickAddTypeButton from '$lib/components/quick-add/QuickAddTypeButton.svelte';
 	import QuickAddDetectedType from '$lib/components/quick-add/QuickAddDetectedType.svelte';
@@ -30,6 +30,8 @@
 	const ts = getTranslation();
 	const keyManager = getKeyManager();
 	const viewPoint = getViewPoint();
+
+	const FOCUS_AFTER_OPEN_MS = 350;
 
 	let keyHandlers: { [key: string]: string | null } = { Escape: null, Enter: null };
 	let contentInput: HTMLInputElement | null = $state(null);
@@ -71,14 +73,14 @@
 		return quickAdd.isUrl ? ALL_TYPES : TEXT_TYPES;
 	}
 
-	onMount(async () => {
+	onMount(() => {
 		isMobile = viewPoint.isMobile;
-		keyHandlers.Escape = keyManager.registerKeyDown('Escape', () => quickAdd.closeModal(), { priority: 0 });
+		keyHandlers.Escape = keyManager.registerKeyDown('Escape', close, { priority: 0 });
 		keyHandlers.Enter = keyManager.registerKeyDown('Enter', handleEnter, { priority: 0 });
 		setTimeout(async () => {
 			await tick();
 			contentInput?.focus();
-		}, 350);
+		}, FOCUS_AFTER_OPEN_MS);
 	});
 
 	onDestroy(() => keyManager.unregisterAll(keyHandlers));
@@ -91,10 +93,31 @@
 	function handleEnter(): void {
 		if (quickAdd.loading) return;
 		if (quickAdd.needsConfirmation && quickAdd.detectedType) {
-			quickAdd.confirm(quickAdd.detectedType);
+			quickAdd.confirmDetected();
 		} else if (!quickAdd.showTypeSelector && !quickAdd.needsConfirmation) {
 			handleSubmit();
 		}
+	}
+
+	function onFormSubmit(event: SubmitEvent): void {
+		event.preventDefault();
+		handleSubmit();
+	}
+
+	function close(): void {
+		quickAdd.closeModal();
+	}
+
+	function backToConfirmation(): void {
+		quickAdd.backToConfirmation();
+	}
+
+	function rejectDetection(): void {
+		quickAdd.rejectDetection();
+	}
+
+	function confirmDetected(): void {
+		quickAdd.confirmDetected();
 	}
 
 	function confidencePercent(): number {
@@ -115,7 +138,7 @@
 		<div class="flex flex-col gap-5">
 			<button
 				class="flex w-fit cursor-pointer items-center gap-1 rounded-md p-1 text-xs text-c-neutral-5 transition-colors hover:text-c-heading dark:hover:text-c-primary"
-				onclick={() => quickAdd.backToConfirmation()}
+				onclick={backToConfirmation}
 			>
 				<IconArrowLeft class="h-3.5 w-3.5" />
 				{ts.get.quick_add.back}
@@ -154,19 +177,19 @@
 				<TextButton
 					title={ts.get.quick_add.choose_different}
 					type="slight"
-					onclick={() => quickAdd.rejectDetection()}
+					onclick={rejectDetection}
 					disabled={quickAdd.loading}
 				/>
 				<TextButton
 					title={ts.get.quick_add.confirm}
-					onclick={() => quickAdd.confirm(quickAdd.detectedType!)}
+					onclick={confirmDetected}
 					disabled={quickAdd.loading}
 				/>
 			</div>
 		</div>
 	{:else}
 		<form
-			onsubmit={(e) => { e.preventDefault(); handleSubmit(); }}
+			onsubmit={onFormSubmit}
 			class="flex gap-3"
 			class:flex-col={isMobile}
 			class:items-center={!isMobile}
@@ -192,13 +215,13 @@
 {/snippet}
 
 {#if isMobile === true}
-	<BottomSheetModal title={ts.get.quick_add.title} onClose={() => quickAdd.closeModal()}>
+	<BottomSheetModal title={ts.get.quick_add.title} onClose={close}>
 		{@render inner()}
 	</BottomSheetModal>
 {:else if isMobile === false}
 	<ContentModal
 		title={ts.get.quick_add.title}
-		onClose={() => quickAdd.closeModal()}
+		onClose={close}
 		rounded="2xl"
 		width="[24rem]"
 		p="6"

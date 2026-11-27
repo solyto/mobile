@@ -10,6 +10,8 @@
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import { getKeyManager } from '$lib/state/KeyManager.svelte';
 
+	const COMMENTS_DELAY_MS = 500;
+
 	let { entry }: { entry: DevRequest } = $props();
 
 	const devRequests = getDevRequests();
@@ -30,9 +32,12 @@
 	onMount(async () => {
 		loadingIndicator.start();
 		setTimeout(async () => {
-			await load();
-			loadingIndicator.stop();
-		}, 500);
+			try {
+				await load();
+			} finally {
+				loadingIndicator.stop();
+			}
+		}, COMMENTS_DELAY_MS);
 
 		keyHandlers.EnterNewLine = keyManager.registerKeyDown('Enter', insertNewLine, {
 			withHelperKey: 'Shift'

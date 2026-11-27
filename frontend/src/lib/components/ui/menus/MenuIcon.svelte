@@ -1,11 +1,11 @@
 <script lang="ts">
 	import type { MenuIcon } from '$lib/types/menu';
-	import IconPlus from '@lucide/svelte/icons/plus';
-	import IconFolderPlus from '@lucide/svelte/icons/folder-plus';
-	import IconFilePlus from '@lucide/svelte/icons/file-plus';
-	import IconTrash from '@lucide/svelte/icons/trash-2';
-	import IconPen from '@lucide/svelte/icons/pen';
-	import IconFolderInput from '@lucide/svelte/icons/folder-input';
+	import IconPlus from '$lib/icons/lucide/plus.svelte';
+	import IconFolderPlus from '$lib/icons/lucide/folder-plus.svelte';
+	import IconFilePlus from '$lib/icons/lucide/file-plus.svelte';
+	import IconTrash from '$lib/icons/lucide/trash.svelte';
+	import IconPen from '$lib/icons/lucide/pen.svelte';
+	import IconFolderInput from '$lib/icons/lucide/folder-input.svelte';
 
 	let { icon, size }: { icon: MenuIcon; size: number } = $props();
 </script>

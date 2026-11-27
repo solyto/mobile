@@ -1,5 +1,5 @@
 <script lang="ts">
-	import IconSave from '@lucide/svelte/icons/save';
+	import IconSave from '$lib/icons/lucide/save.svelte';
 
 	let { onClick }: {
 		onClick: () => void;

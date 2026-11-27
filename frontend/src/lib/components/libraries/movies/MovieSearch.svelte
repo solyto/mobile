@@ -1,5 +1,6 @@
 <script lang="ts">
-	import LibrarySearchModal, { type SearchSource } from '$lib/components/libraries/shared/LibrarySearchModal.svelte';
+	import LibrarySearchModal from '$lib/components/libraries/shared/LibrarySearchModal.svelte';
+	import type { SearchSource } from '$lib/types/library';
 	import type { MovieLibrary } from '$lib/state/MovieLibrary.svelte';
 	import type { Translation } from '$lib/state/Translation.svelte';
 	import type { MovieRelease, MovieSearchResult } from '$lib/types/library_movie';
@@ -32,10 +33,14 @@
 			}
 		}
 	];
+
+	function close(): void {
+		library.closeExternalSearchModal();
+	}
 </script>
 
 <LibrarySearchModal
 	sources={searchSources}
-	onClose={() => library.closeExternalSearchModal()}
+	onClose={close}
 	placeholder={ts.get.libraries.movies.search_placeholder}
 />

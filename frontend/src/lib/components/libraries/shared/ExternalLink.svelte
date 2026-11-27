@@ -17,8 +17,17 @@
 	} = $props();
 
 	const ts = getTranslation();
+	const ICON = 'size-6 group-hover:animate-pulse';
 
 	let href = $derived(safeHref(entry.link));
+
+	function showOn(service: string): string {
+		return ts.get.libraries.show_on.replace('%s', service);
+	}
+
+	function iconAlt(service: string): string {
+		return ts.get.libraries.service_icon.replace('%s', service);
+	}
 </script>
 
 <div class="mt-2 flex flex-col">
@@ -30,35 +39,24 @@
 			class="group mt-2 mb-1 flex cursor-pointer items-center gap-3 rounded-lg border-1 border-c-neutral p-2 text-sm font-bold shadow-sm transition-all hover:text-c-btn dark:border-s-dark-3"
 		>
 			{#if entry.link.includes('discogs')}
-				<img
-					src={DiscogsIcon}
-					alt="Discogs icon"
-					class="size-6 group-hover:animate-pulse"
-				/>
-				{ts.get.libraries.show_on.replace('%s', 'Discogs')}
+				<img src={DiscogsIcon} alt={iconAlt('Discogs')} class={ICON} />
+				{showOn('Discogs')}
 			{:else if entry.link.includes('deezer')}
-				<img src={DeezerIcon} alt="Deezer icon" class="size-6 group-hover:animate-pulse" />
-				{ts.get.libraries.show_on.replace('%s', 'deezer')}
+				<img src={DeezerIcon} alt={iconAlt('Deezer')} class={ICON} />
+				{showOn('deezer')}
 			{:else if entry.link.includes('hardcover')}
-				<IconHardcover /> {ts.get.libraries.show_on.replace('%s', 'Hardcover')}
+				<IconHardcover /> {showOn('Hardcover')}
 			{:else if entry.link.includes('goodreads')}
-				<img
-					src={GoodreadsIcon}
-					alt="Goodreads icon"
-					class="size-6 group-hover:animate-pulse"
-				/>
-				{ts.get.libraries.show_on.replace('%s', 'goodreads')}
+				<img src={GoodreadsIcon} alt={iconAlt('Goodreads')} class={ICON} />
+				{showOn('goodreads')}
 			{:else if entry.link.includes('chefkoch')}
-				<IconChefkoch /> {ts.get.libraries.show_on.replace('%s', 'Chefkoch')}
+				<IconChefkoch /> {showOn('Chefkoch')}
 			{:else if entry.link.includes('imdb')}
-				<img src={ImdbIcon} alt="IMDb icon" class="size-6 group-hover:animate-pulse" />
-				{ts.get.libraries.show_on.replace('%s', 'IMDb')}
+				<img src={ImdbIcon} alt={iconAlt('IMDb')} class={ICON} />
+				{showOn('IMDb')}
 			{:else}
-				<img
-					src={grabFaviconFromUrl(entry.link)}
-					alt="Favicon"
-					class="size-6 group-hover:animate-pulse"
-				/> External link
+				<img src={grabFaviconFromUrl(entry.link)} alt={ts.get.libraries.favicon} class={ICON} />
+				{ts.get.libraries.external_link}
 			{/if}
 		</a>
 	{/if}

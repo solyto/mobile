@@ -1,3 +1,8 @@
+import { DEFAULT_CURRENCY } from '$lib/config/currency';
+import type { UserSettings } from '$lib/types/auth';
+
+type MoneySettings = Pick<UserSettings, 'currency' | 'language'>;
+
 export function average(numbers: number[], decimals: number = 2): number {
 	const average = numbers.reduce((a, b) => a + b, 0) / numbers.length;
 
@@ -8,8 +13,37 @@ export function withDecimals(number: number, decimals: number = 2): string {
 	return number.toFixed(decimals);
 }
 
-export function europeanFormat(number: number): string {
-	return number.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+export function formatCurrency(
+	amount: number,
+	currency: string | null | undefined,
+	language: string | null | undefined
+): string {
+	const code = currency && isFormattableCurrency(currency) ? currency : DEFAULT_CURRENCY;
+	const locale = language || 'en';
+
+	try {
+		return new Intl.NumberFormat(locale, { style: 'currency', currency: code }).format(amount);
+	} catch {
+		return new Intl.NumberFormat('en', { style: 'currency', currency: code }).format(amount);
+	}
+}
+
+export function formatUserMoney(amount: number, settings: MoneySettings | null | undefined): string {
+	return formatCurrency(amount, settings?.currency, settings?.language);
+}
+
+export function userMoneyFormatKey(settings: MoneySettings | null | undefined): string {
+	return `${settings?.currency || DEFAULT_CURRENCY}-${settings?.language || 'en'}`;
+}
+
+function isFormattableCurrency(code: string): boolean {
+	try {
+		new Intl.NumberFormat('en', { style: 'currency', currency: code });
+		return true;
+	} catch (error) {
+		if (error instanceof RangeError) return false;
+		throw error;
+	}
 }
 
 export function formatTimeElapsed(number: number): string {

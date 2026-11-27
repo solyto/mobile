@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { fade } from 'svelte/transition';
-	import IconCloudSun from '@lucide/svelte/icons/cloud-sun';
+	import IconCloudSun from '$lib/icons/lucide/cloud-sun.svelte';
 
 	const imageModules = import.meta.glob('$lib/assets/weather/*.png', {
 		eager: true,

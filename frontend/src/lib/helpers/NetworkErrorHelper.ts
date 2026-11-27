@@ -1,11 +1,11 @@
 import { NetworkError, RateLimitedError } from '$lib/services/ApiService';
 import type { ClipboardRecords, LayoutRecords, SettingsRecords } from '$lib/types/translation';
+import { pluralize } from '$lib/helpers/FormatHelper';
 
 const NOTIFY_INTERVAL_MS = 5000;
 
-// Callers rarely catch a failed request, so their loadingIndicator.stop() and
-// error message never run. This handler for unhandled rejections stops the
-// indicator and reports the problem, at most once per burst of failures.
+// Callers rarely catch a failed request, so their loadingIndicator.stop() and error message never run;
+// this handler for unhandled rejections does both, at most once per burst of failures.
 export function createNetworkErrorHandler(
 	stopLoading: () => void,
 	notifyNetworkError: () => void,
@@ -35,10 +35,7 @@ export function createNetworkErrorHandler(
 export function rateLimitedMessage(retryAfter: number | null, layout: LayoutRecords): string {
 	if (retryAfter === null) return layout.rate_limited;
 
-	const minutes = waitInUnits(retryAfter, 60);
-	return minutes === 1
-		? layout.rate_limited_minutes_singular
-		: layout.rate_limited_minutes_plural.replace('{n}', String(minutes));
+	return pluralize(waitInUnits(retryAfter, 60), layout.rate_limited_minutes_singular, layout.rate_limited_minutes_plural);
 }
 
 export function exportRateLimitedMessage(retryAfter: number | null, settings: SettingsRecords): string {
@@ -62,8 +59,7 @@ export function clipboardFileLimitMessage(retryAfter: number | null, clipboard: 
 function waitInHoursMessage(retryAfter: number | null, plain: string, singular: string, plural: string): string {
 	if (retryAfter === null) return plain;
 
-	const hours = waitInUnits(retryAfter, 3600);
-	return hours === 1 ? singular : plural.replace('{n}', String(hours));
+	return pluralize(waitInUnits(retryAfter, 3600), singular, plural);
 }
 
 // Rounded up so the user never retries too early.

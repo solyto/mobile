@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { getCalendars } from '$lib/state/Calendars.svelte';
 	import { getViewPoint } from '$lib/state/Viewpoint.svelte';
+	import { getAuth } from '$lib/state/Auth.svelte';
 	import EventEdit from '$lib/components/calendars/EventEdit.svelte';
 	import MonthView from '$lib/components/calendars/views/month/MonthView.svelte';
 	import MobileMonthView from '$lib/components/calendars/views/month/MobileMonthView.svelte';
@@ -12,16 +13,21 @@
 
 	const calendars = getCalendars();
 	const viewPoint = getViewPoint();
+	const auth = getAuth();
+
+	function timeZone(): string {
+		return auth.user?.settings.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
+	}
 </script>
 
 {#if calendars.editSidebar}
-	<EventEdit />
+	<EventEdit timeZone={timeZone()} />
 {/if}
 {#if calendars.view === 'month'}
 	{#if viewPoint.isMobile || viewPoint.isTablet}
-		<MobileMonthView />
+		<MobileMonthView weekStart={auth.getWeekStart()} />
 	{:else}
-		<MonthView />
+		<MonthView weekStart={auth.getWeekStart()} />
 	{/if}
 {:else if calendars.view === 'week'}
 	{#if viewPoint.isMobile || viewPoint.isTablet}

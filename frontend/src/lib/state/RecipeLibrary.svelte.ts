@@ -8,11 +8,15 @@ import type {
 import { getContext, setContext } from 'svelte';
 import { getAuth, type Auth } from '$lib/state/Auth.svelte';
 import ApiService from '$lib/services/ApiService';
+import LocalStorageService from '$lib/services/LocalStorageService';
 import { apiRoutes } from '$lib/config/apiRoutes';
 import LibraryFilterService from '$lib/services/LibraryFilterService';
 import type { LibraryConfig } from '$lib/types/library';
 
 export class RecipeLibrary {
+	static readonly LS_VIEW_KEY: string = 'recipes_view';
+	static readonly VIEWS = ['list', 'cards'] as const;
+
 	config: LibraryConfig = {
 		type: 'recipes',
 		hasCovers: true,
@@ -39,14 +43,20 @@ export class RecipeLibrary {
 	typeFilter = $state<RecipeType | null>(null);
 	searchTerm = $state<string>('');
 	activeFilter: 'none' | 'search' | 'ratingAndType' = 'none';
-	view = $state<'list' | 'cards'>('cards');
+	view = $state<(typeof RecipeLibrary.VIEWS)[number]>('cards');
 	auth: Auth;
 	filterService = new LibraryFilterService();
 	apiService: ApiService;
+	localStorage: LocalStorageService;
 
-	constructor(auth: Auth = getAuth(), apiService: ApiService = auth.apiService) {
+	constructor(
+		auth: Auth = getAuth(),
+		apiService: ApiService = auth.apiService,
+		localStorage: LocalStorageService = new LocalStorageService()
+	) {
 		this.auth = auth;
 		this.apiService = apiService;
+		this.localStorage = localStorage;
 	}
 
 	async load(): Promise<void> {
@@ -61,33 +71,12 @@ export class RecipeLibrary {
 	search(): void {
 		this.ratingFilter = null;
 		this.activeFilter = 'search';
-
-		const term = this.searchTerm.trim().toLowerCase();
-		if (term.length === 0) {
-			this.filteredEntries = this.entries;
-			return;
-		}
-
-		this.filteredEntries = this.entries.filter(
-			(entry) =>
-				entry.title.toLowerCase().includes(term) ||
-				entry.ingredients.some((ingredient) => ingredient.name.toLowerCase().includes(term))
-		);
+		this.reapplyFilter();
 	}
 
 	filter(): void {
 		this.activeFilter = 'ratingAndType';
-		let entries = this.entries;
-
-		if (this.ratingFilter !== null) {
-			entries = this.filterService.byRating(entries, this.ratingFilter);
-		}
-
-		if (this.typeFilter !== null) {
-			entries = this.filterService.byType(entries, this.typeFilter);
-		}
-
-		this.filteredEntries = entries;
+		this.reapplyFilter();
 	}
 
 	addRatingFilter(rating: number | null): void {
@@ -104,13 +93,7 @@ export class RecipeLibrary {
 		this.ratingFilter = null;
 		this.typeFilter = null;
 		this.activeFilter = 'none';
-		this.filteredEntries = this.entries;
-	}
-
-	private reapplyFilter(): void {
-		if (this.activeFilter === 'search') this.search();
-		else if (this.activeFilter === 'ratingAndType') this.filter();
-		else this.filteredEntries = this.entries;
+		this.reapplyFilter();
 	}
 
 	openCreateModal(entry?: Recipe): void {
@@ -136,6 +119,13 @@ export class RecipeLibrary {
 		this.activeEntry = null;
 	}
 
+	changeView(view: string): void {
+		const known = RecipeLibrary.VIEWS.find((candidate) => candidate === view);
+		if (!known) return;
+		this.view = known;
+		this.localStorage.set(RecipeLibrary.LS_VIEW_KEY, known);
+	}
+
 	switchView(): void {
 		this.view = this.view === 'list' ? 'cards' : 'list';
 	}
@@ -143,7 +133,7 @@ export class RecipeLibrary {
 	async create(request: CreateRecipeRequest): Promise<boolean> {
 		const res = await this.apiService.create(apiRoutes.libraries.recipes.create, request);
 		if (res) await this.load();
-		return Promise.resolve(res !== null);
+		return res !== null;
 	}
 
 	async update(entry: Recipe, request: UpdateRecipeRequest): Promise<boolean> {
@@ -180,6 +170,32 @@ export class RecipeLibrary {
 		);
 		if (res) return res.data as RecipeRelease;
 		return null;
+	}
+
+	private reapplyFilter(): void {
+		this.filteredEntries = this.filterEntries();
+	}
+
+	private filterEntries(): Recipe[] {
+		switch (this.activeFilter) {
+			case 'search':
+				return this.searchEntries();
+			case 'ratingAndType':
+				return this.filterService.byType(this.filterService.byRating(this.entries, this.ratingFilter), this.typeFilter);
+			default:
+				return this.entries;
+		}
+	}
+
+	private searchEntries(): Recipe[] {
+		const term = this.searchTerm.trim().toLowerCase();
+		if (term.length === 0) return this.entries;
+
+		return this.entries.filter((entry) => entry.title.toLowerCase().includes(term) || this.hasIngredient(entry, term));
+	}
+
+	private hasIngredient(entry: Recipe, term: string): boolean {
+		return entry.ingredients.some((ingredient) => ingredient.name.toLowerCase().includes(term));
 	}
 }
 

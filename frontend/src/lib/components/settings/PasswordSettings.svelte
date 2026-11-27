@@ -2,10 +2,11 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { urls } from '$lib/config/urls';
-	import { getAuth } from '$lib/state/Auth.svelte';
+	import { Auth, getAuth } from '$lib/state/Auth.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
+	import type { AuthActionResponse } from '$lib/types/auth';
 	import { fade } from 'svelte/transition';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
 	import PasswordInput from '$lib/components/forms/PasswordInput.svelte';
@@ -29,21 +30,27 @@
 	function validate(): boolean {
 		currentPasswordError = currentPassword === '' ? ts.get.settings.current_password_required : null;
 		newPasswordError = null;
-		if (newPassword.length < 12) newPasswordError = ts.get.auth.password_error;
+		if (newPassword.length < Auth.MIN_PASSWORD_LENGTH) newPasswordError = ts.get.auth.password_error;
 		else if (newPassword === currentPassword) newPasswordError = ts.get.settings.new_password_same_as_current;
 		confirmError = newPassword !== newPasswordConfirmation;
 
 		return currentPasswordError === null && newPasswordError === null && !confirmError;
 	}
 
+	async function changePassword(): Promise<AuthActionResponse> {
+		loadingIndicator.start();
+		try {
+			return await auth.changePassword(currentPassword, newPassword, newPasswordConfirmation);
+		} finally {
+			loadingIndicator.stop();
+		}
+	}
+
 	async function onsubmit(e: SubmitEvent): Promise<void> {
 		e.preventDefault();
 		if (!validate()) return;
 
-		loadingIndicator.start();
-		const result = await auth.changePassword(currentPassword, newPassword, newPasswordConfirmation);
-		loadingIndicator.stop();
-
+		const result = await changePassword();
 		if (result.success) {
 			notifications.success(ts.get.settings.password_changed);
 			await goto(resolve(urls.login));

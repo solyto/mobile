@@ -2,8 +2,7 @@
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import TextInput from '$lib/components/forms/TextInput.svelte';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
-	import { API_USER_STORAGE_URL } from '$lib/config/apiRoutes';
-	import { getAuth } from '$lib/state/Auth.svelte';
+	import { libraryCoverUrl } from '$lib/helpers/LibraryCoverHelper';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import NumberInput from '$lib/components/forms/NumberInput.svelte';
 	import type {
@@ -18,6 +17,7 @@
 	import CreateModal from '$lib/components/libraries/shared/CreateModal.svelte';
 	import { getRecipeLibrary } from '$lib/state/RecipeLibrary.svelte';
 	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
+	import { SaveAction } from '$lib/helpers/SaveAction.svelte';
 	import CreateModalImport from '$lib/components/libraries/shared/CreateModalImport.svelte';
 	import AddButton from '$lib/components/ui/buttons/AddButton.svelte';
 	import InlineDeleteButton from '$lib/components/ui/buttons/InlineDeleteButton.svelte';
@@ -26,9 +26,9 @@
 
 	const ts = getTranslation();
 	const library = getRecipeLibrary();
-	const auth = getAuth();
 	const loadingIndicator = getLoadingIndicator();
 	const notifications = getUiNotifications();
+	const saving = new SaveAction(() => (activeEntry ? ts.get.libraries.recipes.update_error : ts.get.libraries.recipes.create_error));
 
 	let activeEntry = $state<Recipe | null>(library.activeEntry);
 
@@ -39,9 +39,7 @@
 	let servingsValue = $state<number | null>(activeEntry?.servings ?? null);
 	type IngredientForm = { name: string; amount: number | null; unit: string };
 
-	let ingredients = $state<IngredientForm[]>(
-		activeEntry ? activeEntry.ingredients.map((ingredient) => toForm(ingredient)) : []
-	);
+	let ingredients = $state<IngredientForm[]>(activeEntry ? activeEntry.ingredients.map(toForm) : []);
 	let steps = $state<string[]>(activeEntry ? [...activeEntry.steps] : []);
 	let coverValue = $state<string>('');
 	let linkValue = $state<string>(activeEntry?.link ?? '');
@@ -108,18 +106,8 @@
 		return steps.map((step) => step.trim()).filter((step) => step !== '');
 	}
 
-	async function onsubmit(): Promise<void> {
-		if (activeEntry) {
-			return await update();
-		} else {
-			return await create();
-		}
-	}
-
-	async function create(): Promise<void> {
-		loadingIndicator.start();
-
-		const request: CreateRecipeRequest = {
+	function createRequest(): CreateRecipeRequest {
+		return {
 			title: titleValue,
 			description: descriptionValue != '' ? descriptionValue : null,
 			type: typeValue != '' ? (typeValue as RecipeType) : null,
@@ -132,30 +120,10 @@
 			cover_path: coverValue != '' ? coverValue : null,
 			link: linkValue != '' ? linkValue : null
 		};
-		const ok = await library.create(request);
-		if (ok) {
-			titleValue = '';
-			descriptionValue = '';
-			caloriesValue = null;
-			timeToMakeValue = null;
-			servingsValue = null;
-			ingredients = [];
-			steps = [];
-			typeValue = '';
-			coverValue = '';
-			linkValue = '';
-			library.closeCreateModal();
-		} else {
-			notifications.error(ts.get.libraries.recipes.create_error);
-		}
-
-		loadingIndicator.stop();
 	}
 
-	async function update(): Promise<void> {
-		loadingIndicator.start();
-
-		const request: UpdateRecipeRequest = {
+	function updateRequest(): UpdateRecipeRequest {
+		return {
 			title: titleValue,
 			description: descriptionValue != '' ? descriptionValue : null,
 			type: typeValue != '' ? (typeValue as RecipeType) : null,
@@ -168,14 +136,26 @@
 			...(coverValue !== '' ? { cover_path: coverValue } : {}),
 			link: linkValue != '' ? linkValue : null
 		};
-		const ok = await library.update(activeEntry!, request);
-		if (ok) {
-			library.closeCreateModal();
-		} else {
-			notifications.error(ts.get.libraries.recipes.update_error);
-		}
+	}
 
-		loadingIndicator.stop();
+	function resetForm(): void {
+		titleValue = '';
+		descriptionValue = '';
+		caloriesValue = null;
+		timeToMakeValue = null;
+		servingsValue = null;
+		ingredients = [];
+		steps = [];
+		typeValue = '';
+		coverValue = '';
+		linkValue = '';
+	}
+
+	async function onsubmit(): Promise<void> {
+		const ok = await saving.run(() => (activeEntry ? library.update(activeEntry, updateRequest()) : library.create(createRequest())));
+		if (!ok) return;
+		if (!activeEntry) resetForm();
+		library.closeCreateModal();
 	}
 
 	async function importFrom(
@@ -195,37 +175,40 @@
 
 		importLoading = true;
 		loadingIndicator.start();
-		const recipe = await library.importFrom(provider, linkValue);
+		try {
+			const recipe = await library.importFrom(provider, linkValue);
+			if (!recipe) {
+				notifications.error(ts.get.libraries.recipes.import_error);
+				return;
+			}
 
-		if (!recipe) {
-			notifications.error(ts.get.libraries.recipes.import_error);
+			titleValue = recipe.title;
+			coverValue = recipe.cover ?? '';
+			ingredients = recipe.ingredients.map(toForm);
+			steps = [...recipe.steps];
+			descriptionValue = recipe.description ?? '';
+			timeToMakeValue = recipe.time_to_make;
+			servingsValue = recipe.servings;
+			importDropdownOpen = false;
+		} finally {
 			loadingIndicator.stop();
 			importLoading = false;
-			return;
 		}
+	}
 
-		titleValue = recipe.title;
-		coverValue = recipe.cover ?? '';
-		ingredients = recipe.ingredients.map((ingredient) => toForm(ingredient));
-		steps = [...recipe.steps];
-		descriptionValue = recipe.description ?? '';
-		timeToMakeValue = recipe.time_to_make;
-		servingsValue = recipe.servings;
+	function modalTitle(): string {
+		return activeEntry !== null ? ts.get.libraries.recipes.edit_recipe : ts.get.libraries.recipes.add_recipe;
+	}
 
-		loadingIndicator.stop();
-		importLoading = false;
-		importDropdownOpen = false;
+	function existingCover(): string | null {
+		return activeEntry ? libraryCoverUrl(library, String(activeEntry.cover)) : null;
 	}
 </script>
 
 <CreateModal
-	title={activeEntry !== null
-		? ts.get.libraries.recipes.edit_recipe
-		: ts.get.libraries.recipes.add_recipe}
+	title={modalTitle()}
 	{library}
-	existingCover={activeEntry
-		? `${API_USER_STORAGE_URL}/${auth.user?.id}/${library.config.type}/${activeEntry.cover}`
-		: null}
+	existingCover={existingCover()}
 	newCover={coverValue}
 	bind:selectedRating
 >

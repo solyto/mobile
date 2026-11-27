@@ -30,21 +30,33 @@
 		todos.openEdit(todo.id);
 	}
 
+	function openEditOnEnter(event: KeyboardEvent): void {
+		if (event.key === 'Enter') openEdit();
+	}
+
 	function stopPropagation(event: Event): void {
 		event.stopPropagation();
+	}
+
+	function isRecentlyCreated(): boolean {
+		return todos.recentlyCreated === todo.id;
+	}
+
+	function check(event: Event): Promise<void> {
+		return handleCheck(event, todo);
 	}
 </script>
 
 <div
-	class="relative w-full cursor-pointer rounded-lg border-1 bg-c-bg-surface px-4 py-2 shadow-sm transition-all {todos.recentlyCreated ===
-	todo.id
-		? 'border-c-btn-hover'
-		: 'border-d-lightblue dark:border-s-dark'}"
+	class="relative w-full cursor-pointer rounded-lg border-1 bg-c-bg-surface px-4 py-2 shadow-sm transition-all"
+	class:border-c-btn-hover={isRecentlyCreated()}
+	class:border-d-lightblue={!isRecentlyCreated()}
+	class:dark:border-s-dark={!isRecentlyCreated()}
 	class:opacity-50={todo.is_completed}
 	role="button"
 	tabindex="0"
 	onclick={openEdit}
-	onkeydown={(e) => e.key === 'Enter' && openEdit()}
+	onkeydown={openEditOnEnter}
 	in:fade
 >
 	<div class="todo-priority-bar absolute top-0 left-0 h-full w-1 rounded-l-md {getPriorityColorClass(todo.priority)}"></div>
@@ -61,7 +73,7 @@
 		</span>
 		<div class="flex shrink-0 items-center gap-2">
 			<div class="mt-1" onclick={stopPropagation}>
-				<Checkbox isChecked={todo.is_completed} onchange={(e: Event) => handleCheck(e, todo)} />
+				<Checkbox isChecked={todo.is_completed} onchange={check} />
 			</div>
 		</div>
 	</div>

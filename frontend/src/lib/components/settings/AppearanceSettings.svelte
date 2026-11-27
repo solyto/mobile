@@ -34,7 +34,10 @@
 				>
 					<div
 						class="flex h-full w-32 flex-col gap-1 p-3"
-						style="background-color: {t.previewBg}; color: {t.previewText};"
+						style="
+							background-color: {t.previewBg};
+							color: {t.previewText};
+						"
 					>
 						<div class="h-2 w-8 rounded-full" style="background-color: {t.previewAccent};"></div>
 						<div class="h-1.5 w-16 rounded-full opacity-60" style="background-color: {t.previewText};"></div>
@@ -42,7 +45,10 @@
 						<div class="grow"></div>
 						<div
 							class="mt-1 rounded px-1.5 py-0.5 text-left text-xs font-medium"
-							style="background-color: {t.previewSurface}; color: {t.previewText};"
+							style="
+								background-color: {t.previewSurface};
+								color: {t.previewText};
+							"
 						>
 							{t.name}
 						</div>

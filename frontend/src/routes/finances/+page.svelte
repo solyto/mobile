@@ -3,7 +3,7 @@
 	import SubHeading from '$lib/components/ui/SubHeading.svelte';
 	import { getFinances } from '$lib/state/Finances.svelte';
 	import { getAuth } from '$lib/state/Auth.svelte';
-	import { europeanFormat } from '$lib/helpers/NumberHelper.js';
+	import { formatUserMoney, userMoneyFormatKey } from '$lib/helpers/NumberHelper.js';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { urls } from '$lib/config/urls';
 	import { goto } from '$app/navigation';
@@ -19,24 +19,34 @@
 	const finances = getFinances();
 	const auth = getAuth();
 
+	const statisticsService = new WealthStatisticsService();
+	const COLOR_DELAY_MS = 100;
+
 	let colorLoaded = $state<boolean>(false);
 	let range = $state<WealthRangeKey>('1y');
-	const statisticsService = new WealthStatisticsService();
-	let statistics = $derived.by(() => {
-		if (!finances.wealthLoaded) return [];
-		statisticsService.setData(finances.wealth);
-		return statisticsService.getGraphValues(wealthRanges[range]);
-	});
+	let statistics = $derived(finances.wealthLoaded ? statisticsService.getGraphValues(finances.wealth, wealthRanges[range]) : []);
+	let totals = $derived(statisticsService.getTotals(statistics));
 
 	onMount(() => {
 		setTimeout(() => {
 			colorLoaded = true;
-		}, 100);
+		}, COLOR_DELAY_MS);
 	});
 
-	function getTotalSeriesData(stats: typeof statistics) {
-		if (stats.length === 0) return [];
-		return stats.map((stat) => stat.values.reduce((sum, v) => sum + v.value, 0));
+	function openBudget(): void {
+		goto(resolve(urls.budget));
+	}
+
+	function openWealth(): void {
+		goto(resolve(urls.wealth));
+	}
+
+	function dateFormat(): string | null {
+		return auth.user?.settings?.date_format ?? null;
+	}
+
+	function formatMoney(value: number): string {
+		return formatUserMoney(value, auth.user?.settings);
 	}
 </script>
 
@@ -47,13 +57,11 @@
 				<button
 					type="button"
 					class="relative w-full cursor-pointer rounded-md p-4 shadow-sm transition-all hover:bg-d-lighterblue dark:shadow-s-dark-shadow dark:hover:bg-s-dark-3 md:dark:bg-s-dark-2"
-					onclick={() => goto(resolve(urls.budget))}
+					onclick={openBudget}
 				>
 					<div class="flex w-full flex-col items-start gap-1">
 						<span class="text-sm text-c-neutral-5 dark:text-c-neutral-4">{ts.get.finances.budget}</span>
-						<span class="text-3xl tabular-nums md:text-4xl"
-							>{europeanFormat(finances.getBudgetTotal())}</span
-						>
+						<span class="text-3xl tabular-nums md:text-4xl">{formatMoney(finances.getBudgetTotal())}</span>
 					</div>
 				</button>
 				<button
@@ -61,20 +69,18 @@
 					class="relative w-full cursor-pointer rounded-md p-4 shadow-sm transition-all hover:bg-d-lighterblue dark:shadow-s-dark-shadow dark:hover:bg-s-dark-3 md:dark:bg-s-dark-2"
 					class:border-c-success={colorLoaded && finances.getWealthSum() > 0}
 					class:border-c-danger={colorLoaded && finances.getWealthSum() < 0}
-					onclick={() => goto(resolve(urls.wealth))}
+					onclick={openWealth}
 				>
 					<div class="flex w-full flex-col items-start gap-1">
 						<span class="text-sm text-c-neutral-5 dark:text-c-neutral-4">{ts.get.finances.wealth}</span>
-						<span class="text-3xl tabular-nums md:text-4xl"
-							>{europeanFormat(finances.getWealthSum())}</span
-						>
+						<span class="text-3xl tabular-nums md:text-4xl">{formatMoney(finances.getWealthSum())}</span>
 					</div>
 				</button>
 			</div>
 		</div>
 
 		<div class="flex w-full flex-row gap-4 max-md:flex-col" in:slide>
-			<div class="relative w-full rounded-md p-4 shadow-sm dark:shadow-s-dark-shadow md:dark:bg-s-dark-2 ">
+			<div class="relative w-full rounded-md p-4 shadow-sm dark:shadow-s-dark-shadow md:dark:bg-s-dark-2">
 				<SubHeading title={ts.get.finances.income_vs_expenses} my={0} mb={8} />
 				<div>
 					<BarChart
@@ -82,7 +88,7 @@
 						values={[finances.getBudgetIncomeTotal(), finances.getBudgetExpenseTotal()]}
 						colors={['var(--color-c-success)', 'var(--color-c-danger)']}
 						opacity={0.8}
-						valueFormatter={europeanFormat}
+						valueFormatter={formatMoney}
 					/>
 				</div>
 			</div>
@@ -91,12 +97,13 @@
 				<div class="relative w-full rounded-md p-4 shadow-sm dark:shadow-s-dark-shadow md:dark:bg-s-dark-2">
 					<SubHeading title={ts.get.finances.wealth_distribution} my={0} mb={4} />
 					<div>
-						<DoughnutChart
-							values={finances.wealth.map((wealth) => ({
-								value: wealth.currentValue?.value ?? 0,
-								name: wealth.title
-							}))}
-						/>
+						{#key userMoneyFormatKey(auth.user?.settings)}
+							<DoughnutChart
+								values={statisticsService.getDistribution(finances.wealth)}
+								centerFormatter={formatMoney}
+								valueFormatter={formatMoney}
+							/>
+						{/key}
 					</div>
 				</div>
 			{/if}
@@ -113,10 +120,10 @@
 				</div>
 				<div>
 					<SmoothLineChart
-						categories={statisticsService.getMonthLabels(statistics, auth.user?.settings?.date_format ?? null)}
-						values={getTotalSeriesData(statistics)}
-						min={statisticsService.getTrendMin(getTotalSeriesData(statistics))}
-						valueFormatter={europeanFormat}
+						categories={statisticsService.getMonthLabels(statistics, dateFormat())}
+						values={totals}
+						min={statisticsService.getTrendMin(totals)}
+						valueFormatter={formatMoney}
 						filled={true}
 					/>
 				</div>

@@ -5,6 +5,7 @@
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import QuickSelectOverlay from '$lib/components/ui/QuickSelectOverlay.svelte';
+	import { getStatusLabel } from '$lib/helpers/TodoHelper';
 
 	let { todo, changeStatus, portal = false }: {
 		todo: Todo;
@@ -27,10 +28,16 @@
 
 	async function handleStatusChange(todo: Todo, status: TodoStatus): Promise<void> {
 		loadingIndicator.start();
-		await todos.changeStatus(todo.id, status);
+		try {
+			await todos.changeStatus(todo.id, status);
+			toggleStatusMenu();
+		} finally {
+			loadingIndicator.stop();
+		}
+	}
 
-		toggleStatusMenu();
-		loadingIndicator.stop();
+	function closeStatusMenu(): void {
+		statusMenuVisible = false;
 	}
 
 	function getDotColor(status: TodoStatus): string {
@@ -47,27 +54,11 @@
 				return 'bg-c-success';
 		}
 	}
-
-	function getLabel(status: TodoStatus): string {
-		switch (status) {
-			case 'pending':
-			default:
-				return ts.get.todos.status_pending;
-			case 'backlog':
-				return ts.get.todos.status_backlog;
-			case 'in-progress':
-				return ts.get.todos.status_in_progress;
-			case 'waiting':
-				return ts.get.todos.status_waiting;
-			case 'almost-done':
-				return ts.get.todos.status_almost_done;
-		}
-	}
 </script>
 
 {#snippet label(status: TodoStatus)}
 	<span class="size-2 shrink-0 rounded-full {getDotColor(status)}"></span>
-	{getLabel(status)}
+	{getStatusLabel(status, ts.get.todos)}
 {/snippet}
 
 <div bind:this={trigger} class="relative">
@@ -85,7 +76,7 @@
 		</button>
 		{#if statusMenuVisible}
 			<QuickSelectOverlay
-				onClose={() => (statusMenuVisible = false)}
+				onClose={closeStatusMenu}
 				class="w-48 text-c-neutral-7 dark:text-white"
 				{portal}
 				target={trigger}

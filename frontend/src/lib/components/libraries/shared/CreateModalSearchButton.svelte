@@ -1,6 +1,6 @@
 <script lang="ts">
 	import IconButton from '$lib/components/ui/buttons/IconButton.svelte';
-	import IconSearch from '@lucide/svelte/icons/search';
+	import IconSearch from '$lib/icons/lucide/search.svelte';
 	import type { GenreLibrary } from '$lib/types/library';
 	import type { Translation } from '$lib/state/Translation.svelte';
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import IconFileText from '@lucide/svelte/icons/file-text';
+	import IconFileText from '$lib/icons/lucide/file-text.svelte';
 	import { formatFileSize } from '$lib/helpers/FormatHelper';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 

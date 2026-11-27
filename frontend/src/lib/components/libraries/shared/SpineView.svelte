@@ -1,12 +1,9 @@
 <script lang="ts">
 	import { fade } from 'svelte/transition';
-	import type { Library } from '$lib/types/library';
+	import type { DetailLibrary } from '$lib/types/library';
 	import type { MusicLibrary } from '$lib/state/MusicLibrary.svelte';
 	import type { BookLibrary } from '$lib/state/BookLibrary.svelte';
-	import type { Music } from '$lib/types/library_music';
-	import type { Book } from '$lib/types/library_book';
-	import { API_USER_STORAGE_URL } from '$lib/config/apiRoutes';
-	import { getAuth } from '$lib/state/Auth.svelte';
+	import { libraryCoverUrl } from '$lib/helpers/LibraryCoverHelper';
 	import Spine from '$lib/components/libraries/shared/Spine.svelte';
 	import woodShelf from '$lib/assets/wood-shelf.jpg';
 
@@ -19,8 +16,7 @@
 		pages?: number | null;
 	}
 
-	const auth = getAuth();
-	let { library }: { library: Library } = $props();
+	let { library }: { library: MusicLibrary | BookLibrary } = $props();
 
 	let entries = $derived(library.filteredEntries as SpineEntry[]);
 	const isSquare = $derived(library.config.type === 'music');
@@ -35,6 +31,11 @@
 	const SPINE_H = $derived(isSquare ? VINYL_SPINE_H : BOOK_SPINE_H);
 	const BOOK_COVER_W_MIN = 120;
 	const BOOK_COVER_W_MAX = 220;
+	const UNKNOWN_PAGES_SPINE_W = 34;
+	const THINNEST_SPINE_W = 18;
+	const SPINE_W_RANGE = 50;
+	const FEWEST_PAGES = 50;
+	const MOST_PAGES = 1200;
 
 	let containerWidth = $state(0);
 	let hoveredId = $state<string | null>(null);
@@ -42,9 +43,9 @@
 
 	function getSpineWidth(entry: SpineEntry): number {
 		if (isSquare) return VINYL_SPINE_W;
-		if (!entry.pages) return 34;
-		const clamped = Math.max(50, Math.min(1200, entry.pages));
-		return Math.round(18 + ((clamped - 50) / (1200 - 50)) * 50);
+		if (!entry.pages) return UNKNOWN_PAGES_SPINE_W;
+		const clamped = Math.max(FEWEST_PAGES, Math.min(MOST_PAGES, entry.pages));
+		return Math.round(THINNEST_SPINE_W + ((clamped - FEWEST_PAGES) / (MOST_PAGES - FEWEST_PAGES)) * SPINE_W_RANGE);
 	}
 
 	function getCoverW(entryId?: string): number {
@@ -79,7 +80,7 @@
 
 	function coverUrl(entry: SpineEntry): string | null {
 		if (!entry.cover) return null;
-		return `${API_USER_STORAGE_URL}/${auth.user?.id}/${library.config.type}/${entry.cover}`;
+		return libraryCoverUrl(library, entry.cover);
 	}
 
 	function onCoverLoad(e: Event, entryId: string) {
@@ -94,11 +95,8 @@
 	function handleClick(entry: SpineEntry) {
 		const index = (library.filteredEntries as SpineEntry[]).findIndex((e) => e.id === entry.id);
 		if (index === -1) return;
-		if (library.config.type === 'music') {
-			(library as MusicLibrary).openDetailModal(library.filteredEntries[index] as unknown as Music);
-		} else if (library.config.type === 'books') {
-			(library as BookLibrary).openDetailModal(library.filteredEntries[index] as unknown as Book);
-		}
+		const detailLibrary: DetailLibrary = library;
+		detailLibrary.openDetailModal(library.filteredEntries[index]);
 	}
 </script>
 

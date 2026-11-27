@@ -11,10 +11,15 @@
 
 	const ts = getTranslation();
 
-	const getDeezerUrl = (): string =>
-		encodeURI('https://www.deezer.com/search/' + artist + ' ' + title);
+	let href = $derived(link ? safeHref(link) : searchUrl());
 
-	let href = $derived(link ? safeHref(link) : getDeezerUrl());
+	function searchUrl(): string {
+		return encodeURI('https://www.deezer.com/search/' + artist + ' ' + title);
+	}
+
+	function label(): string {
+		return (link ? ts.get.libraries.show_on : ts.get.libraries.search_on).replace('%s', 'Deezer');
+	}
 </script>
 
 {#if href}
@@ -24,9 +29,7 @@
 		rel="external"
 		class="group mt-2 mb-1 flex cursor-pointer items-center gap-3 rounded-lg border-1 border-c-neutral p-2 text-sm font-bold shadow-sm transition-all hover:text-c-btn dark:border-s-dark-3"
 	>
-		<img src={DeezerIcon} alt="Deezer icon" class="size-6 group-hover:animate-pulse" />
-		{link
-			? ts.get.libraries.show_on.replace('%s', 'Deezer')
-			: ts.get.libraries.search_on.replace('%s', 'Deezer')}
+		<img src={DeezerIcon} alt={ts.get.libraries.service_icon.replace('%s', 'Deezer')} class="size-6 group-hover:animate-pulse" />
+		{label()}
 	</a>
 {/if}

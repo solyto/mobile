@@ -5,3 +5,8 @@ export interface ExportStatus {
 	expires_at: string | null;
 	is_expired: boolean;
 }
+
+export interface ExportStartResponse {
+	success: boolean;
+	message?: string;
+}

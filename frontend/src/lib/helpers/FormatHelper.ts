@@ -2,30 +2,22 @@ export function nl2br(text: string): string {
 	return text.replace(/\n/g, '<br>');
 }
 
+export function pluralize(count: number, singular: string, plural: string): string {
+	return count === 1 ? singular : plural.replace('{n}', String(count));
+}
+
 export function truncate(text: string, maxLength: number): string {
 	if (text.length <= maxLength) return text;
 	return text.slice(0, maxLength).trimEnd() + '...';
 }
 
-function parseHtml(html: string): HTMLElement {
-	return new DOMParser().parseFromString(html, 'text/html').body;
-}
-
-export function stripHtml(html: string): string {
-	return parseHtml(html).textContent ?? '';
-}
-
-export function hasMeaningfulDescription(html: string): boolean {
-	const body = parseHtml(html);
-	const text = body.textContent?.trim() ?? '';
-	if (text === '') return false;
-
-	const links = body.querySelectorAll('a');
-	return links.length !== 1 || links[0].textContent?.trim() !== text;
-}
+const KILOBYTE = 1024;
+const MEGABYTE = 1024 * KILOBYTE;
 
 export function formatFileSize(bytes: number, locale: string): string {
-	const [value, unit] = bytes < 1024 * 1024 ? [bytes / 1024, 'kilobyte'] : [bytes / (1024 * 1024), 'megabyte'];
+	const inMegabytes = bytes >= MEGABYTE;
+	const value = inMegabytes ? bytes / MEGABYTE : bytes / KILOBYTE;
+	const unit = inMegabytes ? 'megabyte' : 'kilobyte';
 	return new Intl.NumberFormat(locale, { style: 'unit', unit, maximumFractionDigits: 1 }).format(value);
 }
 

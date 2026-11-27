@@ -2,12 +2,12 @@
 	import { fly, scale } from 'svelte/transition';
 	import { backOut, cubicIn } from 'svelte/easing';
 	import { onMount, onDestroy } from 'svelte';
-	import IconEllipsisVertical from '@lucide/svelte/icons/ellipsis-vertical';
+	import IconEllipsisVertical from '$lib/icons/lucide/ellipsis-vertical.svelte';
 	import NavEntry from '$lib/components/ui/NavEntry.svelte';
 	import NavProfileEntry from '$lib/components/ui/NavProfileEntry.svelte';
 	import NavLegalEntry from '$lib/components/ui/NavLegalEntry.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
-	import { urls, hasLegalUrls } from '$lib/config/urls';
+	import { urls } from '$lib/config/urls';
 	import { navItems } from '$lib/config/navigation';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import NavEntryIcon from '$lib/components/ui/NavEntryIcon.svelte';
@@ -15,6 +15,9 @@
 	import { clickOutside } from '$lib/helpers/ClickHelper';
 	import { getNavigation } from '$lib/state/Navigation.svelte';
 	import { getUserNotifications } from '$lib/state/UserNotifications.svelte';
+
+	const FIXED_OVERFLOW_ENTRY_COUNT = 4;
+	const ITEM_STAGGER_MS = 26;
 
 	const ts = getTranslation();
 	const nav = getNavigation();
@@ -35,9 +38,17 @@
 		submenuVisible = false;
 	}
 
+	function toggleSubmenu(): void {
+		submenuVisible = !submenuVisible;
+	}
+
 	function itemIn(index: number): { y: number; duration: number; delay: number } {
-		const count = nav.mobileOverflowItems().length + (hasLegalUrls ? 4 : 3);
-		return { y: 20, duration: 200, delay: (count - 1 - index) * 26 };
+		const count = nav.mobileOverflowItems().length + FIXED_OVERFLOW_ENTRY_COUNT;
+		return { y: 20, duration: 200, delay: (count - 1 - index) * ITEM_STAGGER_MS };
+	}
+
+	function fixedEntryIn(position: number): { y: number; duration: number; delay: number } {
+		return itemIn(nav.mobileOverflowItems().length + position);
 	}
 
 	let active = $derived(getPageSlug());
@@ -69,12 +80,7 @@
 			class:text-c-nav-active-text={activeInOverflow && !submenuVisible}
 			use:clickOutside={select}
 		>
-			<button
-				class="cursor-pointer p-4"
-				onclick={() => {
-					submenuVisible = !submenuVisible;
-				}}
-			>
+			<button class="cursor-pointer p-4" onclick={toggleSubmenu}>
 				<div class="relative">
 					<IconEllipsisVertical />
 					{#if activeOverflowItem}
@@ -104,7 +110,7 @@
 							</NavEntry>
 						</div>
 					{/each}
-					<div in:fly|global={itemIn(nav.mobileOverflowItems().length)}>
+					<div in:fly|global={fixedEntryIn(0)}>
 						<NavEntry
 							slug="settings"
 							href={urls.settings}
@@ -116,7 +122,7 @@
 							<NavEntryIcon type="settings" />
 						</NavEntry>
 					</div>
-					<div class="relative" in:fly|global={itemIn(nav.mobileOverflowItems().length + 1)}>
+					<div class="relative" in:fly|global={fixedEntryIn(1)}>
 						<NavEntry
 							slug="notifications"
 							href={urls.notifications}
@@ -136,14 +142,12 @@
 							/>
 						{/if}
 					</div>
-					<div in:fly|global={itemIn(nav.mobileOverflowItems().length + 2)}>
+					<div in:fly|global={fixedEntryIn(2)}>
 						<NavProfileEntry active={active === 'profile'} mobile={true} onSelect={select} />
 					</div>
-					{#if hasLegalUrls}
-						<div in:fly|global={itemIn(nav.mobileOverflowItems().length + 3)}>
-							<NavLegalEntry mobile={true} />
-						</div>
-					{/if}
+					<div in:fly|global={fixedEntryIn(3)}>
+						<NavLegalEntry mobile={true} onSelect={select} />
+					</div>
 				</div>
 			{/if}
 		</div>

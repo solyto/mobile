@@ -57,3 +57,5 @@ export const mobileDefaultOrder: string[] = [
 export const mobileVisibleCount = 5;
 
 export const pinnedNavItem = 'home';
+
+export const hamburgerClearance = 'max-lg:ml-14';

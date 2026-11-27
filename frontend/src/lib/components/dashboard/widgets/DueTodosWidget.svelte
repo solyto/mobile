@@ -1,5 +1,5 @@
 <script lang="ts">
-	import IconListTodo from '@lucide/svelte/icons/list-todo';
+	import IconListTodo from '$lib/icons/lucide/list-todo.svelte';
 	import Checkbox from '$lib/components/forms/Checkbox.svelte';
 	import { Translation } from '$lib/state/Translation.svelte';
 	import type { Todo } from '$lib/types/todo';

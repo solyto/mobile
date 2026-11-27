@@ -39,20 +39,25 @@
 	}
 
 	async function onUpdate() {
-		loadingIndicator.start();
 		const request: UpdateShortcutRequest = {
 			title: titleValue != '' ? titleValue : shortcut.title,
 			url: urlValue != '' ? urlValue : shortcut.url
 		};
-		await shortcuts.update(shortcut, request);
-		loadingIndicator.stop();
+		await withLoadingIndicator(() => shortcuts.update(shortcut, request));
 		toggleEdit();
 	}
 
-	async function onDelete(shortcut: Shortcut): Promise<void> {
+	async function onDelete(): Promise<void> {
+		await withLoadingIndicator(() => shortcuts.delete(shortcut));
+	}
+
+	async function withLoadingIndicator(action: () => Promise<unknown>): Promise<void> {
 		loadingIndicator.start();
-		await shortcuts.delete(shortcut);
-		loadingIndicator.stop();
+		try {
+			await action();
+		} finally {
+			loadingIndicator.stop();
+		}
 	}
 </script>
 
@@ -63,23 +68,15 @@
 		<div class="flex w-full items-center justify-between gap-2">
 			<span>{shortcut.title}</span>
 			<div class="flex items-center gap-2">
-				<InlineEditButton onClick={() => toggleEdit()} />
-				<InlineDeleteButton
-					onClick={() => {
-						onDelete(shortcut);
-					}}
-				/>
+				<InlineEditButton onClick={toggleEdit} />
+				<InlineDeleteButton onClick={onDelete} />
 			</div>
 		</div>
 	{:else}
 		<div class="flex items-center gap-2">
 			<TextInput bind:input={titleInput} bind:value={titleValue} placeholder={ts.get.widgets.shortcut_title} />
 			<TextInput bind:value={urlValue} placeholder={ts.get.widgets.shortcut_url} />
-			<SaveButton
-				onClick={() => {
-					onUpdate();
-				}}
-			/>
+			<SaveButton onClick={onUpdate} />
 		</div>
 	{/if}
 </div>

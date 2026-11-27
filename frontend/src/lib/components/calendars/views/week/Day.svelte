@@ -1,17 +1,17 @@
 <script lang="ts">
 	import { blur } from 'svelte/transition';
-	import IconPlus from '@lucide/svelte/icons/plus';
+	import IconPlus from '$lib/icons/lucide/plus.svelte';
 	import { getCalendars } from '$lib/state/Calendars.svelte';
 	import { formatDate, getDateDiffInMinutes, getHoursOfDay, getMobileTimeOffsetRem, isOffHour, parseDateSlug } from '$lib/helpers/DateHelper';
 	import { getEventBackgroundColor, getEventBorderColor } from '$lib/helpers/ColorHelper';
-	import type { CalendarEvent, NewEventPreset } from '$lib/types/calendar';
+	import type { CalendarEvent } from '$lib/types/calendar';
 	import type { ClassValue } from 'svelte/elements';
 	import TodoEntry from '$lib/components/calendars/TodoEntry.svelte';
 	import CalendarDragService from '$lib/services/CalendarDragService';
 	import { getCalendarDrag } from '$lib/state/CalendarDrag.svelte';
 	import type { CalendarDropTarget } from '$lib/services/CalendarDragService';
 	import { createDraggableEvent, findCalendarDayElement } from '$lib/helpers/CalendarDragHelper';
-	import { eventWriteErrorMessage, getCalendarEventKey, startsOnDate } from '$lib/helpers/CalendarEventHelper';
+	import { getCalendarEventKey, isDraggableOnDate, moveErrorMessage } from '$lib/helpers/CalendarEventHelper';
 	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
@@ -24,15 +24,26 @@
 	const dragService = new CalendarDragService();
 	const hours = getHoursOfDay();
 	const desktopRows = '10% repeat(24, calc(100% / 27))';
+	const ALL_DAY_ROW_SHARE = 3 / 30;
+	const HOUR_ROW_SHARE = 1 / 27;
+	const MIN_EVENT_ROW_SHARE = 0.65;
+	const MIN_EVENT_HEIGHT = `${MIN_EVENT_ROW_SHARE * 100}%`;
 
 	let { date, isMobile = false }: { date: Date; isMobile?: boolean } = $props();
 
+	const dragEnabled = !isMobile;
+	const dateSlug = $derived(formatDate(date));
+	const isDropTargetColumn = $derived(
+		dragEnabled && drag.active && drag.target !== null
+			? formatDate(drag.target.date) === dateSlug
+			: false
+	);
 	let entries = $derived(calendars.getEventsForDate(date));
 	let entriesByHour = $derived(
 		hours.map((hour) => ({
 			hour: parseInt(hour),
 			entries: entries.filter(
-				(entry) => !entry.is_all_day && getSegment(entry).start.getHours() === parseInt(hour)
+				(entry) => !entry.is_all_day && segmentOnThisDay(entry).start.getHours() === parseInt(hour)
 			)
 		}))
 	);
@@ -41,8 +52,7 @@
 		return isMobile && isOffHour(hour);
 	}
 
-	// The part of an event that falls on this column's day, so multi-day events stay inside the grid.
-	function getSegment(entry: CalendarEvent): { start: Date; end: Date } {
+	function segmentOnThisDay(entry: CalendarEvent): { start: Date; end: Date } {
 		const dayStart = new Date(date);
 		dayStart.setHours(0, 0, 0, 0);
 		const dayEnd = new Date(dayStart);
@@ -61,7 +71,7 @@
 	}
 
 	function getTop(entry: CalendarEvent): string {
-		const minutes = getSegment(entry).start.getMinutes();
+		const minutes = segmentOnThisDay(entry).start.getMinutes();
 
 		if (minutes === 0) {
 			return '0';
@@ -72,14 +82,14 @@
 
 	function getHeight(entry: CalendarEvent): string {
 		if (!entry.end_date) {
-			return '65%';
+			return MIN_EVENT_HEIGHT;
 		}
 
-		const segment = getSegment(entry);
+		const segment = segmentOnThisDay(entry);
 		const hours = getDateDiffInMinutes(segment.start, segment.end) / 60;
 
-		if (hours <= 0.65) {
-			return '65%';
+		if (hours <= MIN_EVENT_ROW_SHARE) {
+			return MIN_EVENT_HEIGHT;
 		}
 
 		return isMobile ? getMobileHeight(segment) : hoursToRowSpan(hours);
@@ -103,27 +113,19 @@
 		return time.getHours() + time.getMinutes() / 60;
 	}
 
-	const dragEnabled = !isMobile;
-	const dateSlug = $derived(formatDate(date));
-	const isDropTargetColumn = $derived(
-		dragEnabled && drag.active && drag.target !== null
-			? formatDate(drag.target.date) === dateSlug
-			: false
-	);
-
 	function getIndicatorTop(): number {
 		const target = drag.target;
 		if (!target) return 0;
-		return (3 / 30 + (target.hour + target.minute / 60) * (1 / 27)) * 100;
+		return (ALL_DAY_ROW_SHARE + (target.hour + target.minute / 60) * HOUR_ROW_SHARE) * 100;
 	}
 
 	function getIndicatorHeight(): number {
 		const item = drag.event;
-		if (!item) return (1 / 27) * 100;
+		if (!item) return HOUR_ROW_SHARE * 100;
 		const durationMinutes = item.end_date
 			? (item.end_date.getTime() - item.start_date.getTime()) / 60000
 			: 60;
-		const height = Math.max((durationMinutes / 60) * (1 / 27) * 100, 2);
+		const height = Math.max((durationMinutes / 60) * HOUR_ROW_SHARE * 100, 2);
 		return Math.min(height, 100 - getIndicatorTop());
 	}
 
@@ -143,8 +145,8 @@
 		}
 
 		const rect = column.getBoundingClientRect();
-		const allDayHeight = rect.height * (3 / 30);
-		const hourHeight = rect.height * (1 / 27);
+		const allDayHeight = rect.height * ALL_DAY_ROW_SHARE;
+		const hourHeight = rect.height * HOUR_ROW_SHARE;
 		const gridY = y - grabOffsetY - rect.top - allDayHeight;
 
 		if (gridY < 0) {
@@ -169,13 +171,12 @@
 		const result = await calendars.moveEvent(item, target);
 		loadingIndicator.stop();
 		if (result !== 'ok') {
-			notifications.error(eventWriteErrorMessage(result, ts.get.calendar, ts.get.calendar.entry_move_error));
+			notifications.error(moveErrorMessage(result, ts.get.calendar));
 		}
 	}
 
 	const draggableEvent = createDraggableEvent(drag, {
-		// Multi-day timed events can only be dragged from their start day.
-		enabled: (item) => dragEnabled && (item.is_all_day || startsOnDate(item, date)),
+		enabled: (item) => dragEnabled && isDraggableOnDate(item, date) && !calendars.isEventReadOnly(item),
 		sourceDateSlug: () => dateSlug,
 		computeTarget,
 		onDrop: commitMove
@@ -190,9 +191,24 @@
 		await calendars.showSidebar(null, item);
 	}
 
-	async function onCellDoubleClick(event: MouseEvent, preset: NewEventPreset): Promise<void> {
-		if (isMobile || (event.target as HTMLElement).closest('button, a')) return;
-		await calendars.showSidebar(date, null, preset);
+	async function addAllDayEvent(): Promise<void> {
+		await calendars.showSidebar(date, null, { allDay: true });
+	}
+
+	async function addEventAt(hour: string): Promise<void> {
+		await calendars.showSidebar(date, null, { hour: parseInt(hour) });
+	}
+
+	function isEmptyCellClick(event: MouseEvent): boolean {
+		return !isMobile && !(event.target as HTMLElement).closest('button, a');
+	}
+
+	async function onAllDayDoubleClick(event: MouseEvent): Promise<void> {
+		if (isEmptyCellClick(event)) await addAllDayEvent();
+	}
+
+	async function onHourDoubleClick(event: MouseEvent, hour: string): Promise<void> {
+		if (isEmptyCellClick(event)) await addEventAt(hour);
 	}
 </script>
 
@@ -219,13 +235,10 @@
 	data-calendar-day={dateSlug}
 	style={isMobile ? 'grid-template-rows: subgrid' : `grid-template-rows: ${desktopRows}`}
 >
-	<div class="group relative w-full select-none" ondblclick={(e) => onCellDoubleClick(e, { allDay: true })}>
+	<div class="group relative w-full select-none" ondblclick={onAllDayDoubleClick}>
 		<button
-			onclick={async () => {
-				await calendars.showSidebar(date, null, { allDay: true });
-			}}
-			class="absolute top-0 right-0 z-50 cursor-pointer rounded-bl-lg border-r-1 border-b-1 border-c-neutral-1 p-2 font-bold opacity-0 transition-all group-hover:bg-c-btn group-hover:text-c-neutral group-hover:opacity-100 dark:border-s-dark
-			"
+			onclick={addAllDayEvent}
+			class="absolute top-0 right-0 z-40 cursor-pointer rounded-bl-lg border-r-1 border-b-1 border-c-neutral-1 p-2 font-bold opacity-0 transition-all group-hover:bg-c-btn group-hover:text-c-neutral group-hover:opacity-100 dark:border-s-dark"
 		>
 			<IconPlus class="size-3" />
 		</button>
@@ -243,21 +256,18 @@
 			class="group relative border-t-1 border-c-neutral-1 select-none dark:border-s-dark"
 			class:bg-c-neutral={isShadedHour(hour)}
 			class:dark:bg-s-dark-2={isShadedHour(hour)}
-			ondblclick={(e) => onCellDoubleClick(e, { hour: parseInt(hour) })}
+			ondblclick={(event) => onHourDoubleClick(event, hour)}
 		>
 			<button
-				onclick={async () => {
-					await calendars.showSidebar(date, null, { hour: parseInt(hour) });
-				}}
-				class="absolute top-1 right-1 z-50 cursor-pointer rounded-full p-2 font-bold opacity-0 transition-all group-hover:opacity-100 hover:bg-c-btn hover:text-white
-			"
+				onclick={() => addEventAt(hour)}
+				class="absolute top-1 right-1 z-40 cursor-pointer rounded-full p-2 font-bold opacity-0 transition-all group-hover:opacity-100 hover:bg-c-btn hover:text-white"
 			>
 				<IconPlus class="size-3" />
 			</button>
 			{#if entriesByHour[parseInt(hour)].entries.length > 0}
 				{#each entriesByHour[parseInt(hour)].entries as item, i (getCalendarEventKey(item))}
 					{#if !calendars.isCalendarHidden(item.calendar_id)}
-						{@render eventButton(item, ['absolute z-40 w-2/3 shadow-sm', i === 0 ? 'left-0' : 'right-0'], getTop(item), getHeight(item))}
+						{@render eventButton(item, ['absolute z-30 w-2/3 shadow-sm', i === 0 ? 'left-0' : 'right-0'], getTop(item), getHeight(item))}
 					{/if}
 				{/each}
 			{/if}
@@ -271,7 +281,10 @@
 		{:else}
 			<div
 				class="pointer-events-none absolute inset-x-0 z-40 border-2 border-dashed border-c-action bg-d-lightblue/60"
-				style="top: {getIndicatorTop()}%; height: {getIndicatorHeight()}%;"
+				style="
+					top: {getIndicatorTop()}%;
+					height: {getIndicatorHeight()}%;
+				"
 			></div>
 		{/if}
 	{/if}

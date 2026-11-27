@@ -2,12 +2,12 @@
 	import { onMount } from 'svelte';
 	import { getCalendars } from '$lib/state/Calendars.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
-	import { formatDateWithoutYear, getCalendarWeek, isDateToday, getHoursOfDay, isOffHour, getMobileHourRows } from '$lib/helpers/DateHelper';
+	import { formatDateWithoutYear, getCalendarWeek, isDateToday, getMobileHourRows } from '$lib/helpers/DateHelper';
+	import MobileHourLabels from '$lib/components/calendars/views/MobileHourLabels.svelte';
 	import Day from '$lib/components/calendars/views/week/Day.svelte';
 
 	const calendars = getCalendars();
 	const ts = getTranslation();
-	const hours = getHoursOfDay();
 	const mobileRows = `minmax(4rem, auto) ${getMobileHourRows()}`;
 
 	const columnWidth = 'calc((100vw - 2rem) / 3)';
@@ -55,17 +55,7 @@
 			>
 				<div class="flex items-center justify-center">
 				</div>
-				{#each hours as hour (hour)}
-					<div class="flex items-center justify-center">
-						<span
-							class="text-xs"
-							class:text-c-neutral-4={isOffHour(hour)}
-							class:dark:text-s-dark-3={isOffHour(hour)}
-						>
-							{hour}
-						</span>
-					</div>
-				{/each}
+				<MobileHourLabels />
 			</div>
 
 			{#each week as day (day.date.getTime())}

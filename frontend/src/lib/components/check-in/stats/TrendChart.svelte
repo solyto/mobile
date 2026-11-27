@@ -1,34 +1,37 @@
 <script lang="ts">
-	import type { Component } from 'svelte';
+	import type { CheckInTracker } from '$lib/types/check_in';
 	import SmoothLineChart from '$lib/components/charts/SmoothLineChart.svelte';
 	import SubHeading from '$lib/components/ui/SubHeading.svelte';
+	import TrackerGlyph from '$lib/components/check-in/TrackerGlyph.svelte';
 
 	let {
 		label,
 		categories,
 		values,
-		icon: Icon
+		tracker,
+		min,
+		max
 	}: {
 		label: string;
 		categories: string[];
 		values: number[];
-		icon: Component<{ class?: string }> | null;
+		tracker: CheckInTracker;
+		min: number;
+		max?: number;
 	} = $props();
 </script>
 
 {#if categories.length >= 2}
 	<div class="rounded-xl bg-c-bg-surface p-4 shadow-sm">
 		<div class="mb-8 flex items-center gap-2">
-			{#if Icon}
-				<Icon class="size-4 text-c-neutral-6 dark:text-c-neutral-4" />
-			{/if}
+			<TrackerGlyph {tracker} class="size-4 text-c-neutral-6 dark:text-c-neutral-4" />
 			<SubHeading title={label} my={0} />
 		</div>
 		<SmoothLineChart
 			{categories}
 			{values}
-			min={1}
-			max={5}
+			{min}
+			{max}
 			filled={true}
 			class="h-56"
 		/>

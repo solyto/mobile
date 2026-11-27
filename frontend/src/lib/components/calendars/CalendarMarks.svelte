@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import IconNotebook from '@lucide/svelte/icons/notebook';
-	import IconGoal from '@lucide/svelte/icons/goal';
+	import IconNotebook from '$lib/icons/lucide/notebook.svelte';
+	import IconGoal from '$lib/icons/lucide/goal.svelte';
 	import { urls } from '$lib/config/urls';
 	import { getCalendars } from '$lib/state/Calendars.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';

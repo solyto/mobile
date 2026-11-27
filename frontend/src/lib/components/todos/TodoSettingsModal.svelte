@@ -6,22 +6,31 @@
 	import WorkspaceEdit from '$lib/components/todos/WorkspaceEdit.svelte';
 	import HelpTooltip from '$lib/components/ui/HelpTooltip.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
+	import type { TodoCategory } from '$lib/types/todo';
 	import { getTodos } from '$lib/state/Todos.svelte';
 
 	const ts = getTranslation();
 	const todos = getTodos();
+
+	function close(): void {
+		todos.closeSettingsModal();
+	}
+
+	function createCategory(title: string): Promise<TodoCategory | null> {
+		return todos.createCategory(title);
+	}
+
+	function createWorkspace(title: string): Promise<boolean> {
+		return todos.createWorkspace(title);
+	}
 </script>
 
-<ContentModal rounded="2xl" p="6" width="4xl" onClose={() => todos.closeSettingsModal()}>
+<ContentModal rounded="2xl" p="6" width="4xl" onClose={close}>
 	<div class="flex flex-col gap-8">
 		<section>
 			<div class="mb-4 flex min-h-10 items-center gap-4">
 				<Heading title={ts.get.todos.categories} my={0} />
-				<CreateEntry
-					label={ts.get.todos.new_category}
-					create={(title) => todos.createCategory(title)}
-					useAddButton={true}
-				/>
+				<CreateEntry label={ts.get.todos.new_category} create={createCategory} useAddButton={true} />
 			</div>
 			{#if todos.categories.length === 0}
 				<p class="text-sm text-c-neutral-5 dark:text-c-neutral-4">{ts.get.todos.no_categories}</p>
@@ -36,11 +45,7 @@
 		<section>
 			<div class="mb-4 flex min-h-10 items-center gap-4">
 				<Heading title={ts.get.todos.workspaces} my={0} />
-				<CreateEntry
-					label={ts.get.todos.new_workspace}
-					create={(title) => todos.createWorkspace(title)}
-					useAddButton={true}
-				/>
+				<CreateEntry label={ts.get.todos.new_workspace} create={createWorkspace} useAddButton={true} />
 				<div class="ml-auto">
 					<HelpTooltip description={ts.get.todos.workspaces_help} align="right" muted={true} />
 				</div>

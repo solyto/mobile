@@ -1,15 +1,15 @@
 <script lang="ts">
 	import { getInitials } from '$lib/helpers/NameHelper';
-	import IconPhone from '@lucide/svelte/icons/phone';
-	import IconMail from '@lucide/svelte/icons/mail';
-	import IconUsersRound from '@lucide/svelte/icons/users-round';
-	import IconCardSim from '@lucide/svelte/icons/card-sim';
-	import IconHouse from '@lucide/svelte/icons/house';
-	import IconBriefcaseBusiness from '@lucide/svelte/icons/briefcase-business';
-	import IconBookUser from '@lucide/svelte/icons/book-user';
-	import IconBuilding from '@lucide/svelte/icons/building-2';
-	import IconMapPinHouse from '@lucide/svelte/icons/map-pin-house';
-	import IconPlus from '@lucide/svelte/icons/plus';
+	import IconPhone from '$lib/icons/lucide/phone.svelte';
+	import IconMail from '$lib/icons/lucide/mail.svelte';
+	import IconUsersRound from '$lib/icons/lucide/users-round.svelte';
+	import IconCardSim from '$lib/icons/lucide/card-sim.svelte';
+	import IconHouse from '$lib/icons/lucide/house.svelte';
+	import IconBriefcaseBusiness from '$lib/icons/lucide/briefcase-business.svelte';
+	import IconBookUser from '$lib/icons/lucide/book-user.svelte';
+	import IconBuilding from '$lib/icons/lucide/building-complex.svelte';
+	import IconMapPinHouse from '$lib/icons/lucide/map-pin-house.svelte';
+	import IconPlus from '$lib/icons/lucide/plus.svelte';
 	import ContentModal from '$lib/components/ui/ContentModal.svelte';
 	import Divider from '$lib/components/ui/Divider.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
@@ -27,9 +27,26 @@
 
 	async function onDelete(): Promise<void> {
 		loadingIndicator.start();
-		await contacts.delete(contact as Contact);
-		loadingIndicator.stop();
+		try {
+			await contacts.delete(contact);
+		} finally {
+			loadingIndicator.stop();
+		}
 		contacts.closeDetailModal();
+	}
+
+	function close(): void {
+		contacts.closeDetailModal();
+	}
+
+	function edit(): void {
+		const activeContact = contact;
+		contacts.closeDetailModal();
+		contacts.openCreateModal(activeContact);
+	}
+
+	function choosePhoto(): void {
+		fileInput?.click();
 	}
 
 	function handleFileSelect(event: Event) {
@@ -42,39 +59,41 @@
 
 	async function onUpload(file: File): Promise<void> {
 		loadingIndicator.start();
-		await contacts.updateContactPhoto(contact as Contact, file);
-		loadingIndicator.stop();
+		try {
+			await contacts.updateContactPhoto(contact, file);
+		} finally {
+			loadingIndicator.stop();
+		}
 	}
 
 	async function onRemove(): Promise<void> {
 		loadingIndicator.start();
-		await contacts.removeContactPhoto(contact as Contact);
-		selectedFileUrl = '';
-		loadingIndicator.stop();
+		try {
+			await contacts.removeContactPhoto(contact);
+			selectedFileUrl = '';
+		} finally {
+			loadingIndicator.stop();
+		}
 	}
 </script>
 
 <ContentModal
 	rounded="2xl"
 	p="4"
-	onClose={() => contacts.closeDetailModal()}
-	onEdit={() => {
-		let activeContact = contact;
-		contacts.closeDetailModal();
-		contacts.openCreateModal(activeContact);
-	}}
-	onDelete={() => onDelete()}
+	onClose={close}
+	onEdit={edit}
+	onDelete={onDelete}
 >
 	<div class="flex h-full w-full items-center gap-8">
 		<div class="group relative">
 			<div
 				class="absolute top-[-15px] right-[-15px] z-40 opacity-0 transition-all group-hover:opacity-100"
 			>
-				<DeleteButton inModal={false} onClick={() => onRemove()} />
+				<DeleteButton inModal={false} onClick={onRemove} />
 			</div>
 			<div
 				class="absolute z-30 flex h-full w-full cursor-pointer items-center justify-center rounded-full bg-transparent opacity-0 backdrop-blur-xs transition-all group-hover:opacity-100 dark:bg-s-dark-2/20"
-				onclick={() => fileInput?.click()}
+				onclick={choosePhoto}
 				role="button"
 				tabindex="0"
 			>

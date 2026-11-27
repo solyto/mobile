@@ -1,20 +1,20 @@
 <script lang="ts">
 	import { getCalendarMonth, getUrlFormat, getWeekdayOrder } from '$lib/helpers/DateHelper';
 	import { getTranslation } from '$lib/state/Translation.svelte';
-	import { getAuth } from '$lib/state/Auth.svelte';
-	import IconChevronLeft from '@lucide/svelte/icons/chevron-left';
-	import IconChevronRight from '@lucide/svelte/icons/chevron-right';
+	import IconChevronLeft from '$lib/icons/lucide/chevron-left.svelte';
+	import IconChevronRight from '$lib/icons/lucide/chevron-right.svelte';
+	import type { WeekStart } from '$lib/types/auth';
 
 	const ts = getTranslation();
-	const auth = getAuth();
-	const weekStart = auth.getWeekStart();
-	const weekdays = getWeekdayOrder(weekStart);
 
-	let { selectedDate, markedDates, onSelect }: {
+	let { selectedDate, markedDates, weekStart, onSelect }: {
 		selectedDate: Date;
 		markedDates: string[];
+		weekStart: WeekStart;
 		onSelect: (date: Date) => void;
 	} = $props();
+
+	let weekdays = $derived(getWeekdayOrder(weekStart));
 
 	const today = new Date();
 	const todayKey = getUrlFormat(today);
@@ -64,6 +64,18 @@
 	function monthLabel(index: number): string {
 		return ts.get.calendar.months[(index + 1) as keyof typeof ts.get.calendar.months];
 	}
+
+	function previousMonthLabel(): string {
+		return monthLabel((viewMonth + 11) % 12);
+	}
+
+	function nextMonthLabel(): string {
+		return monthLabel((viewMonth + 1) % 12);
+	}
+
+	function weekdayLabel(weekday: number): string {
+		return ts.get.calendar.weekdays_short[weekday as keyof typeof ts.get.calendar.weekdays_short];
+	}
 </script>
 
 <div class="w-full max-w-sm rounded-lg border border-c-neutral-2 p-3 dark:border-s-dark-3">
@@ -71,19 +83,19 @@
 		<button
 			type="button"
 			class="cursor-pointer rounded-sm p-1 text-c-neutral-5 hover:bg-c-neutral-1 dark:text-c-neutral-4 dark:hover:bg-s-dark-3"
-			aria-label={monthLabel(viewMonth === 0 ? 11 : viewMonth - 1)}
+			aria-label={previousMonthLabel()}
 			onclick={previousMonth}
 		>
 			<IconChevronLeft size={18} />
 		</button>
 		<span class="text-sm font-semibold">
-			{ts.get.calendar.months[(viewMonth + 1) as keyof typeof ts.get.calendar.months]}
+			{monthLabel(viewMonth)}
 			{viewYear}
 		</span>
 		<button
 			type="button"
 			class="cursor-pointer rounded-sm p-1 text-c-neutral-5 hover:bg-c-neutral-1 disabled:cursor-not-allowed disabled:opacity-40 dark:text-c-neutral-4 dark:hover:bg-s-dark-3"
-			aria-label={monthLabel((viewMonth + 1) % 12)}
+			aria-label={nextMonthLabel()}
 			disabled={!canGoNext}
 			onclick={nextMonth}
 		>
@@ -93,11 +105,7 @@
 
 	<div class="grid grid-cols-7 gap-1 text-center">
 		{#each weekdays as weekday (weekday)}
-			<span class="text-xs text-c-neutral-4 dark:text-c-neutral-5">
-				{ts.get.calendar.weekdays_short[
-					weekday as keyof typeof ts.get.calendar.weekdays_short
-				]}
-			</span>
+			<span class="text-xs text-c-neutral-4 dark:text-c-neutral-5">{weekdayLabel(weekday)}</span>
 		{/each}
 
 		{#each days as day (getUrlFormat(day.date))}

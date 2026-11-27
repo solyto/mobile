@@ -13,14 +13,16 @@
 		isActive: boolean;
 		setActive: (type: LibraryType) => void;
 	} = $props();
+
+	function open(): void {
+		setActive(type);
+		goto(resolve(url));
+	}
 </script>
 
 <button
 	class="relative flex w-full cursor-pointer justify-center p-4 transition-all hover:bg-c-neutral dark:hover:bg-s-dark-3"
-	onclick={() => {
-		setActive(type);
-		goto(resolve(url));
-	}}
+	onclick={open}
 	{title}
 >
 	<Icon />

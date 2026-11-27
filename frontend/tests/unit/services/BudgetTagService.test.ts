@@ -2,15 +2,12 @@ import { describe, it, expect } from 'vitest';
 import BudgetTagService from '$lib/services/BudgetTagService';
 import type { Budget, BudgetResponse } from '$lib/types/finance';
 import type { Tag } from '$lib/types/tag';
+import { budget as budgetItem, tag } from '../helpers/factories';
 
 const service = new BudgetTagService();
 
-function tag(id: number, name: string): Tag {
-	return { id, name, color: '', created_at: '', updated_at: '' };
-}
-
 function budget(id: number, tags: Tag[]): Budget {
-	return { id, title: 'Item', type: 'expense', value: 10, tags, created_at: '', updated_at: '' };
+	return budgetItem({ id, title: 'Item', value: 10, tags });
 }
 
 const solidarity = tag(1, 'solidarity');

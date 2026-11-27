@@ -1,18 +1,22 @@
 <script lang="ts">
-	import IconRefreshCw from '@lucide/svelte/icons/refresh-cw';
-	import IconDownload from '@lucide/svelte/icons/download';
-
+	import { onMount } from 'svelte';
+	import IconRefreshCw from '$lib/icons/lucide/refresh-cw.svelte';
+	import IconDownload from '$lib/icons/lucide/download.svelte';
+	import { getTranslation } from '$lib/state/Translation.svelte';
 	import type { UpdaterStatus } from '$lib/types/platform';
 
+	const STATUS_TEXT = 'text-xs text-c-neutral-5 dark:text-c-neutral-4';
+
+	const ts = getTranslation();
 	const electronAPI = window.electronAPI;
 
 	let status: UpdaterStatus = $state({ type: 'idle' });
 
-	$effect(() => {
-		return electronAPI?.onUpdaterStatus((s) => {
+	onMount(() =>
+		electronAPI?.onUpdaterStatus((s) => {
 			status = s;
-		});
-	});
+		})
+	);
 
 	async function check() {
 		status = { type: 'checking' };
@@ -21,6 +25,10 @@
 		} catch {
 			status = { type: 'error' };
 		}
+	}
+
+	function install(): void {
+		electronAPI?.installUpdate();
 	}
 </script>
 
@@ -32,27 +40,27 @@
 			onclick={check}
 		>
 			<IconRefreshCw size={14} class={status.type === 'checking' ? 'animate-spin' : ''} />
-			Check for updates
+			{ts.get.settings.update_check}
 		</button>
 		{#if status.type === 'ready'}
 			<button
 				class="flex cursor-pointer items-center gap-2 rounded-lg bg-c-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-c-primary/80"
-				onclick={() => electronAPI?.installUpdate()}
+				onclick={install}
 			>
 				<IconDownload size={14} />
-				Install & Restart
+				{ts.get.settings.update_install}
 			</button>
 		{/if}
 	</div>
 	{#if status.type === 'up-to-date'}
-		<p class="text-xs text-c-neutral-5 dark:text-c-neutral-4">You're on the latest version.</p>
+		<p class={STATUS_TEXT}>{ts.get.settings.update_up_to_date}</p>
 	{:else if status.type === 'available'}
-		<p class="text-xs text-c-neutral-5 dark:text-c-neutral-4">Update {status.version} available — downloading…</p>
+		<p class={STATUS_TEXT}>{ts.get.settings.update_available.replace('%s', status.version)}</p>
 	{:else if status.type === 'downloading'}
-		<p class="text-xs text-c-neutral-5 dark:text-c-neutral-4">Downloading… {status.percent}%</p>
+		<p class={STATUS_TEXT}>{ts.get.settings.update_downloading.replace('%s', String(status.percent))}</p>
 	{:else if status.type === 'ready'}
-		<p class="text-xs text-c-neutral-5 dark:text-c-neutral-4">Update ready to install.</p>
+		<p class={STATUS_TEXT}>{ts.get.settings.update_ready}</p>
 	{:else if status.type === 'error'}
-		<p class="text-xs text-red-500">Update check failed. Check your connection.</p>
+		<p class="text-xs text-red-500">{ts.get.settings.update_check_failed}</p>
 	{/if}
 </div>

@@ -1,30 +1,32 @@
 <script lang="ts">
-	import IconFrown from '@lucide/svelte/icons/frown';
-	import IconAngry from '@lucide/svelte/icons/angry';
-	import IconMeh from '@lucide/svelte/icons/meh';
-	import IconSmile from '@lucide/svelte/icons/smile';
-	import IconLaugh from '@lucide/svelte/icons/laugh';
-	import IconDumbbell from '@lucide/svelte/icons/dumbbell';
-	import IconBike from '@lucide/svelte/icons/bike';
-	import IconMountain from '@lucide/svelte/icons/mountain';
-	import IconWavesLadder from '@lucide/svelte/icons/waves-ladder';
-	import IconFootprints from '@lucide/svelte/icons/footprints';
-	import IconSparkles from '@lucide/svelte/icons/sparkles';
-	import IconBedSingle from '@lucide/svelte/icons/bed-single';
-	import IconApple from '@lucide/svelte/icons/apple';
-	import IconBriefcaseBusiness from '@lucide/svelte/icons/briefcase-business';
+	import IconFrown from '$lib/icons/lucide/face-slightly-frowning.svelte';
+	import IconAngry from '$lib/icons/lucide/face-angry.svelte';
+	import IconMeh from '$lib/icons/lucide/face-neutral.svelte';
+	import IconSmile from '$lib/icons/lucide/face-slightly-smiling.svelte';
+	import IconLaugh from '$lib/icons/lucide/face-grinning.svelte';
+	import IconDumbbell from '$lib/icons/lucide/dumbbell.svelte';
+	import IconBike from '$lib/icons/lucide/bike.svelte';
+	import IconMountain from '$lib/icons/lucide/mountain.svelte';
+	import IconWavesLadder from '$lib/icons/lucide/waves-ladder.svelte';
+	import IconFootprints from '$lib/icons/lucide/footprints.svelte';
+	import IconSparkles from '$lib/icons/lucide/sparkles.svelte';
+	import IconBedSingle from '$lib/icons/lucide/bed-single.svelte';
+	import IconApple from '$lib/icons/lucide/apple.svelte';
+	import IconBriefcaseBusiness from '$lib/icons/lucide/briefcase-business.svelte';
 	import IconWater from '$lib/components/ui/icons/IconWater.svelte';
 	import IconPlate from '$lib/components/ui/icons/IconPlate.svelte';
 	import IconYoga from '$lib/components/ui/icons/IconYoga.svelte';
 	import IconDropletFill from '$lib/components/ui/icons/IconDropletFill.svelte';
-	import IconWine from '@lucide/svelte/icons/wine';
-	import IconCigarette from '@lucide/svelte/icons/cigarette';
-	import IconUsersRound from '@lucide/svelte/icons/users-round';
+	import IconWine from '$lib/icons/lucide/wine.svelte';
+	import IconCigarette from '$lib/icons/lucide/cigarette.svelte';
+	import IconUsersRound from '$lib/icons/lucide/users-round.svelte';
+	import TrackerIcon from '$lib/components/check-in/TrackerIcon.svelte';
 	import type { CheckInType, SportId } from '$lib/types/check_in';
 	import { DEFAULT_SPORTS } from '$lib/types/check_in';
 
-	let { type, index, onSelect, isHighlighted, selectedSports = DEFAULT_SPORTS }: {
-		type: CheckInType;
+	let { type, icon, index, onSelect, isHighlighted, selectedSports = DEFAULT_SPORTS }: {
+		type: CheckInType | null;
+		icon: string | null;
 		index: number;
 		onSelect: (index: number) => void;
 		isHighlighted: (index: number) => boolean;
@@ -76,14 +78,16 @@
 </script>
 
 <button
-	class="group size-22 cursor-pointer rounded-lg p-4 text-{color} flex items-center justify-center border-3 border-c-neutral-1 shadow-xs transition-all hover:bg-c-neutral dark:hover:bg-s-dark-3"
+	class="group size-19 cursor-pointer rounded-lg p-3.5 text-{color} flex items-center justify-center border-3 border-c-neutral-1 shadow-xs transition-all hover:bg-c-neutral dark:hover:bg-s-dark-3"
 	class:bg-c-neutral={isHighlighted(index)}
 	class:border-transparent={!isHighlighted(index)}
 	class:dark:bg-s-dark-3={isHighlighted(index)}
 	class:p-0!={type === 'food_amount'}
 	onclick={() => onSelect(index)}
 >
-	{#if type === 'water'}
+	{#if type === null}
+		<TrackerIcon name={icon} class="size-full" />
+	{:else if type === 'water'}
 		<IconWater {fill} />
 	{:else if type === 'sleep'}
 		<IconBedSingle class="size-full" />

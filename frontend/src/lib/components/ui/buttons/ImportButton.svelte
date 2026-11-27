@@ -1,5 +1,5 @@
 <script lang="ts">
-	import IconImport from '@lucide/svelte/icons/import';
+	import IconImport from '$lib/icons/lucide/import.svelte';
 
 	let { onClick, title = '' }: {
 		onClick: () => void;

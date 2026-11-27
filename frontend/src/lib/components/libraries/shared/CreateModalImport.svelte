@@ -1,8 +1,8 @@
 <script lang="ts">
 	import QuickSelectOverlay from '$lib/components/ui/QuickSelectOverlay.svelte';
 	import IconButton from '$lib/components/ui/buttons/IconButton.svelte';
-	import IconImport from '@lucide/svelte/icons/import';
-	import IconChevronDown from '@lucide/svelte/icons/chevron-down';
+	import IconImport from '$lib/icons/lucide/import.svelte';
+	import IconChevronDown from '$lib/icons/lucide/chevron-down.svelte';
 	import { Translation } from '$lib/state/Translation.svelte';
 	import type { Component } from 'svelte';
 

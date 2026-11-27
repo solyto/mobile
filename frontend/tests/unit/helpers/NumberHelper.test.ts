@@ -2,7 +2,9 @@ import { describe, it, expect } from 'vitest';
 import {
 	average,
 	withDecimals,
-	europeanFormat,
+	formatCurrency,
+	formatUserMoney,
+	userMoneyFormatKey,
 	formatTimeElapsed,
 	withLeadingZero,
 	humanReadableNumber
@@ -72,15 +74,57 @@ describe('withLeadingZero', () => {
 	});
 });
 
-describe('europeanFormat', () => {
-	it('formats as EUR currency with de-DE separators', () => {
-		const result = europeanFormat(1234.5);
-		expect(result).toContain('1.234,50');
-		expect(result).toContain('€');
+describe('formatCurrency', () => {
+	it('follows the language separators, not the currency', () => {
+		expect(formatCurrency(1234.5, 'EUR', 'de')).toContain('1.234,50');
+		expect(formatCurrency(1234.5, 'EUR', 'en')).toContain('1,234.50');
 	});
 
-	it('formats zero', () => {
-		expect(europeanFormat(0)).toContain('0,00');
+	it('uses the requested currency symbol', () => {
+		expect(formatCurrency(10, 'USD', 'en')).toContain('$');
+		expect(formatCurrency(10, 'GBP', 'en')).toContain('£');
+		expect(formatCurrency(10, 'CAD', 'en')).toContain('CA$');
+	});
+
+	it('formats any ISO code, not only the ones the picker offers', () => {
+		expect(formatCurrency(10, 'JPY', 'en')).toBe('¥10');
+		expect(formatCurrency(10, 'SEK', 'en')).toContain('SEK');
+		expect(formatCurrency(10, 'XYZ', 'en')).toContain('XYZ');
+	});
+
+	it('falls back to EUR for a missing currency or a code Intl rejects', () => {
+		expect(formatCurrency(10, undefined, 'en')).toContain('€');
+		expect(formatCurrency(10, null, 'en')).toContain('€');
+		expect(formatCurrency(10, '', 'en')).toContain('€');
+		expect(formatCurrency(10, 'EURO', 'en')).toContain('€');
+		expect(formatCurrency(10, '€', 'en')).toContain('€');
+	});
+
+	it('falls back to en for an invalid language instead of throwing', () => {
+		expect(formatCurrency(10, 'EUR', 'not a language')).toContain('€');
+	});
+});
+
+describe('formatUserMoney', () => {
+	it('formats with the user\'s currency and language', () => {
+		expect(formatUserMoney(1234.5, { currency: 'USD', language: 'de' })).toBe(formatCurrency(1234.5, 'USD', 'de'));
+		expect(formatUserMoney(1234.5, { currency: 'USD', language: 'de' })).toContain('1.234,50');
+	});
+
+	it('falls back to the default currency and en without settings', () => {
+		expect(formatUserMoney(10, null)).toBe(formatCurrency(10, 'EUR', 'en'));
+		expect(formatUserMoney(10, undefined)).toBe(formatCurrency(10, 'EUR', 'en'));
+	});
+});
+
+describe('userMoneyFormatKey', () => {
+	it('changes with the currency and the language', () => {
+		expect(userMoneyFormatKey({ currency: 'CHF', language: 'fr' })).toBe('CHF-fr');
+		expect(userMoneyFormatKey({ currency: 'CHF', language: 'de' })).not.toBe(userMoneyFormatKey({ currency: 'CHF', language: 'fr' }));
+	});
+
+	it('uses the default currency and en without settings', () => {
+		expect(userMoneyFormatKey(null)).toBe('EUR-en');
 	});
 });
 

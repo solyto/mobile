@@ -7,6 +7,7 @@
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import type {
+		CalendarEvent,
 		EventForm,
 		CreateEventRequest,
 		UpdateEventRequest,
@@ -22,9 +23,11 @@
 	import RecurrenceActionModal from '$lib/components/calendars/RecurrenceActionModal.svelte';
 	import EventAttachments from '$lib/components/calendars/EventAttachments.svelte';
 	import { formatFloatingDate } from '$lib/helpers/DateHelper';
-	import { adjustEventRange, combineDateAndTime, eventWriteErrorMessage } from '$lib/helpers/CalendarEventHelper';
+	import { adjustEventRange, combineDateAndTime, eventWriteErrorMessage, isRecurringOccurrence } from '$lib/helpers/CalendarEventHelper';
 	import RecurrenceRuleService from '$lib/services/RecurrenceRuleService';
-	import type { RecurrenceSelection } from '$lib/services/RecurrenceRuleService';
+	import type { EndFormat, RecurrenceSelection } from '$lib/services/RecurrenceRuleService';
+
+	let { timeZone }: { timeZone: string } = $props();
 
 	const calendars = getCalendars();
 	const ts = getTranslation();
@@ -51,10 +54,11 @@
 		end_hours: 13,
 		end_minutes: 0
 	};
+	const readOnly = calendars.activeEvent !== null && calendars.isEventReadOnly(calendars.activeEvent);
 	const initialForm: EventForm = {
 		calendar_id: calendars.activeEvent && calendars.activeEvent.calendar_id ?
 			Number(calendars.activeEvent.calendar_id) :
-			(calendars.calendars[0]?.id ?? 0),
+			(calendars.writableCalendars()[0]?.id ?? 0),
 		title: calendars.activeEvent ? calendars.activeEvent.title : '',
 		description: calendars.activeEvent ? calendars.activeEvent.description : '',
 		location: calendars.activeEvent ? calendars.activeEvent.location : '',
@@ -71,19 +75,14 @@
 	};
 	let form = $state<EventForm>(initialForm);
 	let recurrence = $state<RecurrenceSelection | null>(
-		recurrenceRuleService.parse(initialForm.recurrence_rule, initialForm.start_date)
+		recurrenceRuleService.parse(initialForm.recurrence_rule, initialForm.start_date, timeZone)
 	);
-	// Plain variable: only read inside afterSelect, never rendered.
 	let duration = getDuration();
 	let titleInput = $state<HTMLInputElement | null>(null);
 	let showRecurrenceModal = $state<'edit' | 'delete' | null>(null);
 
 	function isRecurring(): boolean {
-		return (
-			calendars.activeEvent !== null &&
-			calendars.activeEvent.is_recurring &&
-			calendars.activeEvent.original_start_date !== null
-		);
+		return calendars.activeEvent !== null && isRecurringOccurrence(calendars.activeEvent);
 	}
 
 	function getStartDate(): SvelteDate {
@@ -120,6 +119,9 @@
 		form.end_hours = end.getHours();
 		form.end_minutes = end.getMinutes();
 		duration = getDuration();
+		if (recurrence) {
+			recurrence.until = recurrenceRuleService.untilNotBeforeStart(recurrence.until, start);
+		}
 	}
 
 	function buildRequest(): CreateEventRequest | UpdateEventRequest {
@@ -146,7 +148,9 @@
 	}
 
 	function recurrenceRule(): string | null {
-		return recurrence ? recurrenceRuleService.build(recurrence, form.start_date) : form.recurrence_rule;
+		if (!recurrence) return form.recurrence_rule;
+		const endFormat: EndFormat = { isAllDay: form.is_all_day, wasAllDay: initialForm.is_all_day, timeZone };
+		return recurrenceRuleService.build(recurrence, form.start_date, endFormat);
 	}
 
 	async function onsubmit(): Promise<void> {
@@ -167,22 +171,11 @@
 
 	async function doUpdate(thisOccurrenceOnly: boolean): Promise<void> {
 		loadingIndicator.start();
-		const request = buildRequest();
-
-		const result = thisOccurrenceOnly
-			? await calendars.updateOccurrence(
-					calendars.activeEvent!,
-					request as UpdateEventRequest,
-					calendars.activeEvent!.original_start_date!
-				)
-			: calendars.activeEvent
-				? await calendars.updateEvent(calendars.activeEvent, request as UpdateEventRequest)
-				: await calendars.createEvent(request as CreateEventRequest);
-
+		const result = await save(buildRequest(), thisOccurrenceOnly);
 		loadingIndicator.stop();
 		if (result === 'ok') {
 			form = { ...emptyForm };
-			recurrence = recurrenceRuleService.parse(null, form.start_date);
+			recurrence = recurrenceRuleService.parse(null, form.start_date, timeZone);
 			calendars.hideSidebar();
 		} else {
 			await handleWriteError(result, ts.get.calendar.entry_create_error);
@@ -191,20 +184,47 @@
 
 	async function doDelete(thisOccurrenceOnly: boolean): Promise<void> {
 		loadingIndicator.start();
-
-		const result = thisOccurrenceOnly
-			? await calendars.deleteOccurrence(
-					calendars.activeEvent!,
-					calendars.activeEvent!.original_start_date!
-				)
-			: await calendars.deleteEvent(calendars.activeEvent!);
-
+		const result = await remove(calendars.activeEvent!, thisOccurrenceOnly);
 		loadingIndicator.stop();
 		if (result === 'ok') {
 			calendars.hideSidebar();
 		} else {
 			await handleWriteError(result, ts.get.calendar.entry_delete_error);
 		}
+	}
+
+	function save(request: CreateEventRequest | UpdateEventRequest, thisOccurrenceOnly: boolean): Promise<EventWriteResult> {
+		const event = calendars.activeEvent;
+		if (thisOccurrenceOnly) {
+			return calendars.updateOccurrence(event!, request as UpdateEventRequest, event!.original_start_date!);
+		}
+		if (event) {
+			return calendars.updateEvent(event, request as UpdateEventRequest);
+		}
+		return calendars.createEvent(request as CreateEventRequest);
+	}
+
+	function remove(event: CalendarEvent, thisOccurrenceOnly: boolean): Promise<EventWriteResult> {
+		if (thisOccurrenceOnly) {
+			return calendars.deleteOccurrence(event, event.original_start_date!);
+		}
+		return calendars.deleteEvent(event);
+	}
+
+	async function applyToThisOccurrence(): Promise<void> {
+		await (showRecurrenceModal === 'edit' ? doUpdate(true) : doDelete(true));
+	}
+
+	async function applyToAllOccurrences(): Promise<void> {
+		await (showRecurrenceModal === 'edit' ? doUpdate(false) : doDelete(false));
+	}
+
+	function closeRecurrenceModal(): void {
+		showRecurrenceModal = null;
+	}
+
+	function close(): void {
+		calendars.hideSidebar();
 	}
 
 	async function handleWriteError(result: EventWriteResult, fallback: string): Promise<void> {
@@ -217,29 +237,19 @@
 </script>
 
 <SlidingSideBar
-	onClose={() => {
-		calendars.hideSidebar();
-	}}
+	onClose={close}
 	title={calendars.activeEvent ? ts.get.calendar.edit_entry : ts.get.calendar.create_entry}
 >
 	<div class="flex w-full flex-col items-center gap-2 lg:min-w-80">
-		<ChooseCalendar bind:calendar={form.calendar_id} availableCalendars={calendars.calendars} />
+		<ChooseCalendar bind:calendar={form.calendar_id} availableCalendars={readOnly ? calendars.calendars : calendars.writableCalendars()} />
 		<TextInput
 			bind:input={titleInput}
 			bind:value={form.title}
 			placeholder={ts.get.calendar.title}
 		/>
 		<div class="flex gap-6">
-			<Toggle
-				label={ts.get.calendar.is_all_day}
-				bind:checked={form.is_all_day}
-				onchange={() => {}}
-			/>
-			<Toggle
-				label={ts.get.calendar.is_recurring}
-				bind:checked={form.is_recurring}
-				onchange={() => {}}
-			/>
+			<Toggle label={ts.get.calendar.is_all_day} bind:checked={form.is_all_day} />
+			<Toggle label={ts.get.calendar.is_recurring} bind:checked={form.is_recurring} />
 		</div>
 		{#if form.start_date}
 			<div class="flex w-full gap-2">
@@ -277,25 +287,28 @@
 			<EventAttachments eventId={calendars.activeEvent.id} />
 		{/if}
 
-		<div
-			class="mt-8 flex w-full flex-row items-center"
-			class:justify-between={calendars.activeEvent}
-			class:justify-end={!calendars.activeEvent}
-		>
-			{#if calendars.activeEvent}
-				<TextButton title={ts.get.calendar.delete_entry} onclick={onDelete} type="danger" />
-			{/if}
-			<TextButton title={ts.get.layout.save} onclick={onsubmit} />
-		</div>
+		{#if readOnly}
+			<p class="mt-8 text-sm text-c-neutral-5">{ts.get.calendar.event_read_only}</p>
+		{:else}
+			<div
+				class="mt-8 flex w-full flex-row items-center"
+				class:justify-between={calendars.activeEvent}
+				class:justify-end={!calendars.activeEvent}
+			>
+				{#if calendars.activeEvent}
+					<TextButton title={ts.get.calendar.delete_entry} onclick={onDelete} type="danger" />
+				{/if}
+				<TextButton title={ts.get.layout.save} onclick={onsubmit} />
+			</div>
+		{/if}
 	</div>
 </SlidingSideBar>
 
 {#if showRecurrenceModal}
 	<RecurrenceActionModal
 		action={showRecurrenceModal}
-		onThisOccurrence={() => (showRecurrenceModal === 'edit' ? doUpdate(true) : doDelete(true))}
-		onAllOccurrences={() =>
-			showRecurrenceModal === 'edit' ? doUpdate(false) : doDelete(false)}
-		onCancel={() => (showRecurrenceModal = null)}
+		onThisOccurrence={applyToThisOccurrence}
+		onAllOccurrences={applyToAllOccurrences}
+		onCancel={closeRecurrenceModal}
 	/>
 {/if}

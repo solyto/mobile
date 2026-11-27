@@ -2,7 +2,7 @@
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import TextInput from '$lib/components/forms/TextInput.svelte';
 	import DateInput from '$lib/components/forms/DateInput.svelte';
-	import MultiSelect from '$lib/components/forms/MultiSelect.svelte';
+	import MultiSelect, { type MultiSelectEntry } from '$lib/components/forms/MultiSelect.svelte';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
 	import type {
 		Book,
@@ -10,8 +10,7 @@
 		CreateBookRequest,
 		UpdateBookRequest
 	} from '$lib/types/library_book';
-	import { API_USER_STORAGE_URL } from '$lib/config/apiRoutes';
-	import { getAuth } from '$lib/state/Auth.svelte';
+	import { libraryCoverUrl } from '$lib/helpers/LibraryCoverHelper';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import { getTags } from '$lib/state/Tags.svelte';
 	import NumberInput from '$lib/components/forms/NumberInput.svelte';
@@ -25,14 +24,16 @@
 	import IconHardcover from '$lib/components/ui/icons/IconHardcover.svelte';
 	import GoodreadsIcon from '$lib/assets/services/goodreads_icon.svg';
 	import { getIntegrations } from '$lib/state/Integrations.svelte';
+	import { createdEntryValue, genreEntries, selectedIds, tagEntries } from '$lib/helpers/MultiSelectHelper';
+	import { SaveAction } from '$lib/helpers/SaveAction.svelte';
 
 	const ts = getTranslation();
 	const library = getBookLibrary();
 	const tags = getTags();
-	const auth = getAuth();
 	const loadingIndicator = getLoadingIndicator();
 	const notifications = getUiNotifications();
 	const integrations = getIntegrations();
+	const saving = new SaveAction(() => (activeEntry ? ts.get.libraries.books.update_error : ts.get.libraries.books.create_error));
 
 	let activeEntry = $state<Book | null>(library.activeEntry);
 
@@ -50,14 +51,8 @@
 	let isWhereValue = $state<string>(activeEntry?.is_where ?? '');
 	let startedAtValue = $state<string>(activeEntry?.started_at?.substring(0, 10) ?? '');
 	let finishedAtValue = $state<string>(activeEntry?.finished_at?.substring(0, 10) ?? '');
-	let selectedGenres = $state<{ label: string; value: string }[]>(
-		activeEntry
-			? activeEntry.genres.map((g) => ({ label: g.title, value: g.id.toString() }))
-			: []
-	);
-	let selectedTags = $state<{ label: string; value: string }[]>(
-		activeEntry ? activeEntry.tags.map((t) => ({ label: t.name, value: t.id.toString() })) : []
-	);
+	let selectedGenres = $state<MultiSelectEntry[]>(genreEntries(activeEntry?.genres ?? []));
+	let selectedTags = $state<MultiSelectEntry[]>(tagEntries(activeEntry?.tags ?? []));
 	let selectedRating = $state(activeEntry?.rating ?? 0);
 	let isWishlist = $state<boolean>(activeEntry ? activeEntry.wishlist : false);
 	let summaryValue = $state<string>(activeEntry?.summary ?? '');
@@ -91,30 +86,13 @@
 		? [hardcoverImport, goodreadsImport]
 		: [goodreadsImport];
 
-	let genreOptions: { label: string; value: string }[] = $derived(
-		library.genres.map((genre) => ({ label: genre.title, value: genre.id.toString() }))
-	);
 
-	let tagOptions: { label: string; value: string }[] = $derived(
-		tags.tags.map((tag) => ({ label: tag.name, value: tag.id.toString() }))
-	);
-
-	async function onCreateGenre(label: string): Promise<string | null> {
-		const created = await library.createGenre(label);
-		if (!created) {
-			notifications.error(ts.get.libraries.genre_error);
-			return null;
-		}
-		return created.id.toString();
+	function onCreateGenre(label: string): Promise<string | null> {
+		return createdEntryValue(library.createGenre(label), () => notifications.error(ts.get.libraries.genre_error));
 	}
 
-	async function onCreateTag(label: string): Promise<string | null> {
-		const created = await tags.create(label);
-		if (!created) {
-			notifications.error(ts.get.libraries.tag_error);
-			return null;
-		}
-		return created.id.toString();
+	function onCreateTag(label: string): Promise<string | null> {
+		return createdEntryValue(tags.create(label), () => notifications.error(ts.get.libraries.tag_error));
 	}
 
 	function buildRequestFields() {
@@ -132,56 +110,44 @@
 			finished_at: finishedAtValue !== '' ? finishedAtValue : null,
 			wishlist: isWishlist,
 			summary: summaryValue !== '' ? summaryValue : null,
-			genres: selectedGenres.filter((g) => g.value).map((g) => parseInt(g.value)),
-			tags: selectedTags.filter((t) => t.value).map((t) => parseInt(t.value)),
+			genres: selectedIds(selectedGenres),
+			tags: selectedIds(selectedTags),
 			rating: selectedRating > 0 ? selectedRating : null,
 			link: linkValue !== '' ? linkValue : null
 		};
 	}
 
+	function updateRequest(): UpdateBookRequest {
+		return { ...buildRequestFields(), ...(coverValue !== '' ? { cover_path: coverValue } : {}) };
+	}
+
+	function createRequest(): CreateBookRequest {
+		return { ...buildRequestFields(), cover_path: coverValue !== '' ? coverValue : null };
+	}
+
+	function resetForm(): void {
+		titleValue = '';
+		authorValue = '';
+		seriesValue = '';
+		volumeValue = null;
+		pagesValue = null;
+		currentPageValue = null;
+		lentToValue = '';
+		isWhereValue = '';
+		startedAtValue = '';
+		finishedAtValue = '';
+		coverValue = '';
+		linkValue = '';
+		selectedGenres = [];
+		isWishlist = false;
+		summaryValue = '';
+	}
+
 	async function onsubmit(): Promise<void> {
-		loadingIndicator.start();
-
-		if (activeEntry) {
-			const request: UpdateBookRequest = {
-				...buildRequestFields(),
-				...(coverValue !== '' ? { cover_path: coverValue } : {})
-			};
-			const ok = await library.update(activeEntry, request);
-			if (ok) {
-				library.closeCreateModal();
-			} else {
-				notifications.error(ts.get.libraries.books.update_error);
-			}
-		} else {
-			const request: CreateBookRequest = {
-				...buildRequestFields(),
-				cover_path: coverValue !== '' ? coverValue : null
-			};
-			const ok = await library.create(request);
-			if (ok) {
-				titleValue = '';
-				authorValue = '';
-				seriesValue = '';
-				volumeValue = null;
-				pagesValue = null;
-				currentPageValue = null;
-				lentToValue = '';
-				isWhereValue = '';
-				startedAtValue = '';
-				finishedAtValue = '';
-				coverValue = '';
-				linkValue = '';
-				selectedGenres = [];
-				isWishlist = false;
-				summaryValue = '';
-				library.closeCreateModal();
-			} else {
-				notifications.error(ts.get.libraries.books.create_error);
-			}
-		}
-
-		loadingIndicator.stop();
+		const ok = await saving.run(() => (activeEntry ? library.update(activeEntry, updateRequest()) : library.create(createRequest())));
+		if (!ok) return;
+		if (!activeEntry) resetForm();
+		library.closeCreateModal();
 	}
 
 	function onSearchSelect(book: BookRelease): void {
@@ -211,36 +177,38 @@
 
 		importLoading = true;
 		loadingIndicator.start();
+		try {
+			const book = await library.importFrom(provider, linkValue);
+			if (!book) {
+				notifications.error(ts.get.libraries.books.import_error);
+				return;
+			}
 
-		const book = await library.importFrom(provider, linkValue);
-
-		if (!book) {
-			notifications.error(ts.get.libraries.books.import_error);
-			loadingIndicator.stop();
+			authorValue = book.author;
+			titleValue = book.title;
+			coverValue = book.cover ?? '';
+			publicationYearValue = book.release_date ? parseInt(book.release_date.slice(0, 4)) : null;
+			pagesValue = book.page_count ?? null;
+			importDropdownOpen = false;
+		} finally {
 			importLoading = false;
-			return;
+			loadingIndicator.stop();
 		}
+	}
 
-		authorValue = book.author;
-		titleValue = book.title;
-		coverValue = book.cover ?? '';
-		publicationYearValue = book.release_date ? parseInt(book.release_date.slice(0, 4)) : null;
-		pagesValue = book.page_count ?? null;
+	function modalTitle(): string {
+		return activeEntry !== null ? ts.get.libraries.books.edit_book : ts.get.libraries.books.add_book;
+	}
 
-		importLoading = false;
-		importDropdownOpen = false;
-		loadingIndicator.stop();
+	function existingCover(): string | null {
+		return activeEntry ? libraryCoverUrl(library, String(activeEntry.cover)) : null;
 	}
 </script>
 
 <CreateModal
-	title={activeEntry !== null
-		? ts.get.libraries.books.edit_book
-		: ts.get.libraries.books.add_book}
+	title={modalTitle()}
 	{library}
-	existingCover={activeEntry
-		? `${API_USER_STORAGE_URL}/${auth.user?.id}/${library.config.type}/${activeEntry.cover}`
-		: null}
+	existingCover={existingCover()}
 	newCover={coverValue}
 	bind:selectedRating
 	bind:isWishlist
@@ -258,20 +226,10 @@
 		</div>
 	</ModalFormRow>
 	<ModalFormRow label={ts.get.libraries.genres}>
-		<MultiSelect
-			bind:value={selectedGenres}
-			options={genreOptions}
-			allowUserOptions
-			oncreate={onCreateGenre}
-		/>
+		<MultiSelect bind:value={selectedGenres} options={genreEntries(library.genres)} allowUserOptions oncreate={onCreateGenre} />
 	</ModalFormRow>
 	<ModalFormRow label={ts.get.libraries.tags}>
-		<MultiSelect
-			bind:value={selectedTags}
-			options={tagOptions}
-			allowUserOptions
-			oncreate={onCreateTag}
-		/>
+		<MultiSelect bind:value={selectedTags} options={tagEntries(tags.tags)} allowUserOptions oncreate={onCreateTag} />
 	</ModalFormRow>
 	<ModalFormRow label={ts.get.libraries.publication_year}>
 		<NumberInput bind:value={publicationYearValue} />

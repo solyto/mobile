@@ -2,8 +2,11 @@
 	import { blur } from 'svelte/transition';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { getAuth } from '$lib/state/Auth.svelte';
-	import IconSettings from '@lucide/svelte/icons/settings';
+	import IconSettings from '$lib/icons/lucide/settings.svelte';
 	import type { Language } from '$lib/types/translation';
+
+	const SELECTED = 'border-c-btn bg-c-btn/10 text-c-btn';
+	const UNSELECTED = 'border-c-neutral-2 text-c-neutral-6 hover:border-c-neutral-3 dark:border-s-dark-3 dark:text-c-neutral-4';
 
 	const ts = getTranslation();
 	const auth = getAuth();
@@ -47,6 +50,15 @@
 	}
 </script>
 
+{#snippet option(label: string, selected: boolean, onclick: () => void, alignLeft: boolean = false)}
+	<button
+		class={['cursor-pointer rounded-lg border-2 px-3 py-2 text-sm font-medium transition-all', alignLeft && 'text-left', selected ? SELECTED : UNSELECTED]}
+		{onclick}
+	>
+		{label}
+	</button>
+{/snippet}
+
 <div in:blur={{ duration: 200 }}>
 	<div class="mb-2 flex items-center gap-3">
 		<div class="flex size-10 items-center justify-center rounded-xl bg-c-btn/10">
@@ -72,15 +84,7 @@
 			</span>
 			<div class="grid grid-cols-3 gap-2">
 				{#each languages as lang (lang.value)}
-					<button
-						class="cursor-pointer rounded-lg border-2 px-3 py-2 text-sm font-medium transition-all
-							{selectedLanguage === lang.value
-							? 'border-c-btn bg-c-btn/10 text-c-btn'
-							: 'border-c-neutral-2 text-c-neutral-6 hover:border-c-neutral-3 dark:border-s-dark-3 dark:text-c-neutral-4'}"
-						onclick={() => selectLanguage(lang.value)}
-					>
-						{lang.label}
-					</button>
+					{@render option(lang.label, selectedLanguage === lang.value, () => selectLanguage(lang.value))}
 				{/each}
 			</div>
 		</div>
@@ -90,15 +94,7 @@
 			</span>
 			<div class="grid grid-cols-2 gap-2">
 				{#each dateFormats as format (format.value)}
-					<button
-						class="cursor-pointer rounded-lg border-2 px-3 py-2 text-left text-sm font-medium transition-all
-							{selectedDateFormat === format.value
-							? 'border-c-btn bg-c-btn/10 text-c-btn'
-							: 'border-c-neutral-2 text-c-neutral-6 hover:border-c-neutral-3 dark:border-s-dark-3 dark:text-c-neutral-4'}"
-						onclick={() => (selectedDateFormat = format.value)}
-					>
-						{format.label}
-					</button>
+					{@render option(format.label, selectedDateFormat === format.value, () => (selectedDateFormat = format.value), true)}
 				{/each}
 			</div>
 		</div>
@@ -108,15 +104,7 @@
 			</span>
 			<div class="grid grid-cols-3 gap-2">
 				{#each timeFormats as format (format.value)}
-					<button
-						class="cursor-pointer rounded-lg border-2 px-3 py-2 text-sm font-medium transition-all
-							{selectedTimeFormat === format.value
-							? 'border-c-btn bg-c-btn/10 text-c-btn'
-							: 'border-c-neutral-2 text-c-neutral-6 hover:border-c-neutral-3 dark:border-s-dark-3 dark:text-c-neutral-4'}"
-						onclick={() => (selectedTimeFormat = format.value)}
-					>
-						{format.label}
-					</button>
+					{@render option(format.label, selectedTimeFormat === format.value, () => (selectedTimeFormat = format.value))}
 				{/each}
 			</div>
 		</div>

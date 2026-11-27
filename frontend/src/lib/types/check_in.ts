@@ -83,10 +83,42 @@ export const SPORT_BY_ID: Record<number, SportId> = {
 	6: 'yoga'
 };
 
-export interface CheckInSettings {
-	enabledTrackers: CheckInType[];
-	selectedSports: SportId[];
+export type CheckInTrackerType = 'scale' | 'yes_no' | 'count' | 'sport';
+
+export type CustomCheckInTrackerType = Exclude<CheckInTrackerType, 'sport'>;
+
+export interface CheckInTracker {
+	id: number;
+	key: CheckInType | null;
+	name: string | null;
+	type: CheckInTrackerType;
+	icon: string | null;
+	position: number;
+	enabled: boolean;
+	scored: boolean;
+	// Only in the list.
+	values_count?: number;
 }
+
+export interface CheckInValue {
+	tracker_id: number;
+	date: string;
+	value: number;
+}
+
+export interface CreateCheckInTrackerRequest {
+	name: string;
+	type: CustomCheckInTrackerType;
+	icon: string | null;
+}
+
+export interface UpdateCheckInTrackerRequest {
+	name?: string;
+	icon?: string | null;
+	enabled?: boolean;
+	scored?: boolean;
+}
+
 
 export interface CreateCheckInRequest {
 	date: string;

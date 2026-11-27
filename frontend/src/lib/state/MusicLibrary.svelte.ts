@@ -112,7 +112,7 @@ export class MusicLibrary {
 		const res = await this.apiService.list(apiRoutes.libraries.music.releases);
 		if (res) this.releases = res.data as MusicRelease[];
 		this.releasesLoaded = true;
-		return Promise.resolve(res !== null);
+		return res !== null;
 	}
 
 	search(): void {
@@ -128,6 +128,8 @@ export class MusicLibrary {
 	}
 
 	filterByWishlist(): void {
+		this.genreFilter = null;
+		this.ratingFilter = null;
 		this.wishlistFilter = true;
 		this.activeFilter = 'wishlist';
 		this.setFilteredEntries(this.filterEntries());
@@ -139,29 +141,6 @@ export class MusicLibrary {
 		this.wishlistFilter = false;
 		this.activeFilter = 'none';
 		this.setFilteredEntries(this.entries);
-	}
-
-	private filterEntries(): Music[] {
-		switch (this.activeFilter) {
-			case 'search':
-				return this.filterService.search(this.entries, this.searchTerm, ['title', 'artist']);
-			case 'genreAndRating':
-				return this.filterService.byGenreAndRating(this.entries, this.genreFilter, this.ratingFilter);
-			case 'wishlist':
-				return this.filterService.byWishlist(this.entries);
-			default:
-				return this.entries;
-		}
-	}
-
-	private reapplyFilter(): void {
-		this.filteredEntries = this.filterEntries();
-		this.shelfIndex = Math.max(0, Math.min(this.shelfIndex, this.filteredEntries.length - 1));
-	}
-
-	private setFilteredEntries(entries: Music[]): void {
-		this.filteredEntries = entries;
-		this.shelfIndex = 0;
 	}
 
 	async recommend(type: LibraryRecommendationType): Promise<LibraryRecommendation | null> {
@@ -220,6 +199,13 @@ export class MusicLibrary {
 		this.genreModalVisible = false;
 	}
 
+	changeView(view: string): void {
+		const known = MusicLibrary.VIEWS.find((candidate) => candidate === view);
+		if (!known) return;
+		this.view = known;
+		this.localStorage.set(MusicLibrary.LS_VIEW_KEY, known);
+	}
+
 	switchView(): void {
 		if (this.view === 'list') this.view = 'cards';
 		else if (this.view === 'cards') this.view = 'shelf';
@@ -229,7 +215,7 @@ export class MusicLibrary {
 	async create(request: CreateMusicRequest): Promise<boolean> {
 		const res = await this.apiService.create(apiRoutes.libraries.music.create, request);
 		if (res) await this.load();
-		return Promise.resolve(res !== null);
+		return res !== null;
 	}
 
 	async update(entry: Music, request: UpdateMusicRequest): Promise<boolean> {
@@ -276,8 +262,9 @@ export class MusicLibrary {
 		const res = await this.apiService.list(
 			`${apiRoutes.libraries.music.search}/${provider}/${encodeURIComponent(query)}`
 		);
-		if (res) return res.data as MusicSearchResult[];
-		return null;
+		// null when the search failed or the provider was unreachable.
+		if (!res || res.meta?.unavailable === true) return null;
+		return res.data as MusicSearchResult[];
 	}
 
 	async importFrom(provider: string, url: string): Promise<MusicRelease | null> {
@@ -287,6 +274,29 @@ export class MusicLibrary {
 		);
 		if (res) return res.data as MusicRelease;
 		return null;
+	}
+
+	private filterEntries(): Music[] {
+		switch (this.activeFilter) {
+			case 'search':
+				return this.filterService.search(this.entries, this.searchTerm, ['title', 'artist']);
+			case 'genreAndRating':
+				return this.filterService.byGenreAndRating(this.entries, this.genreFilter, this.ratingFilter);
+			case 'wishlist':
+				return this.filterService.byWishlist(this.entries);
+			default:
+				return this.entries;
+		}
+	}
+
+	private reapplyFilter(): void {
+		this.filteredEntries = this.filterEntries();
+		this.shelfIndex = Math.max(0, Math.min(this.shelfIndex, this.filteredEntries.length - 1));
+	}
+
+	private setFilteredEntries(entries: Music[]): void {
+		this.filteredEntries = entries;
+		this.shelfIndex = 0;
 	}
 }
 

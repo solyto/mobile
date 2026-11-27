@@ -2,6 +2,9 @@
 	import { fly } from 'svelte/transition';
 	import CloseButton from '$lib/components/ui/buttons/CloseButton.svelte';
 	import HamburgerButton from '$lib/components/ui/buttons/HamburgerButton.svelte';
+	import { getTranslation } from '$lib/state/Translation.svelte';
+
+	const ts = getTranslation();
 
 	let {
 		sections,
@@ -17,11 +20,19 @@
 
 	function select(id: number): void {
 		onselect(id);
+		close();
+	}
+
+	function openMenu(): void {
+		open = true;
+	}
+
+	function close(): void {
 		open = false;
 	}
 </script>
 
-<HamburgerButton onclick={() => (open = true)} />
+<HamburgerButton onclick={openMenu} />
 
 {#if open}
 	<div
@@ -31,14 +42,15 @@
 		<div
 			class="flex shrink-0 items-center justify-between border-b border-c-neutral-2 p-4 dark:border-s-dark-3"
 		>
-			<span class="text-2xl font-bold">Settings</span>
-			<CloseButton onClick={() => { open = false; }} inModal={false} />
+			<span class="text-2xl font-bold">{ts.get.nav.settings}</span>
+			<CloseButton onClick={close} inModal={false} />
 		</div>
 		<div class="flex-1 overflow-y-auto">
 			{#each sections as section (section.id)}
 				<button
-					class="flex w-full cursor-pointer items-center border-b border-c-neutral-1 px-4 py-4 text-left hover:bg-c-neutral-1 dark:border-s-dark-3 dark:hover:bg-s-dark-3
-						{active === section.id ? 'bg-c-neutral-1 dark:bg-s-dark-3' : ''}"
+					class="flex w-full cursor-pointer items-center border-b border-c-neutral-1 px-4 py-4 text-left hover:bg-c-neutral-1 dark:border-s-dark-3 dark:hover:bg-s-dark-3"
+					class:bg-c-neutral-1={active === section.id}
+					class:dark:bg-s-dark-3={active === section.id}
 					aria-current={active === section.id ? 'true' : undefined}
 					onclick={() => select(section.id)}
 				>

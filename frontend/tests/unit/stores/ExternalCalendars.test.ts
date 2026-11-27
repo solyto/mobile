@@ -192,6 +192,28 @@ describe('ExternalCalendars store', () => {
 		expect(calendars.loadCalendars).not.toHaveBeenCalled();
 	});
 
+	it('remembers the account to remove until the removal is cancelled', () => {
+		const s = store();
+
+		s.askToRemove(account());
+		expect(s.removal).toEqual(account());
+
+		s.cancelRemoval();
+		expect(s.removal).toBeNull();
+	});
+
+	it('notifies the widgets after a removal but not after a new app password', async () => {
+		api.delete.mockResolvedValue(true);
+		api.putRaw.mockResolvedValue({ success: true, data: account() });
+		api.list.mockResolvedValue({ data: [] });
+
+		await store().updateAccount(account(), { username: 'alice', password: 'new' });
+		expect(auth.widgetBridge.notifyChanged).not.toHaveBeenCalled();
+
+		await store().deleteAccount(account());
+		expect(auth.widgetBridge.notifyChanged).toHaveBeenCalledTimes(1);
+	});
+
 	it('counts only the connected calendars that still exist', () => {
 		const linked = account({
 			calendars: [

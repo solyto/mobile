@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Dices from '@lucide/svelte/icons/dices';
+	import Dices from '$lib/icons/lucide/dices.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 
 	const ts = getTranslation();

@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { urls } from '$lib/config/urls';
 	import { resolve } from '$app/paths';
-	import { getAuth } from '$lib/state/Auth.svelte';
+	import { Auth, getAuth } from '$lib/state/Auth.svelte';
 	import { fade } from 'svelte/transition';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
@@ -15,12 +15,7 @@
 	import PasswordMatchIndicator from '$lib/components/forms/PasswordMatchIndicator.svelte';
 	import StaggeredLogo from '$lib/components/ui/StaggeredLogo.svelte';
 	import { PLATFORM } from '$lib/config/platform';
-
-	onMount(() => {
-		if (auth.loggedIn) {
-			goto(resolve(urls.home));
-		}
-	});
+	import type { AuthActionResponse } from '$lib/types/auth';
 
 	const auth = getAuth();
 	const ts = getTranslation();
@@ -38,21 +33,18 @@
 	let passwordConfirmationError = $state<boolean>(false);
 	let error = $state<boolean>(false);
 
+	onMount(() => {
+		if (auth.loggedIn) {
+			goto(resolve(urls.home));
+		}
+	});
+
 	async function onsubmit(e: SubmitEvent): Promise<void> {
 		e.preventDefault();
 
 		if (!validateInput()) return;
 
-		loadingIndicator.start();
-		const result = await auth.register({
-			name,
-			email,
-			password,
-			password_confirmation: passwordConfirmation,
-			language: ts.locale,
-			platform: PLATFORM
-		});
-		loadingIndicator.stop();
+		const result = await register();
 
 		if (result.success) {
 			notifications.success(ts.get.auth.register_success);
@@ -67,20 +59,31 @@
 		}
 	}
 
+	async function register(): Promise<AuthActionResponse> {
+		loadingIndicator.start();
+		try {
+			return await auth.register({
+				name,
+				email,
+				password,
+				password_confirmation: passwordConfirmation,
+				language: ts.locale,
+				platform: PLATFORM
+			});
+		} finally {
+			loadingIndicator.stop();
+		}
+	}
+
 	function validateInput(): boolean {
-		nameError = false;
-		emailError = false;
-		passwordError = false;
 		passwordCompromisedError = false;
-		passwordConfirmationError = false;
 		nameError = name === '';
 		emailError = email === '';
-		passwordError = password.length < 12;
-		passwordConfirmationError =
-			passwordConfirmation === '' || password !== passwordConfirmation;
+		passwordError = password.length < Auth.MIN_PASSWORD_LENGTH;
+		passwordConfirmationError = passwordConfirmation === '' || password !== passwordConfirmation;
 		error = nameError || emailError || passwordError || passwordConfirmationError;
 
-		return !(nameError || emailError || passwordError || passwordConfirmationError);
+		return !error;
 	}
 </script>
 

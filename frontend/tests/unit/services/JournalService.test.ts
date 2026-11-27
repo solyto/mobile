@@ -1,52 +1,23 @@
 import { describe, it, expect } from 'vitest';
 import JournalService from '$lib/services/JournalService';
-import type { Note, NoteCategory } from '$lib/types/note';
-
-function category(id: number, overrides: Partial<NoteCategory> = {}): NoteCategory {
-	return {
-		id,
-		title: 'Category',
-		parent_id: null,
-		sort_order: 0,
-		is_system: false,
-		is_hidden: false,
-		created_at: '',
-		updated_at: '',
-		children: [],
-		...overrides
-	};
-}
-
-function note(overrides: Partial<Note> = {}): Note {
-	return {
-		id: 'n1',
-		title: 'Note',
-		content: '',
-		category_id: null,
-		tags: [],
-		is_favorite: false,
-		created_at: '',
-		updated_at: '',
-		...overrides
-	};
-}
+import { note, noteCategory } from '../helpers/factories';
 
 const service = new JournalService();
 
 describe('findJournalCategory', () => {
 	it('finds a root-level system category', () => {
-		const journal = category(3, { title: '.journal', is_system: true, is_hidden: true });
-		expect(service.findJournalCategory([category(1), journal, category(2)])).toBe(journal);
+		const journal = noteCategory(3, { title: '.journal', is_system: true, is_hidden: true });
+		expect(service.findJournalCategory([noteCategory(1), journal, noteCategory(2)])).toBe(journal);
 	});
 
 	it('finds a system category nested as a child', () => {
-		const journal = category(9, { is_system: true });
-		const parent = category(1, { children: [category(2), journal] });
+		const journal = noteCategory(9, { is_system: true });
+		const parent = noteCategory(1, { children: [noteCategory(2), journal] });
 		expect(service.findJournalCategory([parent])).toBe(journal);
 	});
 
 	it('returns null when no category is a system folder', () => {
-		expect(service.findJournalCategory([category(1), category(2)])).toBeNull();
+		expect(service.findJournalCategory([noteCategory(1), noteCategory(2)])).toBeNull();
 	});
 
 	it('returns null for an empty list', () => {
@@ -56,48 +27,48 @@ describe('findJournalCategory', () => {
 
 describe('mergeCategories', () => {
 	it('adds a hidden root category as a root', () => {
-		const journal = category(3, { title: '.journal', is_system: true, is_hidden: true });
-		const merged = service.mergeCategories([category(1), category(2)], [journal]);
+		const journal = noteCategory(3, { title: '.journal', is_system: true, is_hidden: true });
+		const merged = service.mergeCategories([noteCategory(1), noteCategory(2)], [journal]);
 		expect(merged.map((c) => c.id)).toEqual([1, 2, 3]);
 		expect(merged[2]).toBe(journal);
 	});
 
 	it('grafts a hidden category under its visible parent', () => {
-		const hidden = category(5, { parent_id: 2, is_hidden: true });
-		const merged = service.mergeCategories([category(1), category(2)], [hidden]);
+		const hidden = noteCategory(5, { parent_id: 2, is_hidden: true });
+		const merged = service.mergeCategories([noteCategory(1), noteCategory(2)], [hidden]);
 		expect(merged.map((c) => c.id)).toEqual([1, 2]);
 		expect(merged[1].children).toEqual([hidden]);
 	});
 
 	it('grafts a hidden category under a nested visible parent', () => {
-		const hidden = category(7, { parent_id: 4, is_hidden: true });
-		const visible = [category(1, { children: [category(4, { parent_id: 1 })] })];
+		const hidden = noteCategory(7, { parent_id: 4, is_hidden: true });
+		const visible = [noteCategory(1, { children: [noteCategory(4, { parent_id: 1 })] })];
 		const merged = service.mergeCategories(visible, [hidden]);
 		expect(merged[0].children[0].children).toEqual([hidden]);
 	});
 
 	it('keeps the children of a hidden category nested under it', () => {
-		const child = category(6, { parent_id: 5 });
-		const hidden = category(5, { is_hidden: true, children: [child] });
-		const merged = service.mergeCategories([category(1)], [hidden]);
+		const child = noteCategory(6, { parent_id: 5 });
+		const hidden = noteCategory(5, { is_hidden: true, children: [child] });
+		const merged = service.mergeCategories([noteCategory(1)], [hidden]);
 		expect(merged[1].children).toEqual([child]);
 	});
 
 	it('falls back to a root when the parent is unknown', () => {
-		const hidden = category(5, { parent_id: 99, is_hidden: true });
-		const merged = service.mergeCategories([category(1)], [hidden]);
+		const hidden = noteCategory(5, { parent_id: 99, is_hidden: true });
+		const merged = service.mergeCategories([noteCategory(1)], [hidden]);
 		expect(merged.map((c) => c.id)).toEqual([1, 5]);
 	});
 
 	it('finds the journal in the merged tree', () => {
-		const journal = category(3, { title: '.journal', is_system: true, is_hidden: true });
-		const merged = service.mergeCategories([category(1)], [journal]);
+		const journal = noteCategory(3, { title: '.journal', is_system: true, is_hidden: true });
+		const merged = service.mergeCategories([noteCategory(1)], [journal]);
 		expect(service.findJournalCategory(merged)).toBe(journal);
 	});
 
 	it('does not mutate its inputs', () => {
-		const visible = [category(1, { children: [category(4, { parent_id: 1 })] })];
-		const hidden = [category(7, { parent_id: 4, is_hidden: true })];
+		const visible = [noteCategory(1, { children: [noteCategory(4, { parent_id: 1 })] })];
+		const hidden = [noteCategory(7, { parent_id: 4, is_hidden: true })];
 		const before = structuredClone(visible);
 		service.mergeCategories(visible, hidden);
 		expect(visible).toEqual(before);
@@ -105,7 +76,7 @@ describe('mergeCategories', () => {
 	});
 
 	it('returns a copy of the visible tree when nothing is hidden', () => {
-		const visible = [category(1)];
+		const visible = [noteCategory(1)];
 		const merged = service.mergeCategories(visible, []);
 		expect(merged).toEqual(visible);
 		expect(merged).not.toBe(visible);
@@ -232,5 +203,44 @@ describe('hasContent', () => {
 	it('accepts content with only embedded media', () => {
 		expect(service.hasContent('<p></p><img src="x.png">')).toBe(true);
 		expect(service.hasContent('<hr>')).toBe(true);
+	});
+});
+
+describe('entryKeyFromParam', () => {
+	it('returns a date param as the entry key', () => {
+		expect(service.entryKeyFromParam('2026-08-04')).toBe('2026-08-04');
+	});
+
+	it('returns null for a missing or non-date param', () => {
+		expect(service.entryKeyFromParam(undefined)).toBeNull();
+		expect(service.entryKeyFromParam('')).toBeNull();
+		expect(service.entryKeyFromParam('abc')).toBeNull();
+	});
+});
+
+describe('dateFromParam', () => {
+	it('parses a date param', () => {
+		expect(service.dateFromParam('2026-08-04')).toEqual(new Date(2026, 7, 4));
+	});
+
+	it('falls back for a missing or non-date param', () => {
+		const fallback = new Date(2026, 0, 1);
+		expect(service.dateFromParam(undefined, fallback)).toBe(fallback);
+		expect(service.dateFromParam('abc', fallback)).toBe(fallback);
+	});
+});
+
+describe('recentEntryKeys / isOlderEntryKey', () => {
+	const recent = service.recentEntryKeys(new Date(2026, 2, 1, 9));
+
+	it('names today and yesterday, across a month boundary', () => {
+		expect(recent).toEqual({ today: '2026-03-01', yesterday: '2026-02-28' });
+	});
+
+	it('treats only other dates as older entries', () => {
+		expect(service.isOlderEntryKey('2026-02-27', recent)).toBe(true);
+		expect(service.isOlderEntryKey('2026-03-01', recent)).toBe(false);
+		expect(service.isOlderEntryKey('2026-02-28', recent)).toBe(false);
+		expect(service.isOlderEntryKey(null, recent)).toBe(false);
 	});
 });

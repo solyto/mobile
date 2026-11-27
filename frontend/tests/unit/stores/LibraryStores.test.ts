@@ -9,187 +9,9 @@ import { RecipeLibrary } from '$lib/state/RecipeLibrary.svelte';
 import { LinkLibrary } from '$lib/state/LinkLibrary.svelte';
 import { api, storage, resetStoreMocks } from '../setup/storeMocks';
 import { apiRoutes } from '$lib/config/apiRoutes';
-import type { Book, BookGenre } from '$lib/types/library_book';
-import type { Music, MusicGenre } from '$lib/types/library_music';
-import type { Movie, MovieGenre } from '$lib/types/library_movie';
-import type { Game, GameGenre } from '$lib/types/library_game';
-import type { Plant, PlantLocation } from '$lib/types/library_plant';
-import type { Quote } from '$lib/types/library_quote';
-import type { Recipe, RecipeType } from '$lib/types/library_recipe';
-import type { Link, LinkCategory } from '$lib/types/library_link';
-
-function book(overrides: Partial<Book> = {}): Book {
-	return {
-		id: 'b1',
-		title: 'Book',
-		author: 'Author',
-		series: null,
-		volume: null,
-		pages: null,
-		current_page: null,
-		lent_to: null,
-		is_where: null,
-		cover: null,
-		link: null,
-		rating: null,
-		publication_year: null,
-		wishlist: false,
-		summary: null,
-		genres: [],
-		tags: [],
-		started_at: null,
-		finished_at: null,
-		created_at: '',
-		updated_at: '',
-		...overrides
-	};
-}
-
-function music(overrides: Partial<Music> = {}): Music {
-	return {
-		id: 'm1',
-		title: 'Album',
-		artist: 'Artist',
-		type: null,
-		format: null,
-		condition: null,
-		acquired_where: null,
-		additional_info: null,
-		cover: null,
-		link: null,
-		rating: null,
-		publication_year: null,
-		wishlist: false,
-		genres: [],
-		created_at: '',
-		updated_at: '',
-		...overrides
-	};
-}
-
-function movie(overrides: Partial<Movie> = {}): Movie {
-	return {
-		id: 'mo1',
-		title: 'Movie',
-		category: '',
-		cover: null,
-		link: null,
-		rating: null,
-		publication_year: null,
-		wishlist: false,
-		genres: [],
-		tags: [],
-		started_at: null,
-		finished_at: null,
-		created_at: '',
-		updated_at: '',
-		...overrides
-	};
-}
-
-function game(overrides: Partial<Game> = {}): Game {
-	return {
-		id: 'g1',
-		title: 'Game',
-		platform: 'PC',
-		developer: null,
-		publisher: null,
-		cover: null,
-		link: null,
-		rating: null,
-		publication_year: null,
-		playtime_hours: null,
-		completed: false,
-		wishlist: false,
-		genres: [],
-		tags: [],
-		started_at: null,
-		finished_at: null,
-		created_at: '',
-		updated_at: '',
-		...overrides
-	};
-}
-
-function plant(overrides: Partial<Plant> = {}): Plant {
-	return {
-		id: 'p1',
-		name: 'Monstera',
-		latin_name: 'Monstera deliciosa',
-		location: null,
-		sunlight: null,
-		current_size: null,
-		max_size: null,
-		acquired_at: null,
-		winter_hardy: null,
-		instructions: null,
-		cover: null,
-		link: null,
-		created_at: '',
-		updated_at: '',
-		...overrides
-	};
-}
-
-function quote(overrides: Partial<Quote> = {}): Quote {
-	return {
-		id: 'q1',
-		summary: null,
-		author: 'Author',
-		quote: 'Words',
-		source: null,
-		tags: [],
-		created_at: '',
-		updated_at: '',
-		...overrides
-	};
-}
-
-function recipe(overrides: Partial<Recipe> = {}): Recipe {
-	return {
-		id: 'r1',
-		title: 'Recipe',
-		cover: null,
-		link: null,
-		rating: null,
-		calories: null,
-		time_to_make: null,
-		servings: null,
-		ingredients: [],
-		steps: [],
-		description: null,
-		type: null,
-		created_at: '',
-		updated_at: '',
-		...overrides
-	};
-}
-
-function link(overrides: Partial<Link> = {}): Link {
-	return {
-		id: 'l1',
-		title: 'Link',
-		url: 'https://example.com',
-		cover: null,
-		tags: [],
-		category: null,
-		is_favorite: false,
-		created_at: '',
-		updated_at: '',
-		...overrides
-	};
-}
-
-function linkCategory(id: number, title: string): LinkCategory {
-	return { id, title, color: null };
-}
-
-const genre = (id: number, title: string): BookGenre & MusicGenre & MovieGenre & GameGenre => ({
-	id,
-	title,
-	created_at: '',
-	updated_at: ''
-});
+import type { PlantLocation } from '$lib/types/library_plant';
+import type { RecipeType } from '$lib/types/library_recipe';
+import { book, game, genre, link, linkCategory, movie, music, plant, quote, recipe } from '../helpers/factories';
 
 function deferListRequests(routes: string[]): Map<string, (value: unknown) => void> {
 	const pending = new Map<string, (value: unknown) => void>();
@@ -679,6 +501,20 @@ describe('RecipeLibrary', () => {
 		expect(s.filteredEntries).toHaveLength(2);
 	});
 
+	it('ignores spaces around the search term and clears the rating filter', () => {
+		const s = new RecipeLibrary();
+		s.entries = [recipe({ id: '1', title: 'Pizza', rating: 3 }), recipe({ id: '2', title: 'Cake', rating: 5 })];
+		s.addRatingFilter(5);
+		s.searchTerm = '  PIZZA ';
+		s.search();
+		expect(s.filteredEntries.map((r) => r.id)).toEqual(['1']);
+		expect(s.ratingFilter).toBeNull();
+
+		s.searchTerm = '   ';
+		s.search();
+		expect(s.filteredEntries).toHaveLength(2);
+	});
+
 	it('filters by rating and type', () => {
 		const s = new RecipeLibrary();
 		s.entries = [
@@ -792,38 +628,50 @@ describe('LinkLibrary', () => {
 		expect(s.filteredEntries.map((l) => l.id)).toEqual(['1']);
 	});
 
-	it('reapplies the active filter after a reload', async () => {
+	it('keeps the active category or favourite filter when the links are reloaded', async () => {
 		const work = linkCategory(1, 'Work');
+		const entries = [link({ id: '1', category: work }), link({ id: '2', category: null, is_favorite: true })];
+		api.list.mockImplementation(async (route: string) => (route === apiRoutes.libraries.links.list ? { data: entries } : { data: [work] }));
 		const s = new LinkLibrary();
-		s.entries = [link({ id: '1', category: work }), link({ id: '2', category: null })];
-		s.filterByCategory(1);
-		expect(s.filteredEntries).toHaveLength(1);
+		s.entries = entries;
 
-		s.reapplyFilter();
-		expect(s.filteredEntries).toHaveLength(1);
+		s.filterByCategory(1);
+		await s.load();
+		expect(s.filteredEntries.map((l) => l.id)).toEqual(['1']);
 
 		s.filterByFavorite();
-		s.reapplyFilter();
+		await s.load();
 		expect(s.activeFilter).toBe('favorite');
+		expect(s.filteredEntries.map((l) => l.id)).toEqual(['2']);
 	});
 
-	it('keeps the search after a reload until a category is chosen', () => {
+	it('keeps the search after a reload until a category is chosen', async () => {
 		const work = linkCategory(1, 'Work');
+		const entries = [link({ id: '1', title: 'Solyto', category: work }), link({ id: '2', title: 'Docs', category: work })];
+		api.list.mockImplementation(async (route: string) => (route === apiRoutes.libraries.links.list ? { data: entries } : { data: [work] }));
 		const s = new LinkLibrary();
-		s.entries = [
-			link({ id: '1', title: 'Solyto', category: work }),
-			link({ id: '2', title: 'Docs', category: work })
-		];
+		s.entries = entries;
 		s.filterByCategory(1);
 		s.searchTerm = 'solyto';
 		s.search();
 
-		s.reapplyFilter();
+		await s.load();
 		expect(s.filteredEntries.map((l) => l.id)).toEqual(['1']);
 
 		s.filterByCategory(1);
-		s.reapplyFilter();
+		await s.load();
 		expect(s.filteredEntries.map((l) => l.id)).toEqual(['1', '2']);
+	});
+
+	it('tells whether a single category is chosen', () => {
+		const s = new LinkLibrary();
+		expect(s.isCategoryChosen()).toBe(false);
+
+		s.filterByFavorite();
+		expect(s.isCategoryChosen()).toBe(false);
+
+		s.filterByCategory(0);
+		expect(s.isCategoryChosen()).toBe(true);
 	});
 
 	it('resolves the active category id for new entries', () => {
@@ -999,5 +847,25 @@ describe('library load', () => {
 				expect(s.categoriesCount).toEqual([{ id: 1, count: 2 }]);
 			}
 		);
+	});
+});
+
+describe('Library search', () => {
+	it.each([
+		['books', () => new BookLibrary()],
+		['music', () => new MusicLibrary()],
+		['movies', () => new MovieLibrary()],
+		['games', () => new GameLibrary()]
+	])('treats an unreachable provider in %s as a failed search, and no results as an empty list', async (_type, create) => {
+		const library = create();
+
+		api.list.mockResolvedValueOnce({ data: [], meta: { unavailable: true } });
+		expect(await library.searchAt('provider', 'query')).toBeNull();
+
+		api.list.mockResolvedValueOnce({ data: [], meta: { unavailable: false } });
+		expect(await library.searchAt('provider', 'query')).toEqual([]);
+
+		api.list.mockResolvedValueOnce({ data: [] });
+		expect(await library.searchAt('provider', 'query')).toEqual([]);
 	});
 });

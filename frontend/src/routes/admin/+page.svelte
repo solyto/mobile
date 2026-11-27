@@ -3,47 +3,148 @@
 	import { getStatistics } from '$lib/state/Statistics.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import StatisticWidget from '$lib/components/admin/StatisticWidget.svelte';
-	import IconCheckCheck from '@lucide/svelte/icons/check-check';
-	import IconNotebook from '@lucide/svelte/icons/notebook';
-	import IconMusic from '@lucide/svelte/icons/music';
-	import IconBook from '@lucide/svelte/icons/book';
-	import IconClapperboard from '@lucide/svelte/icons/clapperboard';
-	import IconLink from '@lucide/svelte/icons/link';
-	import IconQuote from '@lucide/svelte/icons/quote';
-	import IconCookingPot from '@lucide/svelte/icons/cooking-pot';
-	import IconUser from '@lucide/svelte/icons/user';
-	import IconLayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
-	import IconFolderOpen from '@lucide/svelte/icons/folder-open';
-	import IconLayoutGrid from '@lucide/svelte/icons/layout-grid';
-	import IconTag from '@lucide/svelte/icons/tag';
-	import IconClock from '@lucide/svelte/icons/clock';
-	import IconLayers from '@lucide/svelte/icons/layers';
-	import IconFolderKanban from '@lucide/svelte/icons/folder-kanban';
-	import IconCalendar from '@lucide/svelte/icons/calendar';
-	import IconCalendarDays from '@lucide/svelte/icons/calendar-days';
-	import IconBookUser from '@lucide/svelte/icons/book-user';
-	import IconUsers from '@lucide/svelte/icons/users';
-	import IconUserRoundCheck from '@lucide/svelte/icons/user-round-check';
-	import IconUserPlus from '@lucide/svelte/icons/user-plus';
-	import IconGamepad2 from '@lucide/svelte/icons/gamepad-2';
-	import IconRss from '@lucide/svelte/icons/rss';
-	import IconTrendingUp from '@lucide/svelte/icons/trending-up';
-	import IconLandmark from '@lucide/svelte/icons/landmark';
-	import IconMapPin from '@lucide/svelte/icons/map-pin';
-	import IconBell from '@lucide/svelte/icons/bell';
-	import IconFolderTree from '@lucide/svelte/icons/folder-tree';
+	import IconCheckCheck from '$lib/icons/lucide/check-check.svelte';
+	import IconNotebook from '$lib/icons/lucide/notebook.svelte';
+	import IconMusic from '$lib/icons/lucide/eighth-notes.svelte';
+	import IconBook from '$lib/icons/lucide/book.svelte';
+	import IconClapperboard from '$lib/icons/lucide/clapperboard.svelte';
+	import IconLink from '$lib/icons/lucide/link.svelte';
+	import IconQuote from '$lib/icons/lucide/quote.svelte';
+	import IconCookingPot from '$lib/icons/lucide/cooking-pot.svelte';
+	import IconUser from '$lib/icons/lucide/user.svelte';
+	import IconLayoutDashboard from '$lib/icons/lucide/layout-dashboard.svelte';
+	import IconFolderOpen from '$lib/icons/lucide/folder-open.svelte';
+	import IconLayoutGrid from '$lib/icons/lucide/layout-grid.svelte';
+	import IconTag from '$lib/icons/lucide/tag.svelte';
+	import IconClock from '$lib/icons/lucide/clock.svelte';
+	import IconLayers from '$lib/icons/lucide/layers.svelte';
+	import IconFolderKanban from '$lib/icons/lucide/folder-kanban.svelte';
+	import IconCalendar from '$lib/icons/lucide/calendar.svelte';
+	import IconCalendarDays from '$lib/icons/lucide/calendar-days.svelte';
+	import IconBookUser from '$lib/icons/lucide/book-user.svelte';
+	import IconUsers from '$lib/icons/lucide/users.svelte';
+	import IconUserRoundCheck from '$lib/icons/lucide/user-round-check.svelte';
+	import IconUserPlus from '$lib/icons/lucide/user-plus.svelte';
+	import IconGamepad2 from '$lib/icons/lucide/gamepad-2.svelte';
+	import IconRss from '$lib/icons/lucide/rss.svelte';
+	import IconTrendingUp from '$lib/icons/lucide/trending-up.svelte';
+	import IconLandmark from '$lib/icons/lucide/landmark.svelte';
+	import IconMapPin from '$lib/icons/lucide/map-pin.svelte';
+	import IconBell from '$lib/icons/lucide/bell.svelte';
+	import IconFolderTree from '$lib/icons/lucide/folder-tree.svelte';
+	import type { Component } from 'svelte';
+	import type { StatisticsOverview } from '$lib/types/statistic';
+	import type { AdminRecords } from '$lib/types/translation';
+	import { getTranslation } from '$lib/state/Translation.svelte';
+
+	type Statistic = {
+		field: keyof StatisticsOverview;
+		label: keyof AdminRecords;
+		icon: Component<{ class?: string }>;
+		color: 'teal' | 'blue' | 'green' | 'purple' | 'orange' | 'red' | 'yellow';
+	};
+
+	const STAGGER_MS = 25;
+
+	const SECTIONS: { title: keyof AdminRecords; statistics: Statistic[] }[] = [
+		{
+			title: 'users',
+			statistics: [
+				{ field: 'users', label: 'stat_users', icon: IconUser, color: 'blue' },
+				{ field: 'active_users', label: 'stat_active_users', icon: IconUserRoundCheck, color: 'blue' },
+				{ field: 'confirmed_users', label: 'stat_confirmed_users', icon: IconUsers, color: 'teal' },
+				{ field: 'friends', label: 'stat_friends', icon: IconUserPlus, color: 'purple' },
+				{ field: 'ui_notifications', label: 'stat_notifications', icon: IconBell, color: 'yellow' }
+			]
+		},
+		{
+			title: 'section_calendars',
+			statistics: [
+				{ field: 'calendars', label: 'stat_calendars', icon: IconCalendar, color: 'teal' },
+				{ field: 'calendar_events', label: 'stat_events', icon: IconCalendarDays, color: 'green' }
+			]
+		},
+		{
+			title: 'section_todos',
+			statistics: [
+				{ field: 'todos', label: 'stat_todos', icon: IconCheckCheck, color: 'green' },
+				{ field: 'todo_categories', label: 'stat_categories', icon: IconFolderOpen, color: 'teal' },
+				{ field: 'todo_workspaces', label: 'stat_workspaces', icon: IconLayoutGrid, color: 'blue' }
+			]
+		},
+		{
+			title: 'section_notes',
+			statistics: [
+				{ field: 'notes', label: 'stat_notes', icon: IconNotebook, color: 'yellow' },
+				{ field: 'note_folders', label: 'stat_folders', icon: IconFolderTree, color: 'orange' }
+			]
+		},
+		{
+			title: 'section_libraries',
+			statistics: [
+				{ field: 'books', label: 'stat_books', icon: IconBook, color: 'orange' },
+				{ field: 'albums', label: 'stat_albums', icon: IconMusic, color: 'purple' },
+				{ field: 'movies', label: 'stat_movies', icon: IconClapperboard, color: 'red' },
+				{ field: 'recipes', label: 'stat_recipes', icon: IconCookingPot, color: 'teal' },
+				{ field: 'links', label: 'stat_links', icon: IconLink, color: 'blue' },
+				{ field: 'quotes', label: 'stat_quotes', icon: IconQuote, color: 'yellow' },
+				{ field: 'library_games', label: 'stat_games', icon: IconGamepad2, color: 'green' }
+			]
+		},
+		{
+			title: 'section_contacts',
+			statistics: [
+				{ field: 'address_books', label: 'stat_address_books', icon: IconBookUser, color: 'yellow' },
+				{ field: 'contacts', label: 'stat_contacts', icon: IconUsers, color: 'blue' }
+			]
+		},
+		{
+			title: 'section_check_in',
+			statistics: [{ field: 'check_in_entries', label: 'stat_entries', icon: IconMapPin, color: 'red' }]
+		},
+		{
+			title: 'section_finances',
+			statistics: [
+				{ field: 'income_entries', label: 'stat_income_entries', icon: IconTrendingUp, color: 'green' },
+				{ field: 'wealth_entries', label: 'stat_wealth_entries', icon: IconLandmark, color: 'teal' }
+			]
+		},
+		{
+			title: 'section_time_tracking',
+			statistics: [
+				{ field: 'time_tracking_entries', label: 'stat_entries', icon: IconClock, color: 'orange' },
+				{ field: 'time_tracking_categories', label: 'stat_categories', icon: IconLayers, color: 'teal' },
+				{ field: 'time_tracking_projects', label: 'stat_projects', icon: IconFolderKanban, color: 'blue' }
+			]
+		},
+		{
+			title: 'section_feeds',
+			statistics: [{ field: 'feed_subscriptions', label: 'stat_subscribed_feeds', icon: IconRss, color: 'orange' }]
+		},
+		{
+			title: 'section_other',
+			statistics: [{ field: 'tags', label: 'stat_tags', icon: IconTag, color: 'purple' }]
+		}
+	];
+
+	const ALL_STATISTICS = SECTIONS.flatMap((section) => section.statistics);
 
 	const statistics = getStatistics();
 	const loadingIndicator = getLoadingIndicator();
-
-	let delayIndex = 0;
-	const delay = () => delayIndex++ * 25;
+	const ts = getTranslation();
 
 	onMount(async () => {
 		loadingIndicator.start();
-		await statistics.load();
-		loadingIndicator.stop();
+		try {
+			await statistics.load();
+		} finally {
+			loadingIndicator.stop();
+		}
 	});
+
+	function loadDelay(statistic: Statistic): number {
+		return ALL_STATISTICS.indexOf(statistic) * STAGGER_MS;
+	}
 </script>
 
 <div class="flex h-full w-full flex-col gap-8 overflow-auto p-8">
@@ -52,105 +153,27 @@
 			<IconLayoutDashboard class="h-6 w-6 text-c-primary" />
 		</div>
 		<div>
-			<h1 class="text-2xl font-bold text-c-neutral-9 dark:text-white">Dashboard</h1>
-			<p class="text-c-neutral-5 dark:text-c-neutral-4">Overview of platform statistics</p>
+			<h1 class="text-2xl font-bold text-c-neutral-9 dark:text-white">{ts.get.admin.dashboard}</h1>
+			<p class="text-c-neutral-5 dark:text-c-neutral-4">{ts.get.admin.dashboard_description}</p>
 		</div>
 	</div>
 
 	{#if statistics.loaded}
-		<section class="flex flex-col gap-3">
-			<h2 class="text-sm font-semibold uppercase tracking-wider text-c-neutral-4 dark:text-c-neutral-5">Users</h2>
-			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-				<StatisticWidget label="Users" number={statistics.overview?.users ?? 0} icon={IconUser} color="blue" loadDelay={delay()} />
-				<StatisticWidget label="Active Users" number={statistics.overview?.active_users ?? 0} icon={IconUserRoundCheck} color="blue" loadDelay={delay()} />
-				<StatisticWidget label="Confirmed Users" number={statistics.overview?.confirmed_users ?? 0} icon={IconUsers} color="teal" loadDelay={delay()} />
-				<StatisticWidget label="Friends" number={statistics.overview?.friends ?? 0} icon={IconUserPlus} color="purple" loadDelay={delay()} />
-				<StatisticWidget label="Notifications" number={statistics.overview?.ui_notifications ?? 0} icon={IconBell} color="yellow" loadDelay={delay()} />
-			</div>
-		</section>
-
-		<section class="flex flex-col gap-3">
-			<h2 class="text-sm font-semibold uppercase tracking-wider text-c-neutral-4 dark:text-c-neutral-5">Calendars</h2>
-			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-				<StatisticWidget label="Calendars" number={statistics.overview?.calendars ?? 0} icon={IconCalendar} color="teal" loadDelay={delay()} />
-				<StatisticWidget label="Events" number={statistics.overview?.calendar_events ?? 0} icon={IconCalendarDays} color="green" loadDelay={delay()} />
-			</div>
-		</section>
-
-		<section class="flex flex-col gap-3">
-			<h2 class="text-sm font-semibold uppercase tracking-wider text-c-neutral-4 dark:text-c-neutral-5">Todos</h2>
-			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-				<StatisticWidget label="Todos" number={statistics.overview?.todos ?? 0} icon={IconCheckCheck} color="green" loadDelay={delay()} />
-				<StatisticWidget label="Categories" number={statistics.overview?.todo_categories ?? 0} icon={IconFolderOpen} color="teal" loadDelay={delay()} />
-				<StatisticWidget label="Workspaces" number={statistics.overview?.todo_workspaces ?? 0} icon={IconLayoutGrid} color="blue" loadDelay={delay()} />
-			</div>
-		</section>
-
-		<section class="flex flex-col gap-3">
-			<h2 class="text-sm font-semibold uppercase tracking-wider text-c-neutral-4 dark:text-c-neutral-5">Notes</h2>
-			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-				<StatisticWidget label="Notes" number={statistics.overview?.notes ?? 0} icon={IconNotebook} color="yellow" loadDelay={delay()} />
-				<StatisticWidget label="Folders" number={statistics.overview?.note_folders ?? 0} icon={IconFolderTree} color="orange" loadDelay={delay()} />
-			</div>
-		</section>
-
-		<section class="flex flex-col gap-3">
-			<h2 class="text-sm font-semibold uppercase tracking-wider text-c-neutral-4 dark:text-c-neutral-5">Libraries</h2>
-			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-				<StatisticWidget label="Books" number={statistics.overview?.books ?? 0} icon={IconBook} color="orange" loadDelay={delay()} />
-				<StatisticWidget label="Albums" number={statistics.overview?.albums ?? 0} icon={IconMusic} color="purple" loadDelay={delay()} />
-				<StatisticWidget label="Movies" number={statistics.overview?.movies ?? 0} icon={IconClapperboard} color="red" loadDelay={delay()} />
-				<StatisticWidget label="Recipes" number={statistics.overview?.recipes ?? 0} icon={IconCookingPot} color="teal" loadDelay={delay()} />
-				<StatisticWidget label="Links" number={statistics.overview?.links ?? 0} icon={IconLink} color="blue" loadDelay={delay()} />
-				<StatisticWidget label="Quotes" number={statistics.overview?.quotes ?? 0} icon={IconQuote} color="yellow" loadDelay={delay()} />
-				<StatisticWidget label="Games" number={statistics.overview?.library_games ?? 0} icon={IconGamepad2} color="green" loadDelay={delay()} />
-			</div>
-		</section>
-
-		<section class="flex flex-col gap-3">
-			<h2 class="text-sm font-semibold uppercase tracking-wider text-c-neutral-4 dark:text-c-neutral-5">Contacts</h2>
-			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-				<StatisticWidget label="Address Books" number={statistics.overview?.address_books ?? 0} icon={IconBookUser} color="yellow" loadDelay={delay()} />
-				<StatisticWidget label="Contacts" number={statistics.overview?.contacts ?? 0} icon={IconUsers} color="blue" loadDelay={delay()} />
-			</div>
-		</section>
-
-		<section class="flex flex-col gap-3">
-			<h2 class="text-sm font-semibold uppercase tracking-wider text-c-neutral-4 dark:text-c-neutral-5">Check-in</h2>
-			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-				<StatisticWidget label="Entries" number={statistics.overview?.check_in_entries ?? 0} icon={IconMapPin} color="red" loadDelay={delay()} />
-			</div>
-		</section>
-
-		<section class="flex flex-col gap-3">
-			<h2 class="text-sm font-semibold uppercase tracking-wider text-c-neutral-4 dark:text-c-neutral-5">Finances</h2>
-			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-				<StatisticWidget label="Income Entries" number={statistics.overview?.income_entries ?? 0} icon={IconTrendingUp} color="green" loadDelay={delay()} />
-				<StatisticWidget label="Wealth Entries" number={statistics.overview?.wealth_entries ?? 0} icon={IconLandmark} color="teal" loadDelay={delay()} />
-			</div>
-		</section>
-
-		<section class="flex flex-col gap-3">
-			<h2 class="text-sm font-semibold uppercase tracking-wider text-c-neutral-4 dark:text-c-neutral-5">Time Tracking</h2>
-			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-				<StatisticWidget label="Entries" number={statistics.overview?.time_tracking_entries ?? 0} icon={IconClock} color="orange" loadDelay={delay()} />
-				<StatisticWidget label="Categories" number={statistics.overview?.time_tracking_categories ?? 0} icon={IconLayers} color="teal" loadDelay={delay()} />
-				<StatisticWidget label="Projects" number={statistics.overview?.time_tracking_projects ?? 0} icon={IconFolderKanban} color="blue" loadDelay={delay()} />
-			</div>
-		</section>
-
-		<section class="flex flex-col gap-3">
-			<h2 class="text-sm font-semibold uppercase tracking-wider text-c-neutral-4 dark:text-c-neutral-5">Feeds</h2>
-			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-				<StatisticWidget label="Subscribed Feeds" number={statistics.overview?.feed_subscriptions ?? 0} icon={IconRss} color="orange" loadDelay={delay()} />
-			</div>
-		</section>
-
-		<section class="flex flex-col gap-3">
-			<h2 class="text-sm font-semibold uppercase tracking-wider text-c-neutral-4 dark:text-c-neutral-5">Other</h2>
-			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-				<StatisticWidget label="Tags" number={statistics.overview?.tags ?? 0} icon={IconTag} color="purple" loadDelay={delay()} />
-			</div>
-		</section>
+		{#each SECTIONS as section (section.title)}
+			<section class="flex flex-col gap-3">
+				<h2 class="text-sm font-semibold uppercase tracking-wider text-c-neutral-4 dark:text-c-neutral-5">{ts.get.admin[section.title]}</h2>
+				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+					{#each section.statistics as statistic (statistic.field)}
+						<StatisticWidget
+							label={ts.get.admin[statistic.label]}
+							number={statistics.overview?.[statistic.field] ?? 0}
+							icon={statistic.icon}
+							color={statistic.color}
+							loadDelay={loadDelay(statistic)}
+						/>
+					{/each}
+				</div>
+			</section>
+		{/each}
 	{/if}
 </div>

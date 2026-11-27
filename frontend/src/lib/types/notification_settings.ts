@@ -35,6 +35,10 @@ export interface NotificationSettings {
 	movie_release_email: boolean;
 	movie_release_push: boolean;
 	movie_release_telegram: boolean;
+	alert_ui: boolean;
+	alert_email: boolean;
+	alert_push: boolean;
+	alert_telegram: boolean;
 }
 
 export type NotificationType =
@@ -46,5 +50,6 @@ export type NotificationType =
     | 'calendar_share'
     | 'dev_request_comment'
     | 'export_ready'
-    | 'movie_release';
+    | 'movie_release'
+    | 'alert';
 export type NotificationChannel = 'ui' | 'email' | 'push' | 'telegram';

@@ -1,15 +1,18 @@
 import { describe, it, expect, vi } from 'vitest';
+import { screen } from '@testing-library/svelte';
 import { renderWithContext } from './helpers/context';
 import JournalArchivePicker from '$lib/components/notes/journal/JournalArchivePicker.svelte';
+import type { WeekStart } from '$lib/types/auth';
 
 // 1 March 2026 is a Sunday, so the week start decides whether it opens the first row.
-const props = { selectedDate: new Date(2026, 2, 15), markedDates: [], onSelect: vi.fn() };
-
-function renderPicker(weekStart: 'monday' | 'sunday') {
-	const { container } = renderWithContext(JournalArchivePicker, props, {
-		stores: { auth: { user: { settings: { week_start: weekStart } } } }
+function renderPicker(weekStart: WeekStart) {
+	renderWithContext(JournalArchivePicker, {
+		selectedDate: new Date(2026, 2, 15),
+		markedDates: [],
+		weekStart,
+		onSelect: vi.fn()
 	});
-	const cells = Array.from(container.querySelector('.grid-cols-7')!.children);
+	const cells = Array.from(screen.getByRole('button', { name: '1' }).parentElement!.children);
 
 	return {
 		weekdays: cells.slice(0, 7).map((cell) => cell.textContent?.trim()),

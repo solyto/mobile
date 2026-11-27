@@ -11,10 +11,15 @@
 
 	const ts = getTranslation();
 
-	const getHardcoverUrl = (): string =>
-		encodeURI('https://hardcover.app/search?q=' + author + ' ' + title);
+	let href = $derived(link ? safeHref(link) : searchUrl());
 
-	let href = $derived(link ? safeHref(link) : getHardcoverUrl());
+	function searchUrl(): string {
+		return encodeURI('https://hardcover.app/search?q=' + author + ' ' + title);
+	}
+
+	function label(): string {
+		return (link ? ts.get.libraries.show_on : ts.get.libraries.search_on).replace('%s', 'Hardcover');
+	}
 </script>
 
 {#if href}
@@ -25,8 +30,6 @@
 		class="group mt-2 mb-1 flex cursor-pointer items-center gap-3 rounded-lg border-1 border-c-neutral p-2 text-sm font-bold shadow-sm transition-all hover:text-c-btn dark:border-s-dark-3"
 	>
 		<div class="group-hover:animate-pulse"><IconHardcover /></div>
-		{link
-			? ts.get.libraries.show_on.replace('%s', 'Hardcover')
-			: ts.get.libraries.search_on.replace('%s', 'Hardcover')}
+		{label()}
 	</a>
 {/if}

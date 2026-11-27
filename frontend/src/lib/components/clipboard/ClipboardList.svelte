@@ -1,12 +1,14 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { getClipboard } from '$lib/state/Clipboard.svelte';
-	import IconClipboardCopy from '@lucide/svelte/icons/clipboard-copy';
-	import IconTrash from '@lucide/svelte/icons/trash-2';
-	import IconDownload from '@lucide/svelte/icons/download';
+	import IconClipboardCopy from '$lib/icons/lucide/clipboard-copy.svelte';
+	import IconTrash from '$lib/icons/lucide/trash.svelte';
+	import IconDownload from '$lib/icons/lucide/download.svelte';
 	import { formatDate } from '$lib/helpers/DateHelper';
-	import { getFileExtension, truncate } from '$lib/helpers/FormatHelper';
+	import { truncate } from '$lib/helpers/FormatHelper';
 	import { downloadBlob } from '$lib/helpers/DownloadHelper';
+	import { clipboardImageFileName } from '$lib/helpers/ClipboardHelper';
+	import { SaveAction } from '$lib/helpers/SaveAction.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
@@ -19,6 +21,7 @@
 	const ts = getTranslation();
 	const notifications = getUiNotifications();
 	const loadingIndicator = getLoadingIndicator();
+	const deleting = new SaveAction(() => ts.get.clipboard.delete_error);
 
 	const MAX_TEXT_PREVIEW_LENGTH = 200;
 	const ACTION_BUTTON = 'flex size-8 cursor-pointer items-center justify-center rounded-full bg-c-action text-c-action-icon drop-shadow-md transition-all hover:drop-shadow-xl';
@@ -53,7 +56,7 @@
 				canvas.toBlob((result) => {
 					URL.revokeObjectURL(img.src);
 					if (result) resolve(result);
-				else reject();
+					else reject();
 				}, 'image/png');
 			};
 			img.onerror = () => {
@@ -81,38 +84,37 @@
 			notifications.error(ts.get.clipboard.file_download_error);
 			return;
 		}
-		downloadBlob(blob, entry.type === 'image' ? imageFileName(entry, blob) : (entry.file_name ?? 'file'));
+		downloadBlob(blob, downloadFileName(entry, blob));
 	}
 
-	// Images have no original name; the stored path keeps the original format's extension.
-	function imageFileName(entry: ClipboardEntry, blob: Blob): string {
-		const extension = getFileExtension(entry.file_path ?? '') || blob.type.split('/')[1]?.replace('jpeg', 'jpg') || 'png';
-		return `clipboard-${entry.id}.${extension}`;
+	function downloadFileName(entry: ClipboardEntry, blob: Blob): string {
+		if (entry.type === 'image') return clipboardImageFileName(entry, blob.type);
+
+		return entry.file_name ?? ts.get.clipboard.download_fallback_name;
 	}
 
 	async function onDelete(entry: ClipboardEntry): Promise<void> {
-		loadingIndicator.start();
-		const res = await clipboard.delete(entry);
-		if (!res) notifications.error(ts.get.clipboard.delete_error);
-		loadingIndicator.stop();
+		await deleting.run(() => clipboard.delete(entry));
 	}
 </script>
 
 {#snippet actionButtons(entry: ClipboardEntry)}
 	<div class="flex gap-2">
 		{#if entry.type !== 'file'}
-			<button class={ACTION_BUTTON} onclick={() => onCopy(entry)}>
+			<button class={ACTION_BUTTON} onclick={() => onCopy(entry)} title={ts.get.clipboard.copy} aria-label={ts.get.clipboard.copy}>
 				<IconClipboardCopy class="size-4" />
 			</button>
 		{/if}
 		{#if entry.type !== 'text'}
-			<button class={ACTION_BUTTON} onclick={() => onDownload(entry)}>
+			<button class={ACTION_BUTTON} onclick={() => onDownload(entry)} title={ts.get.clipboard.download} aria-label={ts.get.clipboard.download}>
 				<IconDownload class="size-4" />
 			</button>
 		{/if}
 		<button
 			class="flex size-8 cursor-pointer items-center justify-center rounded-full bg-c-danger text-white drop-shadow-md transition-all hover:drop-shadow-xl"
 			onclick={() => onDelete(entry)}
+			title={ts.get.clipboard.delete_entry}
+			aria-label={ts.get.clipboard.delete_entry}
 		>
 			<IconTrash class="size-4" />
 		</button>

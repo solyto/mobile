@@ -2,11 +2,12 @@ import type {
 	CreateNoteCategoryRequest,
 	CreateNoteRequest,
 	Note,
+	NoteBacklink,
 	NoteCategory,
 	UpdateNoteCategoryRequest,
 	UpdateNoteRequest
 } from '$lib/types/note';
-import { setContext, getContext, tick } from 'svelte';
+import { setContext, getContext, tick, flushSync } from 'svelte';
 import { getAuth, type Auth } from '$lib/state/Auth.svelte';
 import { getTranslation, type Translation } from '$lib/state/Translation.svelte';
 import { getUiNotifications, type UiNotifications } from '$lib/state/UiNotifications.svelte';
@@ -17,16 +18,24 @@ import { resolve } from '$app/paths';
 import ApiService from '$lib/services/ApiService';
 import JournalService from '$lib/services/JournalService';
 import NoteSearchService from '$lib/services/NoteSearchService';
+import NoteLinkService from '$lib/services/NoteLinkService';
 import LocalStorageService from '$lib/services/LocalStorageService';
 import { apiRoutes } from '$lib/config/apiRoutes';
 
 export class NotesSvelte {
 	static readonly LS_COLLAPSED_CATEGORIES_KEY: string = 'notes.collapsedCategories';
 	static readonly SEARCH_RESULT_LIMIT: number = 10;
+	static readonly LAST_UPDATED_LIMIT: number = 10;
+	static readonly LINK_PICKER_LIMIT: number = 10;
+	static readonly LINK_SUGGESTION_LIMIT: number = 8;
 
 	loaded = $state<boolean>(false);
 	notes = $state<Note[]>([]);
+	hiddenNoteIds = $state<string[]>([]);
+	backlinks = $state<NoteBacklink[]>([]);
 	lastUpdatedNotes = $state<Note[]>([]);
+	recentNotes = $state<Note[]>([]);
+	recentNotesLoaded = $state<boolean>(false);
 	favoriteNotes = $state<Note[]>([]);
 	categories = $state<NoteCategory[]>([]);
 	journalCategory = $state<NoteCategory | null>(null);
@@ -57,6 +66,8 @@ export class NotesSvelte {
 	localStorage: LocalStorageService;
 	journalService = new JournalService();
 	searchService = new NoteSearchService();
+	linkService = new NoteLinkService();
+	private backlinksNoteId: string | null = null;
 
 	constructor(
 		auth: Auth = getAuth(),
@@ -73,6 +84,10 @@ export class NotesSvelte {
 		this.loadCollapsedCategories();
 	}
 
+	get journalEnabled(): boolean {
+		return this.auth.user?.settings?.journal_enabled ?? false;
+	}
+
 	async load(): Promise<void> {
 		const [res, hiddenRes] = await Promise.all([
 			this.apiService.list(apiRoutes.notes.list),
@@ -81,10 +96,18 @@ export class NotesSvelte {
 		if (res && hiddenRes) {
 			this.loaded = true;
 			this.notes = [...(res.data as Note[]), ...(hiddenRes.data as Note[])];
+			this.hiddenNoteIds = (hiddenRes.data as Note[]).map((n) => n.id);
 			this.lastUpdatedNotes = this.getLastUpdatedNotes();
 			this.favoriteNotes = this.getFavorites();
-			this.checkUrlForActiveNote();
+			this.syncActiveNoteWithUrl();
+			await this.reloadShownBacklinks();
 		}
+	}
+
+	async loadRecent(): Promise<void> {
+		const res = await this.apiService.list(apiRoutes.notes.recent);
+		if (res) this.recentNotes = res.data as Note[];
+		this.recentNotesLoaded = true;
 	}
 
 	loadCollapsedCategories(): void {
@@ -99,10 +122,32 @@ export class NotesSvelte {
 		);
 	}
 
-	checkUrlForActiveNote(): void {
+	syncActiveNoteWithUrl(): void {
+		if (page.route.id === urls.journalDate) {
+			this.openJournalEntryFromUrl();
+			return;
+		}
+
 		if (page.params.id) {
 			this.selectNote(page.params.id);
+		} else {
+			this.activeNote = null;
 		}
+	}
+
+	private openJournalEntryFromUrl(): void {
+		const key = page.params.date ?? '';
+		const day = this.journalService.parseEntryTitle(key);
+		if (!this.loaded || day === null || !this.journalService.isReachable(day)) return;
+		if (this.activeNote !== null && this.isJournalNote(this.activeNote) && this.activeNote.title === key) return;
+
+		void this.openJournalEntry(day);
+	}
+
+	async loadBacklinks(noteId: string): Promise<void> {
+		this.backlinks = [];
+		this.backlinksNoteId = noteId;
+		await this.fetchBacklinks(noteId);
 	}
 
 	async loadCategories(): Promise<void> {
@@ -119,6 +164,7 @@ export class NotesSvelte {
 			this.categories = all.filter((c) => !c.is_system);
 			this.lastUpdatedNotes = this.getLastUpdatedNotes();
 			this.favoriteNotes = this.getFavorites();
+			if (page.route.id === urls.journalDate) this.openJournalEntryFromUrl();
 		}
 	}
 
@@ -186,26 +232,37 @@ export class NotesSvelte {
 		return this.notes.filter((n) => !this.isJournalNote(n));
 	}
 
+	searchLinkableNotes(term: string, limit: number): Note[] {
+		const linkable = this.getVisibleNotes().filter((n) => {
+			return n.id !== this.activeNote?.id && !this.hiddenNoteIds.includes(n.id);
+		});
+
+		return this.linkService.searchByTitle(linkable, term, limit);
+	}
+
+	findNote(noteId: string): Note | null {
+		return this.notes.find((n) => n.id === noteId) ?? null;
+	}
+
 	getCategoryTitle(categoryId: number): string {
-		for (const cat of this.categories) {
-			if (cat.id === categoryId) return cat.title;
-			if (cat.children) {
-				for (const child of cat.children) {
-					if (child.id === categoryId) return child.title;
-				}
-			}
+		return this.findCategory(this.categories, categoryId)?.title ?? '-';
+	}
+
+	private findCategory(categories: NoteCategory[], categoryId: number): NoteCategory | null {
+		for (const cat of categories) {
+			if (cat.id === categoryId) return cat;
+
+			const child = this.findCategory(cat.children, categoryId);
+			if (child !== null) return child;
 		}
 
-		return '-';
+		return null;
 	}
 
 	getLastUpdatedNotes(): Note[] {
 		return this.getVisibleNotes()
-			.sort(
-				(a, b) =>
-					new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
-			)
-			.slice(0, 10);
+			.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+			.slice(0, NotesSvelte.LAST_UPDATED_LIMIT);
 	}
 
 	getFavorites(): Note[] {
@@ -219,8 +276,10 @@ export class NotesSvelte {
 		if (this.activeNote !== null && localContent !== null) this.activeNote.content = localContent;
 	}
 
+	// Mounts NoteSearch synchronously so it focuses inside the tap; iOS only opens the keyboard then.
 	openSearch(): void {
 		this.searchVisible = true;
+		flushSync();
 	}
 
 	closeSearch(): void {
@@ -244,18 +303,20 @@ export class NotesSvelte {
 		this.searchIndex = Math.min(Math.max(this.searchIndex + delta, 0), last);
 	}
 
+	async openNote(noteId: string): Promise<void> {
+		await goto(resolve(urls.note, { id: noteId }));
+	}
+
 	async openSearchResult(note: Note | undefined = this.searchResults[this.searchIndex]): Promise<void> {
 		if (note === undefined) return;
 
-		this.selectNote(note.id);
 		this.closeSearch();
 		await goto(resolve(urls.note, { id: note.id }));
 	}
 
 	async openModal(type: 'note' | 'category', edit: boolean = false): Promise<void> {
 		if (type === 'category' && edit && this.rightClickId) {
-			this.inputValue =
-				this.categories.filter((c) => c.id === this.rightClickId)[0]?.title ?? '';
+			this.inputValue = this.categories.find((c) => c.id === this.rightClickId)?.title ?? '';
 		} else {
 			this.inputValue = '';
 		}
@@ -337,7 +398,6 @@ export class NotesSvelte {
 		this.modalOpen = false;
 
 		await this.load();
-		this.activeNote = this.notes.find((n) => n.id === note.id) ?? note;
 		await goto(resolve(urls.note, { id: note.id }));
 
 		return note;
@@ -388,32 +448,9 @@ export class NotesSvelte {
 	async saveContent(): Promise<boolean> {
 		if (this.activeNote === null) return false;
 
-		// A journal draft is persisted only once it has content. Creating takes
-		// two calls because the create contract does not accept content.
 		if (this.isJournalDraft(this.activeNote)) {
 			if (!this.journalService.hasContent(this.activeNote.content)) return true;
-
-			const createRes = await this.apiService.create(apiRoutes.notes.create, {
-				title: this.activeNote.title,
-				category_id: this.activeNote.category_id
-			});
-			if (!createRes) {
-				this.notifications.error(this.ts.get.notes.journal_create_error);
-				return false;
-			}
-
-			const created = createRes.data as Note;
-			const updateRes = await this.apiService.update(apiRoutes.notes.update, created.id, {
-				content: this.activeNote.content
-			});
-			if (!updateRes) {
-				this.notifications.error(this.ts.get.notes.save_error);
-				return false;
-			}
-
-			await this.load();
-			this.activeNote = this.notes.find((n) => n.id === created.id) ?? created;
-			return true;
+			return this.createJournalEntry(this.activeNote);
 		}
 
 		const request: UpdateNoteRequest = { content: this.activeNote.content };
@@ -498,15 +535,11 @@ export class NotesSvelte {
 		return ok;
 	}
 
-	async deleteCategory(): Promise<boolean> {
-		if (this.rightClickType === 'note' || typeof this.rightClickId !== 'number') {
-			return false;
-		}
-
+	async deleteCategory(categoryId: number): Promise<boolean> {
 		const activeId = this.activeNote?.id;
 		const activeWasSaved = this.notes.some((n) => n.id === activeId);
 
-		const ok = await this.apiService.delete(apiRoutes.notes.deleteCategory, this.rightClickId);
+		const ok = await this.apiService.delete(apiRoutes.notes.deleteCategory, categoryId);
 		if (ok) {
 			// The API also deletes every note in the folder and its subfolders.
 			await Promise.all([this.loadCategories(), this.load()]);
@@ -529,6 +562,47 @@ export class NotesSvelte {
 		}
 
 		return false;
+	}
+
+	// Deleting, hiding or renaming a linking note elsewhere changes the list shown below the active note.
+	private async reloadShownBacklinks(): Promise<void> {
+		const noteId = this.backlinksNoteId;
+		if (noteId === null || this.backlinks.length === 0 || this.activeNote?.id !== noteId) return;
+
+		await this.fetchBacklinks(noteId);
+	}
+
+	private async fetchBacklinks(noteId: string): Promise<void> {
+		const res = await this.apiService.list(apiRoutes.notes.backlinks.replace('%s', noteId));
+		// A slower response for a note the user already left must not overwrite the current list.
+		if (!res || this.backlinksNoteId !== noteId) return;
+
+		this.backlinks = res.data as NoteBacklink[];
+	}
+
+	// The create contract does not accept content, so the entry is created first and then filled.
+	private async createJournalEntry(draft: Note): Promise<boolean> {
+		const createRes = await this.apiService.create(apiRoutes.notes.create, {
+			title: draft.title,
+			category_id: draft.category_id
+		});
+		if (!createRes) {
+			this.notifications.error(this.ts.get.notes.journal_create_error);
+			return false;
+		}
+
+		const created = createRes.data as Note;
+		const updateRes = await this.apiService.update(apiRoutes.notes.update, created.id, {
+			content: draft.content
+		});
+		if (!updateRes) {
+			this.notifications.error(this.ts.get.notes.save_error);
+			return false;
+		}
+
+		await this.load();
+		this.activeNote = this.notes.find((n) => n.id === created.id) ?? created;
+		return true;
 	}
 }
 

@@ -1,3 +1,4 @@
+import type { Component } from 'svelte';
 import type { MusicLibrary } from '$lib/state/MusicLibrary.svelte';
 import type { BookLibrary } from '$lib/state/BookLibrary.svelte';
 import type { LinkLibrary } from '$lib/state/LinkLibrary.svelte';
@@ -27,7 +28,11 @@ export type Library =
 export type GenreLibrary = MusicLibrary | BookLibrary | GameLibrary | MovieLibrary;
 export type RatingLibrary = GenreLibrary | RecipeLibrary;
 export type FilterLibrary = RatingLibrary | PlantLibrary;
+export type ViewLibrary = MusicLibrary | BookLibrary | GameLibrary | MovieLibrary | RecipeLibrary | PlantLibrary;
 export type LibraryEntry = Music | Book | Quote | Recipe | Movie | Game | Plant;
+export interface DetailLibrary {
+	openDetailModal(entry: LibraryEntry): void;
+}
 export type LibraryRecommendationType = 'favorite' | 'unrated' | 'random' | 'new';
 
 export interface LibraryRecommendation {
@@ -53,4 +58,19 @@ export interface LibraryConfig {
 	hasShelf: boolean;
 	entriesAreLinks: boolean;
 	hasSmallForm: boolean;
+}
+
+export interface NormalizedSearchResult {
+	id: string | number;
+	title: string;
+	subtitle?: string;
+	image?: string | null;
+	data?: unknown;
+}
+
+export interface SearchSource {
+	label: string;
+	icon: string | Component;
+	search: (query: string) => Promise<NormalizedSearchResult[] | null>;
+	onSelect: (result: NormalizedSearchResult) => Promise<void>;
 }

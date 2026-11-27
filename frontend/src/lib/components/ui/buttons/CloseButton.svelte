@@ -1,5 +1,5 @@
 <script lang="ts">
-	import IconX from '@lucide/svelte/icons/x';
+	import IconX from '$lib/icons/lucide/x.svelte';
 
 	let { onClick, inModal = true }: {
 		onClick: () => void | Promise<void>;

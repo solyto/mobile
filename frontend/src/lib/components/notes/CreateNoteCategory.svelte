@@ -1,5 +1,5 @@
 <script lang="ts">
-	import IconFolderPlus from '@lucide/svelte/icons/folder-plus';
+	import IconFolderPlus from '$lib/icons/lucide/folder-plus.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import TextInput from '$lib/components/forms/TextInput.svelte';
 	import { getKeyManager } from '$lib/state/KeyManager.svelte';

@@ -1,109 +1,84 @@
 <script lang="ts">
 	import { fade } from 'svelte/transition';
-	import { getAuth } from '$lib/state/Auth.svelte';
 	import { onMount } from 'svelte';
-	import { apiRoutes } from '$lib/config/apiRoutes';
 	import { getTranslation } from '$lib/state/Translation.svelte';
+	import { getTelegramBot } from '$lib/state/TelegramBot.svelte';
+	import { getNotificationPreferences } from '$lib/state/NotificationPreferences.svelte';
+	import { getPushNotifications } from '$lib/state/PushNotifications.svelte';
 	import Checkbox from '$lib/components/forms/Checkbox.svelte';
 	import type {
 		NotificationSettings,
 		NotificationType,
 		NotificationChannel
 	} from '$lib/types/notification_settings';
-	import type { Connection } from '$lib/types/telegram_bot_connection';
 
 	let { showTelegram }: { showTelegram: boolean } = $props();
 
-	const auth = getAuth();
-	const apiService = auth.apiService;
+	const telegramBot = getTelegramBot();
+	const preferences = getNotificationPreferences();
+	const pushNotifications = getPushNotifications();
 	const ts = getTranslation();
 
-	let settings = $state<NotificationSettings | null>(null);
-	let telegramConnection = $state<Connection | null>(null);
 	let pushEnabled = $state<boolean>(false);
 	let loaded = $state<boolean>(false);
 	let updating = $state<boolean>(false);
 
-	const notificationTypes: { key: NotificationType; label: string }[] = [
-		{ key: 'book_release', label: 'New Book Releases' },
-		{ key: 'music_release', label: 'New Music Releases' },
-		{ key: 'movie_release', label: 'New Screen Release' },
-		{ key: 'friend_request', label: 'New Friend Request' },
-		{ key: 'daily_check_in_reminder', label: 'Reminder for daily check-in' },
-		{ key: 'daily_day_reminder', label: 'Reminder for the upcoming day' },
-		{ key: 'calendar_share', label: 'Calendar Shares' },
-		{ key: 'dev_request_comment', label: 'Dev Request Comments' },
-		{ key: 'export_ready', label: 'Export Ready' }
+	const notificationTypes: NotificationType[] = [
+		'book_release',
+		'music_release',
+		'movie_release',
+		'friend_request',
+		'daily_check_in_reminder',
+		'alert',
+		'daily_day_reminder',
+		'calendar_share',
+		'dev_request_comment',
+		'export_ready'
 	];
 
-	const channels: { key: NotificationChannel; label: string }[] = [
-		{ key: 'ui', label: 'UI' },
-		{ key: 'email', label: 'Email' },
-		{ key: 'push', label: 'Push' },
-		{ key: 'telegram', label: 'Bot' }
-	];
+	const channels: NotificationChannel[] = ['ui', 'email', 'push', 'telegram'];
 
 	onMount(async () => {
-		await Promise.all([loadSettings(), loadTelegramConnection(), checkPushStatus()]);
+		await Promise.all([preferences.load(), telegramBot.load(), checkPushStatus()]);
 		loaded = true;
 	});
 
-	async function loadSettings() {
-		const res = await apiService.get(apiRoutes.notifications.settings.get, null);
-		if (res?.data) {
-			settings = res.data as NotificationSettings;
-		}
-	}
-
-	async function loadTelegramConnection() {
-		const res = await apiService.get(apiRoutes.telegram.getRequest, null);
-		if (res) {
-			telegramConnection = res.data as Connection;
-		}
-	}
-
 	async function checkPushStatus() {
 		try {
-			if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-				pushEnabled = false;
-				return;
-			}
-			if (Notification.permission !== 'granted') {
-				pushEnabled = false;
-				return;
-			}
-			const reg = await navigator.serviceWorker.getRegistration();
-			if (!reg) {
-				pushEnabled = false;
-				return;
-			}
-			const sub = await reg.pushManager.getSubscription();
-			pushEnabled = sub !== null;
+			pushEnabled = await hasPushSubscription();
 		} catch {
 			pushEnabled = false;
 		}
 	}
 
-	function visibleChannels(): { key: NotificationChannel; label: string }[] {
-		return showTelegram ? channels : channels.filter((channel) => channel.key !== 'telegram');
+	async function hasPushSubscription(): Promise<boolean> {
+		if (pushNotifications.isNative()) return (await pushNotifications.nativeStatus()).enabled;
+		if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
+		if (Notification.permission !== 'granted') return false;
+
+		const reg = await navigator.serviceWorker.getRegistration();
+		if (!reg) return false;
+
+		return (await reg.pushManager.getSubscription()) !== null;
 	}
 
-	function getSettingKey(
-		type: NotificationType,
-		channel: NotificationChannel
-	): keyof NotificationSettings {
+	function visibleChannels(): NotificationChannel[] {
+		return showTelegram ? channels : channels.filter((channel) => channel !== 'telegram');
+	}
+
+	function getSettingKey(type: NotificationType, channel: NotificationChannel): keyof NotificationSettings {
 		return `${type}_${channel}` as keyof NotificationSettings;
 	}
 
 	function isChecked(type: NotificationType, channel: NotificationChannel): boolean {
-		if (!settings) return false;
+		if (!preferences.settings) return false;
 		const key = getSettingKey(type, channel);
-		return settings[key] ?? false;
+		return preferences.settings[key] ?? false;
 	}
 
 	function isChannelAvailable(channel: NotificationChannel): boolean {
 		if (channel === 'telegram') {
-			return telegramConnection?.is_confirmed ?? false;
+			return telegramBot.isConnected;
 		}
 		if (channel === 'push') {
 			return pushEnabled;
@@ -112,31 +87,32 @@
 	}
 
 	async function toggleSetting(type: NotificationType, channel: NotificationChannel) {
-		if (!settings || updating) return;
+		if (!preferences.settings || updating) return;
 
 		const key = getSettingKey(type, channel);
-		const newValue = !settings[key];
 
 		updating = true;
-		const res = await apiService.put(apiRoutes.notifications.settings.update, {
-			[key]: newValue
-		});
-
-		if (res) {
-			settings = { ...settings, [key]: newValue };
-		}
+		await preferences.update(key, !preferences.settings[key]);
 		updating = false;
+	}
+
+	function typeLabel(type: NotificationType): string {
+		return ts.get.notifications[`type_${type}`];
+	}
+
+	function channelLabel(channel: NotificationChannel): string {
+		return ts.get.notifications[`channel_${channel}`];
 	}
 
 	function getChannelTooltip(channel: NotificationChannel): string {
 		if (channel === 'telegram' && !isChannelAvailable('telegram')) {
-			return 'Set up Telegram Bot in Integrations first';
+			return ts.get.notifications.channel_telegram_unavailable;
 		}
 		if (channel === 'push' && !isChannelAvailable('push')) {
-			return 'Enable Push Notifications above first';
+			return ts.get.notifications.channel_push_unavailable;
 		}
 		if (channel === 'email') {
-			return 'Email notifications coming soon';
+			return ts.get.notifications.channel_email_coming_soon;
 		}
 		return '';
 	}
@@ -148,33 +124,33 @@
 			<thead>
 				<tr class="border-b border-c-neutral-2 dark:border-s-dark-2">
 					<th class="px-1 py-2 text-left font-semibold"></th>
-					{#each visibleChannels() as channel (channel.key)}
+					{#each visibleChannels() as channel (channel)}
 						<th class="min-w-[60px] px-2 py-2 text-center font-semibold">
 							<span
-								class:opacity-40={!isChannelAvailable(channel.key)}
-								title={getChannelTooltip(channel.key)}
+								class:opacity-40={!isChannelAvailable(channel)}
+								title={getChannelTooltip(channel)}
 							>
-								{channel.label}
+								{channelLabel(channel)}
 							</span>
 						</th>
 					{/each}
 				</tr>
 			</thead>
 			<tbody>
-				{#each notificationTypes as type (type.key)}
+				{#each notificationTypes as type (type)}
 					<tr class="border-b border-c-neutral-1 last:border-0 dark:border-s-dark-3">
-						<td class="px-1 py-3 text-left">{type.label}</td>
-						{#each visibleChannels() as channel (channel.key)}
+						<td class="px-1 py-3 text-left">{typeLabel(type)}</td>
+						{#each visibleChannels() as channel (channel)}
 							<td class="px-2 py-3 text-center">
-								{#if isChannelAvailable(channel.key)}
+								{#if isChannelAvailable(channel)}
 									<Checkbox
-										isChecked={isChecked(type.key, channel.key)}
-										onchange={() => toggleSetting(type.key, channel.key)}
+										isChecked={isChecked(type, channel)}
+										onchange={() => toggleSetting(type, channel)}
 									/>
 								{:else}
 									<div
 										class="inline-flex cursor-not-allowed items-center opacity-30"
-										title={getChannelTooltip(channel.key)}
+										title={getChannelTooltip(channel)}
 									>
 										<div
 											class="dark:bg-s-dark-4 h-5 w-5 rounded border border-c-neutral-3 bg-c-neutral-1 dark:border-s-dark-2"
@@ -196,12 +172,12 @@
 
 		{#if !isChannelAvailable('push')}
 			<p class="mt-4 text-xs text-c-neutral-5 dark:text-c-neutral-4">
-				Enable Push Notifications above to receive push notifications.
+				{ts.get.settings.push_notifications_hint}
 			</p>
 		{/if}
 	</div>
 {:else}
 	<div class="flex h-40 items-center justify-center">
-		<div class="animate-pulse text-c-neutral-4">Loading...</div>
+		<div class="animate-pulse text-c-neutral-4">{ts.get.layout.loading}</div>
 	</div>
 {/if}

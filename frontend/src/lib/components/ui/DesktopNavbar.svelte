@@ -23,7 +23,7 @@
 		class="nav-desktop gradient-down flex h-full w-16 flex-col rounded-md p-1 flat-nav:rounded-none bottom-nav:h-16 bottom-nav:w-full bottom-nav:flex-row text-c-neutral-8 drop-shadow-xl dark:text-c-neutral-2"
 	>
 		<div class="relative mb-auto flex flex-col items-center bottom-nav:mb-0 bottom-nav:h-full">
-			<img src={logo} class="logo bottom-nav:h-full bottom-nav:w-auto" alt="logo" />
+			<img src={logo} class="logo bottom-nav:h-full bottom-nav:w-auto" alt="solyto" />
 		</div>
 
 		<div class="flex flex-1 flex-col items-center justify-center bottom-nav:flex-row bottom-nav:[&>*]:w-14">

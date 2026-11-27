@@ -29,11 +29,9 @@
 {:else if library.view === 'shelf'}
 	<ShelfView library={library as MusicLibrary | BookLibrary} />
 {:else if library.view === 'spine'}
-	<SpineView {library} />
+	<SpineView library={library as MusicLibrary | BookLibrary} />
 {:else if library.view === 'cards'}
 	<CardsView {library} />
 {:else}
 	<ListView {library} />
 {/if}
-
-<!-- h-12 w-12 aspect-square max-w-48 -->

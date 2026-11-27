@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Todo, TodoEffort } from '$lib/types/todo';
-	import IconClock from '@lucide/svelte/icons/clock';
+	import IconClock from '$lib/icons/lucide/clock.svelte';
 	import { getTodos } from '$lib/state/Todos.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import QuickSelectOverlay from '$lib/components/ui/QuickSelectOverlay.svelte';
@@ -13,6 +13,8 @@
 		compact?: boolean;
 	} = $props();
 
+	const EFFORTS: TodoEffort[] = ['low', 'medium', 'high'];
+
 	const todos = getTodos();
 	const loadingIndicator = getLoadingIndicator();
 
@@ -23,12 +25,22 @@
 		effortMenuVisible = !effortMenuVisible;
 	}
 
+	function closeEffortMenu(): void {
+		effortMenuVisible = false;
+	}
+
 	async function handleEffortChange(todo: Todo, effort: TodoEffort): Promise<void> {
 		loadingIndicator.start();
-		await todos.changeEffort(todo, effort);
+		try {
+			await todos.changeEffort(todo, effort);
+			toggleEffortMenu();
+		} finally {
+			loadingIndicator.stop();
+		}
+	}
 
-		toggleEffortMenu();
-		loadingIndicator.stop();
+	function fillsRow(): boolean {
+		return todos.isRowView && !compact;
 	}
 
 	function getColor(effort: TodoEffort): string {
@@ -49,32 +61,20 @@
 	class="relative flex items-center p-4"
 	class:justify-center={!left}
 	class:justify-start={left}
-	class:2xl:w-full={(todos.view === 'list' || todos.view === 'grouped') && !compact}
-	class:2xl:h-full={(todos.view === 'list' || todos.view === 'grouped') && !compact}
-	class:p-4={(todos.view === 'list' || todos.view === 'grouped') && !compact}
+	class:2xl:w-full={fillsRow()}
+	class:2xl:h-full={fillsRow()}
+	class:p-4={fillsRow()}
 >
 	{#if changeEffort}
 		<IconClock class="cursor-pointer transition-colors duration-300 {getColor(todo.effort)}" onclick={toggleEffortMenu} />
 		{#if effortMenuVisible}
-			<QuickSelectOverlay onClose={() => (effortMenuVisible = false)} {portal} target={trigger}>
-				<IconClock
-					class="cursor-pointer rounded-full hover:bg-c-neutral dark:hover:bg-s-dark-3 {getColor(
-						'low'
-					)}"
-					onclick={() => handleEffortChange(todo, 'low')}
-				/>
-				<IconClock
-					class="cursor-pointer rounded-full hover:bg-c-neutral dark:hover:bg-s-dark-3 {getColor(
-						'medium'
-					)}"
-					onclick={() => handleEffortChange(todo, 'medium')}
-				/>
-				<IconClock
-					class="cursor-pointer rounded-full hover:bg-c-neutral dark:hover:bg-s-dark-3 {getColor(
-						'high'
-					)}"
-					onclick={() => handleEffortChange(todo, 'high')}
-				/>
+			<QuickSelectOverlay onClose={closeEffortMenu} {portal} target={trigger}>
+				{#each EFFORTS as effort (effort)}
+					<IconClock
+						class="cursor-pointer rounded-full hover:bg-c-neutral dark:hover:bg-s-dark-3 {getColor(effort)}"
+						onclick={() => handleEffortChange(todo, effort)}
+					/>
+				{/each}
 			</QuickSelectOverlay>
 		{/if}
 	{:else}

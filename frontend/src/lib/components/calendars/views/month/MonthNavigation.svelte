@@ -1,6 +1,6 @@
 <script lang="ts">
-	import IconChevronDown from '@lucide/svelte/icons/chevron-down';
-	import IconChevronUp from '@lucide/svelte/icons/chevron-up';
+	import IconChevronDown from '$lib/icons/lucide/chevron-down.svelte';
+	import IconChevronUp from '$lib/icons/lucide/chevron-up.svelte';
 	import { getCalendars } from '$lib/state/Calendars.svelte';
 
 	const calendars = getCalendars();

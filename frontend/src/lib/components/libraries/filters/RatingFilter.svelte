@@ -1,5 +1,5 @@
 <script lang="ts">
-	import IconStar from '@lucide/svelte/icons/star';
+	import IconStar from '$lib/icons/lucide/star.svelte';
 	import type { RatingLibrary } from '$lib/types/library';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 

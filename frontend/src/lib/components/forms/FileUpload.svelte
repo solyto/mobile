@@ -20,20 +20,19 @@
 	/* eslint-enable no-useless-assignment */
 
 	const ts = getTranslation();
+	const uid = $props.id();
 
 	let selectedFile = $state<File | null>(null);
 	let isUploading = $state(false);
 	let isHandingOver = $state(false);
 	let uploadProgress = $state(0);
 	let uploadError = $state<string | null>(null);
-	let uploadSuccess = $state(false);
 
 	async function handleFileChange(event: Event) {
 		const inputElement = event.target as HTMLInputElement;
 		if (inputElement.files && inputElement.files.length > 0) {
 			selectedFile = inputElement.files[0];
 			uploadError = null;
-			uploadSuccess = false;
 
 			if (onfile) {
 				await handOver(inputElement, selectedFile, onfile);
@@ -48,7 +47,6 @@
 				value = base64String;
 				filename = selectedFile.name;
 
-				uploadSuccess = true;
 				uploadProgress = 100;
 			} catch (error) {
 				uploadError = error instanceof Error ? error.message : 'Failed to process file';
@@ -61,10 +59,7 @@
 	async function handOver(inputElement: HTMLInputElement, file: File, deliver: (file: File) => Promise<boolean>): Promise<void> {
 		isHandingOver = true;
 		try {
-			if (await deliver(file)) {
-				uploadSuccess = true;
-				return;
-			}
+			if (await deliver(file)) return;
 			selectedFile = null;
 			inputElement.value = '';
 		} finally {
@@ -99,52 +94,44 @@
 	}
 </script>
 
-<div class="my-2 w-full p-1">
+<div class="flex w-full flex-col gap-2">
 	{#if label}
-		<h2 class="mb-4 text-xl font-semibold">{label}</h2>
+		<span class="text-sm font-bold">{label}</span>
 	{/if}
 
-	<div>
-		<label
-			for="file-upload"
-			class="mb-2 block text-sm font-medium text-c-neutral-7 dark:text-c-neutral-5"
-		>
-			{ts.get.layout.select_file}
-		</label>
+	<div class="flex min-w-0 items-center gap-3">
 		<input
-			id="file-upload"
+			id="{uid}-file"
 			type="file"
+			class="peer sr-only"
+			aria-label={ts.get.layout.select_file}
 			{accept}
 			disabled={isHandingOver}
 			bind:this={input}
 			onchange={handleFileChange}
-			class="block w-full text-sm text-c-neutral-5
-             file:mr-4 file:rounded-md file:border-0
-             file:bg-blue-50 file:px-4
-             file:py-2 file:text-sm file:font-semibold
-             file:text-blue-700 file:transition-all
-             hover:file:bg-blue-100"
 		/>
+		<label
+			for="{uid}-file"
+			class="flex h-10 shrink-0 items-center rounded-lg border-1 border-c-neutral-2 bg-c-bg-elevated px-4 text-sm font-medium shadow-xs transition-all peer-focus-visible:ring-2 peer-focus-visible:ring-d-lightblue dark:border-s-dark-3 dark:text-white dark:peer-focus-visible:ring-c-primary"
+			class:cursor-pointer={!isHandingOver}
+			class:hover:shadow-sm={!isHandingOver}
+			class:opacity-40={isHandingOver}
+		>
+			{ts.get.layout.select_file}
+		</label>
+		<span class="min-w-0 truncate text-sm text-c-neutral-5 dark:text-c-neutral-4">
+			{selectedFile ? selectedFile.name : ts.get.layout.no_file}
+		</span>
 	</div>
 
-	{#if selectedFile}
-		<div
-			class="mt-4 rounded bg-c-neutral p-3"
-			class:bg-red-200={uploadError}
-			class:bg-green-200={uploadSuccess}
-		>
-			<p class="text-sm">
-				<span class="font-medium">{ts.get.layout.selected_file}:</span>
-				{selectedFile.name}
-			</p>
-			<p class="text-xs text-c-neutral-5">{(selectedFile.size / 1024).toFixed(2)} KB</p>
-		</div>
+	{#if uploadError}
+		<p class="text-sm text-c-danger" role="alert">{uploadError}</p>
 	{/if}
 
 	{#if isUploading}
-		<div class="mb-4">
-			<div class="h-2.5 w-full rounded-full bg-c-neutral-2">
-				<div class="h-2.5 rounded-full bg-blue-600" style="width: {uploadProgress}%"></div>
+		<div>
+			<div class="h-2.5 w-full rounded-full bg-c-neutral-2 dark:bg-s-dark-3">
+				<div class="h-2.5 rounded-full bg-c-primary" style="width: {uploadProgress}%"></div>
 			</div>
 			<p class="mt-1 text-center text-xs">{ts.get.layout.processing}: {uploadProgress}%</p>
 		</div>

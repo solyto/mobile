@@ -1,32 +1,36 @@
 <script lang="ts">
 	import { getAuth } from '$lib/state/Auth.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
-	import IconPlus from '@lucide/svelte/icons/plus';
-	import IconLogout from '@lucide/svelte/icons/log-out';
-	import IconShieldUser from '@lucide/svelte/icons/shield-user';
-	import { API_USER_STORAGE_URL } from '$lib/config/apiRoutes';
+	import IconPlus from '$lib/icons/lucide/plus.svelte';
+	import IconLogout from '$lib/icons/lucide/log-out.svelte';
+	import IconShieldUser from '$lib/icons/lucide/shield-user.svelte';
+	import { profileImageUrl } from '$lib/helpers/ProfileImageHelper';
 	import { onMount } from 'svelte';
 	import { getFriends } from '$lib/state/Friends.svelte';
 	import Friends from '$lib/components/users/Friends.svelte';
 	import FriendRequests from '$lib/components/users/FriendRequests.svelte';
 	import { urls } from '$lib/config/urls';
 	import { resolve } from '$app/paths';
+	import { getTranslation } from '$lib/state/Translation.svelte';
 
 	const loadingIndicator = getLoadingIndicator();
 	const auth = getAuth();
 	const friends = getFriends();
+	const ts = getTranslation();
 
 	let fileInput = $state<HTMLInputElement | null>(null);
 	let selectedFileUrl = $state<string>('');
 
 	onMount(async () => {
-		loadingIndicator.start();
-		await Promise.all([friends.load(), friends.loadRequests()]);
-		await friends.load();
-		loadingIndicator.stop();
+		await withLoadingIndicator(loadFriends);
 	});
 
-	function handleFileSelect(event: Event) {
+	async function loadFriends(): Promise<void> {
+		await Promise.all([friends.load(), friends.loadRequests()]);
+		await friends.load();
+	}
+
+	function handleFileSelect(event: Event): void {
 		const input = event.target as HTMLInputElement;
 		if (input.files && input.files.length > 0) {
 			selectedFileUrl = URL.createObjectURL(input.files[0]);
@@ -35,13 +39,30 @@
 	}
 
 	async function onUpload(file: File): Promise<void> {
+		await withLoadingIndicator(() => auth.setProfileImage(file));
+	}
+
+	async function withLoadingIndicator(action: () => Promise<unknown>): Promise<void> {
 		loadingIndicator.start();
-		await auth.setProfileImage(file);
-		loadingIndicator.stop();
+		try {
+			await action();
+		} finally {
+			loadingIndicator.stop();
+		}
+	}
+
+	function pickImage(): void {
+		fileInput?.click();
+	}
+
+	function profileImageSrc(): string | null {
+		if (selectedFileUrl) return selectedFileUrl;
+		const storedPath = auth.user?.profile?.profile_image_path;
+		return storedPath ? profileImageUrl(storedPath) : null;
 	}
 </script>
 
-<div class="bg-red relative flex w-full flex-col gap-8 p-8">
+<div class="relative flex w-full flex-col gap-8 p-8">
 	<div class="absolute top-4 right-4 flex gap-4">
 		{#if auth.isAdmin()}
 			<a
@@ -66,25 +87,15 @@
 			/>
 			<button
 				class="group relative h-32 w-32 rounded-full border-2 border-c-neutral-1 transition-all hover:border-c-btn-hover dark:border-s-dark-3"
-				onclick={() => fileInput?.click()}
+				onclick={pickImage}
 			>
 				<div
 					class="absolute top-0 left-0 flex h-full w-full cursor-pointer items-center justify-center bg-transparent text-c-btn-hover opacity-0 transition-opacity group-hover:opacity-100"
 				>
 					<IconPlus class="size-10" />
 				</div>
-				{#if selectedFileUrl}
-					<img
-						src={selectedFileUrl}
-						alt="Profile"
-						class="h-full w-full rounded-full object-cover"
-					/>
-				{:else if auth.user?.profile?.profile_image_path}
-					<img
-						src={API_USER_STORAGE_URL + '/' + auth.user.profile.profile_image_path}
-						alt="Profile"
-						class="h-full w-full rounded-full object-cover"
-					/>
+				{#if profileImageSrc()}
+					<img src={profileImageSrc()} alt={ts.get.profile.profile_image_alt} class="h-full w-full rounded-full object-cover" />
 				{/if}
 			</button>
 		</div>

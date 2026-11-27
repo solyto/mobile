@@ -1,9 +1,9 @@
 <script lang="ts">
-	import IconPen from '@lucide/svelte/icons/pen';
+	import IconPen from '$lib/icons/lucide/pen.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
 	import type { AddressBook, UpdateAddressBookRequest } from '$lib/types/contact';
 	import { getContacts } from '$lib/state/Contacts.svelte';
-	import ColorPicker from 'svelte-awesome-color-picker';
+	import ColorPicker from '$lib/components/forms/ColorPicker.svelte';
 	import { clickOutside } from '$lib/helpers/ClickHelper';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 
@@ -21,13 +21,29 @@
 		edit = !edit;
 	}
 
+	function color(): string {
+		return addressBook.color ?? 'var(--color-c-primary)';
+	}
+
+	function select(): void {
+		contacts.selectAddressBook(addressBook);
+	}
+
 	async function onColorChange(): Promise<void> {
 		if (hex === addressBook.color) return;
 
-		loadingIndicator.start();
 		const request: UpdateAddressBookRequest = { color: hex };
-		await contacts.updateAddressBook(addressBook, request);
-		loadingIndicator.stop();
+		loadingIndicator.start();
+		try {
+			await contacts.updateAddressBook(addressBook, request);
+		} finally {
+			loadingIndicator.stop();
+		}
+	}
+
+	function closeColorPicker(): void {
+		onColorChange();
+		toggleEdit();
 	}
 </script>
 
@@ -35,17 +51,17 @@
 	role="button"
 	tabindex="0"
 	class="group relative cursor-pointer touch-manipulation gap-2 rounded-sm bg-c-bg-surface p-8 font-bold drop-shadow-sm transition-all not-dark:border-1 not-dark:border-c-neutral-1 hover:bg-c-neutral max-md:w-full dark:hover:bg-s-dark-2"
-	onclick={() => contacts.selectAddressBook(addressBook)}
+	onclick={select}
 >
 	{addressBook.name}
 	<Badge
 		i={contacts.getAddressBookCount(addressBook.id)}
-		color={addressBook.color ?? 'var(--color-c-primary)'}
+		color={color()}
 		light={addressBook.color === 'var(--color-c-neutral-2)'}
 	/>
 	<div
 		class="absolute bottom-0 left-0 h-1 w-full rounded-lg opacity-0 transition-all"
-		style="background-color: {addressBook.color ?? 'var(--color-c-primary)'};"
+		style="background-color: {color()};"
 		class:opacity-100={contacts.activeAddressBook?.name === addressBook.name}
 	></div>
 	<div
@@ -62,19 +78,8 @@
 {#if edit}
 	<div
 		class="absolute top-15 left-15 z-80"
-		use:clickOutside={() => {
-			onColorChange();
-			toggleEdit();
-		}}
+		use:clickOutside={closeColorPicker}
 	>
-		<ColorPicker
-			bind:hex
-			position="responsive"
-			nullable={false}
-			label=""
-			isTextInput={false}
-			--cp-border-color="var(--color-c-neutral-2)"
-			isDialog={false}
-		/>
+		<ColorPicker bind:hex isDialog={false} />
 	</div>
 {/if}

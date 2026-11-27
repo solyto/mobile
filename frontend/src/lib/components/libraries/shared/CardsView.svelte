@@ -2,7 +2,8 @@
 	import { fade } from 'svelte/transition';
 	import EntryCover from '$lib/components/libraries/shared/EntryCover.svelte';
 	import EntryContent from '$lib/components/libraries/shared/EntryContent.svelte';
-	import type { Library, LibraryEntry, LibraryType } from '$lib/types/library';
+	import type { DetailLibrary, Library, LibraryEntry, LibraryType } from '$lib/types/library';
+	import type { Link } from '$lib/types/library_link';
 
 	let { library }: { library: Library } = $props();
 
@@ -18,6 +19,10 @@
 	function isWide(): boolean {
 		return library.config.type === 'games';
 	}
+
+	function openDetail(entry: LibraryEntry | Link): void {
+		(library as DetailLibrary).openDetailModal(entry as LibraryEntry);
+	}
 </script>
 
 <div
@@ -28,7 +33,7 @@
 >
 	{#each library.filteredEntries as entry (entry.id)}
 		<button
-			onclick={() => (library as { openDetailModal(entry: LibraryEntry): void }).openDetailModal(entry as LibraryEntry)}
+			onclick={() => openDetail(entry)}
 			class="w-full min-w-0 cursor-pointer"
 		>
 			<div class="group relative flex w-full touch-manipulation flex-col rounded-sm transition-all" transition:fade>
@@ -40,7 +45,7 @@
 				>
 					<div class="relative flex h-full w-full items-center justify-center">
 						<div class="relative flex h-full w-full items-center justify-center rounded-sm transition-all">
-							<EntryCover {entry} {library} fill />
+							<EntryCover {entry} {library} fit="object-cover" />
 						</div>
 					</div>
 				</div>

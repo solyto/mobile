@@ -1,5 +1,5 @@
-// Compares dotted versions like 1.0.15 numerically. Returns null when either
-// side is not a plain dotted version, so callers can skip the comparison.
+import type { UpdateRequiredRecords } from '$lib/types/translation';
+
 export function compareVersions(a: string, b: string): number | null {
 	const pattern = /^\d+(\.\d+)*$/;
 	if (!pattern.test(a) || !pattern.test(b)) return null;
@@ -17,6 +17,10 @@ export function compareVersions(a: string, b: string): number | null {
 
 export function isOlderVersion(version: string, than: string): boolean {
 	return compareVersions(version, than) === -1;
+}
+
+export function outdatedServerMessage(serverVersion: string, appVersion: string, records: UpdateRequiredRecords): string {
+	return records.server_outdated.replace('{server}', serverVersion).replace('{app}', appVersion);
 }
 
 // Servers before this version reject X-Client-Version in their CORS preflight.

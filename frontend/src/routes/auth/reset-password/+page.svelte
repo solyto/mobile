@@ -3,7 +3,7 @@
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 	import { urls, getDeepLinkUrl } from '$lib/config/urls';
-	import { getAuth } from '$lib/state/Auth.svelte';
+	import { Auth, getAuth } from '$lib/state/Auth.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
@@ -13,6 +13,7 @@
 	import PasswordInput from '$lib/components/forms/PasswordInput.svelte';
 	import PasswordStrengthIndicator from '$lib/components/forms/PasswordStrengthIndicator.svelte';
 	import PasswordMatchIndicator from '$lib/components/forms/PasswordMatchIndicator.svelte';
+	import type { AuthActionResponse } from '$lib/types/auth';
 
 	const auth = getAuth();
 	const ts = getTranslation();
@@ -43,14 +44,12 @@
 
 	async function onsubmit(e: SubmitEvent): Promise<void> {
 		e.preventDefault();
-		passwordError = password.length < 12;
+		passwordError = password.length < Auth.MIN_PASSWORD_LENGTH;
 		confirmError = password !== passwordConfirmation;
 		passwordCompromisedError = false;
 		if (passwordError || confirmError) return;
 
-		loadingIndicator.start();
-		const result = await auth.resetPassword(token, email, password, passwordConfirmation);
-		loadingIndicator.stop();
+		const result = await resetPassword();
 
 		if (result.success) {
 			done = true;
@@ -59,6 +58,15 @@
 			passwordCompromisedError = true;
 		} else {
 			failed = true;
+		}
+	}
+
+	async function resetPassword(): Promise<AuthActionResponse> {
+		loadingIndicator.start();
+		try {
+			return await auth.resetPassword(token, email, password, passwordConfirmation);
+		} finally {
+			loadingIndicator.stop();
 		}
 	}
 </script>

@@ -4,8 +4,8 @@
 	import { getCalendarSharing } from '$lib/state/CalendarSharing.svelte';
 	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
 	import type { Calendar } from '$lib/types/calendar.js';
-	import IconCheck from '@lucide/svelte/icons/check';
-	import IconX from '@lucide/svelte/icons/x';
+	import IconCheck from '$lib/icons/lucide/check.svelte';
+	import IconX from '$lib/icons/lucide/x.svelte';
 
 	const ts = getTranslation();
 	const loadingIndicator = getLoadingIndicator();

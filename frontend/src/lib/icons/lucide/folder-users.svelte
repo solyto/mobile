@@ -1,0 +1,25 @@
+<!--
+@lucide/svelte v1.59.0 - ISC
+
+This source code is licensed under the ISC license.
+See the LICENSE file in this directory.
+-->
+<script lang="ts">
+	import Icon from './Icon.svelte';
+	import type { LucideIconData, LucideProps } from './types';
+
+	const props: LucideProps = $props();
+
+	const iconData: LucideIconData = {
+		name: 'folder-users',
+		size: 24,
+		node: [
+			['path', { d: 'M5.254 20H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2V9.255' }],
+			['circle', { cx: '13', cy: '15', r: '3' }],
+			['path', { d: 'M17 22a4 4 0 0 0-8 0' }],
+			['path', { d: 'M22 22A4 4 0 0 0 20.24 18.686 1 1 0 0 1 20.1 17.143 3 3 0 0 0 19.5 12.402' }]
+		]
+	};
+</script>
+
+<Icon {...props} icon={iconData} />

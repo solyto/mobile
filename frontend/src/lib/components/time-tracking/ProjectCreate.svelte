@@ -7,6 +7,7 @@
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import { getReadableTextColor } from '$lib/helpers/ColorHelper';
 	import { portalToBody } from '$lib/helpers/PortalHelper';
+	import type { CreateTimeTrackingProjectRequest, TimeTrackingCategory } from '$lib/types/time_tracking';
 
 	const tt = getTimeTracking();
 	const ts = getTranslation();
@@ -46,26 +47,34 @@
 
 	let isValid = $derived(title.trim().length > 0);
 
+	function chipColor(category: TimeTrackingCategory): string {
+		return category.color ?? 'var(--color-c-neutral-4)';
+	}
+
+	function toggleCategoryDropdown(): void {
+		showCategoryDropdown = !showCategoryDropdown;
+	}
+
+	function closeCategoryDropdown(): void {
+		showCategoryDropdown = false;
+	}
+
 	async function onSave(): Promise<void> {
 		if (!isValid) return;
 
+		const request: CreateTimeTrackingProjectRequest = {
+			title: title.trim(),
+			description: description.trim() || null,
+			category_ids: selectedCategoryIds
+		};
+
 		loadingIndicator.start();
-
-		if (existingProject) {
-			await tt.updateProject(existingProject.id, {
-				title: title.trim(),
-				description: description.trim() || null,
-				category_ids: selectedCategoryIds
-			});
-		} else {
-			await tt.createProject({
-				title: title.trim(),
-				description: description.trim() || null,
-				category_ids: selectedCategoryIds
-			});
+		try {
+			if (existingProject) await tt.updateProject(existingProject.id, request);
+			else await tt.createProject(request);
+		} finally {
+			loadingIndicator.stop();
 		}
-
-		loadingIndicator.stop();
 		onClose();
 	}
 </script>
@@ -97,7 +106,10 @@
 				{#each selectedCategories as cat (cat.id)}
 					<span
 						class="flex flex-row items-center gap-1 rounded-md px-2 py-1 text-xs"
-						style="background-color: {cat.color ?? 'var(--color-c-neutral-4)'}; color: {getReadableTextColor(cat.color ?? 'var(--color-c-neutral-4)')}"
+						style="
+							background-color: {chipColor(cat)};
+							color: {getReadableTextColor(chipColor(cat))};
+						"
 					>
 						{cat.title}
 						<button
@@ -114,19 +126,14 @@
 						<button
 							aria-label={ts.get.timeTracking.add_category}
 							class="cursor-pointer rounded-md border-1 border-dashed border-c-neutral-3 px-2 py-1 text-xs text-c-neutral-5 transition-all hover:border-c-primary hover:text-c-primary dark:border-s-dark-3 dark:text-c-neutral-4"
-							onclick={() => (showCategoryDropdown = !showCategoryDropdown)}
+							onclick={toggleCategoryDropdown}
 						>
 							+
 						</button>
 						{#if showCategoryDropdown && categoryDropdownAnchor}
-							<!-- Portalled to the body so the modal's scroll container doesn't clip it (as in the todo workspace picker). mt-8 keeps it below the + button. -->
 							<div
 								class="mt-8 max-h-40 min-w-36 overflow-y-auto rounded-md border-1 border-c-neutral-2 bg-c-bg-modal shadow-md dark:border-s-dark-3"
-								use:portalToBody={{
-									target: categoryDropdownAnchor,
-									closeOnScroll: true,
-									onClose: () => (showCategoryDropdown = false)
-								}}
+								use:portalToBody={{ target: categoryDropdownAnchor, closeOnScroll: true, onClose: closeCategoryDropdown }}
 							>
 								{#each availableCategories as cat (cat.id)}
 									<button

@@ -1,12 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
-	import type {
-		DevRequest,
-		DevRequestPriority,
-		DevRequestType,
-		DevRequestForm
-	} from '$lib/types/dev_request';
+	import type { DevRequest, DevRequestForm } from '$lib/types/dev_request';
 	import TextInput from '$lib/components/forms/TextInput.svelte';
 	import Select from '$lib/components/forms/Select.svelte';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
@@ -16,6 +11,7 @@
 	import FileUpload from '$lib/components/forms/FileUpload.svelte';
 	import DevRequestFormService from '$lib/services/DevRequestFormService';
 	import { isVersion } from '$lib/helpers/VersionHelper';
+	import { DEV_REQUEST_STATUSES, devRequestStatusLabels } from '$lib/helpers/DevRequestHelper';
 	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
 	import { getAuth } from '$lib/state/Auth.svelte';
 
@@ -46,52 +42,44 @@
 		{ value: '5', label: ts.get.dev.requests.priority_5 }
 	];
 
-	const statusOptions: { value: string; label: string }[] = [
-		{ value: 'backlog', label: ts.get.dev.requests.status_backlog },
-		{ value: 'pending', label: ts.get.dev.requests.status_pending },
-		{ value: 'in-progress', label: ts.get.dev.requests.status_in_progress },
-		{ value: 'waiting-for-deployment', label: ts.get.dev.requests.status_waiting_for_deployment },
-		{ value: 'completed', label: ts.get.dev.requests.status_completed },
-		{ value: 'cancelled', label: ts.get.dev.requests.status_cancelled }
-	];
+	const statusLabels = devRequestStatusLabels(ts.get.dev.requests);
+	const statusOptions: { value: string; label: string }[] = DEV_REQUEST_STATUSES.map((status) => ({ value: status, label: statusLabels[status] }));
 
 	onMount(async () => {
 		loadingIndicator.start();
-		await devRequests.load();
-		loadingIndicator.stop();
+		try {
+			await devRequests.load();
+		} finally {
+			loadingIndicator.stop();
+		}
 	});
 
+	function validationError(): string | null {
+		if (!formService.isComplete(form)) return ts.get.dev.requests.validation_error;
+		const version = formService.versionToCheck(form, entry);
+		if (version !== null && !isVersion(version)) return ts.get.dev.requests.version_validation_error;
+		return null;
+	}
+
+	function save(): Promise<boolean> {
+		if (entry) return devRequests.update(entry, formService.changes(entry, form));
+		return devRequests.create(formService.createRequest(form, auth.user?.id ?? null));
+	}
+
 	async function onSave() {
+		const error = validationError();
+		if (error) {
+			notifications.error(error);
+			return;
+		}
+
 		loadingIndicator.start();
-
-		if (form.title === '' || form.description === '') {
+		let ok: boolean;
+		try {
+			ok = await save();
+		} finally {
 			loadingIndicator.stop();
-			notifications.error(ts.get.dev.requests.validation_error);
-			return;
 		}
-
-		// Only a changed version is checked: older requests may hold e.g. `1.2`, which the API accepts.
-		const version = form.fixed_in_version.trim();
-		const versionChanged = version !== (entry?.fixed_in_version ?? '');
-		if (form.status === 'completed' && version !== '' && versionChanged && !isVersion(version)) {
-			loadingIndicator.stop();
-			notifications.error(ts.get.dev.requests.version_validation_error);
-			return;
-		}
-
-		const ok = entry
-			? await devRequests.update(entry, formService.changes(entry, form))
-			: await devRequests.create({
-					title: form.title,
-					description: form.description,
-					screenshot: form.screenshot != '' ? form.screenshot : null,
-					screenshot_name: form.screenshot_name != '' ? form.screenshot_name : null,
-					priority: parseInt(form.priority) as DevRequestPriority,
-					url: form.url,
-					type: form.type as DevRequestType,
-					created_by_user_id: auth.user?.id ?? null
-				});
-		loadingIndicator.stop();
 
 		// Keep the modal and the input open so nothing typed is lost.
 		if (!ok) {
@@ -107,12 +95,7 @@
 <ContentModal title={entry ? ts.get.dev.requests.edit : ts.get.dev.requests.new} rounded="2xl" p="8" {onClose}>
 	<div class="flex flex-col gap-3">
 		<TextInput placeholder={ts.get.dev.requests.title} bind:value={form.title} />
-		<TextInput
-			placeholder={ts.get.dev.requests.description}
-			bind:value={form.description}
-			multiLine={true}
-			height={150}
-		/>
+		<TextInput placeholder={ts.get.dev.requests.description} bind:value={form.description} multiLine={true} height={150} />
 		<Select bind:value={form.priority} options={priorityOptions} />
 		{#if entry}
 			<Select bind:value={form.status} options={statusOptions} />
@@ -122,12 +105,8 @@
 		{/if}
 		<Select bind:value={form.type} options={typeOptions} />
 		{#if !entry}
-			<FileUpload
-				label={ts.get.dev.requests.screenshot}
-				bind:value={form.screenshot}
-				bind:filename={form.screenshot_name}
-			/>
-			<TextInput placeholder="URL" bind:value={form.url} />
+			<FileUpload label={ts.get.dev.requests.screenshot} bind:value={form.screenshot} bind:filename={form.screenshot_name} />
+			<TextInput placeholder={ts.get.dev.requests.url} bind:value={form.url} />
 		{/if}
 		<div class="mt-4 flex w-full justify-end">
 			<TextButton title={ts.get.layout.save} type="btn" onclick={onSave} />

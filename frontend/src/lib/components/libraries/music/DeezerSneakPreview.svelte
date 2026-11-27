@@ -1,12 +1,15 @@
 <script lang="ts">
 	import { scale } from 'svelte/transition';
 	import type { MusicRelease } from '$lib/types/library_music';
+	import { getTranslation } from '$lib/state/Translation.svelte';
+
+	const ts = getTranslation();
 
 	let { release }: { release: MusicRelease } = $props();
 </script>
 
 <iframe
-	title="deezer-widget"
+	title={ts.get.libraries.music.deezer_preview}
 	src="https://widget.deezer.com/widget/auto/album/{release.id}"
 	width="100%"
 	height="300"

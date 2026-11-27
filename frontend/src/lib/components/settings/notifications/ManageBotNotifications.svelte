@@ -27,19 +27,20 @@
 	});
 
 	async function onToggleYourDayAlert(): Promise<void> {
-		loadingIndicator.start();
-		await apiService.put(apiRoutes.telegram.updateYourDayAlert, {
-			your_day_alert: yourDayAlert
-		});
-		loadingIndicator.stop();
+		await withLoadingIndicator(() => apiService.put(apiRoutes.telegram.updateYourDayAlert, { your_day_alert: yourDayAlert }));
 	}
 
 	async function onToggleCheckInAlert(): Promise<void> {
+		await withLoadingIndicator(() => apiService.put(apiRoutes.telegram.updateCheckInAlert, { check_in_alert: checkInAlert }));
+	}
+
+	async function withLoadingIndicator(action: () => Promise<unknown>): Promise<void> {
 		loadingIndicator.start();
-		await apiService.put(apiRoutes.telegram.updateCheckInAlert, {
-			check_in_alert: checkInAlert
-		});
-		loadingIndicator.stop();
+		try {
+			await action();
+		} finally {
+			loadingIndicator.stop();
+		}
 	}
 </script>
 

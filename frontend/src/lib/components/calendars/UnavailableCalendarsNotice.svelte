@@ -1,6 +1,6 @@
 <script lang="ts">
-	import IconCloudOff from '@lucide/svelte/icons/cloud-off';
-	import IconKeyRound from '@lucide/svelte/icons/key-round';
+	import IconCloudOff from '$lib/icons/lucide/cloud-off.svelte';
+	import IconKeyRound from '$lib/icons/lucide/key-round.svelte';
 	import { getCalendars } from '$lib/state/Calendars.svelte';
 	import { getExternalCalendars } from '$lib/state/ExternalCalendars.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';

@@ -8,10 +8,6 @@
 
 	const todos = getTodos();
 	const ts = getTranslation();
-
-	let quickCreateOpen = $derived(todos.quickCreateOpen);
-
-
 	const viewPoint = getViewPoint();
 
 	const titles: Record<TodoView, string> = {
@@ -26,18 +22,16 @@
 		type,
 		title: titles[type]
 	}));
+
+	function changeView(type: string): void {
+		todos.changeView(type as TodoView);
+	}
 </script>
 
-<div
-	class="todo-view-switcher absolute top-7 left-20 2xl:top-10 2xl:left-8 z-30 2xl:block"
->
-	{#if !quickCreateOpen}
+<div class="todo-view-switcher absolute top-7 left-20 2xl:top-10 2xl:left-8 z-30 2xl:block">
+	{#if !todos.quickCreateOpen}
 		<div class="transition-opacity duration-150 ease-in-out">
-			<ViewSwitcher
-				views={views}
-				currentlySelected={todos.view}
-				onChange={(type) => todos.changeView(type as TodoView)}
-			/>
+			<ViewSwitcher {views} currentlySelected={todos.view} onChange={changeView} />
 		</div>
 	{/if}
 </div>

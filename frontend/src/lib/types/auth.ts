@@ -18,6 +18,7 @@ export interface UserSettings {
 	date_format: string;
 	time_format: string;
 	week_start: WeekStart;
+	currency: string;
 	widgets: string;
 	navigation: string;
 	first_visit: boolean;

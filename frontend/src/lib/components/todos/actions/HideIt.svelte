@@ -8,13 +8,9 @@
 
 	let toggled = $derived<boolean>(todos.hideItActive);
 
-	function toggleHideIt() {
+	function toggleHideIt(value: boolean): void {
 		todos.toggleHideIt();
 	}
 </script>
 
-<Toggle
-	label={ts.get.todos.workspace_hide_it}
-	bind:checked={toggled}
-	onchange={() => toggleHideIt()}
-/>
+<Toggle label={ts.get.todos.workspace_hide_it} bind:checked={toggled} onchange={toggleHideIt} />

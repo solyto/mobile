@@ -29,7 +29,7 @@ tests/
   unit/            helpers, services, config, effects, musictheory, auth
   unit/stores/     state stores (module mocks active)
   unit/setup/      storeMocks.ts
-  components/      component tests, helpers/context.ts + ContextHarness.svelte
+  components/      component tests, helpers/context.ts + ContextHarness.svelte + StoreHarness.svelte
   setup/           component.ts (jsdom stubs)
 ```
 
@@ -82,6 +82,13 @@ Components read stores through `getX()`, so render them through
 `setViewPoint` and `setCookieConsent` before rendering the component under
 test. Props-driven leaves (dashboard widgets, form primitives) need no
 context and are rendered directly.
+
+A component that needs a feature store as well (`Friends`, `Todos`,
+`Contacts`, …) is rendered as `renderWithContext(StoreHarness, { component,
+provide: setFriends, onReady })`: `StoreHarness.svelte` calls the store's
+`setX()` inside the context and hands the store to `onReady`, so the test
+can seed or spy on it. One harness serves every store; don't add a
+per-store harness.
 
 `tests/setup/component.ts` stubs what jsdom lacks: `Element.prototype.animate`
 (Svelte transitions), `window.matchMedia` (`Viewpoint`), and the

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import IconPlus from '@lucide/svelte/icons/plus';
+	import IconPlus from '$lib/icons/lucide/plus.svelte';
 
 	let { onClick, title = '', colorOnHover = false, hoverColor = 'btn' }: {
 		onClick: () => void;

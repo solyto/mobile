@@ -13,11 +13,11 @@
 		"lint": "eslint .",
 		"test": "vitest run",
 		"test:watch": "vitest",
-		"test:coverage": "vitest run --coverage"
+		"test:coverage": "vitest run --coverage",
+		"licenses": "node scripts/write-licenses.ts"
 	},
 	"devDependencies": {
 		"@eslint/js": "10.0.1",
-		"@lucide/svelte": "1.59.0",
 		"@sveltejs/adapter-auto": "6.1.0",
 		"@sveltejs/adapter-node": "5.3.2",
 		"@sveltejs/adapter-static": "3.0.10",
@@ -30,6 +30,7 @@
 		"@testing-library/svelte": "5.4.2",
 		"@testing-library/user-event": "14.6.8",
 		"@types/canvas-confetti": "1.9.0",
+		"@types/node": "22.20.5",
 		"@vitest/coverage-v8": "4.1.12",
 		"eslint": "10.13.0",
 		"eslint-plugin-svelte": "3.23.1",
@@ -66,6 +67,7 @@
 		"@tiptap/extension-typography": "3.32.0",
 		"@tiptap/pm": "3.32.0",
 		"@tiptap/starter-kit": "3.32.0",
+		"@tiptap/suggestion": "3.32.0",
 		"@vvo/tzdb": "6.201.1",
 		"canvas-confetti": "1.9.4",
 		"dompurify": "3.4.17",

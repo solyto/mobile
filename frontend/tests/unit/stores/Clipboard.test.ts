@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Clipboard } from '$lib/state/Clipboard.svelte';
-import type { ClipboardEntry } from '$lib/types/clipboard';
 import { NetworkError, RateLimitedError } from '$lib/services/ApiService';
 import { apiRoutes } from '$lib/config/apiRoutes';
 import { api, resetStoreMocks } from '../setup/storeMocks';
+import { clipboardEntry } from '../helpers/factories';
 
 beforeEach(() => {
 	resetStoreMocks();
@@ -107,7 +107,7 @@ describe('Clipboard createFile', () => {
 describe('Clipboard getFile', () => {
 	it('downloads through the authenticated endpoint', async () => {
 		api.download.mockResolvedValue(new Blob(['x']));
-		const entry = { id: 7, mime_type: 'application/pdf' } as ClipboardEntry;
+		const entry = clipboardEntry({ id: 7, type: 'file', mime_type: 'application/pdf' });
 
 		await new Clipboard().getFile(entry);
 

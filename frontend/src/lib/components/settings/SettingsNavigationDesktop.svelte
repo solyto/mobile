@@ -1,5 +1,8 @@
 <script lang="ts">
 	import { fade } from 'svelte/transition';
+	import { getTranslation } from '$lib/state/Translation.svelte';
+
+	const ts = getTranslation();
 
 	let {
 		sections,
@@ -16,7 +19,7 @@
 	in:fade
 	class="hidden h-full max-h-screen w-full flex-col overflow-y-auto bg-c-bg p-2 drop-shadow-xl lg:relative lg:flex lg:w-32 2xl:w-60 2xl:p-4 dark:border-r-1 dark:border-s-dark-2 dark:drop-shadow-sm dark:drop-shadow-s-dark-shadow"
 >
-	<div class="p-2 pt-3 text-base font-bold 2xl:text-2xl 2xl:font-normal">Settings</div>
+	<div class="p-2 pt-3 text-base font-bold 2xl:text-2xl 2xl:font-normal">{ts.get.nav.settings}</div>
 	<nav class="flex flex-col">
 		{#each sections as section (section.id)}
 			<button

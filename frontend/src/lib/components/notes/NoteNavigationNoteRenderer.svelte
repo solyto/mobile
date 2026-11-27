@@ -5,37 +5,40 @@
 	import { contextMenu } from '$lib/helpers/ContextMenuHelper';
 	import { urls } from '$lib/config/urls';
 	import { resolve } from '$app/paths';
+	import type { Note } from '$lib/types/note';
 
 	const notes = getNotes();
 
-	let { categoryId, depth, handleNavigation }: {
+	let { categoryId, depth }: {
 		categoryId: number | null;
 		depth: number;
-		handleNavigation: () => void;
 	} = $props();
+
+	function isActive(note: Note): boolean {
+		return note.id === notes.activeNote?.id;
+	}
+
+	function endDrag(): void {
+		notes.draggedNote = null;
+		notes.dragTarget = null;
+	}
 </script>
 
 <div transition:fade>
 	{#each notes.getNotesForCategory(categoryId) as note (note.id)}
 		<a
 			href={resolve(urls.note, { id: note.id })}
-			onclick={() => {
-				notes.selectNote(note.id);
-				handleNavigation();
-			}}
 			use:contextMenu={(x, y) => notes.openRightClickMenu(x, y, 'note', note.id)}
 			draggable="true"
 			ondragstart={() => (notes.draggedNote = note)}
-			ondragend={() => {
-				notes.draggedNote = null;
-				notes.dragTarget = null;
-			}}
+			ondragend={endDrag}
 			animate:flip
 			transition:fade
 		>
 			<div
-				class="flex cursor-pointer items-center space-x-2 rounded-lg px-2 py-1 hover:bg-c-neutral dark:hover:bg-s-dark-3
-					{notes.activeNote !== null && note.id === notes.activeNote.id ? 'bg-c-neutral-1 dark:bg-s-dark-3': ''}"
+				class="flex cursor-pointer items-center space-x-2 rounded-lg px-2 py-1 hover:bg-c-neutral dark:hover:bg-s-dark-3"
+				class:bg-c-neutral-1={isActive(note)}
+				class:dark:bg-s-dark-3={isActive(note)}
 				style="padding-left: {8 + depth * 16}px;"
 			>
 				<span>{note.title}</span>

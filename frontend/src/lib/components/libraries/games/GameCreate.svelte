@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { getTranslation } from '$lib/state/Translation.svelte';
+	import { createdEntryValue, genreEntries, selectedIds, tagEntries } from '$lib/helpers/MultiSelectHelper';
 	import TextInput from '$lib/components/forms/TextInput.svelte';
 	import DateInput from '$lib/components/forms/DateInput.svelte';
-	import MultiSelect from '$lib/components/forms/MultiSelect.svelte';
+	import MultiSelect, { type MultiSelectEntry } from '$lib/components/forms/MultiSelect.svelte';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
-	import { API_USER_STORAGE_URL } from '$lib/config/apiRoutes';
-	import { getAuth } from '$lib/state/Auth.svelte';
+	import { libraryCoverUrl } from '$lib/helpers/LibraryCoverHelper';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import { getTags } from '$lib/state/Tags.svelte';
 	import NumberInput from '$lib/components/forms/NumberInput.svelte';
@@ -21,20 +21,21 @@
 	import CreateModal from '$lib/components/libraries/shared/CreateModal.svelte';
 	import { getGameLibrary } from '$lib/state/GameLibrary.svelte';
 	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
+	import { SaveAction } from '$lib/helpers/SaveAction.svelte';
 	import CreateModalSearchButton from '$lib/components/libraries/shared/CreateModalSearchButton.svelte';
 	import CreateModalImport from '$lib/components/libraries/shared/CreateModalImport.svelte';
 	import GameSearch from '$lib/components/libraries/games/GameSearch.svelte';
 	import SteamIcon from '$lib/assets/services/steam_icon.svg';
-	import Dices from '@lucide/svelte/icons/dices';
+	import Dices from '$lib/icons/lucide/dices.svelte';
 	import { getIntegrations } from '$lib/state/Integrations.svelte';
 
 	const ts = getTranslation();
 	const library = getGameLibrary();
 	const tags = getTags();
-	const auth = getAuth();
 	const loadingIndicator = getLoadingIndicator();
 	const notifications = getUiNotifications();
 	const integrations = getIntegrations();
+	const updating = new SaveAction(() => ts.get.libraries.games.update_error);
 
 	let activeEntry = $state<Game | null>(library.activeEntry);
 
@@ -49,12 +50,8 @@
 	let publisherValue = $state<string>(activeEntry?.publisher ?? '');
 	let playtimeHoursValue = $state<number | null>(activeEntry?.playtime_hours ?? null);
 	let completedValue = $state<boolean>(activeEntry ? activeEntry.completed : false);
-	let selectedGenres = $state<{ label: string; value: string }[]>(
-		activeEntry ? activeEntry.genres.map((g) => ({ label: g.title, value: g.id.toString() })) : []
-	);
-	let selectedTags = $state<{ label: string; value: string }[]>(
-		activeEntry ? activeEntry.tags.map((t) => ({ label: t.name, value: t.id.toString() })) : []
-	);
+	let selectedGenres = $state<MultiSelectEntry[]>(genreEntries(activeEntry?.genres ?? []));
+	let selectedTags = $state<MultiSelectEntry[]>(tagEntries(activeEntry?.tags ?? []));
 	let selectedRating = $state(activeEntry?.rating ?? 0);
 	let isWishlist = $state<boolean>(activeEntry ? activeEntry.wishlist : false);
 	let linkInput = $state<HTMLInputElement | null>(null);
@@ -65,30 +62,12 @@
 	const bggImport = { label: 'BGG', icon: Dices, onClick: () => importFrom('bgg', 'boardgamegeek.com', ts.get.libraries.games.bgg_import_validation_error, 'boardgame') };
 	const importOptions = integrations.isConfigured('bgg') ? [steamImport, bggImport] : [steamImport];
 
-	let genreOptions: { label: string; value: string }[] = $derived(
-		library.genres.map((genre) => ({ label: genre.title, value: genre.id.toString() }))
-	);
-
-	let tagOptions: { label: string; value: string }[] = $derived(
-		tags.tags.map((tag) => ({ label: tag.name, value: tag.id.toString() }))
-	);
-
-	async function onCreateGenre(label: string): Promise<string | null> {
-		const created = await library.createGenre(label);
-		if (!created) {
-			notifications.error(ts.get.libraries.genre_error);
-			return null;
-		}
-		return created.id.toString();
+	function onCreateGenre(label: string): Promise<string | null> {
+		return createdEntryValue(library.createGenre(label), () => notifications.error(ts.get.libraries.genre_error));
 	}
 
-	async function onCreateTag(label: string): Promise<string | null> {
-		const created = await tags.create(label);
-		if (!created) {
-			notifications.error(ts.get.libraries.tag_error);
-			return null;
-		}
-		return created.id.toString();
+	function onCreateTag(label: string): Promise<string | null> {
+		return createdEntryValue(tags.create(label), () => notifications.error(ts.get.libraries.tag_error));
 	}
 
 	const platformOptions: { label: string; value: string }[] = [
@@ -101,18 +80,8 @@
 		{ label: ts.get.libraries.games.platform_other, value: 'other' }
 	];
 
-	async function onsubmit(): Promise<void> {
-		if (activeEntry) {
-			return await update();
-		} else {
-			return await create();
-		}
-	}
-
-	async function create(): Promise<void> {
-		loadingIndicator.start();
-
-		const request: CreateGameRequest = {
+	function createRequest(): CreateGameRequest {
+		return {
 			title: titleValue,
 			platform: platformValue,
 			developer: developerValue !== '' ? developerValue : null,
@@ -123,38 +92,16 @@
 			started_at: startedAtValue !== '' ? startedAtValue : null,
 			finished_at: finishedAtValue !== '' ? finishedAtValue : null,
 			wishlist: isWishlist,
-			genres: selectedGenres.filter((g) => g.value).map((g) => parseInt(g.value)),
-			tags: selectedTags.filter((t) => t.value).map((t) => parseInt(t.value)),
+			genres: selectedIds(selectedGenres),
+			tags: selectedIds(selectedTags),
 			rating: selectedRating > 0 ? selectedRating : null,
 			cover_path: coverValue != '' ? coverValue : null,
 			link: linkValue != '' ? linkValue : null
 		};
-		const ok = await library.create(request);
-		if (ok) {
-			titleValue = '';
-			platformValue = 'pc';
-			developerValue = '';
-			publisherValue = '';
-			playtimeHoursValue = null;
-			publicationYearValue = null;
-			completedValue = false;
-			startedAtValue = '';
-			finishedAtValue = '';
-			coverValue = '';
-			linkValue = '';
-			selectedGenres = [];
-			selectedTags = [];
-			isWishlist = false;
-			library.closeCreateModal();
-		}
-
-		loadingIndicator.stop();
 	}
 
-	async function update(): Promise<void> {
-		loadingIndicator.start();
-
-		const request: UpdateGameRequest = {
+	function updateRequest(): UpdateGameRequest {
+		return {
 			title: titleValue,
 			platform: platformValue,
 			developer: developerValue !== '' ? developerValue : null,
@@ -165,20 +112,45 @@
 			started_at: startedAtValue !== '' ? startedAtValue : null,
 			finished_at: finishedAtValue !== '' ? finishedAtValue : null,
 			wishlist: isWishlist,
-			genres: selectedGenres.filter((g) => g.value).map((g) => parseInt(g.value)),
-			tags: selectedTags.filter((t) => t.value).map((t) => parseInt(t.value)),
+			genres: selectedIds(selectedGenres),
+			tags: selectedIds(selectedTags),
 			rating: selectedRating > 0 ? selectedRating : null,
 			...(coverValue !== '' ? { cover_path: coverValue } : {}),
 			link: linkValue != '' ? linkValue : null
 		};
-		const ok = await library.update(activeEntry!, request);
-		if (ok) {
-			library.closeCreateModal();
-		} else {
-			notifications.error(ts.get.libraries.games.update_error);
-		}
+	}
 
-		loadingIndicator.stop();
+	function resetForm(): void {
+		titleValue = '';
+		platformValue = 'pc';
+		developerValue = '';
+		publisherValue = '';
+		playtimeHoursValue = null;
+		publicationYearValue = null;
+		completedValue = false;
+		startedAtValue = '';
+		finishedAtValue = '';
+		coverValue = '';
+		linkValue = '';
+		selectedGenres = [];
+		selectedTags = [];
+		isWishlist = false;
+	}
+
+	async function onsubmit(): Promise<void> {
+		if (activeEntry) return update(activeEntry);
+		loadingIndicator.start();
+		try {
+			if (!(await library.create(createRequest()))) return;
+		} finally {
+			loadingIndicator.stop();
+		}
+		resetForm();
+		library.closeCreateModal();
+	}
+
+	async function update(entry: Game): Promise<void> {
+		if (await updating.run(() => library.update(entry, updateRequest()))) library.closeCreateModal();
 	}
 
 	function onSearchSelect(game: GameRelease): void {
@@ -194,10 +166,7 @@
 
 		if (game.publication_year) publicationYearValue = game.publication_year;
 
-		for (const genre of game.genres ?? []) {
-			const existing = library.genres.find((g) => g.title === genre);
-			if (existing) selectedGenres.push({ label: existing.title, value: existing.id.toString() });
-		}
+		selectKnownGenres(game.genres ?? []);
 
 		library.closeExternalSearchModal();
 	}
@@ -215,41 +184,46 @@
 
 		importLoading = true;
 		loadingIndicator.start();
-		const game = await library.importFrom(provider, linkValue);
+		try {
+			const game = await library.importFrom(provider, linkValue);
+			if (!game) {
+				notifications.error(ts.get.libraries.games.import_error);
+				return;
+			}
 
-		if (!game) {
-			notifications.error(ts.get.libraries.games.import_error);
+			titleValue = game.title;
+			coverValue = game.cover ?? '';
+			developerValue = game.developer ?? '';
+			publisherValue = game.publisher ?? '';
+			if (platform) platformValue = platform;
+			if (game.publication_year) publicationYearValue = game.publication_year;
+			selectKnownGenres(game.genres);
+			importDropdownOpen = false;
+		} finally {
 			loadingIndicator.stop();
 			importLoading = false;
-			return;
 		}
-
-		titleValue = game.title;
-		coverValue = game.cover ?? '';
-		developerValue = game.developer ?? '';
-		publisherValue = game.publisher ?? '';
-		if (platform) platformValue = platform;
-		if (game.publication_year) publicationYearValue = game.publication_year;
-
-		for (const genre of game.genres) {
-			const existing = library.genres.find((g) => g.title === genre);
-			if (existing) selectedGenres.push({ label: existing.title, value: existing.id.toString() });
+	}
+	function selectKnownGenres(titles: string[]): void {
+		for (const title of titles) {
+			const existing = library.genres.find((genre) => genre.title === title);
+			if (existing) selectedGenres.push(...genreEntries([existing]));
 		}
+	}
 
-		loadingIndicator.stop();
-		importLoading = false;
-		importDropdownOpen = false;
+	function modalTitle(): string {
+		return activeEntry !== null ? ts.get.libraries.games.edit_game : ts.get.libraries.games.add_game;
+	}
+
+	function existingCover(): string | null {
+		return activeEntry ? libraryCoverUrl(library, String(activeEntry.cover)) : null;
 	}
 </script>
 
 <CreateModal
-	title={activeEntry !== null
-		? ts.get.libraries.games.edit_game
-		: ts.get.libraries.games.add_game}
+	title={modalTitle()}
 	{library}
-	existingCover={activeEntry
-		? `${API_USER_STORAGE_URL}/${auth.user?.id}/${library.config.type}/${activeEntry.cover}`
-		: null}
+	existingCover={existingCover()}
 	newCover={coverValue}
 	bind:selectedRating
 	bind:isWishlist
@@ -267,10 +241,10 @@
 		<TextInput bind:value={publisherValue} />
 	</ModalFormRow>
 	<ModalFormRow label={ts.get.libraries.genres}>
-		<MultiSelect bind:value={selectedGenres} options={genreOptions} allowUserOptions oncreate={onCreateGenre} />
+		<MultiSelect bind:value={selectedGenres} options={genreEntries(library.genres)} allowUserOptions oncreate={onCreateGenre} />
 	</ModalFormRow>
 	<ModalFormRow label={ts.get.libraries.tags}>
-		<MultiSelect bind:value={selectedTags} options={tagOptions} allowUserOptions oncreate={onCreateTag} />
+		<MultiSelect bind:value={selectedTags} options={tagEntries(tags.tags)} allowUserOptions oncreate={onCreateTag} />
 	</ModalFormRow>
 	<ModalFormRow label={ts.get.libraries.publication_year}>
 		<NumberInput bind:value={publicationYearValue} />

@@ -13,7 +13,6 @@ export class Navigation {
 	static readonly LS_MOBILE_ORDER_KEY: string = 'navigation_mobile_order';
 
 	loaded = $state<boolean>(false);
-	auth: Auth;
 	features = $state<Record<FeatureType, boolean>>({
 		calendar: true,
 		todos: true,
@@ -30,18 +29,21 @@ export class Navigation {
 	usage = $state<FeatureUsage>({});
 	autoMobileOrder = $state<string[]>([...mobileDefaultOrder]);
 	customOrders = $state<Record<NavigationLayout, string[] | null>>({ desktop: null, mobile: null });
+	auth: Auth;
 	apiService: ApiService;
 	localStorage: LocalStorageService;
-	settingsService = new NavigationSettingsService();
+	settingsService: NavigationSettingsService;
 
 	constructor(
 		auth: Auth = getAuth(),
 		apiService: ApiService = auth.apiService,
-		localStorage: LocalStorageService = new LocalStorageService()
+		localStorage: LocalStorageService = new LocalStorageService(),
+		settingsService: NavigationSettingsService = new NavigationSettingsService()
 	) {
 		this.auth = auth;
 		this.apiService = apiService;
 		this.localStorage = localStorage;
+		this.settingsService = settingsService;
 		void Promise.all([this.loadActiveFeatures(), this.loadUsage(), this.loadMobileOrder()]);
 	}
 
@@ -113,12 +115,8 @@ export class Navigation {
 		const enabled = this.enabledItems(this.autoMobileOrder).map((item) => item.slug);
 		if (enabled.indexOf(slug) < mobileVisibleCount) return;
 
-		const barItems = enabled.slice(0, mobileVisibleCount).filter(s => s !== pinnedNavItem);
-		const leastUsed = barItems.reduce((a, b) => {
-			const aUsage = navItems[a]?.featureFlag ? (this.usage[navItems[a].featureFlag!] ?? 0) : 0;
-			const bUsage = navItems[b]?.featureFlag ? (this.usage[navItems[b].featureFlag!] ?? 0) : 0;
-			return aUsage <= bUsage ? a : b;
-		});
+		const barItems = enabled.slice(0, mobileVisibleCount).filter((s) => s !== pinnedNavItem);
+		const leastUsed = barItems.reduce((a, b) => (this.usageOf(a) <= this.usageOf(b) ? a : b));
 
 		const order = [...this.autoMobileOrder];
 		const submenuIndex = order.indexOf(slug);
@@ -153,6 +151,11 @@ export class Navigation {
 		this.auth.user!.settings.navigation = navigation;
 		await this.auth.updateNavigation(navigation);
 		await this.auth.loadAdditionalData();
+	}
+
+	private usageOf(slug: string): number {
+		const featureFlag = navItems[slug]?.featureFlag;
+		return featureFlag ? (this.usage[featureFlag] ?? 0) : 0;
 	}
 }
 

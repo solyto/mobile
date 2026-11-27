@@ -6,15 +6,20 @@
 	import DateTimeInput from '$lib/components/forms/DateTimeInput.svelte';
 	import Select from '$lib/components/forms/Select.svelte';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
-	import IconChevronDown from '@lucide/svelte/icons/chevron-down';
+	import IconChevronDown from '$lib/icons/lucide/chevron-down.svelte';
 	import { getTimeTracking } from '$lib/state/TimeTracking.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
-	import type {
-		CreateTimeTrackingEntryRequest,
-		TimeTrackingEntry,
-		UpdateTimeTrackingEntryRequest
-	} from '$lib/types/time_tracking';
+	import type { CreateTimeTrackingEntryRequest, TimeTrackingEntry } from '$lib/types/time_tracking';
+	import { getUrlFormat } from '$lib/helpers/DateHelper';
+	import {
+		durationInMinutes,
+		durationOnlyTimestamps,
+		minutesBetween,
+		splitDuration,
+		toDateTimeInputValue,
+		type DurationUnit
+	} from '$lib/helpers/TimeTrackingHelper';
 
 	const tt = getTimeTracking();
 	const ts = getTranslation();
@@ -30,43 +35,15 @@
 		entry?: TimeTrackingEntry | null;
 	} = $props();
 
-	type DurationUnit = 'minutes' | 'hours';
-
-	function toLocalDateValue(date: Date): string {
-		const y = date.getFullYear();
-		const m = String(date.getMonth() + 1).padStart(2, '0');
-		const d = String(date.getDate()).padStart(2, '0');
-		return `${y}-${m}-${d}`;
-	}
-
-	function toLocalDateTimeValue(iso: string): string {
-		const date = new Date(iso);
-		const y = date.getFullYear();
-		const m = String(date.getMonth() + 1).padStart(2, '0');
-		const d = String(date.getDate()).padStart(2, '0');
-		const h = String(date.getHours()).padStart(2, '0');
-		const min = String(date.getMinutes()).padStart(2, '0');
-		return `${y}-${m}-${d}T${h}:${min}`;
-	}
-
-	const initialMinutes = entry?.duration_minutes ?? 0;
-	const initialUnit: DurationUnit =
-		initialMinutes >= 60 && initialMinutes % 60 === 0 ? 'hours' : 'minutes';
-	const initialAmount = initialUnit === 'hours' ? initialMinutes / 60 : initialMinutes;
+	const initialDuration = splitDuration(entry?.duration_minutes ?? 0);
 
 	let description = $state<string>(entry?.description ?? '');
-	let durationAmount = $state<number>(initialAmount);
-	let durationUnit = $state<DurationUnit>(initialUnit);
-	let date = $state<string>(
-		entry ? toLocalDateValue(new Date(entry.started_at)) : toLocalDateValue(new Date())
-	);
+	let durationAmount = $state<number>(initialDuration.amount);
+	let durationUnit = $state<DurationUnit>(initialDuration.unit);
+	let date = $state<string>(getUrlFormat(entry ? new Date(entry.started_at) : new Date()));
 	let showExactTimes = $state<boolean>(!!entry?.has_exact_times);
-	let startedAt = $state<string>(
-		entry?.has_exact_times ? toLocalDateTimeValue(entry.started_at) : ''
-	);
-	let stoppedAt = $state<string>(
-		entry?.has_exact_times && entry.stopped_at ? toLocalDateTimeValue(entry.stopped_at) : ''
-	);
+	let startedAt = $state<string>(entry?.has_exact_times ? toDateTimeInputValue(entry.started_at) : '');
+	let stoppedAt = $state<string>(entry?.has_exact_times && entry.stopped_at ? toDateTimeInputValue(entry.stopped_at) : '');
 	// No silent default to the first project: the user must pick one.
 	let projectId = $state<string>(entry?.project?.id ?? initialProjectId ?? '');
 
@@ -82,61 +59,37 @@
 
 	let hasExactTimes = $derived(showExactTimes && !!startedAt && !!stoppedAt);
 
-	let durationMinutes = $derived.by(() => {
-		if (hasExactTimes) {
-			const start = new Date(startedAt).getTime();
-			const stop = new Date(stoppedAt).getTime();
-			if (stop > start) return Math.round((stop - start) / 60000);
-			return 0;
-		}
-		return durationUnit === 'hours' ? Math.round(durationAmount * 60) : Math.round(durationAmount);
-	});
+	let durationMinutes = $derived(hasExactTimes ? minutesBetween(startedAt, stoppedAt) : durationInMinutes(durationAmount, durationUnit));
 
-	let isValid = $derived(
-		!!projectId &&
-			(showExactTimes
-				? !!startedAt && !!stoppedAt && durationMinutes > 0
-				: durationMinutes > 0)
-	);
+	let isValid = $derived(!!projectId && durationMinutes > 0 && (!showExactTimes || hasExactTimes));
 
-	function buildTimestamps(): { started_at: string; stopped_at: string } {
-		if (hasExactTimes) {
-			return {
-				started_at: new Date(startedAt).toISOString(),
-				stopped_at: new Date(stoppedAt).toISOString()
-			};
-		}
-		// Duration-only entries are anchored to a defined local time (noon) on
-		// the chosen day, so the entry always lands on the day the user picked
-		// and never rolls into the previous calendar day.
-		const [y, m, d] = date.split('-').map(Number);
-		const start = new Date(y, m - 1, d, 12, 0, 0, 0);
-		const stop = new Date(start.getTime() + durationMinutes * 60000);
-		return { started_at: start.toISOString(), stopped_at: stop.toISOString() };
+	function timestamps(): { started_at: string; stopped_at: string } {
+		if (!hasExactTimes) return durationOnlyTimestamps(date, durationMinutes);
+		return { started_at: new Date(startedAt).toISOString(), stopped_at: new Date(stoppedAt).toISOString() };
+	}
+
+	function toggleExactTimes(): void {
+		showExactTimes = !showExactTimes;
 	}
 
 	async function onSave(): Promise<void> {
 		if (!isValid) return;
 
-		loadingIndicator.start();
-
-		const timestamps = buildTimestamps();
-		const request: CreateTimeTrackingEntryRequest & UpdateTimeTrackingEntryRequest = {
+		const request: CreateTimeTrackingEntryRequest = {
 			description: description.trim() || null,
-			started_at: timestamps.started_at,
-			stopped_at: timestamps.stopped_at,
+			...timestamps(),
 			duration_minutes: durationMinutes,
 			has_exact_times: hasExactTimes,
 			project_id: projectId
 		};
 
-		if (entry) {
-			await tt.updateEntry(entry.id, request);
-		} else {
-			await tt.createEntry(request as CreateTimeTrackingEntryRequest);
+		loadingIndicator.start();
+		try {
+			if (entry) await tt.updateEntry(entry.id, request);
+			else await tt.createEntry(request);
+		} finally {
+			loadingIndicator.stop();
 		}
-
-		loadingIndicator.stop();
 		onClose();
 	}
 </script>
@@ -179,11 +132,9 @@
 		{/if}
 		<button
 			class="flex cursor-pointer flex-row items-center gap-1 text-xs text-c-neutral-4 transition-colors hover:text-c-neutral-6 dark:hover:text-c-neutral-3"
-			onclick={() => (showExactTimes = !showExactTimes)}
+			onclick={toggleExactTimes}
 		>
-			<IconChevronDown
-				class="size-3.5 transition-transform {showExactTimes ? 'rotate-180' : ''}"
-			/>
+			<IconChevronDown class="size-3.5 transition-transform {showExactTimes ? 'rotate-180' : ''}" />
 			{ts.get.timeTracking.started_at} / {ts.get.timeTracking.stopped_at}
 		</button>
 		{#if showExactTimes}

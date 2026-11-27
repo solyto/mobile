@@ -1,8 +1,6 @@
 <script lang="ts">
 	import type { Todo } from '$lib/types/todo';
-	import type { CalendarEvent } from '$lib/types/calendar';
 	import { blur } from 'svelte/transition';
-	import { onMount } from 'svelte';
 	import { getTodos } from '$lib/state/Todos.svelte';
 	import { getCalendars } from '$lib/state/Calendars.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
@@ -17,8 +15,12 @@
 	import UpcomingEventsWidget from '$lib/components/dashboard/widgets/UpcomingEventsWidget.svelte';
 	import confetti from 'canvas-confetti';
 	import { createConfettiOptions } from '$lib/effects/confetti';
+	import { eventsNotStartingOn, eventsStartingOn } from '$lib/helpers/CalendarEventHelper';
 	import { getAuth } from '$lib/state/Auth.svelte';
 	import { getNavigation } from '$lib/state/Navigation.svelte';
+
+	const RELEVANCE_THRESHOLD = 0.6;
+	const MAX_SCORED_TODOS = 5;
 
 	const todos = getTodos();
 	const calendars = getCalendars();
@@ -32,52 +34,18 @@
 
 	const today = new Date();
 
-	let allEvents = $state<CalendarEvent[]>([]);
-	let todayEvents = $derived(
-		allEvents
-			.filter((e) => {
-				const d = new Date(e.start_date);
-				return (
-					d.getDate() === today.getDate() &&
-					d.getMonth() === today.getMonth() &&
-					d.getFullYear() === today.getFullYear()
-				);
-			})
-			.sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime())
-	);
-	let upcomingEvents = $derived(
-		allEvents
-			.filter((e) => {
-				const d = new Date(e.start_date);
-				return (
-					d.getDate() !== today.getDate() ||
-					d.getMonth() !== today.getMonth() ||
-					d.getFullYear() !== today.getFullYear()
-				);
-			})
-			.sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime())
-	);
+	let todayEvents = $derived(eventsStartingOn(calendars.widgetEvents, today));
+	let upcomingEvents = $derived(eventsNotStartingOn(calendars.widgetEvents, today));
 	let dueTodos = $derived(filterService.filterByDueDate('today-overdue', todos.filteredTodos, auth.getWeekStart()));
 	let scoredTodos = $derived.by(() => {
 		const cloned = todos.filteredTodos.map((t) => ({ ...t }));
 		const scored = sortingService.sortByScore(relevanceService.getScoredTodos(cloned));
-		return scored
-			.filter(
-				(t) =>
-					t.relevance !== null &&
-					t.relevance !== undefined &&
-					t.relevance > 0.6 &&
-					!dueTodos.some((d) => d.id === t.id)
-			)
-			.slice(0, 5);
+		return scored.filter(isRelevantAndNotDue).slice(0, MAX_SCORED_TODOS);
 	});
 
-	onMount(() => {
-		if (!nav.features.calendar) return;
-		calendars.getWidgetEvents().then((events) => {
-			if (events) allEvents = events;
-		});
-	});
+	function isRelevantAndNotDue(todo: Todo): boolean {
+		return (todo.relevance ?? 0) > RELEVANCE_THRESHOLD && !dueTodos.some((due) => due.id === todo.id);
+	}
 
 	function isLoaded(): boolean {
 		return todos.loaded || !nav.features.todos;
@@ -95,6 +63,14 @@
 		return nav.features.todos ? scoredTodos : [];
 	}
 
+	function hasWidgetAboveScoredTodos(): boolean {
+		return todayEvents.length > 0 || visibleDueTodos().length > 0;
+	}
+
+	function hasWidgetAboveUpcomingEvents(): boolean {
+		return hasWidgetAboveScoredTodos() || visibleScoredTodos().length > 0;
+	}
+
 	async function handleCheck(event: Event, todo: Todo): Promise<void> {
 		loadingIndicator.start();
 		const checkbox = event.target as HTMLInputElement;
@@ -106,9 +82,12 @@
 			confetti(createConfettiOptions({ x, y }, 'default'));
 		}
 
-		await todos.changeCompleted(todo, checkbox.checked);
-		todo.is_completed = checkbox.checked;
-		loadingIndicator.stop();
+		try {
+			await todos.changeCompleted(todo, checkbox.checked);
+			todo.is_completed = checkbox.checked;
+		} finally {
+			loadingIndicator.stop();
+		}
 	}
 </script>
 
@@ -126,11 +105,11 @@
 			{/if}
 
 			{#if visibleScoredTodos().length > 0}
-				<ScoredTodosWidget scoredTodos={visibleScoredTodos()} {handleCheck} {ts} mt={todayEvents.length > 0 || visibleDueTodos().length > 0} />
+				<ScoredTodosWidget scoredTodos={visibleScoredTodos()} {handleCheck} {ts} mt={hasWidgetAboveScoredTodos()} />
 			{/if}
 
 			{#if upcomingEvents.length > 0}
-				<UpcomingEventsWidget {upcomingEvents} {ts} {auth} mt={todayEvents.length > 0 || visibleDueTodos().length > 0 || visibleScoredTodos().length > 0} />
+				<UpcomingEventsWidget {upcomingEvents} {ts} {auth} mt={hasWidgetAboveUpcomingEvents()} />
 			{/if}
 
 			{#if hasNothingToday()}

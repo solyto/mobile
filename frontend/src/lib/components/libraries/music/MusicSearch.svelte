@@ -1,5 +1,6 @@
 <script lang="ts">
-	import LibrarySearchModal, { type SearchSource } from '$lib/components/libraries/shared/LibrarySearchModal.svelte';
+	import LibrarySearchModal from '$lib/components/libraries/shared/LibrarySearchModal.svelte';
+	import type { SearchSource } from '$lib/types/library';
 	import type { MusicLibrary } from '$lib/state/MusicLibrary.svelte';
 	import type { Translation } from '$lib/state/Translation.svelte';
 	import type { MusicRelease, MusicSearchResult } from '$lib/types/library_music';
@@ -14,58 +15,38 @@
 	} = $props();
 
 	const sourceDefs: Record<string, Omit<SearchSource, 'label' | 'icon'>> = {
-		deezer: {
-			search: async (query) => {
-				const results = await library.searchAt('deezer', query);
-				return results?.map((r: MusicSearchResult) => ({
-					id: r.id,
-					title: r.title,
-					subtitle: [r.artist, r.release_year?.toString()].filter(Boolean).join(' · '),
-					image: r.cover,
-					data: r
-				})) ?? null;
-			},
-			onSelect: async (result) => {
-				const r = result.data as MusicSearchResult;
-				const album = await library.importFrom('deezer', r.url);
-				if (album) onSelect(album);
-			}
-		},
-		discogs: {
-			search: async (query) => {
-				const results = await library.searchAt('discogs', query);
-				return results?.map((r: MusicSearchResult) => ({
-					id: r.id,
-					title: r.title,
-					subtitle: r.release_year?.toString(),
-					image: r.cover,
-					data: r
-				})) ?? null;
-			},
-			onSelect: async (result) => {
-				const r = result.data as MusicSearchResult;
-				const album = await library.importFrom('discogs', r.url);
-				if (album) onSelect(album);
-			}
-		},
-		spotify: {
-			search: async (query) => {
-				const results = await library.searchAt('spotify', query);
-				return results?.map((r: MusicSearchResult) => ({
-					id: r.id,
-					title: r.title,
-					subtitle: [r.artist, r.release_year?.toString()].filter(Boolean).join(' · '),
-					image: r.cover,
-					data: r
-				})) ?? null;
-			},
-			onSelect: async (result) => {
-				const r = result.data as MusicSearchResult;
-				const album = await library.importFrom('spotify', r.url);
-				if (album) onSelect(album);
-			}
-		}
+		deezer: searchSource('deezer', artistAndYear),
+		discogs: searchSource('discogs', year),
+		spotify: searchSource('spotify', artistAndYear)
 	};
+
+	function artistAndYear(result: MusicSearchResult): string {
+		return [result.artist, result.release_year?.toString()].filter(Boolean).join(' · ');
+	}
+
+	function year(result: MusicSearchResult): string | undefined {
+		return result.release_year?.toString();
+	}
+
+	function searchSource(provider: string, subtitle: (result: MusicSearchResult) => string | undefined): Omit<SearchSource, 'label' | 'icon'> {
+		return {
+			search: async (query) => {
+				const results = await library.searchAt(provider, query);
+				return results?.map((r: MusicSearchResult) => ({
+					id: r.id,
+					title: r.title,
+					subtitle: subtitle(r),
+					image: r.cover,
+					data: r
+				})) ?? null;
+			},
+			onSelect: async (result) => {
+				const r = result.data as MusicSearchResult;
+				const album = await library.importFrom(provider, r.url);
+				if (album) onSelect(album);
+			}
+		};
+	}
 
 	const icons: Record<string, string> = {
 		deezer: DeezerIcon,
@@ -86,10 +67,14 @@
 			})
 			.filter((source: SearchSource | null): source is SearchSource => source !== null)
 	);
+
+	function close(): void {
+		library.closeExternalSearchModal();
+	}
 </script>
 
 <LibrarySearchModal
 	sources={searchSources}
-	onClose={() => library.closeExternalSearchModal()}
+	onClose={close}
 	placeholder={ts.get.libraries.music.search_placeholder}
 />

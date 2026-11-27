@@ -1,23 +1,22 @@
 <script lang="ts">
 	import { fade } from 'svelte/transition';
-	import IconBot from '@lucide/svelte/icons/bot';
-	import IconRotateCcw from '@lucide/svelte/icons/rotate-ccw';
+	import IconBot from '$lib/icons/lucide/bot.svelte';
+	import IconRotateCcw from '$lib/icons/lucide/rotate-ccw.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import IconButton from '$lib/components/ui/buttons/IconButton.svelte';
 	import ContentModal from '$lib/components/ui/ContentModal.svelte';
 	import LoadingLogo from '$lib/components/ui/LoadingLogo.svelte';
 	import type { LibraryRecommendation, LibraryRecommendationType } from '$lib/types/library';
-	import { getAuth } from '$lib/state/Auth.svelte';
 	import type { MusicLibrary } from '$lib/state/MusicLibrary.svelte';
 	import type { BookLibrary } from '$lib/state/BookLibrary.svelte';
 	import Recommendation from '$lib/components/libraries/shared/Recommendation.svelte';
-	import { apiRoutes } from '$lib/config/apiRoutes';
 	import { urls } from '$lib/config/urls';
 	import { resolve } from '$app/paths';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
+	import OptionCard from '$lib/components/ui/OptionCard.svelte';
 
 	const ts = getTranslation();
-	const auth = getAuth();
+	const MIN_LOADING_MS = 500;
 
 	let { library }: { library: MusicLibrary | BookLibrary } = $props();
 
@@ -25,7 +24,7 @@
 	let selection = $state<LibraryRecommendationType | null>(null);
 	let recommendation = $state<LibraryRecommendation | null>(null);
 	let recommendationLoaded = $state<boolean>(false);
-	let loadingText = $state<string>('Loading...');
+	let loadingText = $state<string>(ts.get.libraries.recommendations.loading_text_local);
 
 	function toggleChat() {
 		if (modalVisible) {
@@ -37,11 +36,8 @@
 	}
 
 	async function select(type: LibraryRecommendationType): Promise<void> {
-		if (type === 'new') {
-			loadingText = ts.get.libraries.recommendations.loading_text_remote;
-		} else {
-			loadingText = ts.get.libraries.recommendations.loading_text_local;
-		}
+		const texts = ts.get.libraries.recommendations;
+		loadingText = type === 'new' ? texts.loading_text_remote : texts.loading_text_local;
 
 		recommendationLoaded = false;
 		selection = type;
@@ -58,20 +54,22 @@
 		recommendation = await library.recommend(selection!);
 		setTimeout(() => {
 			recommendationLoaded = true;
-		}, 500);
+		}, MIN_LOADING_MS);
 
 		if (recommendation === null) return;
 
 		if (recommendation.id === null) {
-			const apiService = auth.apiService;
-			const query = encodeURIComponent(`${recommendation.creator} ${recommendation.title}`);
-			const res = await apiService.list(`${apiRoutes.libraries.music.search}/deezer/${query}`);
-			if (res !== null && res.data.length > 0) {
-				const item = (res.data as Array<{ url: string; cover: string | null }>)[0];
-				recommendation.link = item.url;
-				recommendation.cover = item.cover;
+			const results = await library.searchAt(searchProvider(), `${recommendation.creator} ${recommendation.title}`);
+			const match = results?.[0];
+			if (match) {
+				recommendation.link = match.url;
+				recommendation.cover = match.cover;
 			}
 		}
+	}
+
+	function searchProvider(): string {
+		return library.config.type === 'books' ? 'hardcover' : 'deezer';
 	}
 </script>
 
@@ -104,7 +102,7 @@
 						<button
 							class="flex cursor-pointer items-center justify-center gap-3 rounded-lg bg-c-action px-4 py-2 text-c-action-icon drop-shadow-md transition-all hover:bg-c-warning hover:text-c-action-icon-hover hover:shadow-xs hover:drop-shadow-xl"
 							in:fade
-							onclick={async () => loadRecommendation()}
+							onclick={loadRecommendation}
 						>
 							<IconRotateCcw />
 							{ts.get.libraries.recommendations.not_satisfied}
@@ -123,17 +121,9 @@
 {/if}
 
 {#snippet recommenderOption(type: LibraryRecommendationType, color: string)}
-	<button
-		type="button"
-		class="relative w-full cursor-pointer rounded-lg border-1 border-c-neutral-1 bg-c-bg-surface text-left shadow-sm transition-all hover:bg-c-neutral dark:border-s-dark-2 dark:hover:bg-s-dark-3"
+	<OptionCard
+		label={ts.get.libraries.recommendations[type as keyof typeof ts.get.libraries.recommendations]}
+		stripeColor="var(--color-s-{color})"
 		onclick={() => select(type)}
-	>
-		<div
-			class="w-1 absolute rounded-lg"
-			style="background-color: var(--color-s-{color}); height: calc(100% - 16px); top: 8px; left: 12px;"
-		></div>
-		<div class="ml-4 w-full px-4 py-2">
-			{ts.get.libraries.recommendations[type as keyof typeof ts.get.libraries.recommendations]}
-		</div>
-	</button>
+	/>
 {/snippet}

@@ -8,8 +8,11 @@
 	import { dndzone, type DndEvent } from 'svelte-dnd-action';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import Heading from '$lib/components/ui/Heading.svelte';
+	import { getTranslation } from '$lib/state/Translation.svelte';
+	import { getStatusLabel } from '$lib/helpers/TodoHelper';
 
 	const todos = getTodos();
+	const ts = getTranslation();
 	const loadingIndicator = getLoadingIndicator();
 	const flipDurationMs = 200;
 
@@ -20,21 +23,6 @@
 	onMount(() => {
 		todos.groupByStatus();
 	});
-
-	function getStatusLabel(status: TodoStatus): string {
-		switch (status) {
-			case 'backlog':
-				return 'Backlog';
-			case 'in-progress':
-				return 'In Progress';
-			case 'waiting':
-				return 'Waiting';
-			case 'almost-done':
-				return 'Almost done';
-			default:
-				return 'Pending';
-		}
-	}
 
 	function getStatusColor(status: TodoStatus): string {
 		switch (status) {
@@ -72,10 +60,12 @@
 
 	async function handleStatusChange(todoId: string, status: TodoStatus): Promise<void> {
 		loadingIndicator.start();
-		await todos.changeStatus(todoId, status);
-		await todos.load();
-
-		loadingIndicator.stop();
+		try {
+			await todos.changeStatus(todoId, status);
+			await todos.load();
+		} finally {
+			loadingIndicator.stop();
+		}
 	}
 </script>
 
@@ -86,7 +76,7 @@
 			animate:flip={{ duration: flipDurationMs }}
 		>
 			<div class="mb-6 border-b-4 p-4 border-{getStatusColor(group.status)}">
-				<Heading title={getStatusLabel(group.status)} my={0} />
+				<Heading title={getStatusLabel(group.status, ts.get.todos)} my={0} />
 			</div>
 			<div
 				class="flex flex-1 flex-col space-y-4 rounded-lg !outline-0 transition-all"

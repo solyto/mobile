@@ -1,5 +1,5 @@
 <script lang="ts">
-	import IconCheck from '@lucide/svelte/icons/check';
+	import IconCheck from '$lib/icons/lucide/check.svelte';
 
 	let { onClick, colorOnHover = false, inModal = false }: {
 		onClick: () => void;

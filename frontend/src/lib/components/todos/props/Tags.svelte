@@ -41,8 +41,13 @@
 			keyHandlers.Escape = keyManager.registerKeyDown('Escape', handleEscape);
 		}
 	}
+
 	async function handleEnter(event: KeyboardEvent): Promise<void> {
 		if (autocompleteOpen) return;
+		await submitAndClose();
+	}
+
+	async function submitAndClose(): Promise<void> {
 		await onsubmit();
 		await toggleAddTags();
 		addTagName = '';
@@ -61,49 +66,47 @@
 	}
 
 	async function onsubmit(): Promise<void> {
-		loadingIndicator.start();
 		keyManager.unregisterKeyDown(keyHandlers.Enter);
-		let tagName = addTagName.trim().replace('#', '');
+		const tagName = addTagName.trim().replace('#', '');
+		if (tagName === '') return;
 
-		if (tagName === '') {
+		loadingIndicator.start();
+		try {
+			await assignTag(tagName);
+		} finally {
 			loadingIndicator.stop();
+		}
+	}
+
+	async function assignTag(name: string): Promise<void> {
+		const existing = tags.tags.find((t) => t.name.toLowerCase() === name.toLowerCase());
+		const tag = existing ?? (await tags.create(name));
+		if (!tag) {
+			notifications.error(ts.get.todos.tag_error);
 			return;
 		}
-
-		let tagId = tags.tags.find((t) => t.name.toLowerCase() === tagName.toLowerCase())?.id;
-
-		if (!tagId) {
-			const tag = await tags.create(tagName);
-
-			if (!tag) {
-				loadingIndicator.stop();
-				notifications.error(ts.get.todos.tag_error);
-				return;
-			}
-
-			tagId = tag.id;
-		}
-
-		await todos.addTag(todo, tagId);
-		loadingIndicator.stop();
+		await todos.addTag(todo, tag.id);
 	}
 
 	async function onRemoveTag(tag: Tag): Promise<void> {
 		loadingIndicator.start();
-		await todos.removeTag(todo, tag);
-		loadingIndicator.stop();
+		try {
+			await todos.removeTag(todo, tag);
+		} finally {
+			loadingIndicator.stop();
+		}
 	}
 </script>
 
 {#if addTagVisible && !readonly}
-	<div class="w-32 {todos.view === 'kanban' ? 'px-2 py-1 text-xs' : ''}">
+	<div class="w-32" class:px-2={todos.view === 'kanban'} class:py-1={todos.view === 'kanban'} class:text-xs={todos.view === 'kanban'}>
 		<InputAutocomplete
 			bind:input={addTagInput}
 			bind:value={addTagName}
 			bind:open={autocompleteOpen}
 			{onblur}
 			items={tags.tags.map((t) => ({ label: t.name }))}
-			onselect={async () => { await onsubmit(); await toggleAddTags(); addTagName = ''; }}
+			onselect={submitAndClose}
 		/>
 	</div>
 {:else}

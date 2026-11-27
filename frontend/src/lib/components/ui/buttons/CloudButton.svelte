@@ -1,5 +1,5 @@
 <script lang="ts">
-	import IconCloud from '@lucide/svelte/icons/cloud';
+	import IconCloud from '$lib/icons/lucide/cloud.svelte';
 
 	let { onClick, title }: {
 		onClick: () => void;

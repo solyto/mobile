@@ -5,6 +5,8 @@
 		disabled = false,
 		id,
 		ariaLabel,
+		boxSize = 'size-5',
+		markSize = 'size-3.5',
 		class: customClass = ''
 	}: {
 		isChecked?: boolean;
@@ -12,6 +14,8 @@
 		disabled?: boolean;
 		id?: string;
 		ariaLabel?: string;
+		boxSize?: string;
+		markSize?: string;
 		class?: string;
 	} = $props();
 </script>
@@ -22,7 +26,7 @@
 			type="checkbox"
 			{id}
 			aria-label={ariaLabel}
-			class="checkbox-box peer h-5 w-5 appearance-none rounded border border-c-neutral-3 bg-c-bg-elevated shadow transition-all checked:border-c-success checked:bg-c-success dark:border-c-neutral-6 dark:checked:border-c-success"
+			class="checkbox-box peer appearance-none rounded border border-c-neutral-3 bg-c-bg-elevated shadow transition-all checked:border-c-success checked:bg-c-success dark:border-c-neutral-6 dark:checked:border-c-success {boxSize}"
 			class:cursor-pointer={!disabled}
 			class:cursor-not-allowed={disabled}
 			class:hover:shadow-md={!disabled}
@@ -35,7 +39,7 @@
 		>
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
-				class="h-3.5 w-3.5"
+				class={markSize}
 				viewBox="0 0 20 20"
 				fill="currentColor"
 				stroke="currentColor"

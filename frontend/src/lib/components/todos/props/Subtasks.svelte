@@ -47,22 +47,29 @@
 	}
 
 	async function handleEnter(event: KeyboardEvent): Promise<void> {
-		let subtask = subtaskValue.trim();
-		if (subtask !== '') {
-			loadingIndicator.start();
-			const res = await todos.addSubtask(todo, subtask);
-			if (res) subtaskValue = '';
-			loadingIndicator.stop();
-			keyManager.unregisterAll(keyHandlers);
-		}
+		const subtask = subtaskValue.trim();
+		if (subtask !== '') await addSubtask(subtask);
 		await toggleAddSubtask();
 	}
 
-	async function handleCheckboxClick(subtask: TodoSubtask): Promise<void> {
-		const is_completed = !subtask.is_completed;
+	async function addSubtask(title: string): Promise<void> {
 		loadingIndicator.start();
-		await todos.markSubtask(todo, subtask, is_completed);
-		loadingIndicator.stop();
+		try {
+			const added = await todos.addSubtask(todo, title);
+			if (added) subtaskValue = '';
+		} finally {
+			loadingIndicator.stop();
+		}
+		keyManager.unregisterAll(keyHandlers);
+	}
+
+	async function handleCheckboxClick(subtask: TodoSubtask): Promise<void> {
+		loadingIndicator.start();
+		try {
+			await todos.markSubtask(todo, subtask, !subtask.is_completed);
+		} finally {
+			loadingIndicator.stop();
+		}
 	}
 </script>
 
@@ -71,7 +78,13 @@
 		<Subtask {todo} {subtask} {handleCheckboxClick} />
 	{/each}
 	{#if addSubtaskVisible}
-		<div class="w-full {todos.view === 'kanban' ? 'px-2 py-1 text-xs' : ''}" class:mt-2={subtasks.length > 0}>
+		<div
+			class="w-full"
+			class:px-2={todos.view === 'kanban'}
+			class:py-1={todos.view === 'kanban'}
+			class:text-xs={todos.view === 'kanban'}
+			class:mt-2={subtasks.length > 0}
+		>
 			<TextInput bind:input={subtaskInput} bind:value={subtaskValue} {onblur} />
 		</div>
 	{:else}

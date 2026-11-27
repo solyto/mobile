@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { init } from './echarts';
 	import type { ECharts } from './echarts';
-	import { onMount, onDestroy } from 'svelte';
+	import { onMount } from 'svelte';
 
 	let { title, xCategories, dataPoints, valueFormatter }: {
 		title?: string;
@@ -10,26 +10,11 @@
 		valueFormatter?: (value: number) => string;
 	} = $props();
 
-	let chartContainer = $state<HTMLDivElement | null>(null);
-	let myChart: ECharts | null = null;
+	let chartContainer: HTMLDivElement;
+	let chart = $state<ECharts | null>(null);
 
-	/*
-		Fields: categories
-		Legend: Fields
-		Values: series
-	 */
-
-	function createChart() {
-		if (!chartContainer || !xCategories?.length || !dataPoints?.length) return;
-
-		if (myChart) {
-			myChart.dispose();
-			myChart = null;
-		}
-
-		myChart = init(chartContainer);
-
-		const options = {
+	function options() {
+		return {
 			title: {
 				text: title || ''
 			},
@@ -74,35 +59,27 @@
 				}
 			}))
 		};
-
-		myChart.setOption(options);
 	}
 
 	onMount(() => {
-		const handleResize = () => {
-			if (myChart) {
-				myChart.resize();
-			}
-		};
-
+		const instance = init(chartContainer);
+		const handleResize = () => instance.resize();
+		chart = instance;
 		window.addEventListener('resize', handleResize);
 
 		return () => {
 			window.removeEventListener('resize', handleResize);
+			instance.dispose();
 		};
 	});
 
-	onDestroy(() => {
-		if (myChart) {
-			myChart.dispose();
-			myChart = null;
-		}
-	});
-
 	$effect(() => {
-		if (chartContainer) {
-			createChart();
+		if (!xCategories?.length || !dataPoints?.length) {
+			chart?.clear();
+			return;
 		}
+
+		chart?.setOption(options(), true);
 	});
 </script>
 

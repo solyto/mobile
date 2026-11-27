@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { blur } from 'svelte/transition';
-	import IconBookOpen from '@lucide/svelte/icons/book-open';
-	import IconExternalLink from '@lucide/svelte/icons/external-link';
+	import IconBookOpen from '$lib/icons/lucide/book-open.svelte';
+	import IconExternalLink from '$lib/icons/lucide/external-link.svelte';
 	import type { BookRelease } from '$lib/types/library_book';
 	import type { Translation } from '$lib/state/Translation.svelte';
 	import { formatDate } from '$lib/helpers/DateHelper';

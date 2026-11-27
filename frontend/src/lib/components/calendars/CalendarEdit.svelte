@@ -4,15 +4,16 @@
 	import { getExternalCalendars } from '$lib/state/ExternalCalendars.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
-	import ColorPicker from 'svelte-awesome-color-picker';
+	import ColorPicker from '$lib/components/forms/ColorPicker.svelte';
 	import type { Calendar, UpdateCalendarRequest } from '$lib/types/calendar';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import { clickOutside } from '$lib/helpers/ClickHelper';
 	import InlineDeleteButton from '$lib/components/ui/buttons/InlineDeleteButton.svelte';
-	import IconShare2 from '@lucide/svelte/icons/share-2';
-	import IconEye from '@lucide/svelte/icons/eye';
-	import IconEyeOff from '@lucide/svelte/icons/eye-off';
-	import IconKeyRound from '@lucide/svelte/icons/key-round';
+	import GhostIconButton from '$lib/components/ui/buttons/GhostIconButton.svelte';
+	import IconShare2 from '$lib/icons/lucide/share-2.svelte';
+	import IconEye from '$lib/icons/lucide/eye.svelte';
+	import IconEyeOff from '$lib/icons/lucide/eye-off.svelte';
+	import IconKeyRound from '$lib/icons/lucide/key-round.svelte';
 
 	const calendars = getCalendars();
 	const calendarSharing = getCalendarSharing();
@@ -23,11 +24,13 @@
 
 	let { calendar }: { calendar: Calendar } = $props();
 
-	let hex = $state<string>(calendar.color !== null ? calendar.color : 'var(--color-c-neutral-2)');
+	const NO_COLOR = 'var(--color-c-neutral-2)';
+
+	let hex = $state<string>(calendar.color ?? NO_COLOR);
+	let status = $derived(calendars.calendarStatus(calendar));
 
 	async function onColorChange(): Promise<void> {
-		if (hex === calendar.color) return;
-		if (hex === null) return;
+		if (hex === NO_COLOR || hex === calendar.color) return;
 
 		loadingIndicator.start();
 		const request: UpdateCalendarRequest = { color: hex };
@@ -59,36 +62,30 @@
 	function onChangePassword(): void {
 		externalCalendars.changePasswordForCalendar(calendar.id);
 	}
+
+	function onToggleVisibility(): void {
+		calendars.toggleCalendar(calendar.id);
+	}
 </script>
 
 <div class="flex w-full min-w-0 items-center gap-4">
 	<div use:clickOutside={onColorChange}>
-		<ColorPicker
-			bind:hex
-			position="responsive"
-			nullable={false}
-			label=""
-			isTextInput={false}
-			--cp-border-color="var(--color-c-neutral-2)"
-		/>
+		<ColorPicker bind:hex />
 	</div>
 	<div class="flex flex-1 flex-col min-w-0">
 		<span class="truncate text-md">{calendar.name}</span>
 		{#if calendar.is_shared && calendar.share_owner}
 			<span class="truncate text-xs text-c-neutral-4">{ts.get.calendar.shared_by.toLowerCase().replace('%s', calendar.share_owner)}</span>
-		{:else if calendars.isCalendarCredentialsRejected(calendar.id)}
+		{:else if status === 'credentials_rejected'}
 			<span class="truncate text-xs text-c-danger">{ts.get.calendar.external_credentials_rejected}</span>
-		{:else if calendars.isCalendarUnavailable(calendar.id)}
+		{:else if status === 'unavailable'}
 			<span class="truncate text-xs text-c-danger">{ts.get.calendar.external_unavailable}</span>
-		{:else if calendar.is_external}
+		{:else if status === 'external'}
 			<span class="truncate text-xs text-c-neutral-4">{ts.get.calendar.external_calendar}</span>
 		{/if}
 	</div>
 	<div class="lg:hidden">
-		<button
-			class="text-c-neutral-4"
-			onclick={() => calendars.toggleCalendar(calendar.id)}
-		>
+		<button class="text-c-neutral-4" onclick={onToggleVisibility}>
 			{#if calendars.isCalendarHidden(calendar.id)}
 				<IconEyeOff class="size-4" />
 			{:else}
@@ -98,24 +95,15 @@
 	</div>
 	<div class="flex items-center">
 		{#if !calendar.is_shared && calendar.invite_status === null}
-			{#if calendars.isCalendarCredentialsRejected(calendar.id)}
-				<button
-					class="cursor-pointer rounded-full p-2 text-c-danger transition-colors hover:bg-c-neutral-1 hover:text-c-primary dark:hover:bg-s-dark-3"
-					onclick={onChangePassword}
-					title={ts.get.calendar.account_change_password}
-					aria-label={ts.get.calendar.account_change_password}
-				>
+			{#if status === 'credentials_rejected'}
+				<GhostIconButton onclick={onChangePassword} label={ts.get.calendar.account_change_password} color="text-c-danger">
 					<IconKeyRound class="size-4" />
-				</button>
+				</GhostIconButton>
 			{/if}
 			{#if !calendar.is_external}
-				<button
-					class="cursor-pointer rounded-full p-2 text-c-neutral-4 transition-colors hover:bg-c-neutral-1 hover:text-c-primary dark:hover:bg-s-dark-3"
-					onclick={onShare}
-					title={ts.get.calendar.share_calendar}
-				>
+				<GhostIconButton onclick={onShare} label={ts.get.calendar.share_calendar}>
 					<IconShare2 class="size-4" />
-				</button>
+				</GhostIconButton>
 			{/if}
 			<InlineDeleteButton onClick={onDelete} />
 		{:else if calendar.is_shared}

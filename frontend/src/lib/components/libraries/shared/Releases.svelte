@@ -3,7 +3,7 @@
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import IconButton from '$lib/components/ui/buttons/IconButton.svelte';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
-	import IconNewspaper from '@lucide/svelte/icons/newspaper';
+	import IconNewspaper from '$lib/icons/lucide/newspaper.svelte';
 	import ContentModal from '$lib/components/ui/ContentModal.svelte';
 	import type { MusicLibrary } from '$lib/state/MusicLibrary.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
@@ -26,12 +26,8 @@
 
 	let modalOpen = $state<boolean>(false);
 
-	onMount(async () => {
-		const showReleases = page.url.searchParams.get('releases');
-
-		if (showReleases !== null) {
-			toggleModal();
-		}
+	onMount(() => {
+		if (page.url.searchParams.has('releases')) toggleModal();
 	});
 
 	async function toggleModal(): Promise<void> {
@@ -39,8 +35,11 @@
 
 		if (modalOpen && !library.releasesLoaded) {
 			loadingIndicator.start();
-			await library.loadReleases();
-			loadingIndicator.stop();
+			try {
+				await library.loadReleases();
+			} finally {
+				loadingIndicator.stop();
+			}
 		}
 	}
 </script>

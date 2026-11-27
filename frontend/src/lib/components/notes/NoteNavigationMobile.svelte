@@ -1,16 +1,16 @@
 <script lang="ts">
-	import { fly } from 'svelte/transition';
+	import { fly, type FlyParams } from 'svelte/transition';
 	import { getNotes } from '$lib/state/Notes.svelte';
 	import type { Note, NoteCategory } from '$lib/types/note';
 	import { urls } from '$lib/config/urls';
 	import { resolve } from '$app/paths';
-	import { goto } from '$app/navigation';
+	import { afterNavigate, goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { getDateMinusDays, getUrlFormat } from '$lib/helpers/DateHelper';
+	import { getUrlFormat } from '$lib/helpers/DateHelper';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { getAuth } from '$lib/state/Auth.svelte';
-	import IconChevronRight from '@lucide/svelte/icons/chevron-right';
-	import IconArrowLeft from '@lucide/svelte/icons/arrow-left';
+	import IconChevronRight from '$lib/icons/lucide/chevron-right.svelte';
+	import IconArrowLeft from '$lib/icons/lucide/arrow-left.svelte';
 	import AddNoteButton from '$lib/components/notes/AddNoteButton.svelte';
 	import AddFolderButton from '$lib/components/notes/AddFolderButton.svelte';
 	import SearchNoteButton from '$lib/components/notes/SearchNoteButton.svelte';
@@ -25,23 +25,32 @@
 	const notes = getNotes();
 	const ts = getTranslation();
 	const auth = getAuth();
+	const loadingIndicator = getLoadingIndicator();
+	const recentKeys = notes.journalService.recentEntryKeys();
 
 	let open = $state<boolean>(false);
 	let stack = $state<(NoteCategory | 'journal' | 'favorites')[]>([]);
 	let direction = $state<'forward' | 'back'>('forward');
-	let favorites = $derived(notes.getFavorites());
 	let otherOpen = $state<boolean>(false);
-
-	const todayKey = getUrlFormat(new Date());
-	const yesterdayKey = getUrlFormat(getDateMinusDays(new Date(), 1));
-
-	let activeKey = $derived.by(() => {
-		const date = page.params.date;
-		return date && notes.journalService.isEntryTitle(date) ? date : null;
-	});
+	let deleteModalOpen = $state<boolean>(false);
+	let favorites = $derived(notes.getFavorites());
+	let activeKey = $derived(notes.journalService.entryKeyFromParam(page.params.date));
+	let current = $derived(stack.length > 0 ? stack[stack.length - 1] : null);
 
 	function isOtherActive(): boolean {
-		return otherOpen || (activeKey !== null && activeKey !== todayKey && activeKey !== yesterdayKey);
+		return otherOpen || notes.journalService.isOlderEntryKey(activeKey, recentKeys);
+	}
+
+	function toggleOther(): void {
+		otherOpen = !otherOpen;
+	}
+
+	function isDashboardActive(): boolean {
+		return page.url.pathname === urls.notes;
+	}
+
+	function isActive(note: Note): boolean {
+		return notes.activeNote?.id === note.id;
 	}
 
 	function openOtherDate(date: Date): void {
@@ -50,20 +59,15 @@
 		goto(resolve(urls.journalDate, { date: getUrlFormat(date) }));
 	}
 
-	let current = $derived(stack.length > 0 ? stack[stack.length - 1] : null);
-
 	function close(): void {
 		open = false;
 	}
 
+	afterNavigate(close);
+
 	function openSearch(): void {
 		close();
 		notes.openSearch();
-	}
-
-	function openNote(note: Note): void {
-		notes.selectNote(note.id);
-		close();
 	}
 
 	function selectCategory(category: NoteCategory): void {
@@ -81,18 +85,31 @@
 		stack = stack.slice(0, -1);
 	}
 
-	let deleteModalOpen = $state<boolean>(false);
-	const loadingIndicator = getLoadingIndicator();
+	function flyDistance(movingForward: boolean): number {
+		return movingForward ? window.innerWidth : -window.innerWidth;
+	}
 
-	// Reuses the desktop right-click delete, which targets rightClickId.
+	function flyIn(): FlyParams {
+		return { x: flyDistance(direction === 'forward'), duration: 250, opacity: 1 };
+	}
+
+	function flyOut(): FlyParams {
+		return { x: flyDistance(direction !== 'forward'), duration: 250, opacity: 1 };
+	}
+
+	function askDeleteFolder(): void {
+		deleteModalOpen = true;
+	}
+
+	function cancelDeleteFolder(): void {
+		deleteModalOpen = false;
+	}
+
 	async function deleteCurrentFolder(): Promise<void> {
 		if (current === null || typeof current === 'string') return;
 		deleteModalOpen = false;
-		notes.rightClickType = 'category';
-		notes.rightClickId = current.id;
 		loadingIndicator.start();
-		const ok = await notes.deleteCategory();
-		loadingIndicator.stop();
+		const ok = await notes.deleteCategory(current.id).finally(() => loadingIndicator.stop());
 		// The stack holds pre-reload folder objects, so a parent level would
 		// still list the deleted folder. Return to the (live) root instead.
 		if (ok) {
@@ -116,14 +133,46 @@
 {#snippet noteRow(note: Note)}
 	<a
 		href={resolve(urls.note, { id: note.id })}
-		onclick={() => openNote(note)}
 		use:contextMenu={(x, y) => notes.openRightClickMenu(x, y, 'note', note.id)}
 		class="flex items-center border-b border-c-neutral-1 px-4 py-4 hover:bg-c-neutral-1 dark:border-s-dark-3 dark:hover:bg-s-dark-3"
-		class:bg-c-neutral-1={notes.activeNote?.id === note.id}
-		class:dark:bg-s-dark-3={notes.activeNote?.id === note.id}
+		class:bg-c-neutral-1={isActive(note)}
+		class:dark:bg-s-dark-3={isActive(note)}
 	>
 		<span class="text-base">{note.title}</span>
 	</a>
+{/snippet}
+
+{#snippet sectionRow(section: 'journal' | 'favorites', label: string)}
+	<button
+		class="flex w-full cursor-pointer items-center justify-between border-b border-c-neutral-1 px-4 py-4 text-left hover:bg-c-neutral-1 dark:border-s-dark-3 dark:hover:bg-s-dark-3"
+		onclick={() => selectSection(section)}
+	>
+		<span class="text-base">{label}</span>
+		<IconChevronRight size={18} class="shrink-0 text-c-neutral-4" />
+	</button>
+{/snippet}
+
+{#snippet journalRow(key: string, label: string)}
+	<a
+		href={resolve(urls.journalDate, { date: key })}
+		class="flex items-center border-b border-c-neutral-1 px-4 py-4 hover:bg-c-neutral-1 dark:border-s-dark-3 dark:hover:bg-s-dark-3"
+		class:bg-c-neutral-1={activeKey === key}
+		class:dark:bg-s-dark-3={activeKey === key}
+	>
+		<span class="text-base">{label}</span>
+	</a>
+{/snippet}
+
+{#snippet levelTitle(title: string)}
+	<div class="flex items-center gap-3">
+		<button
+			class="cursor-pointer text-c-neutral-5 hover:text-c-neutral-7 dark:text-c-neutral-4 dark:hover:text-c-neutral-2"
+			onclick={goBack}
+		>
+			<IconArrowLeft size={22} />
+		</button>
+		<span class="text-xl font-semibold">{title}</span>
+	</div>
 {/snippet}
 
 <HamburgerButton onclick={() => (open = true)} />
@@ -137,11 +186,10 @@
 			{#key current ?? 'root'}
 				<div
 					class="absolute inset-0 flex flex-col"
-					in:fly={{ x: direction === 'forward' ? window.innerWidth : -window.innerWidth, duration: 250, opacity: 1 }}
-					out:fly={{ x: direction === 'forward' ? -window.innerWidth : window.innerWidth, duration: 250, opacity: 1 }}
+					in:fly={flyIn()}
+					out:fly={flyOut()}
 				>
 					{#if current === null}
-						<!-- Level 1: root -->
 						<div class="flex shrink-0 items-center justify-between border-b border-c-neutral-2 p-4 dark:border-s-dark-3">
 							<span class="text-2xl font-bold">{ts.get.notes.notebook}</span>
 							<div class="flex gap-1">
@@ -154,30 +202,17 @@
 						<div class="flex-1 overflow-y-auto">
 							<a
 								href={resolve(urls.notes)}
-								onclick={close}
 								class="flex items-center border-b border-c-neutral-1 px-4 py-4 hover:bg-c-neutral-1 dark:border-s-dark-3 dark:hover:bg-s-dark-3"
-								class:bg-c-neutral-1={page.url.pathname === urls.notes}
-								class:dark:bg-s-dark-3={page.url.pathname === urls.notes}
+								class:bg-c-neutral-1={isDashboardActive()}
+								class:dark:bg-s-dark-3={isDashboardActive()}
 							>
 								<span class="text-base">{ts.get.notes.dashboard}</span>
 							</a>
-							{#if auth.user?.settings?.journal_enabled}
-								<button
-									class="flex w-full cursor-pointer items-center justify-between border-b border-c-neutral-1 px-4 py-4 text-left hover:bg-c-neutral-1 dark:border-s-dark-3 dark:hover:bg-s-dark-3"
-									onclick={() => selectSection('journal')}
-								>
-									<span class="text-base">{ts.get.notes.journal}</span>
-									<IconChevronRight size={18} class="shrink-0 text-c-neutral-4" />
-								</button>
+							{#if notes.journalEnabled}
+								{@render sectionRow('journal', ts.get.notes.journal)}
 							{/if}
 							{#if favorites.length > 0}
-								<button
-									class="flex w-full cursor-pointer items-center justify-between border-b border-c-neutral-1 px-4 py-4 text-left hover:bg-c-neutral-1 dark:border-s-dark-3 dark:hover:bg-s-dark-3"
-									onclick={() => selectSection('favorites')}
-								>
-									<span class="text-base">{ts.get.notes.favorites}</span>
-									<IconChevronRight size={18} class="shrink-0 text-c-neutral-4" />
-								</button>
+								{@render sectionRow('favorites', ts.get.notes.favorites)}
 							{/if}
 							{#each notes.categories as category (category.id)}
 								{@render folderRow(category)}
@@ -190,47 +225,29 @@
 							{/if}
 						</div>
 					{:else if current === 'journal'}
-						<!-- Level N: journal -->
 						<div class="flex shrink-0 items-center justify-between border-b border-c-neutral-2 p-4 dark:border-s-dark-3">
-							<div class="flex items-center gap-3">
-								<button
-									class="cursor-pointer text-c-neutral-5 hover:text-c-neutral-7 dark:text-c-neutral-4 dark:hover:text-c-neutral-2"
-									onclick={goBack}
-								>
-									<IconArrowLeft size={22} />
-								</button>
-								<span class="text-xl font-semibold">{ts.get.notes.journal}</span>
-							</div>
+							{@render levelTitle(ts.get.notes.journal)}
 							<CloseButton onClick={close} inModal={false} />
 						</div>
 						<div class="flex-1 overflow-y-auto">
-							<a
-								href={resolve(urls.journalDate, { date: todayKey })}
-								onclick={close}
-								class="flex items-center border-b border-c-neutral-1 px-4 py-4 hover:bg-c-neutral-1 dark:border-s-dark-3 dark:hover:bg-s-dark-3 {activeKey === todayKey ? 'bg-c-neutral-1 dark:bg-s-dark-3' : ''}"
-							>
-								<span class="text-base">{ts.get.notes.today}</span>
-							</a>
-							<a
-								href={resolve(urls.journalDate, { date: yesterdayKey })}
-								onclick={close}
-								class="flex items-center border-b border-c-neutral-1 px-4 py-4 hover:bg-c-neutral-1 dark:border-s-dark-3 dark:hover:bg-s-dark-3 {activeKey === yesterdayKey ? 'bg-c-neutral-1 dark:bg-s-dark-3' : ''}"
-							>
-								<span class="text-base">{ts.get.notes.yesterday}</span>
-							</a>
+							{@render journalRow(recentKeys.today, ts.get.notes.today)}
+							{@render journalRow(recentKeys.yesterday, ts.get.notes.yesterday)}
 							<div class="relative">
 								<button
 									type="button"
-									class="flex w-full cursor-pointer items-center border-b border-c-neutral-1 px-4 py-4 text-left hover:bg-c-neutral-1 dark:border-s-dark-3 dark:hover:bg-s-dark-3 {isOtherActive() ? 'bg-c-neutral-1 dark:bg-s-dark-3' : ''}"
-									onclick={() => (otherOpen = !otherOpen)}
+									class="flex w-full cursor-pointer items-center border-b border-c-neutral-1 px-4 py-4 text-left hover:bg-c-neutral-1 dark:border-s-dark-3 dark:hover:bg-s-dark-3"
+									class:bg-c-neutral-1={isOtherActive()}
+									class:dark:bg-s-dark-3={isOtherActive()}
+									onclick={toggleOther}
 								>
 									<span class="text-base">{ts.get.notes.other}</span>
 								</button>
 								{#if otherOpen}
 									<div class="absolute top-full left-0 z-30 rounded-lg bg-c-bg shadow-lg">
 										<JournalArchivePicker
-											selectedDate={notes.journalService.parseEntryTitle(page.params.date ?? '') ?? new Date()}
+											selectedDate={notes.journalService.dateFromParam(page.params.date)}
 											markedDates={notes.getJournalEntryDates()}
+											weekStart={auth.getWeekStart()}
 											onSelect={openOtherDate}
 										/>
 									</div>
@@ -238,17 +255,8 @@
 							</div>
 						</div>
 					{:else if current === 'favorites'}
-						<!-- Level N: favorites -->
 						<div class="flex shrink-0 items-center justify-between border-b border-c-neutral-2 p-4 dark:border-s-dark-3">
-							<div class="flex items-center gap-3">
-								<button
-									class="cursor-pointer text-c-neutral-5 hover:text-c-neutral-7 dark:text-c-neutral-4 dark:hover:text-c-neutral-2"
-									onclick={goBack}
-								>
-									<IconArrowLeft size={22} />
-								</button>
-								<span class="text-xl font-semibold">{ts.get.notes.favorites}</span>
-							</div>
+							{@render levelTitle(ts.get.notes.favorites)}
 							<CloseButton onClick={close} inModal={false} />
 						</div>
 						<div class="flex-1 overflow-y-auto">
@@ -257,19 +265,10 @@
 							{/each}
 						</div>
 					{:else}
-						<!-- Level N: category detail -->
 						<div class="flex shrink-0 items-center justify-between border-b border-c-neutral-2 p-4 dark:border-s-dark-3">
-							<div class="flex items-center gap-3">
-								<button
-									class="cursor-pointer text-c-neutral-5 hover:text-c-neutral-7 dark:text-c-neutral-4 dark:hover:text-c-neutral-2"
-									onclick={goBack}
-								>
-									<IconArrowLeft size={22} />
-								</button>
-								<span class="text-xl font-semibold">{current.title}</span>
-							</div>
+							{@render levelTitle(current.title)}
 							<div class="flex gap-1">
-								<DeleteButton onClick={() => { deleteModalOpen = true; }} inModal={false} title={ts.get.notes.delete_folder} />
+								<DeleteButton onClick={askDeleteFolder} inModal={false} title={ts.get.notes.delete_folder} />
 								<AddNoteButton onClick={() => notes.openCreateNoteModal(current.id)} />
 								<CloseButton onClick={close} inModal={false} />
 							</div>
@@ -298,6 +297,6 @@
 		description={ts.get.notes.folder_deletion_description}
 		type="confirm-delete"
 		onConfirm={deleteCurrentFolder}
-		onCancel={() => (deleteModalOpen = false)}
+		onCancel={cancelDeleteFolder}
 	/>
 {/if}

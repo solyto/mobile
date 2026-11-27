@@ -2,9 +2,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { QuickAdd } from '$lib/state/QuickAdd.svelte';
 import { api, resetStoreMocks } from '../setup/storeMocks';
 
-// QuickAdd reads getTranslation() and getUiNotifications() at field
-// initialisation; the storeMocks setup does not cover those modules, so they
-// are stubbed per file.
+// The storeMocks setup does not cover the Translation and UiNotifications modules
+// that QuickAdd's constructor defaults read, so they are stubbed per file.
 const notifications = { error: vi.fn(), success: vi.fn() };
 const ts = {
 	get: {
@@ -123,7 +122,6 @@ describe('QuickAdd store', () => {
 			expect(s.metadata).toEqual({ title: 'Example' });
 			expect(s.needsConfirmation).toBe(true);
 			expect(s.loading).toBe(false);
-			// no commit call while waiting for confirmation
 			expect(api.create).toHaveBeenCalledTimes(1);
 		});
 
@@ -175,6 +173,39 @@ describe('QuickAdd store', () => {
 			await s.confirm('note');
 			expect(s.error).toBe("Couldn't add this. Try again.");
 			expect(notifications.error).toHaveBeenCalled();
+		});
+	});
+
+	describe('loading flag', () => {
+		it.each([
+			['detect', (s: QuickAdd) => s.detect()],
+			['confirm', (s: QuickAdd) => s.confirm('note')]
+		])('is cleared when %s throws', async (_, run) => {
+			api.create.mockRejectedValue(new Error('offline'));
+			const s = new QuickAdd();
+			s.content = 'Buy milk';
+
+			await expect(run(s)).rejects.toThrow('offline');
+			expect(s.loading).toBe(false);
+		});
+	});
+
+	describe('confirmDetected', () => {
+		it('commits the detected type', async () => {
+			api.create.mockResolvedValue({ data: null });
+			const s = new QuickAdd();
+			s.content = 'Buy milk';
+			s.detectedType = 'todo';
+
+			await s.confirmDetected();
+
+			expect(api.create).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ content_type: 'todo' }));
+		});
+
+		it('does nothing without a detected type', async () => {
+			const s = new QuickAdd();
+			await s.confirmDetected();
+			expect(api.create).not.toHaveBeenCalled();
 		});
 	});
 

@@ -1,15 +1,18 @@
 <script lang="ts">
 	import { init } from './echarts';
 	import type { ECharts } from './echarts';
-	import { onMount, onDestroy, tick } from 'svelte';
-	import { europeanFormat } from '$lib/helpers/NumberHelper';
+	import { onMount } from 'svelte';
 	import { getChartColor } from '$lib/helpers/ColorHelper';
+
+	function plainNumber(value: number): string {
+		return String(value);
+	}
 
 	let {
 		title,
 		values,
-		centerFormatter = europeanFormat,
-		valueFormatter = europeanFormat
+		centerFormatter = plainNumber,
+		valueFormatter = plainNumber
 	}: {
 		title?: string;
 		values?: { value: number; name: string; color?: string | null }[];
@@ -17,29 +20,18 @@
 		valueFormatter?: (value: number) => string;
 	} = $props();
 
-	let chartContainer: HTMLDivElement | null = null;
-	let myChart: ECharts | null = null;
-	let isInitialized = false;
+	let chartContainer: HTMLDivElement;
+	let chart = $state<ECharts | null>(null);
 	let hiddenNames = $state<string[]>([]);
 
 	function toggleEntry(name: string) {
-		myChart?.dispatchAction({ type: 'legendToggleSelect', name });
 		hiddenNames = hiddenNames.includes(name) ? hiddenNames.filter((hidden) => hidden !== name) : [...hiddenNames, name];
 	}
 
-	function createChart() {
-		if (!chartContainer || !values?.length) return;
-
-		if (myChart) {
-			myChart.dispose();
-			myChart = null;
-		}
-
-		myChart = init(chartContainer);
-
+	function options(values: { value: number; name: string; color?: string | null }[]) {
 		const total = values.reduce((sum: number, item: { value: number; name: string; color?: string | null }) => sum + item.value, 0);
 
-		const options = {
+		return {
 			title: [
 				{
 					text: title || ''
@@ -62,7 +54,8 @@
 					`${params.name}: ${valueFormatter(params.value)} (${params.percent}%)`
 			},
 			legend: {
-				show: false
+				show: false,
+				selected: Object.fromEntries(values.map((v) => [v.name, !hiddenNames.includes(v.name)]))
 			},
 			grid: {
 				left: '3%',
@@ -94,38 +87,27 @@
 				}
 			]
 		};
-
-		myChart.setOption(options);
-		isInitialized = true;
 	}
 
 	onMount(() => {
-		tick().then(createChart);
-
-		const handleResize = () => {
-			if (myChart) {
-				myChart.resize();
-			}
-		};
-
+		const instance = init(chartContainer);
+		const handleResize = () => instance.resize();
+		chart = instance;
 		window.addEventListener('resize', handleResize);
 
 		return () => {
 			window.removeEventListener('resize', handleResize);
+			instance.dispose();
 		};
 	});
 
-	onDestroy(() => {
-		if (myChart) {
-			myChart.dispose();
-			myChart = null;
-		}
-	});
-
 	$effect(() => {
-		if (!isInitialized && chartContainer) {
-			createChart();
+		if (!values?.length) {
+			chart?.clear();
+			return;
 		}
+
+		chart?.setOption(options(values));
 	});
 </script>
 

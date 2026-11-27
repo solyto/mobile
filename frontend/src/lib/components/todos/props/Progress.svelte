@@ -9,8 +9,8 @@
 	let hoverValue = $state<number | null>(null);
 	let div = $state<HTMLDivElement | null>(null);
 
-	const todos = getTodos(),
-		loadingIndicator = getLoadingIndicator();
+	const todos = getTodos();
+	const loadingIndicator = getLoadingIndicator();
 
 	function onclick(): void {
 		if (hoverValue !== null) {
@@ -45,8 +45,11 @@
 
 	async function onChange(progress: number): Promise<void> {
 		loadingIndicator.start();
-		await todos.changeProgress(todo, progress);
-		loadingIndicator.stop();
+		try {
+			await todos.changeProgress(todo, progress);
+		} finally {
+			loadingIndicator.stop();
+		}
 	}
 
 	function clampPct(v: number) {

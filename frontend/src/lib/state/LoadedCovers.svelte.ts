@@ -1,7 +1,8 @@
 import { setContext, getContext } from 'svelte';
+import { SvelteSet } from 'svelte/reactivity';
 
 export class LoadedCovers {
-	sources = new Set<string>();
+	sources = new SvelteSet<string>();
 
 	has(src: string): boolean {
 		return this.sources.has(src);

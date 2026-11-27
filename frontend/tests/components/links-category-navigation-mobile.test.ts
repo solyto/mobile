@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
 import { apiRoutes } from '$lib/config/apiRoutes';
@@ -36,10 +36,6 @@ async function openMenu() {
 function rows(panel: HTMLElement): HTMLElement[] {
 	return within(panel).getAllByRole('button').filter((button) => button.textContent?.trim());
 }
-
-afterEach(() => {
-	vi.restoreAllMocks();
-});
 
 describe('CategoryNavigationMobile', () => {
 	it('lists All, Favorites, Uncategorized and each category with its count', async () => {

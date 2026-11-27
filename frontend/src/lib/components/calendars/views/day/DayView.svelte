@@ -10,7 +10,7 @@
 	const rows = '10% repeat(24, calc(100% / 27))';
 </script>
 
-<div class="calendar-view flex h-full w-full dark:bg-s-dark" style="background-color: color-mix(in srgb, var(--color-c-primary) 12%, var(--color-c-bg));">
+<div class="calendar-view flex h-full w-full dark:bg-s-dark">
 	<div class="grid h-full w-8" style="grid-template-rows: {rows};">
 		<div class="flex flex-col items-center justify-center">
 			<CalendarMarks

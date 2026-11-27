@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 const lsStore = new Map<string, string>();
 
@@ -25,6 +25,9 @@ async function loadPlatform(
 
 beforeEach(() => {
 	lsStore.clear();
+});
+
+afterEach(() => {
 	vi.unstubAllGlobals();
 });
 

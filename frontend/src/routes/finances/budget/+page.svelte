@@ -3,7 +3,7 @@
 	import { getFinances } from '$lib/state/Finances.svelte';
 	import { getAuth } from '$lib/state/Auth.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
-	import { europeanFormat } from '$lib/helpers/NumberHelper.js';
+	import { formatUserMoney } from '$lib/helpers/NumberHelper.js';
 	import AddBudget from '$lib/components/finances/AddBudget.svelte';
 	import BudgetField from '$lib/components/finances/BudgetField.svelte';
 	import type {
@@ -20,28 +20,28 @@
 	import Divider from '$lib/components/ui/Divider.svelte';
 	import BudgetTagPicker from '$lib/components/finances/BudgetTagPicker.svelte';
 	import type { MultiSelectEntry } from '$lib/components/forms/MultiSelect.svelte';
-	import { getTags } from '$lib/state/Tags.svelte';
 	import Select from '$lib/components/forms/Select.svelte';
+	import { selectedIds, tagEntries } from '$lib/helpers/MultiSelectHelper';
 
 	const ts = getTranslation();
 	const loadingIndicator = getLoadingIndicator();
 	const finances = getFinances();
 	const auth = getAuth();
-	const tags = getTags();
+	const COLOR_DELAY_MS = 100;
 
 	let total = $derived(finances.getBudgetTotal());
 	let incomeTotal = $derived(finances.getBudgetIncomeTotal());
 	let expenseTotal = $derived(finances.getBudgetExpenseTotal());
 	let colorLoaded = $state<boolean>(false);
-	let historyBudget = $state<Budget | null>(null);
+	let historyBudgetId = $state<number | null>(null);
+	let historyBudget = $derived([...finances.income, ...finances.expenses].find((budget) => budget.id === historyBudgetId) ?? null);
 
 	function tagFilterOptions(): { label: string; value: string }[] {
-		const options = finances.availableTags().map((tag) => ({ label: tag.name, value: tag.id.toString() }));
-		return [{ label: ts.get.finances.all_tags, value: '' }, ...options];
+		return [{ label: ts.get.finances.all_tags, value: '' }, ...tagEntries(finances.availableTags())];
 	}
 
 	function selectTag(value: string): void {
-		finances.selectedTagId = value === '' ? null : Number(value);
+		finances.selectTag(value === '' ? null : Number(value));
 	}
 
 	function expenseShare(): number {
@@ -49,92 +49,86 @@
 		return Math.abs(expenseTotal / incomeTotal) * 100;
 	}
 
-	async function openHistory(budget: Budget): Promise<void> {
+	async function withLoadingIndicator<T>(action: () => Promise<T>): Promise<T> {
 		loadingIndicator.start();
-		const ok = await finances.loadBudgetValues(budget);
-		loadingIndicator.stop();
-		if (ok) historyBudget = budget;
+		try {
+			return await action();
+		} finally {
+			loadingIndicator.stop();
+		}
+	}
+
+	async function openHistory(budget: Budget): Promise<void> {
+		if (await withLoadingIndicator(() => finances.loadBudgetValues(budget))) historyBudgetId = budget.id;
 	}
 
 	function closeHistory(): void {
-		historyBudget = null;
+		historyBudgetId = null;
 	}
 
 	async function deleteHistoryBudget(): Promise<void> {
 		if (historyBudget === null) return;
-		loadingIndicator.start();
-		await finances.deleteBudget(historyBudget);
-		loadingIndicator.stop();
+		const budget = historyBudget;
+		await withLoadingIndicator(() => finances.deleteBudget(budget));
 		closeHistory();
 	}
 
 	async function renameHistoryBudget(title: string): Promise<boolean> {
 		if (historyBudget === null) return false;
-		loadingIndicator.start();
-		const ok = await finances.updateBudget(historyBudget, { title });
-		loadingIndicator.stop();
-		if (ok) historyBudget = { ...historyBudget, title };
-		return ok;
+		const budget = historyBudget;
+		return withLoadingIndicator(() => finances.updateBudget(budget, { title }));
 	}
 
 	async function changeHistoryInterval(value: string): Promise<void> {
 		if (historyBudget === null) return;
-		const interval = value as BudgetInterval;
-		loadingIndicator.start();
-		const ok = await finances.updateBudget(historyBudget, { interval });
-		loadingIndicator.stop();
-		if (ok) historyBudget = { ...historyBudget, interval };
-	}
-
-	function tagEntries(budget: Budget): MultiSelectEntry[] {
-		return budget.tags.map((tag) => ({ label: tag.name, value: tag.id.toString() }));
+		const budget = historyBudget;
+		await withLoadingIndicator(() => finances.updateBudget(budget, { interval: value as BudgetInterval }));
 	}
 
 	async function changeHistoryTags(entries: MultiSelectEntry[]): Promise<void> {
 		if (historyBudget === null) return;
-		const tagIds = entries.map((entry) => Number(entry.value));
-		loadingIndicator.start();
-		const ok = await finances.updateBudget(historyBudget, { tags: tagIds });
-		loadingIndicator.stop();
-		const savedTags = ok ? tags.tags.filter((tag) => tagIds.includes(tag.id)) : historyBudget.tags;
-		// A new object also resets the picker to the saved tags when the update failed.
-		historyBudget = { ...historyBudget, tags: savedTags };
+		const budget = historyBudget;
+		await withLoadingIndicator(async () => {
+			const ok = await finances.updateBudget(budget, { tags: selectedIds(entries) });
+			// The picker keeps what was picked; reloading puts it back to the saved tags.
+			if (!ok) await finances.loadIncome();
+		});
 	}
 
 	async function addHistoryValue(request: StoreFinanceValueRequest): Promise<boolean> {
 		if (historyBudget === null) return false;
-		loadingIndicator.start();
-		const ok = await finances.addBudgetValue(historyBudget, request);
-		loadingIndicator.stop();
-		return ok;
+		const budget = historyBudget;
+		return withLoadingIndicator(() => finances.addBudgetValue(budget, request));
 	}
 
 	async function updateHistoryValue(value: FinanceValue, request: UpdateFinanceValueRequest): Promise<boolean> {
 		if (historyBudget === null) return false;
-		loadingIndicator.start();
-		const ok = await finances.updateBudgetValue(historyBudget, value, request);
-		loadingIndicator.stop();
-		return ok;
+		const budget = historyBudget;
+		return withLoadingIndicator(() => finances.updateBudgetValue(budget, value, request));
 	}
 
 	async function deleteHistoryValue(value: FinanceValue): Promise<boolean> {
 		if (historyBudget === null) return false;
-		loadingIndicator.start();
-		const ok = await finances.deleteBudgetValue(historyBudget, value);
-		loadingIndicator.stop();
-		return ok;
+		const budget = historyBudget;
+		return withLoadingIndicator(() => finances.deleteBudgetValue(budget, value));
+	}
+
+	function dateFormat(): string | null {
+		return auth.user?.settings?.date_format ?? null;
+	}
+
+	function formatMoney(value: number): string {
+		return formatUserMoney(value, auth.user?.settings);
 	}
 
 	onMount(() => {
 		setTimeout(() => {
 			colorLoaded = true;
-		}, 100);
+		}, COLOR_DELAY_MS);
 	});
 
 	// The finances overview shares the store and always shows the whole budget.
-	onDestroy(() => {
-		finances.selectedTagId = null;
-	});
+	onDestroy(() => finances.selectTag(null));
 </script>
 
 {#if finances.budgetLoaded}
@@ -157,7 +151,7 @@
 					{/if}
 				</div>
 				<div class="text-xl tabular-nums md:text-3xl">
-					{total > 0 ? '+ ' : '- '}{europeanFormat(Math.abs(total))}
+					{total > 0 ? '+ ' : '- '}{formatMoney(Math.abs(total))}
 				</div>
 			</div>
 			<div class="mt-4 flex h-2 items-end rounded-full bg-c-success opacity-80 transition-all">
@@ -177,13 +171,18 @@
 				<div class="mb-4 flex w-full flex-row items-center justify-between">
 					<div class="flex items-baseline gap-3">
 						<h2 class="text-2xl font-semibold">{ts.get.finances.income}</h2>
-						<span class="text-lg text-c-neutral-5 tabular-nums">+ {europeanFormat(incomeTotal)}</span>
+						<span class="text-lg text-c-neutral-5 tabular-nums">+ {formatMoney(incomeTotal)}</span>
 					</div>
 					<AddBudget type="income" showTags={finances.tagsSupported} />
 				</div>
 				<div class="flex w-full flex-col gap-1">
 					{#each finances.filteredIncome() as i (i.id)}
-						<BudgetField budget={i} sectionTotal={incomeTotal} onOpenHistory={openHistory} />
+						<BudgetField
+							budget={i}
+							sectionTotal={incomeTotal}
+							onOpenHistory={openHistory}
+							valueFormatter={formatMoney}
+						/>
 					{/each}
 				</div>
 			</div>
@@ -193,13 +192,18 @@
 				<div class="mb-4 flex w-full items-center justify-between">
 					<div class="flex items-baseline gap-3">
 						<h2 class="text-2xl font-semibold">{ts.get.finances.expenses}</h2>
-						<span class="text-lg text-c-neutral-5 tabular-nums">- {europeanFormat(expenseTotal)}</span>
+						<span class="text-lg text-c-neutral-5 tabular-nums">- {formatMoney(expenseTotal)}</span>
 					</div>
 					<AddBudget type="expense" showTags={finances.tagsSupported} />
 				</div>
 				<div class="flex w-full flex-col gap-1">
 					{#each finances.filteredExpenses() as e (e.id)}
-						<BudgetField budget={e} sectionTotal={expenseTotal} onOpenHistory={openHistory} />
+						<BudgetField
+							budget={e}
+							sectionTotal={expenseTotal}
+							onOpenHistory={openHistory}
+							valueFormatter={formatMoney}
+						/>
 					{/each}
 				</div>
 			</div>
@@ -216,7 +220,7 @@
 				ariaLabel={ts.get.finances.interval}
 			/>
 			{#if finances.tagsSupported}
-				<BudgetTagPicker value={tagEntries(historyBudget)} onchange={changeHistoryTags} />
+				<BudgetTagPicker value={tagEntries(historyBudget.tags)} onchange={changeHistoryTags} />
 			{/if}
 		</div>
 		<Divider my={8} />
@@ -227,8 +231,9 @@
 			onUpdate={updateHistoryValue}
 			onDelete={deleteHistoryValue}
 			itemTitle={historyBudget.title}
-			dateFormat={auth.user?.settings?.date_format ?? null}
+			dateFormat={dateFormat()}
 			onDeleteItem={deleteHistoryBudget}
+			valueFormatter={formatMoney}
 		/>
 	</ContentModal>
 {/if}

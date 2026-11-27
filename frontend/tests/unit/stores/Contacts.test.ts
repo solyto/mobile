@@ -1,46 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Contacts } from '$lib/state/Contacts.svelte';
 import { api, storage, resetStoreMocks } from '../setup/storeMocks';
-import type { Contact, AddressBook, CreateContactRequest } from '$lib/types/contact';
-
-function contact(overrides: Partial<Contact> = {}): Contact {
-	return {
-		uid: 'u1',
-		uri: 'contact-1',
-		full_name: 'Alice Example',
-		first_name: 'Alice',
-		last_name: 'Example',
-		middle_name: '',
-		prefix: '',
-		suffix: '',
-		email: null,
-		phone: null,
-		groups: null,
-		organization: '',
-		title: '',
-		note: '',
-		street: '',
-		city: '',
-		state: '',
-		postal_code: '',
-		country: '',
-		etag: '',
-		address_book_id: 1,
-		address_book_color: '#fff',
-		...overrides
-	};
-}
-
-function addressBook(overrides: Partial<AddressBook> = {}): AddressBook {
-	return {
-		id: 1,
-		name: 'Personal',
-		uri: 'ab-1',
-		color: '#ff0000',
-		description: '',
-		...overrides
-	};
-}
+import type { CreateContactRequest } from '$lib/types/contact';
+import { addressBook, contact } from '../helpers/factories';
 
 beforeEach(() => {
 	resetStoreMocks();

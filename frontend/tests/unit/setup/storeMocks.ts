@@ -47,6 +47,7 @@ export const auth = {
 
 export const pageState = {
 	pathname: '/',
+	routeId: null as string | null,
 	params: {},
 	searchParams: new URL('http://localhost/').searchParams
 };
@@ -63,6 +64,9 @@ vi.mock('$app/state', () => ({
 		},
 		get params() {
 			return pageState.params;
+		},
+		get route() {
+			return { id: pageState.routeId };
 		}
 	}
 }));
@@ -129,6 +133,7 @@ export function resetStoreMocks() {
 	for (const fn of Object.values(api)) fn.mockResolvedValue(null);
 
 	pageState.pathname = '/';
+	pageState.routeId = null;
 	pageState.params = {};
 	pageState.searchParams = new URL('http://localhost/').searchParams;
 }

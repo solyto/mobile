@@ -5,11 +5,12 @@
 	import { getCalendarSharing } from '$lib/state/CalendarSharing.svelte';
 	import { getAuth } from '$lib/state/Auth.svelte';
 	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
-	import { apiRoutes, API_USER_STORAGE_URL } from '$lib/config/apiRoutes.js';
+	import { apiRoutes } from '$lib/config/apiRoutes.js';
+	import { profileImageUrl } from '$lib/helpers/ProfileImageHelper';
 	import type { Friend } from '$lib/types/friend.js';
 	import type { Calendar, CalendarSharee } from '$lib/types/calendar.js';
-	import IconUserPlus from '@lucide/svelte/icons/user-plus';
-	import IconX from '@lucide/svelte/icons/x';
+	import IconUserPlus from '$lib/icons/lucide/user-plus.svelte';
+	import IconX from '$lib/icons/lucide/x.svelte';
 	import { onMount } from 'svelte';
 
 	const ts = getTranslation();
@@ -128,7 +129,7 @@
 								<div class="flex size-8 items-center justify-center rounded-full bg-c-neutral-2 dark:bg-s-dark-3">
 									{#if friend.profile_image_path}
 										<img
-											src={API_USER_STORAGE_URL + '/' + friend.profile_image_path}
+											src={profileImageUrl(friend.profile_image_path)}
 											alt="Profile"
 											class="h-full w-full rounded-full object-cover"
 										/>

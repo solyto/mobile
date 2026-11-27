@@ -37,13 +37,9 @@ export class Friends {
 	}
 
 	async createFriendRequest(userId: string): Promise<boolean> {
-		const res = await this.apiService.create(apiRoutes.friends.createRequest, {
-			receiver_id: userId
-		});
-		if (res) {
-			await this.loadRequests();
-		}
-		return Promise.resolve(res !== null);
+		const res = await this.apiService.create(apiRoutes.friends.createRequest, { receiver_id: userId });
+		if (res) await this.loadRequests();
+		return res !== null;
 	}
 
 	async acceptRequest(request: FriendRequest): Promise<void> {
@@ -52,7 +48,6 @@ export class Friends {
 			await this.loadRequests();
 			await this.load();
 		}
-		return Promise.resolve();
 	}
 
 	async rejectRequest(request: FriendRequest): Promise<void> {
@@ -61,7 +56,6 @@ export class Friends {
 			await this.loadRequests();
 			await this.load();
 		}
-		return Promise.resolve();
 	}
 }
 

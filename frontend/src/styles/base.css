@@ -25,3 +25,7 @@ html.dark .gradient-right {
 .pointer-events-all {
     pointer-events: all;
 }
+
+.calendar-view {
+    background-color: color-mix(in srgb, var(--color-c-primary) 12%, var(--color-c-bg));
+}

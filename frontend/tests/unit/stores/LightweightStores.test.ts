@@ -2,6 +2,12 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { LoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 import { CookieConsent } from '$lib/state/CookieConsent.svelte';
 import { UiNotifications } from '$lib/state/UiNotifications.svelte';
+import { Translation } from '$lib/state/Translation.svelte';
+import type { Auth } from '$lib/state/Auth.svelte';
+import type { Language } from '$lib/types/translation';
+import { en } from '$lib/i18n/en';
+import { de } from '$lib/i18n/de';
+import { ru } from '$lib/i18n/ru';
 
 describe('LoadingIndicator', () => {
 	it('starts and stops', () => {
@@ -18,6 +24,7 @@ describe('LoadingIndicator', () => {
 		indicator.setProgress(42);
 		expect(indicator.progress).toBe(42);
 	});
+
 });
 
 describe('CookieConsent', () => {
@@ -90,5 +97,36 @@ describe('UiNotifications', () => {
 		notifications.error('b');
 		notifications.clear();
 		expect(notifications.queue).toHaveLength(0);
+	});
+});
+
+describe('Translation', () => {
+	function translation(language?: string): Translation {
+		return new Translation({ user: { settings: { language } } } as unknown as Auth);
+	}
+
+	it('switches to a supported language', () => {
+		const ts = translation();
+		ts.changeLanguage('de');
+
+		expect(ts.locale).toBe('de');
+		expect(ts.get).toBe(de);
+	});
+
+	it('falls back to English for an unknown language', () => {
+		const ts = translation();
+		ts.changeLanguage('de');
+		ts.changeLanguage('nl' as Language);
+
+		expect(ts.locale).toBe('en');
+		expect(ts.get).toBe(en);
+	});
+
+	it("loads the user's stored language", () => {
+		const ts = translation('ru');
+		ts.loadLanguage();
+
+		expect(ts.locale).toBe('ru');
+		expect(ts.get).toBe(ru);
 	});
 });

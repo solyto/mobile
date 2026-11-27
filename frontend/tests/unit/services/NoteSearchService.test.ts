@@ -1,22 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import NoteSearchService from '$lib/services/NoteSearchService';
-import type { Note } from '$lib/types/note';
+import { note } from '../helpers/factories';
 
 const service = new NoteSearchService();
-
-function note(overrides: Partial<Note> = {}): Note {
-	return {
-		id: '1',
-		title: 'Note',
-		content: '',
-		category_id: null,
-		tags: [],
-		is_favorite: false,
-		created_at: '',
-		updated_at: '',
-		...overrides
-	};
-}
 
 describe('search', () => {
 	it('returns nothing for an empty or whitespace term', () => {

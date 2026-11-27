@@ -30,6 +30,6 @@
 		<span class="max-w-48 truncate md:w-40">{source}</span>
 		<span class="md:hidden">·</span>
 		<span class="tabular-nums md:min-w-[15ch] md:text-right">{formatDateTime(new Date(item.published_at))}</span>
-		<span class="ml-auto"><SaveToLibraryButton {item} /></span>
+		<span class="ml-auto flex"><SaveToLibraryButton {item} /></span>
 	</span>
 </svelte:element>

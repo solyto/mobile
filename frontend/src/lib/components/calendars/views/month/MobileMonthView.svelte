@@ -1,21 +1,23 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { blur } from 'svelte/transition';
-	import IconPlus from '@lucide/svelte/icons/plus';
+	import IconPlus from '$lib/icons/lucide/plus.svelte';
 	import { getCalendars } from '$lib/state/Calendars.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { isDateToday, formatDate, formatTime, getWeekdayOrder } from '$lib/helpers/DateHelper';
-	import { getAuth } from '$lib/state/Auth.svelte';
 	import { getEventBackgroundColor, getEventBorderColor } from '$lib/helpers/ColorHelper';
-	import { getCalendarEventKey, startsOnDate } from '$lib/helpers/CalendarEventHelper';
+	import { getCalendarEventKey, showsStartTimeOnDate } from '$lib/helpers/CalendarEventHelper';
 	import { SwipeNavigate } from '$lib/helpers/SwipeNavigate.svelte';
 	import TodoEntry from '$lib/components/calendars/TodoEntry.svelte';
 	import CalendarMarks from '$lib/components/calendars/CalendarMarks.svelte';
+	import type { CalendarEvent } from '$lib/types/calendar';
+	import type { WeekStart } from '$lib/types/auth';
+
+	let { weekStart }: { weekStart: WeekStart } = $props();
 
 	const calendars = getCalendars();
 	const ts = getTranslation();
-	const auth = getAuth();
-	const weekdays = getWeekdayOrder(auth.getWeekStart());
+	const weekdays = getWeekdayOrder(weekStart);
 
 	const swipe = new SwipeNavigate({
 		onLeft: () => calendars.nextMonth(),
@@ -54,7 +56,32 @@
 	function selectDay(date: Date): void {
 		calendars.selectMobileDate(date);
 	}
+
+	async function addEvent(): Promise<void> {
+		await calendars.showSidebar(calendars.mobileSelectedDate);
+	}
+
+	async function openEvent(item: CalendarEvent): Promise<void> {
+		await calendars.showSidebar(null, item);
+	}
 </script>
+
+{#snippet eventButton(item: CalendarEvent)}
+	<button
+		class="my-0.5 flex w-full cursor-pointer items-center justify-start border-l-4 px-3 py-2.5 text-sm transition-all hover:bg-c-neutral dark:hover:bg-s-dark-3"
+		style="
+			border-color: {getEventBorderColor(item.calendar_color)};
+			background-color: {getEventBackgroundColor(item.calendar_color)};
+		"
+		onclick={() => openEvent(item)}
+		transition:blur
+	>
+		{#if showsStartTimeOnDate(item, calendars.mobileSelectedDate)}
+			<span class="mr-3 font-medium text-c-heading dark:text-c-primary">{formatTime(item.start_date)}</span>
+		{/if}
+		<span class="text-left">{item.title}</span>
+	</button>
+{/snippet}
 
 <div class="flex h-full w-full flex-col overflow-hidden bg-c-bg dark:bg-s-dark">
 	<div
@@ -137,7 +164,7 @@
 				/>
 				<button
 					class="cursor-pointer rounded-full p-2 transition-all hover:bg-c-primary hover:text-white"
-					onclick={async () => await calendars.showSidebar(calendars.mobileSelectedDate)}
+					onclick={addEvent}
 				>
 					<IconPlus class="size-4" />
 				</button>
@@ -147,17 +174,7 @@
 			<div class="flex flex-col px-2">
 				{#each calendars.getAllDayEventsForDate(calendars.mobileSelectedDate) as item (getCalendarEventKey(item))}
 					{#if !calendars.isCalendarHidden(item.calendar_id)}
-						<button
-							class="my-0.5 flex w-full cursor-pointer items-center justify-start border-l-4 px-3 py-2.5 text-sm transition-all hover:bg-c-neutral dark:hover:bg-s-dark-3"
-							style="
-								border-color: {getEventBorderColor(item.calendar_color)};
-								background-color: {getEventBackgroundColor(item.calendar_color)};
-							"
-							onclick={async () => await calendars.showSidebar(null, item)}
-							transition:blur
-						>
-							<span class="text-left">{item.title}</span>
-						</button>
+						{@render eventButton(item)}
 					{/if}
 				{/each}
 				{#each calendars.getTodosForDate(calendars.mobileSelectedDate) as todo (todo.id)}
@@ -165,22 +182,7 @@
 				{/each}
 				{#each calendars.getNonAllDayEventsForDate(calendars.mobileSelectedDate) as item (getCalendarEventKey(item))}
 					{#if !calendars.isCalendarHidden(item.calendar_id)}
-						<button
-							class="my-0.5 flex w-full cursor-pointer items-center justify-start border-l-4 px-3 py-2.5 text-sm transition-all hover:bg-c-neutral dark:hover:bg-s-dark-3"
-							style="
-								border-color: {getEventBorderColor(item.calendar_color)};
-								background-color: {getEventBackgroundColor(item.calendar_color)};
-							"
-							onclick={async () => await calendars.showSidebar(null, item)}
-							transition:blur
-						>
-							{#if startsOnDate(item, calendars.mobileSelectedDate)}
-								<span class="mr-3 font-medium text-c-heading dark:text-c-primary"
-									>{formatTime(item.start_date)}</span
-								>
-							{/if}
-							<span class="text-left">{item.title}</span>
-						</button>
+						{@render eventButton(item)}
 					{/if}
 				{/each}
 			</div>

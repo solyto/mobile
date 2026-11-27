@@ -3,10 +3,10 @@
 	import type { Component } from 'svelte';
 	import { getCalendars } from '$lib/state/Calendars.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
-	import IconUsers from '@lucide/svelte/icons/users';
-	import IconCloud from '@lucide/svelte/icons/cloud';
-	import IconCloudOff from '@lucide/svelte/icons/cloud-off';
-	import IconKeyRound from '@lucide/svelte/icons/key-round';
+	import IconUsers from '$lib/icons/lucide/users.svelte';
+	import IconCloud from '$lib/icons/lucide/cloud.svelte';
+	import IconCloudOff from '$lib/icons/lucide/cloud-off.svelte';
+	import IconKeyRound from '$lib/icons/lucide/key-round.svelte';
 	import { getEventBackgroundColor, getEventBorderColor } from '$lib/helpers/ColorHelper';
 
 	const calendars = getCalendars();
@@ -14,6 +14,7 @@
 
 	let { calendar }: { calendar: Calendar } = $props();
 	let hidden = $derived(calendars.isCalendarHidden(calendar.id));
+	let status = $derived(calendars.calendarStatus(calendar));
 
 	function getBorderColor(): string {
 		if (hidden || !calendar.color) return 'var(--color-c-neutral-2)';
@@ -30,24 +31,27 @@
 	}
 
 	function getTitle(): string {
-		if (calendars.isCalendarCredentialsRejected(calendar.id)) {
-			return withStatus(ts.get.calendar.external_credentials_rejected);
+		switch (status) {
+			case 'credentials_rejected':
+				return withStatus(ts.get.calendar.external_credentials_rejected);
+			case 'unavailable':
+				return withStatus(ts.get.calendar.external_unavailable);
+			case 'external':
+				return withStatus(ts.get.calendar.external_calendar);
+			case 'shared':
+				return calendar.share_owner ? ts.get.calendar.shared_by.replace('%s', calendar.share_owner) : ts.get.layout.toggle;
+			default:
+				return ts.get.layout.toggle;
 		}
-		if (calendars.isCalendarUnavailable(calendar.id)) {
-			return withStatus(ts.get.calendar.external_unavailable);
-		}
-		if (calendar.is_external) {
-			return withStatus(ts.get.calendar.external_calendar);
-		}
-		if (calendar.is_shared && calendar.share_owner) {
-			return ts.get.calendar.shared_by.replace('%s', calendar.share_owner);
-		}
-		return ts.get.layout.toggle;
+	}
+
+	function toggle(): void {
+		calendars.toggleCalendar(calendar.id);
 	}
 </script>
 
 {#snippet badge(Icon: Component<{ class?: string }>, iconClass: string, label: string | null)}
-	<span class="absolute -right-0.5 -bottom-0.5 rounded-full bg-c-bg-surface p-0.5">
+	<span class="absolute -right-0.5 -bottom-0.5 rounded-full bg-c-bg p-0.5">
 		<Icon class="size-2.5 {iconClass}" />
 		{#if label}
 			<span class="sr-only">{label}</span>
@@ -59,18 +63,21 @@
 	class="relative my-1 flex max-md:min-w-8 cursor-pointer items-center justify-center rounded-full border-c-neutral-1 transition-all duration-100 dark:!bg-s-dark-3"
 	class:border-l-4={!hidden}
 	class:border-r-4={hidden}
-	style="border-color: {getBorderColor()}; background-color: {getBgColor()};"
-	onclick={() => calendars.toggleCalendar(calendar.id)}
+	style="
+		border-color: {getBorderColor()};
+		background-color: {getBgColor()};
+	"
+	onclick={toggle}
 	title={getTitle()}
 >
 	{calendar.name ? calendar.name.slice(0, 1) : ''}
-	{#if calendars.isCalendarCredentialsRejected(calendar.id)}
+	{#if status === 'credentials_rejected'}
 		{@render badge(IconKeyRound, 'text-c-danger', ts.get.calendar.external_credentials_rejected)}
-	{:else if calendars.isCalendarUnavailable(calendar.id)}
+	{:else if status === 'unavailable'}
 		{@render badge(IconCloudOff, 'text-c-danger', ts.get.calendar.external_unavailable)}
-	{:else if calendar.is_external}
+	{:else if status === 'external'}
 		{@render badge(IconCloud, 'text-c-neutral-4', ts.get.calendar.external_calendar)}
-	{:else if calendar.is_shared}
+	{:else if status === 'shared'}
 		{@render badge(IconUsers, 'text-c-neutral-4', null)}
 	{/if}
 </button>

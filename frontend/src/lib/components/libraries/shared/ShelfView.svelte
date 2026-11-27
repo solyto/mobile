@@ -1,16 +1,15 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
 	import { fade } from 'svelte/transition';
-	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
-	import ChevronRight from '@lucide/svelte/icons/chevron-right';
-	import { API_USER_STORAGE_URL } from '$lib/config/apiRoutes';
-	import { getAuth } from '$lib/state/Auth.svelte';
+	import ChevronLeft from '$lib/icons/lucide/chevron-left.svelte';
+	import ChevronRight from '$lib/icons/lucide/chevron-right.svelte';
+	import { libraryCoverUrl } from '$lib/helpers/LibraryCoverHelper';
 	import { getKeyManager } from '$lib/state/KeyManager.svelte';
 	import MissingCover from '$lib/components/libraries/shared/MissingCover.svelte';
 	import type { MusicLibrary } from '$lib/state/MusicLibrary.svelte';
 	import type { BookLibrary } from '$lib/state/BookLibrary.svelte';
-	import type { Music } from '$lib/types/library_music';
-	import type { Book } from '$lib/types/library_book';
+	import type { DetailLibrary } from '$lib/types/library';
+	import { getTranslation } from '$lib/state/Translation.svelte';
 
 	interface ShelfEntry {
 		id: string;
@@ -22,8 +21,20 @@
 		genres?: { id: number; title: string }[];
 	}
 
-	const auth = getAuth();
 	const keyManager = getKeyManager();
+	const ts = getTranslation();
+
+	const STAGE_RADIUS = 3;
+	const SWIPE_THRESHOLD_PX = 50;
+	const FIRST_OFFSET_PX = 230;
+	const NEXT_OFFSET_PX = 155;
+	const FIRST_ROTATION_DEG = 52;
+	const NEXT_ROTATION_DEG = 9;
+	const OPACITY_BY_DISTANCE = [1, 0.82, 0.5];
+	const FAR_OPACITY = 0.22;
+	const ACTIVE_SHADOW = 'box-shadow: 0 25px 60px rgba(0,0,0,0.45), 0 10px 20px rgba(0,0,0,0.3)';
+	const SHADOW = 'box-shadow: 0 8px 24px rgba(0,0,0,0.25)';
+
 	let { library }: { library: MusicLibrary | BookLibrary } = $props();
 
 	let entries = $derived(library.filteredEntries as ShelfEntry[]);
@@ -40,18 +51,23 @@
 
 	function handleClick(index: number) {
 		if (index === library.shelfIndex) {
-			if (library.config.type === 'music') {
-				(library as MusicLibrary).openDetailModal(
-					library.filteredEntries[index] as unknown as Music
-				);
-			} else if (library.config.type === 'books') {
-				(library as BookLibrary).openDetailModal(
-					library.filteredEntries[index] as unknown as Book
-				);
-			}
+			const detailLibrary: DetailLibrary = library;
+			detailLibrary.openDetailModal(library.filteredEntries[index]);
 		} else {
 			library.shelfIndex = index;
 		}
+	}
+
+	function openActiveEntry(): void {
+		handleClick(library.shelfIndex);
+	}
+
+	function showPrevious(): void {
+		navigate(-1);
+	}
+
+	function showNext(): void {
+		navigate(1);
 	}
 
 	function onTouchStart(e: TouchEvent) {
@@ -60,16 +76,12 @@
 
 	function onTouchEnd(e: TouchEvent) {
 		const diff = touchStartX - e.changedTouches[0].clientX;
-		if (Math.abs(diff) > 50) navigate(diff > 0 ? 1 : -1);
+		if (Math.abs(diff) > SWIPE_THRESHOLD_PX) navigate(diff > 0 ? 1 : -1);
 	}
 
 	let keyHandlers: { [key: string]: string | null } = {
-		ArrowLeft: keyManager.registerKeyDown('ArrowLeft', () => navigate(-1), {
-			preventDefault: false
-		}),
-		ArrowRight: keyManager.registerKeyDown('ArrowRight', () => navigate(1), {
-			preventDefault: false
-		})
+		ArrowLeft: keyManager.registerKeyDown('ArrowLeft', showPrevious, { preventDefault: false }),
+		ArrowRight: keyManager.registerKeyDown('ArrowRight', showNext, { preventDefault: false })
 	};
 
 	onDestroy(() => keyManager.unregisterAll(keyHandlers));
@@ -79,9 +91,9 @@
 		const abs = Math.abs(offset);
 		const sign = Math.sign(offset);
 
-		const xPx = offset === 0 ? 0 : sign * (230 + (abs - 1) * 155);
-		const rotateY = offset === 0 ? 0 : -sign * (52 + (abs - 1) * 9);
-		const opacity = abs === 0 ? 1 : abs === 1 ? 0.82 : abs === 2 ? 0.5 : 0.22;
+		const xPx = offset === 0 ? 0 : sign * (FIRST_OFFSET_PX + (abs - 1) * NEXT_OFFSET_PX);
+		const rotateY = offset === 0 ? 0 : -sign * (FIRST_ROTATION_DEG + (abs - 1) * NEXT_ROTATION_DEG);
+		const opacity = OPACITY_BY_DISTANCE[abs] ?? FAR_OPACITY;
 		const zIndex = 10 - abs;
 
 		return [
@@ -93,11 +105,15 @@
 	}
 
 	function isOnStage(index: number): boolean {
-		return Math.abs(index - library.shelfIndex) <= 3;
+		return Math.abs(index - library.shelfIndex) <= STAGE_RADIUS;
 	}
 
-	function coverUrl(entry: ShelfEntry): string {
-		return `${API_USER_STORAGE_URL}/${auth.user?.id}/${library.config.type}/${entry.cover}`;
+	function coverShadow(index: number): string {
+		return index === library.shelfIndex ? ACTIVE_SHADOW : SHADOW;
+	}
+
+	function coverUrl(cover: string): string {
+		return libraryCoverUrl(library, cover);
 	}
 </script>
 
@@ -123,14 +139,12 @@
 						class:h-56={isSquare}
 						class:w-44={!isSquare}
 						class:h-64={!isSquare}
-						style={index === library.shelfIndex
-							? 'box-shadow: 0 25px 60px rgba(0,0,0,0.45), 0 10px 20px rgba(0,0,0,0.3)'
-							: 'box-shadow: 0 8px 24px rgba(0,0,0,0.25)'}
+						style={coverShadow(index)}
 					>
 						<MissingCover {library} />
 						{#if entry.cover}
 							<img
-								src={coverUrl(entry)}
+								src={coverUrl(entry.cover)}
 								alt={entry.title}
 								class="absolute inset-0 h-full w-full object-cover"
 								loading="lazy"
@@ -145,10 +159,10 @@
 
 	<div class="flex items-center gap-6">
 		<button
-			onclick={() => navigate(-1)}
+			onclick={showPrevious}
 			disabled={library.shelfIndex === 0}
 			class="rounded-full p-2 transition-all hover:bg-c-neutral-1 disabled:opacity-25 dark:hover:bg-s-dark-3"
-			aria-label="Previous"
+			aria-label={ts.get.libraries.previous}
 		>
 			<ChevronLeft size={22} />
 		</button>
@@ -156,10 +170,10 @@
 			{library.shelfIndex + 1} / {entries.length}
 		</span>
 		<button
-			onclick={() => navigate(1)}
+			onclick={showNext}
 			disabled={library.shelfIndex === entries.length - 1}
 			class="rounded-full p-2 transition-all hover:bg-c-neutral-1 disabled:opacity-25 dark:hover:bg-s-dark-3"
-			aria-label="Next"
+			aria-label={ts.get.libraries.next}
 		>
 			<ChevronRight size={22} />
 		</button>
@@ -169,7 +183,7 @@
 		{#key library.shelfIndex}
 			<button
 				class="flex max-w-sm flex-col items-center gap-1 text-center"
-				onclick={() => handleClick(library.shelfIndex)}
+				onclick={openActiveEntry}
 				in:fade={{ duration: 180 }}
 			>
 				<div class="text-xl font-bold">{activeEntry.title}</div>

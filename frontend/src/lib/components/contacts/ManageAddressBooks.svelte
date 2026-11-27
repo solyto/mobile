@@ -1,5 +1,5 @@
 <script lang="ts">
-	import IconChevronLeft from '@lucide/svelte/icons/chevron-left';
+	import IconChevronLeft from '$lib/icons/lucide/chevron-left.svelte';
 	import { getContacts } from '$lib/state/Contacts.svelte';
 	import AddressBookEdit from '$lib/components/contacts/AddressBookEdit.svelte';
 	import AddressBookCreate from '$lib/components/contacts/AddressBookCreate.svelte';

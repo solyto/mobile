@@ -9,7 +9,11 @@ import { ru } from '$lib/i18n/ru';
 import { browser } from '$app/environment';
 import { type Auth, getAuth } from '$lib/state/Auth.svelte';
 
-const SUPPORTED: Language[] = ['en', 'de', 'fr', 'es', 'it', 'ru'];
+const LANGUAGE_FILES: Record<Language, LanguageFile> = { en, de, fr, es, it, ru };
+
+function isSupported(code: string): code is Language {
+	return Object.hasOwn(LANGUAGE_FILES, code);
+}
 
 export class Translation {
 	locale = $state<string>('en');
@@ -28,39 +32,15 @@ export class Translation {
 		}
 		if (browser) {
 			const code = (navigator.language || 'en').split('-')[0];
-			const lang: Language = SUPPORTED.includes(code as Language) ? (code as Language) : 'en';
+			const lang: Language = isSupported(code) ? code : 'en';
 			if (this.locale !== lang) this.changeLanguage(lang);
 		}
 	}
 
 	changeLanguage(locale: Language): void {
-		switch (locale) {
-			case 'en':
-			default:
-				this.locale = 'en';
-				this.get = en;
-				break;
-			case 'de':
-				this.locale = 'de';
-				this.get = de;
-				break;
-			case 'fr':
-				this.locale = 'fr';
-				this.get = fr;
-				break;
-			case 'es':
-				this.locale = 'es';
-				this.get = es;
-				break;
-			case 'it':
-				this.locale = 'it';
-				this.get = it;
-				break;
-			case 'ru':
-				this.locale = 'ru';
-				this.get = ru;
-				break;
-		}
+		const supported: Language = isSupported(locale) ? locale : 'en';
+		this.locale = supported;
+		this.get = LANGUAGE_FILES[supported];
 		if (browser) document.documentElement.lang = this.locale;
 	}
 }

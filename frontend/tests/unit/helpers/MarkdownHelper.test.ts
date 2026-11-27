@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { markdownToHtml } from '$lib/helpers/MarkdownHelper';
+import { looksLikeMarkdown, markdownToHtml, pastedMarkdownToHtml } from '$lib/helpers/MarkdownHelper';
 
 describe('markdownToHtml', () => {
 	it('renders a heading', () => {
@@ -19,5 +19,31 @@ describe('markdownToHtml', () => {
 		expect(markdownToHtml('[solyto](https://solyto.app)')).toContain(
 			'href="https://solyto.app"'
 		);
+	});
+});
+
+describe('looksLikeMarkdown', () => {
+	it.each(['# Heading', '- item', '* item', '1. item', '> quote', '```\ncode\n```', 'some **bold** text', 'a [link](https://solyto.app)'])(
+		'recognises %j',
+		(text) => {
+			expect(looksLikeMarkdown(text)).toBe(true);
+		}
+	);
+
+	it.each(['Meet at #office', 'file_name_v2 is ready', '5 * 3 = 15', 'Line one\nLine two'])('leaves %j as plain text', (text) => {
+		expect(looksLikeMarkdown(text)).toBe(false);
+	});
+});
+
+describe('pastedMarkdownToHtml', () => {
+	it('turns an image into a link to it', () => {
+		const html = pastedMarkdownToHtml('![logo](https://cdn.example/logo.png)');
+
+		expect(html).toContain('<a href="https://cdn.example/logo.png">logo</a>');
+		expect(html).not.toContain('<img');
+	});
+
+	it('keeps single line breaks', () => {
+		expect(pastedMarkdownToHtml('# Title\nfirst\nsecond')).toContain('first<br>second');
 	});
 });

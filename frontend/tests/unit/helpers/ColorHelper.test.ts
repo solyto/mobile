@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+	withAlpha,
 	lightenColor,
 	isLightColor,
 	getReadableTextColor,
@@ -108,5 +109,16 @@ describe('getChartColor', () => {
 
 	it('starts over after the last palette colour', () => {
 		expect(getChartColor(9)).toBe(getChartColor(0));
+	});
+});
+
+describe('withAlpha', () => {
+	it('adds the alpha to a computed rgb colour', () => {
+		expect(withAlpha('rgb(97, 217, 106)', 0.25)).toBe('rgba(97, 217, 106, 0.25)');
+	});
+
+	it('leaves any other colour as it is', () => {
+		expect(withAlpha('rgba(97, 217, 106, 0.5)', 0.25)).toBe('rgba(97, 217, 106, 0.5)');
+		expect(withAlpha('#61d96a', 0.25)).toBe('#61d96a');
 	});
 });

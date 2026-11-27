@@ -1,5 +1,5 @@
 <script lang="ts">
-	import IconPlus from '@lucide/svelte/icons/plus';
+	import IconPlus from '$lib/icons/lucide/plus.svelte';
 	import { getKeyManager } from '$lib/state/KeyManager.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import { getTodos } from '$lib/state/Todos.svelte';
@@ -55,24 +55,26 @@
 	}
 
 	async function onsubmit(): Promise<void> {
-		if (value.trim() === '') {
-			return;
-		}
+		if (value.trim() === '') return;
 
 		loadingIndicator.start();
-
-		if (type === 'tag') {
-			await tags.create(value);
-		} else if (type === 'category') {
-			await todos.createCategory(value);
+		try {
+			await create(value);
+			value = '';
+			visible = false;
+		} finally {
+			loadingIndicator.stop();
 		}
-
-		value = '';
-		visible = false;
-
-		loadingIndicator.stop();
 		keyManager.unregisterAll(keyHandlers);
 		onFinish();
+	}
+
+	async function create(title: string): Promise<void> {
+		if (type === 'tag') {
+			await tags.create(title);
+		} else {
+			await todos.createCategory(title);
+		}
 	}
 </script>
 

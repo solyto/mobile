@@ -1,5 +1,5 @@
 <script lang="ts">
-	import IconSettings from '@lucide/svelte/icons/settings';
+	import IconSettings from '$lib/icons/lucide/settings.svelte';
 
 	let {
 		onclick,

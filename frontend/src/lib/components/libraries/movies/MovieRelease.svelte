@@ -1,7 +1,10 @@
 <script lang="ts">
+	import { getTranslation } from '$lib/state/Translation.svelte';
 	import type { MovieRelease } from '$lib/types/library_movie';
 	import MissingCover from '$lib/components/libraries/shared/MissingCover.svelte';
 	import type { MovieLibrary } from '$lib/state/MovieLibrary.svelte';
+
+	const ts = getTranslation();
 
 	let { release, library }: { release: MovieRelease; library: MovieLibrary } = $props();
 </script>
@@ -11,14 +14,14 @@
 >
 	<div class="flex flex-col gap-4 md:flex-row">
 		<div class="flex justify-center">
-		{#if !release.cover}
-			<div
-				class="relative flex size-48 items-center justify-center rounded-lg bg-c-neutral text-xs text-c-neutral-5"
-			>
-				<MissingCover {library} />
-			</div>
-		{:else}
-			<img src={release.cover} loading="lazy" alt="Poster" class="rounded-lg md:size-48 object-cover" />
+			{#if !release.cover}
+				<div
+					class="relative flex size-48 items-center justify-center rounded-lg bg-c-neutral text-xs text-c-neutral-5"
+				>
+					<MissingCover {library} />
+				</div>
+			{:else}
+				<img src={release.cover} loading="lazy" alt={ts.get.libraries.poster} class="rounded-lg md:size-48 object-cover" />
 			{/if}
 		</div>
 		<div class="flex flex-col items-start justify-between gap-2 md:max-w-96 md:min-w-60">

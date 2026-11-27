@@ -10,8 +10,11 @@
 
 	onMount(async () => {
 		loadingIndicator.start();
-		await clipboard.load();
-		loadingIndicator.stop();
+		try {
+			await clipboard.load();
+		} finally {
+			loadingIndicator.stop();
+		}
 	});
 </script>
 

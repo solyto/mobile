@@ -1,5 +1,5 @@
 <script lang="ts">
-	import IconFunnel from '@lucide/svelte/icons/funnel';
+	import IconFunnel from '$lib/icons/lucide/funnel.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import type { FilterLibrary, GenreLibrary, RatingLibrary } from '$lib/types/library';
 	import { clickOutside } from '$lib/helpers/ClickHelper';
@@ -40,10 +40,7 @@
 
 	function filterByWishlist() {
 		toggleMenu();
-		const wishlistLibrary = library as GenreLibrary;
-		wishlistLibrary.genreFilter = null;
-		wishlistLibrary.ratingFilter = null;
-		wishlistLibrary.filterByWishlist();
+		(library as GenreLibrary).filterByWishlist();
 	}
 
 	function hasActiveFilter(): boolean {
@@ -74,9 +71,7 @@
 	{#if visibility.menu}
 		<div
 			class="absolute top-0 left-0 z-20 flex min-w-48 flex-col gap-1 rounded-lg bg-c-bg-modal px-2 py-2 shadow-md md:right-0 dark:bg-s-dark-2"
-			use:clickOutside={() => {
-				toggleMenu();
-			}}
+			use:clickOutside={toggleMenu}
 		>
 			{#if library.config.hasGenres}
 				<button

@@ -1,0 +1,10 @@
+- Create your own check-in trackers (e.g. to track habits), build goals, get alerted
+- Revamped the check-in history
+- Import .ics files into your calendar
+- Import .vcf files into your contacts
+- Set custom recurrence rules in the calendar + end-date
+- Notebook: link other notes with automatic backlinks
+- Change your currency in the localization settings
+- Feeds now has an auto-discovery function
+- Push notifications for f-droid users
+- selfhosters: please update your API first

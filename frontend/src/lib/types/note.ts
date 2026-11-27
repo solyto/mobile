@@ -11,6 +11,11 @@ export interface Note {
 	updated_at: string;
 }
 
+export interface NoteBacklink {
+	id: string;
+	title: string;
+}
+
 export interface CreateNoteRequest {
 	title: string;
 	category_id?: number | null;

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import IconSearch from '@lucide/svelte/icons/search';
+	import IconSearch from '$lib/icons/lucide/search.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 
 	let { onClick }: {

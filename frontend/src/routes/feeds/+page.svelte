@@ -13,6 +13,11 @@
 	const feeds = getFeeds();
 	const feedImport = getFeedImport();
 	const ts = getTranslation();
+
+	function closeEditor(): void {
+		feeds.modalOpen = false;
+		feeds.activeFeed = null;
+	}
 </script>
 
 {#if feeds.browseOpen}
@@ -26,17 +31,9 @@
 		rounded="2xl"
 		p="8"
 		title={feeds.activeFeed ? ts.get.feeds.edit_feed : ts.get.feeds.add_feed}
-		onClose={() => {
-			feeds.modalOpen = false;
-			feeds.activeFeed = null;
-		}}
+		onClose={closeEditor}
 	>
-		<EntryEdit
-			onClose={() => {
-				feeds.modalOpen = false;
-				feeds.activeFeed = null;
-			}}
-		/>
+		<EntryEdit onClose={closeEditor} />
 	</ContentModal>
 {/if}
 <div class="flex h-full w-full flex-row">

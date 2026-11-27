@@ -6,6 +6,8 @@
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import StaggeredLogo from '$lib/components/ui/StaggeredLogo.svelte';
 
+	const FAREWELL_MS = 1500;
+
 	const auth = getAuth();
 	const ts = getTranslation();
 
@@ -13,7 +15,7 @@
 		if (auth.loggedIn) {
 			await auth.signOut();
 
-			await new Promise((resolve) => setTimeout(resolve, 1500));
+			await new Promise((resolve) => setTimeout(resolve, FAREWELL_MS));
 
 			window.location.href = env.PUBLIC_REDIRECT_AFTER_LOGOUT || urls.landingPage;
 		}

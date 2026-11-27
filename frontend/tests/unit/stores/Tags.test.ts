@@ -1,14 +1,11 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Tags } from '$lib/state/Tags.svelte';
 import { api, resetStoreMocks } from '../setup/storeMocks';
+import { tag } from '../helpers/factories';
 
 beforeEach(() => {
 	resetStoreMocks();
 });
-
-function tag(id: number, name: string) {
-	return { id, name, color: '#000000', created_at: '', updated_at: '' };
-}
 
 describe('Tags store', () => {
 	it('loads and sorts tags case-insensitively', async () => {

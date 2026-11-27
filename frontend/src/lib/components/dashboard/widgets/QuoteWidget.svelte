@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { blur } from 'svelte/transition';
 	import DOMPurify from 'dompurify';
-	import IconQuote from '@lucide/svelte/icons/quote';
+	import IconQuote from '$lib/icons/lucide/quote.svelte';
 	import { nl2br } from '$lib/helpers/FormatHelper';
 	import type { Quote } from '$lib/types/library_quote';
 

@@ -48,3 +48,20 @@ const CHART_COLORS = ['#5070dd', '#b6d634', '#505372', '#ff994d', '#0ca8df', '#f
 export function getChartColor(index: number, color?: string | null): string {
 	return color || CHART_COLORS[index % CHART_COLORS.length];
 }
+
+const COMPUTED_RGB = /^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/;
+
+export function withAlpha(rgb: string, alpha: number): string {
+	const match = rgb.match(COMPUTED_RGB);
+	return match ? `rgba(${match[1]}, ${match[2]}, ${match[3]}, ${alpha})` : rgb;
+}
+
+// Canvas charts cannot read CSS variables such as var(--color-c-success), so the browser resolves them first.
+export function resolveCssColor(cssColor: string): string {
+	const probe = document.createElement('div');
+	probe.style.color = cssColor;
+	document.body.appendChild(probe);
+	const resolved = getComputedStyle(probe).color;
+	document.body.removeChild(probe);
+	return resolved;
+}

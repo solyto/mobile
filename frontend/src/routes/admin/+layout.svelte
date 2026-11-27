@@ -4,7 +4,7 @@
 	import LoadingIndicator from '$lib/components/ui/LoadingIndicator.svelte';
 	import Notifications from '$lib/components/ui/Notifications.svelte';
 	import { setAuth, getAuth } from '$lib/state/Auth.svelte';
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { urls } from '$lib/config/urls';
 	import { resolve } from '$app/paths';
@@ -23,7 +23,7 @@
 	setUiNotifications();
 	setKeyManager();
 	setStatistics();
-	setUserManagement();
+	const userManagement = setUserManagement();
 	setTranslation();
 
 	const auth = getAuth();
@@ -40,6 +40,8 @@
 			goto(resolve(urls.home));
 		}
 	});
+
+	onDestroy(() => userManagement.destroy());
 </script>
 
 <svelte:head>

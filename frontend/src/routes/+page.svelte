@@ -5,7 +5,13 @@
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import { setWeather } from '$lib/state/Weather.svelte';
 	import { setCheckInData } from '$lib/state/CheckInData.svelte';
+	import { setGoals } from '$lib/state/Goals.svelte';
 	import { setShortcuts } from '$lib/state/Shortcuts.svelte';
+	import { setNotes } from '$lib/state/Notes.svelte';
+	import { setMusicLibrary } from '$lib/state/MusicLibrary.svelte';
+	import { setBookLibrary } from '$lib/state/BookLibrary.svelte';
+	import { setLinkLibrary } from '$lib/state/LinkLibrary.svelte';
+	import { setQuoteLibrary } from '$lib/state/QuoteLibrary.svelte';
 	import { getAuth } from '$lib/state/Auth.svelte';
 	import { getNavigation } from '$lib/state/Navigation.svelte';
 	import { getWelcomeTour } from '$lib/state/WelcomeTour.svelte';
@@ -18,11 +24,17 @@
 	import QuickGlance from '$lib/components/dashboard/QuickGlance.svelte';
 
 	setTodos();
-	setCalendars();
-	setWeather();
-	setCheckInData();
-	setShortcuts();
-	setTimeTracking();
+	const calendars = setCalendars();
+	const weather = setWeather();
+	const checkInData = setCheckInData();
+	const goals = setGoals();
+	const shortcuts = setShortcuts();
+	const timeTracking = setTimeTracking();
+	const notes = setNotes();
+	const music = setMusicLibrary();
+	const books = setBookLibrary();
+	const links = setLinkLibrary();
+	const quotes = setQuoteLibrary();
 
 	const todos = getTodos();
 	const loadingIndicator = getLoadingIndicator();
@@ -36,15 +48,24 @@
 	let keyHandlers: { [key: string]: string | null } = { Enter: null };
 
 	onMount(async () => {
-		if (nav.features.todos) {
-			loadingIndicator.start();
-			await todos.load();
-			loadingIndicator.stop();
-		}
+		if (nav.features.todos) await withLoadingIndicator(() => todos.load());
 
 		if (auth.user?.settings?.first_visit) {
 			showOnboardingModal = true;
 		}
+	});
+
+	onMount(async () => {
+		if (nav.features.checkIn) await Promise.all([checkInData.loadDashboard(), goals.load()]);
+	});
+
+	onMount(() => {
+		weather.load();
+		shortcuts.load();
+		if (nav.features.calendar) calendars.loadWidgetEvents();
+		if (nav.features.timeTracking) withLoadingIndicator(() => timeTracking.load());
+		if (nav.features.libraries) loadLibraryHighlights();
+		if (nav.features.notes) notes.loadRecent();
 	});
 
 	onMount(() => {
@@ -55,6 +76,22 @@
 	});
 
 	onDestroy(() => keyManager.unregisterAll(keyHandlers));
+
+	function loadLibraryHighlights(): void {
+		quotes.loadRandom();
+		music.loadReleases();
+		books.loadReleases();
+		links.loadNewest();
+	}
+
+	async function withLoadingIndicator(load: () => Promise<void>): Promise<void> {
+		loadingIndicator.start();
+		try {
+			await load();
+		} finally {
+			loadingIndicator.stop();
+		}
+	}
 
 	function handleEnter(): void {
 		const tag = document.activeElement?.tagName.toLowerCase();

@@ -3,7 +3,7 @@
 	import { resolve } from '$app/paths';
 	import { blur } from 'svelte/transition';
 	import { formatDate } from '$lib/helpers/DateHelper';
-	import IconNotebookPen from '@lucide/svelte/icons/notebook-pen';
+	import IconNotebookPen from '$lib/icons/lucide/notebook-pen.svelte';
 	import type { Note } from '$lib/types/note';
 	import type { Translation } from '$lib/state/Translation.svelte';
 
@@ -11,6 +11,10 @@
 		newestNotes: Note[];
 		ts: Translation;
 	} = $props();
+
+	function lastChanged(note: Note): string {
+		return new Date(note.updated_at) > new Date(note.created_at) ? note.updated_at : note.created_at;
+	}
 </script>
 
 <div in:blur>
@@ -30,7 +34,7 @@
 					{note.title}
 				</span>
 				<span class="ml-auto shrink-0 text-xs text-c-neutral-4 dark:text-c-neutral-5">
-					{formatDate(new Date(note.updated_at) > new Date(note.created_at) ? note.updated_at : note.created_at)}
+					{formatDate(lastChanged(note))}
 				</span>
 			</a>
 		{/each}

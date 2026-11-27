@@ -1,13 +1,13 @@
 <script lang="ts">
+	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { scale } from 'svelte/transition';
 	import type { Library, LibraryRecommendation } from '$lib/types/library.js';
 	import DeezerButton from '$lib/components/ui/buttons/DeezerButton.svelte';
 	import HardcoverButton from '$lib/components/ui/buttons/HardcoverButton.svelte';
 	import MissingCover from '$lib/components/libraries/shared/MissingCover.svelte';
-	import { API_USER_STORAGE_URL } from '$lib/config/apiRoutes';
-	import { getAuth } from '$lib/state/Auth.svelte';
+	import { libraryCoverUrl } from '$lib/helpers/LibraryCoverHelper';
 
-	const auth = getAuth();
+	const ts = getTranslation();
 
 	let { library, item }: {
 		library: Library;
@@ -21,7 +21,7 @@
 >
 	<div class="flex flex-col gap-4 md:flex-row">
 		<div class="flex justify-center">
-			{#if item.cover === null || item.cover === undefined || item.cover === ''}
+			{#if !item.cover}
 				<div
 					class="relative flex size-48 items-center justify-center rounded-lg bg-c-neutral text-xs text-c-neutral-5"
 				>
@@ -29,13 +29,13 @@
 				</div>
 			{:else if item.id}
 				<img
-					src={`${API_USER_STORAGE_URL}/${auth.user?.id}/${library.config.type}/${item.cover}`}
+					src={libraryCoverUrl(library, item.cover)}
 					loading="lazy"
-					alt="Cover"
+					alt={ts.get.libraries.cover}
 					class="rounded-lg md:size-48"
 				/>
 			{:else}
-				<img src={item.cover} loading="lazy" alt="Cover" class="rounded-lg md:size-48" />
+				<img src={item.cover} loading="lazy" alt={ts.get.libraries.cover} class="rounded-lg md:size-48" />
 			{/if}
 		</div>
 		<div class="flex flex-col items-start justify-between gap-2 md:min-w-60">
@@ -46,14 +46,14 @@
 			<div class="flex flex-row items-start gap-2">
 				{#if library.config.type === 'music'}
 					<DeezerButton
-						link={item.link ? item.link : null}
+						link={item.link || null}
 						title={item.title}
 						artist={item.creator}
 					/>
 				{/if}
 				{#if library.config.type === 'books'}
 					<HardcoverButton
-						link={item.link ? item.link : null}
+						link={item.link || null}
 						title={item.title}
 						author={item.creator}
 					/>

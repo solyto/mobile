@@ -1,13 +1,13 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { getHoursOfDay, isOffHour, getMobileHourRows } from '$lib/helpers/DateHelper';
+	import { getMobileHourRows } from '$lib/helpers/DateHelper';
+	import MobileHourLabels from '$lib/components/calendars/views/MobileHourLabels.svelte';
 	import { getCalendars } from '$lib/state/Calendars.svelte';
 	import { SwipeNavigate } from '$lib/helpers/SwipeNavigate.svelte';
 	import CalendarWeekDay from '$lib/components/calendars/views/week/Day.svelte';
 	import CalendarMarks from '$lib/components/calendars/CalendarMarks.svelte';
 
 	const calendars = getCalendars();
-	const hours = getHoursOfDay();
 	const mobileRows = `minmax(4rem, auto) ${getMobileHourRows()}`;
 
 	const swipe = new SwipeNavigate({
@@ -37,17 +37,7 @@
 						class="flex flex-col"
 					/>
 				</div>
-				{#each hours as hour (hour)}
-					<div class="flex items-center justify-center">
-						<span
-							class="text-xs"
-							class:text-c-neutral-4={isOffHour(hour)}
-							class:dark:text-s-dark-3={isOffHour(hour)}
-						>
-							{hour}
-						</span>
-					</div>
-				{/each}
+				<MobileHourLabels />
 			</div>
 			<div
 				bind:this={contentEl}

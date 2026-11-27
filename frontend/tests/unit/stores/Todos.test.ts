@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Todos } from '$lib/state/Todos.svelte';
 import { api, auth, storage, pageState, resetStoreMocks } from '../setup/storeMocks';
-import { todo, category } from '../helpers/factories';
+import { todo, category, tag, todoWorkspace } from '../helpers/factories';
 
 beforeEach(() => {
 	resetStoreMocks();
@@ -68,14 +68,7 @@ describe('Todos store', () => {
 
 		it('hides todos from hideable workspaces when hide-it is active', () => {
 			const cat1 = category(1);
-			const hideable = {
-				id: 1,
-				title: 'Hidden',
-				is_hideable: true,
-				categories: [cat1],
-				created_at: '',
-				updated_at: ''
-			};
+			const hideable = todoWorkspace(1, [cat1], true);
 			const t = new Todos();
 			t.workspaces = [hideable];
 			t.hideItActive = true;
@@ -88,14 +81,7 @@ describe('Todos store', () => {
 		it('hides backlog todos from hideable workspaces when hide-it is active and the backlog filter is selected', () => {
 			const cat1 = category(1);
 			const cat2 = category(2);
-			const hideable = {
-				id: 1,
-				title: 'Hidden',
-				is_hideable: true,
-				categories: [cat1],
-				created_at: '',
-				updated_at: ''
-			};
+			const hideable = todoWorkspace(1, [cat1], true);
 			const t = new Todos();
 			t.workspaces = [hideable];
 			t.hideItActive = true;
@@ -109,20 +95,10 @@ describe('Todos store', () => {
 		});
 
 		it('re-evaluates hide-it against the filters being applied, not the previous selection', () => {
-			// Regression test: selecting a category filter and then switching to
-			// the backlog status filter used to leak hidden-workspace backlog
-			// items through, because the hide-it guard read the stale
-			// this.activeFilters from before the switch.
+			// Regression: the hide-it guard used to read the previous selection's filters.
 			const cat1 = category(1);
 			const cat2 = category(2);
-			const hideable = {
-				id: 1,
-				title: 'Hidden',
-				is_hideable: true,
-				categories: [cat1],
-				created_at: '',
-				updated_at: ''
-			};
+			const hideable = todoWorkspace(1, [cat1], true);
 			const t = new Todos();
 			t.workspaces = [hideable];
 			t.hideItActive = true;
@@ -229,6 +205,48 @@ describe('Todos store', () => {
 			await t.changeCompleted(todo({ id: '1' }), true);
 			expect(auth.widgetBridge.notifyChanged).toHaveBeenCalledTimes(1);
 		});
+
+		const subtask = { id: 7, title: 'Sub', is_completed: false, created_at: '', updated_at: '' };
+		const changes: [string, 'update' | 'post' | 'put' | 'delete', (t: Todos) => Promise<boolean>][] = [
+			['delete', 'delete', (t) => t.delete(todo())],
+			['changePriority', 'update', (t) => t.changePriority(todo(), 'high')],
+			['addTag', 'update', (t) => t.addTag(todo(), 2)],
+			['removeTag', 'update', (t) => t.removeTag(todo(), tag(2))],
+			['addCategory', 'update', (t) => t.addCategory(todo(), 3)],
+			['removeCategory', 'update', (t) => t.removeCategory(todo())],
+			['changeCompleted', 'update', (t) => t.changeCompleted(todo(), true)],
+			['changeEffort', 'update', (t) => t.changeEffort(todo(), 'low')],
+			['changeStatus', 'update', (t) => t.changeStatus('1', 'waiting')],
+			['changeProgress', 'update', (t) => t.changeProgress(todo(), 50)],
+			['changeDue', 'update', (t) => t.changeDue(todo(), '2026-12-01')],
+			['changeRecurrence', 'update', (t) => t.changeRecurrence(todo(), 'weekly', 2, '2027-01-01')],
+			['changeTitle', 'update', (t) => t.changeTitle(todo(), 'New')],
+			['changeDescription', 'update', (t) => t.changeDescription(todo(), 'Text')],
+			['changeLink', 'update', (t) => t.changeLink(todo(), null)],
+			['addSubtask', 'post', (t) => t.addSubtask(todo(), 'Sub')],
+			['changeSubtaskTitle', 'put', (t) => t.changeSubtaskTitle(todo(), subtask, 'New')],
+			['markSubtask', 'put', (t) => t.markSubtask(todo(), subtask, true)],
+			['deleteSubtask', 'delete', (t) => t.deleteSubtask(todo(), subtask)]
+		];
+
+		it.each(changes)('%s reloads and notifies on success', async (_, method, change) => {
+			api.list.mockResolvedValue({ data: [] });
+			api[method].mockResolvedValue(method === 'post' ? { data: {} } : true);
+			const t = new Todos();
+
+			expect(await change(t)).toBe(true);
+			expect(api.list).toHaveBeenCalledWith(expect.stringMatching(/todos$/));
+			expect(auth.widgetBridge.notifyChanged).toHaveBeenCalledTimes(1);
+		});
+
+		it.each(changes)('%s neither reloads nor notifies on failure', async (_, method, change) => {
+			api[method].mockResolvedValue(method === 'post' ? null : false);
+			const t = new Todos();
+
+			expect(await change(t)).toBe(false);
+			expect(api.list).not.toHaveBeenCalled();
+			expect(auth.widgetBridge.notifyChanged).not.toHaveBeenCalled();
+		});
 	});
 
 	describe('quickCreate', () => {
@@ -247,6 +265,21 @@ describe('Todos store', () => {
 
 			vi.runAllTimers();
 			expect(t.recentlyCreated).toBeNull();
+		});
+
+		it('files the todo under the active tag and category filters', async () => {
+			api.create.mockResolvedValue(null);
+			const t = new Todos();
+			t.addFilter({ type: 'tag', value: 4 });
+			t.addFilter({ type: 'category', value: 9 });
+
+			await t.quickCreate('Buy milk');
+
+			expect(api.create).toHaveBeenCalledWith(expect.stringContaining('todos'), {
+				title: 'Buy milk',
+				tags: [4],
+				category_id: 9
+			});
 		});
 
 		it('reports failure when creation fails', async () => {
@@ -399,6 +432,26 @@ describe('Todos store', () => {
 			t.toggleHideIt();
 			expect(t.filteredTodos.map((x) => x.id)).toEqual(['2']);
 			expect(t.filteredCategories.map((c) => c.id)).toEqual([]);
+		});
+	});
+
+	describe('derived flags', () => {
+		it('knows whether there are no todos at all, regardless of filters', () => {
+			const t = new Todos();
+			expect(t.noTodosYet).toBe(true);
+			t.todos = [todo({ status: 'backlog' })];
+			t.useFilters([]);
+			expect(t.filteredTodos).toEqual([]);
+			expect(t.noTodosYet).toBe(false);
+		});
+
+		it('treats the list and grouped views as row views', () => {
+			const t = new Todos();
+			const rowViews = (['list', 'grouped', 'kanban', 'overview', 'card'] as const).filter((view) => {
+				t.view = view;
+				return t.isRowView;
+			});
+			expect(rowViews).toEqual(['list', 'grouped']);
 		});
 	});
 

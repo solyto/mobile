@@ -192,11 +192,15 @@ describe('ImportButton', () => {
 });
 
 describe('NavLegalEntry', () => {
-	it('renders nothing when no legal urls are configured', () => {
-		// the shared component setup mocks $env/dynamic/public with an empty env,
-		// so hasLegalUrls is false and the entry is hidden
-		const { container } = renderWithContext(NavLegalEntry, {});
-		expect(container.textContent).toBe('');
+	it('shows only the attributions link when no legal urls are configured', async () => {
+		// the shared component setup mocks $env/dynamic/public with an empty env
+		const user = userEvent.setup();
+		renderWithContext(NavLegalEntry, {});
+		await user.click(screen.getByTitle('Legal'));
+		expect(screen.getByText('Open-source attributions')).toBeInTheDocument();
+		expect(screen.queryByText('Legal Notice')).not.toBeInTheDocument();
+		expect(screen.queryByText('Privacy Policy')).not.toBeInTheDocument();
+		expect(screen.queryByText('Terms of Service')).not.toBeInTheDocument();
 	});
 });
 

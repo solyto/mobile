@@ -5,12 +5,47 @@
 	import CategoryCreate from '$lib/components/libraries/links/CategoryCreate.svelte';
 	import CategoryNavigationMobile from '$lib/components/libraries/links/CategoryNavigationMobile.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
-	import IconTrash from '@lucide/svelte/icons/trash-2';
+	import IconTrash from '$lib/icons/lucide/trash.svelte';
+	import type { LinkCategory } from '$lib/types/library_link';
 
 	const library = getLinkLibrary();
 	const ts = getTranslation();
 
 	const TAB = 'relative cursor-pointer touch-manipulation gap-2 rounded-sm bg-c-bg-surface px-6 py-3 font-bold border-1 border-c-neutral-1 drop-shadow-sm transition-all hover:bg-c-neutral max-md:w-full dark:border-transparent dark:hover:bg-s-dark-2';
+	const UNCATEGORIZED = 0;
+	const UNCATEGORIZED_COLOR = 'var(--color-c-btn)';
+
+	function categoryColor(category: LinkCategory): string {
+		return category.color ?? 'var(--color-c-primary)';
+	}
+
+	function ringStyle(target: number, color: string): string {
+		return library.dragTarget === target ? `--tw-ring-color: ${color};` : '';
+	}
+
+	function showFavorites(): void {
+		library.filterByFavorite();
+	}
+
+	function dragOver(event: DragEvent, target: number): void {
+		event.preventDefault();
+		event.stopPropagation();
+		library.dragTarget = target;
+	}
+
+	function clearDragTarget(): void {
+		library.dragTarget = null;
+	}
+
+	function drop(event: DragEvent): void {
+		event.preventDefault();
+		library.dragToCategory();
+	}
+
+	function deleteCategory(event: MouseEvent, category: LinkCategory): void {
+		event.stopPropagation();
+		library.deleteCategory(category);
+	}
 </script>
 
 <div class="flex flex-wrap items-center gap-x-4 gap-y-5 max-md:hidden">
@@ -28,7 +63,7 @@
 		role="button"
 		tabindex="0"
 		class={TAB}
-		onclick={() => library.filterByFavorite()}
+		onclick={showFavorites}
 	>
 		{ts.get.libraries.links.favorites}
 		<Badge i={library.getFavoriteCount()} color="var(--color-c-warning)" />
@@ -38,63 +73,41 @@
 		role="button"
 		tabindex="0"
 		class={TAB}
-		class:ring-2={library.dragTarget === 0}
-		style={library.dragTarget === 0 ? `--tw-ring-color: var(--color-c-btn);` : ''}
-		ondragover={(e: DragEvent) => {
-			e.preventDefault();
-			e.stopPropagation();
-			library.dragTarget = 0;
-		}}
-		ondragenter={() => (library.dragTarget = null)}
-		ondragleave={() => (library.dragTarget = null)}
-		ondrop={(e: DragEvent) => {
-			e.preventDefault();
-			library.dragToCategory();
-		}}
-		onclick={() => library.filterByCategory(0)}
+		class:ring-2={library.dragTarget === UNCATEGORIZED}
+		style={ringStyle(UNCATEGORIZED, UNCATEGORIZED_COLOR)}
+		ondragover={(e: DragEvent) => dragOver(e, UNCATEGORIZED)}
+		ondragenter={clearDragTarget}
+		ondragleave={clearDragTarget}
+		ondrop={drop}
+		onclick={() => library.filterByCategory(UNCATEGORIZED)}
 	>
 		{ts.get.libraries.links.uncategorized}
-		<Badge i={library.getCategoryCount(null)} color="var(--color-c-btn)" />
-		<NavIndicator active={library.activeFilter === 0} edge="bottom" color="var(--color-c-btn)" />
+		<Badge i={library.getCategoryCount(null)} color={UNCATEGORIZED_COLOR} />
+		<NavIndicator active={library.activeFilter === UNCATEGORIZED} edge="bottom" color={UNCATEGORIZED_COLOR} />
 	</div>
-	{#each library.categories as category, i (category.id)}
+	{#each library.categories as category (category.id)}
 		<div
 			role="button"
 			tabindex="0"
 			class="group {TAB}"
 			class:ring-2={library.dragTarget === category.id}
-			style={library.dragTarget === category.id
-				? `--tw-ring-color: ${category.color ?? 'var(--color-c-primary)'};`
-				: ''}
-			ondragover={(e: DragEvent) => {
-				e.preventDefault();
-				e.stopPropagation();
-				library.dragTarget = category.id;
-			}}
-			ondragenter={() => (library.dragTarget = null)}
-			ondragleave={() => (library.dragTarget = null)}
-			ondrop={(e: DragEvent) => {
-				e.preventDefault();
-				library.dragToCategory();
-			}}
+			style={ringStyle(category.id, categoryColor(category))}
+			ondragover={(e: DragEvent) => dragOver(e, category.id)}
+			ondragenter={clearDragTarget}
+			ondragleave={clearDragTarget}
+			ondrop={drop}
 			onclick={() => library.filterByCategory(category.id)}
 		>
 			{category.title}
-			<Badge
-				i={library.getCategoryCount(category.id)}
-				color={category.color ?? 'var(--color-c-primary)'}
-			/>
-			<NavIndicator active={library.activeFilter === category.id} edge="bottom" color={category.color ?? 'var(--color-c-primary)'} />
+			<Badge i={library.getCategoryCount(category.id)} color={categoryColor(category)} />
+			<NavIndicator active={library.activeFilter === category.id} edge="bottom" color={categoryColor(category)} />
 			<div
 				class="absolute right-[-9px] bottom-[-4px] opacity-0 transition-all group-hover:opacity-100"
 			>
 				<button
 					type="button"
 					class="z-40 flex size-[24px] cursor-pointer items-center justify-center rounded-full bg-c-danger text-white drop-shadow-md transition-all hover:text-c-heading hover:drop-shadow-xl"
-					onclick={(e) => {
-						e.stopPropagation();
-						library.deleteCategory(category);
-					}}
+					onclick={(e) => deleteCategory(e, category)}
 				>
 					<IconTrash class="size-4" />
 				</button>

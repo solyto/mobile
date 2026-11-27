@@ -4,6 +4,7 @@
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
+	import { formatElapsed } from '$lib/helpers/TimeTrackingHelper';
 
 	const tt = getTimeTracking();
 	const ts = getTranslation();
@@ -15,12 +16,7 @@
 	function updateElapsed(): void {
 		if (!tt.activeTimer) return;
 		const start = new Date(tt.activeTimer.started_at).getTime();
-		const now = Date.now();
-		const diff = Math.floor((now - start) / 1000);
-		const h = Math.floor(diff / 3600);
-		const m = Math.floor((diff % 3600) / 60);
-		const s = diff % 60;
-		elapsed = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+		elapsed = formatElapsed(Math.floor((Date.now() - start) / 1000));
 	}
 
 	onMount(() => {
@@ -35,8 +31,11 @@
 	async function stopTimer(): Promise<void> {
 		if (!tt.activeTimer) return;
 		loadingIndicator.start();
-		await tt.stopTimer(tt.activeTimer.id);
-		loadingIndicator.stop();
+		try {
+			await tt.stopTimer(tt.activeTimer.id);
+		} finally {
+			loadingIndicator.stop();
+		}
 	}
 </script>
 

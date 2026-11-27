@@ -11,28 +11,34 @@
 	const loadingIndicator = getLoadingIndicator();
 
 	async function onJournalEnabled(value: boolean): Promise<void> {
-		loadingIndicator.start();
-		await auth.updateJournalEnabled(value);
-		loadingIndicator.stop();
+		await withLoadingIndicator(() => auth.updateJournalEnabled(value));
 	}
 
 	async function onJournalCalendarMark(value: boolean): Promise<void> {
-		loadingIndicator.start();
-		await auth.updateJournalCalendarMark(value);
-		loadingIndicator.stop();
+		await withLoadingIndicator(() => auth.updateJournalCalendarMark(value));
 	}
 
 	async function onCheckInCalendarMark(value: boolean): Promise<void> {
+		await withLoadingIndicator(() => auth.updateCheckInCalendarMark(value));
+	}
+
+	async function withLoadingIndicator(action: () => Promise<unknown>): Promise<void> {
 		loadingIndicator.start();
-		await auth.updateCheckInCalendarMark(value);
-		loadingIndicator.stop();
+		try {
+			await action();
+		} finally {
+			loadingIndicator.stop();
+		}
 	}
 </script>
 
-<div>
-	<NavigationOrder />
+<div class="flex flex-col gap-8 xl:flex-row xl:items-start xl:gap-16">
+	<div class="xl:flex-1">
+		<NavigationOrder />
+	</div>
 
-	<div class="mt-8">
+	<!-- Side by side, the rows start level with the feature list below its hint. -->
+	<div class="xl:flex-1 xl:pt-6">
 		<SettingsSection label={ts.get.settings.calendar_life_marks}>
 			<div class="flex w-full flex-col gap-2">
 				<div class="flex w-full justify-between">

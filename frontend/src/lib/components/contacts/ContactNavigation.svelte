@@ -5,6 +5,7 @@
 	import EditButton from '$lib/components/ui/buttons/EditButton.svelte';
 	import ImportButton from '$lib/components/ui/buttons/ImportButton.svelte';
 	import { getContacts } from '$lib/state/Contacts.svelte';
+	import { getContactImport } from '$lib/state/ContactImport.svelte';
 	import ManageAddressBooks from '$lib/components/contacts/ManageAddressBooks.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
 	import CloudButton from '$lib/components/ui/buttons/CloudButton.svelte';
@@ -15,7 +16,12 @@
 	let navigation = $state<HTMLDivElement | null>(null);
 
 	const contacts = getContacts();
+	const contactImport = getContactImport();
 	const ts = getTranslation();
+
+	function openImport(): void {
+		contactImport.open();
+	}
 
 	function toggleMobile(): void {
 		if (navigation) {
@@ -99,11 +105,7 @@
 						editMode = true;
 					}}
 				/>
-				<ImportButton
-					onClick={() => {
-						contacts.importModal = true;
-					}}
-				/>
+				<ImportButton onClick={openImport} />
 				<CloudButton
 					onClick={() => {
 						contacts.syncModal = true;

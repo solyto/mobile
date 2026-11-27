@@ -7,7 +7,7 @@
 	import { onDestroy, tick } from 'svelte';
 	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
 	import InputAutocomplete from '$lib/components/forms/InputAutocomplete.svelte';
-	import IconTrash from '@lucide/svelte/icons/trash-2';
+	import IconTrash from '$lib/icons/lucide/trash.svelte';
 
 	const ts = getTranslation();
 	const todos = getTodos();
@@ -43,6 +43,10 @@
 
 	async function handleEnter(event: KeyboardEvent): Promise<void> {
 		if (autocompleteOpen) return;
+		await submitAndClose();
+	}
+
+	async function submitAndClose(): Promise<void> {
 		await onsubmit();
 		await toggleAddCategories();
 		addCategoryTitle = '';
@@ -59,54 +63,48 @@
 	}
 
 	async function onsubmit(): Promise<void> {
-		loadingIndicator.start();
 		keyManager.unregisterKeyDown(keyHandlers.Enter);
+		const trimmed = addCategoryTitle.trim();
+		const categoryTitle = trimmed.startsWith('/') ? addCategoryTitle.slice(1) : trimmed;
+		if (categoryTitle === '') return;
 
-		let categoryTitle = addCategoryTitle.trim();
-
-		if (categoryTitle.trim().startsWith('/')) {
-			categoryTitle = addCategoryTitle.slice(1);
-		}
-
-		if (categoryTitle === '') {
+		loadingIndicator.start();
+		try {
+			await assignCategory(categoryTitle);
+		} finally {
 			loadingIndicator.stop();
+		}
+	}
+
+	async function assignCategory(title: string): Promise<void> {
+		const existing = todos.categories.find((c) => c.title.toLowerCase() === title.toLowerCase());
+		const category = existing ?? (await todos.createCategory(title));
+		if (!category) {
+			notifications.error(ts.get.todos.category_error);
 			return;
 		}
-
-		let categoryId = todos.categories.find(
-			(c) => c.title.toLowerCase() === categoryTitle.toLowerCase()
-		)?.id;
-
-		if (!categoryId) {
-			const created = await todos.createCategory(categoryTitle);
-			if (!created) {
-				loadingIndicator.stop();
-				notifications.error(ts.get.todos.category_error);
-				return;
-			}
-			categoryId = created.id;
-		}
-
-		await todos.addCategory(todo, categoryId);
-		loadingIndicator.stop();
+		await todos.addCategory(todo, category.id);
 	}
 
 	async function onRemove(): Promise<void> {
 		loadingIndicator.start();
-		await todos.removeCategory(todo);
-		loadingIndicator.stop();
+		try {
+			await todos.removeCategory(todo);
+		} finally {
+			loadingIndicator.stop();
+		}
 	}
 </script>
 
 {#if addCategoryVisible && !readonly}
-	<div class="w-32 {todos.view === 'kanban' ? 'px-2 py-1 text-xs' : ''}">
+	<div class="w-32" class:px-2={todos.view === 'kanban'} class:py-1={todos.view === 'kanban'} class:text-xs={todos.view === 'kanban'}>
 		<InputAutocomplete
 			bind:input={addCategoryInput}
 			bind:value={addCategoryTitle}
 			bind:open={autocompleteOpen}
 			{onblur}
 			items={todos.categories.map((c) => ({ label: c.title }))}
-			onselect={async () => { await onsubmit(); await toggleAddCategories(); addCategoryTitle = ''; }}
+			onselect={submitAndClose}
 		/>
 	</div>
 {:else}

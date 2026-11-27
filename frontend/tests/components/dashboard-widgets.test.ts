@@ -11,7 +11,10 @@ import NewestLinksWidget from '$lib/components/dashboard/widgets/NewestLinksWidg
 import BookReleasesWidget from '$lib/components/dashboard/widgets/BookReleasesWidget.svelte';
 import MusicReleasesWidget from '$lib/components/dashboard/widgets/MusicReleasesWidget.svelte';
 import QuoteWidget from '$lib/components/dashboard/widgets/QuoteWidget.svelte';
-import { todo } from '../unit/helpers/factories';
+import CheckInWidget from '$lib/components/dashboard/widgets/CheckInWidget.svelte';
+import CheckInContextHarness from './helpers/CheckInContextHarness.svelte';
+import { calendarEvent as eventFixture, checkInTracker, checkInValue, link as linkFixture, note as noteFixture, todo } from '../unit/helpers/factories';
+import type { CheckInTracker, CheckInValue } from '$lib/types/check_in';
 import type { CalendarEvent } from '$lib/types/calendar';
 import type { Note } from '$lib/types/note';
 import type { Link } from '$lib/types/library_link';
@@ -21,56 +24,23 @@ import type { Quote } from '$lib/types/library_quote';
 import type { TodoPriority } from '$lib/types/todo';
 
 function calendarEvent(overrides: Partial<CalendarEvent> = {}): CalendarEvent {
-	return {
-		id: 1,
+	return eventFixture({
 		uri: 'evt-1',
 		title: 'Standup',
-		description: '',
-		location: '',
 		start_date: new Date(2026, 7, 14, 9, 30),
 		end_date: new Date(2026, 7, 14, 10, 0),
-		is_all_day: false,
-		is_recurring: false,
-		recurrence_rule: null,
-		recurrence_end: null,
-		original_start_date: null,
-		created_at: null,
-		updated_at: null,
-		calendar_id: 1,
 		calendar_name: 'Work',
 		calendar_color: '#ff0000',
-		etag: '',
 		...overrides
-	};
+	});
 }
 
 function note(overrides: Partial<Note> = {}): Note {
-	return {
-		id: 'n1',
-		title: 'Shopping list',
-		content: '',
-		category_id: null,
-		tags: [],
-		is_favorite: false,
-		created_at: '2026-08-01T00:00:00',
-		updated_at: '2026-08-10T00:00:00',
-		...overrides
-	};
+	return noteFixture({ title: 'Shopping list', created_at: '2026-08-01T00:00:00', updated_at: '2026-08-10T00:00:00', ...overrides });
 }
 
 function link(overrides: Partial<Link> = {}): Link {
-	return {
-		id: 'l1',
-		title: 'Solyto',
-		url: 'https://solyto.app',
-		cover: null,
-		tags: [],
-		category: null,
-		is_favorite: false,
-		created_at: '',
-		updated_at: '',
-		...overrides
-	};
+	return linkFixture({ title: 'Solyto', url: 'https://solyto.app', ...overrides });
 }
 
 describe('DueTodosWidget', () => {
@@ -243,6 +213,24 @@ describe('EventsTodayWidget', () => {
 });
 
 describe('UpcomingEventsWidget', () => {
+	it('lists every occurrence of a recurring event and the same event in two calendars', () => {
+		const daily = (day: number, calendarId: number) =>
+			calendarEvent({ id: 9, uri: 'standup.ics', calendar_id: calendarId, start_date: new Date(2026, 7, day, 9, 30) });
+		renderWithContext(
+			UpcomingEventsWidget,
+			{},
+			{
+				prepare: (stores) => ({
+					upcomingEvents: [daily(15, 1), daily(16, 1), daily(17, 1), daily(15, 2)],
+					ts: stores.ts,
+					auth: stores.auth
+				})
+			}
+		);
+
+		expect(screen.getAllByText('Standup')).toHaveLength(4);
+	});
+
 	it('renders the event date (user format), title and time', () => {
 		renderWithContext(
 			UpcomingEventsWidget,
@@ -260,7 +248,7 @@ describe('UpcomingEventsWidget', () => {
 				})
 			}
 		);
-		expect(screen.getByText('Coming Up')).toBeInTheDocument();
+		expect(screen.getByText('Coming up')).toBeInTheDocument();
 		expect(screen.getByText('Conference')).toBeInTheDocument();
 		expect(screen.getByText('14:00')).toBeInTheDocument();
 	});
@@ -440,5 +428,28 @@ describe('QuoteWidget', () => {
 		renderWithContext(QuoteWidget, { quote: quote({ author: null }) });
 		expect(screen.getByText('What does not kill me')).toBeInTheDocument();
 		expect(screen.queryByText('Nietzsche')).not.toBeInTheDocument();
+	});
+});
+
+describe('CheckInWidget', () => {
+	const mood = checkInTracker({ id: 1, key: 'mood', name: null, type: 'scale', scored: true });
+	const meditated = checkInTracker({ id: 2, type: 'yes_no' });
+
+	function renderWidget(values: CheckInValue[], trackers: CheckInTracker[] = [mood, meditated]): void {
+		renderWithContext(CheckInContextHarness, {}, {
+			prepare: (stores) => ({ component: CheckInWidget, props: { ts: stores.ts }, trackers, values, loaded: true })
+		});
+	}
+
+	it('shows the averages of the trackers that count towards the score', () => {
+		renderWidget([checkInValue(1, '2026-08-14', 4), checkInValue(2, '2026-08-14', 1)]);
+
+		expect(screen.getByText('Total Score')).toBeInTheDocument();
+	});
+
+	it('stays hidden when only trackers that do not count towards the score have values', () => {
+		renderWidget([checkInValue(2, '2026-08-14', 1)]);
+
+		expect(screen.queryByText('Total Score')).not.toBeInTheDocument();
 	});
 });

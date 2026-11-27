@@ -1,4 +1,11 @@
-import type { SolytoWidgetsBridge, WidgetAppMessage, WidgetNativeMessage } from '$lib/types/platform';
+import type {
+	NativePushPermission,
+	NativePushStatus,
+	PushRequestType,
+	SolytoWidgetsBridge,
+	WidgetAppMessage,
+	WidgetNativeMessage
+} from '$lib/types/platform';
 import type { WidgetTokenResponse } from '$lib/types/auth';
 import { browser } from '$app/environment';
 import { goto } from '$app/navigation';
@@ -11,6 +18,8 @@ import ApiService from '$lib/services/ApiService';
 import LocalStorageService from '$lib/services/LocalStorageService';
 
 const REFRESH_DEBOUNCE_MS = 2000;
+// Long enough for the user to answer Android's permission dialog.
+const PUSH_REQUEST_TIMEOUT_MS = 60000;
 
 interface UnsupportedServer {
 	apiUrl: string;
@@ -25,6 +34,10 @@ export class WidgetBridge {
 	private localStorage: LocalStorageService;
 	private refreshTimer: ReturnType<typeof setTimeout> | null = null;
 	private started = false;
+	private listening = false;
+	// Waiting push requests by id; native echoes the id in its pushStatus answer.
+	private pushRequests = new Map<string, (status: NativePushStatus) => void>();
+	private nextPushRequestId = 1;
 
 	constructor(
 		apiService: ApiService,
@@ -41,7 +54,7 @@ export class WidgetBridge {
 		if (!bridge || this.started) return;
 
 		this.started = true;
-		bridge.onmessage = (event) => this.receive(event.data);
+		this.listen(bridge);
 		this.post({ type: 'ready' });
 	}
 
@@ -87,12 +100,36 @@ export class WidgetBridge {
 		}, REFRESH_DEBOUNCE_MS);
 	}
 
+	hasNativePush(): boolean {
+		return this.bridge() !== null;
+	}
+
+	pushStatus(): Promise<NativePushStatus> {
+		return this.askPush('getPushStatus');
+	}
+
+	enablePush(): Promise<NativePushStatus> {
+		return this.askPush('enablePush');
+	}
+
+	disablePush(): Promise<NativePushStatus> {
+		return this.askPush('disablePush');
+	}
+
 	destroy(): void {
 		this.cancelRefresh();
 
 		const bridge = this.bridge();
-		if (bridge && this.started) bridge.onmessage = null;
+		if (bridge && this.listening) bridge.onmessage = null;
+		this.listening = false;
 		this.started = false;
+	}
+
+	private listen(bridge: SolytoWidgetsBridge): void {
+		if (this.listening) return;
+
+		this.listening = true;
+		bridge.onmessage = (event) => this.receive(event.data);
 	}
 
 	private bridge(): SolytoWidgetsBridge | null {
@@ -104,12 +141,46 @@ export class WidgetBridge {
 		this.bridge()?.postMessage(JSON.stringify(message));
 	}
 
+	// Native answers each push request with one pushStatus message carrying the request's id;
+	// an answer after the timeout is ignored. Settings can ask before start() (a reload on the
+	// settings page), so the answer needs the listener already.
+	private askPush(type: PushRequestType): Promise<NativePushStatus> {
+		const bridge = this.bridge();
+		if (bridge) this.listen(bridge);
+
+		const id = String(this.nextPushRequestId++);
+		return new Promise((resolve, reject) => {
+			const timeout = setTimeout(() => {
+				this.pushRequests.delete(id);
+				reject(new Error(`No answer to ${type}`));
+			}, PUSH_REQUEST_TIMEOUT_MS);
+
+			this.pushRequests.set(id, (status) => {
+				clearTimeout(timeout);
+				this.pushRequests.delete(id);
+				resolve(status);
+			});
+			this.post({ type, id });
+		});
+	}
+
 	private receive(data: unknown): void {
 		const message = this.parse(data);
 		if (!message) return;
 
 		if (message.type === 'status') {
 			if (message.needsToken && this.isLoggedIn()) void this.issueToken();
+			return;
+		}
+
+		if (message.type === 'pushStatus') {
+			this.pushRequests.get(message.id)?.({ enabled: message.enabled, permission: message.permission });
+			return;
+		}
+
+		if (message.type === 'open') {
+			// eslint-disable-next-line svelte/no-navigation-without-resolve -- a notification's link, checked by isAppPath()
+			if (this.isLoggedIn()) void goto(message.path);
 			return;
 		}
 
@@ -127,12 +198,14 @@ export class WidgetBridge {
 		}
 		if (typeof message !== 'object' || message === null) return null;
 
-		const { type, needsToken, key, id } = message as Record<string, unknown>;
+		const { type, needsToken, key, id, enabled, permission, path } = message as Record<string, unknown>;
 
 		if (type === 'status' && typeof needsToken === 'boolean') return { type, needsToken };
-		if (type === 'navigate' && typeof key === 'string' && (id === undefined || typeof id === 'string')) {
-			return { type, key, id };
-		}
+		const isPushStatus = type === 'pushStatus' && typeof id === 'string' && typeof enabled === 'boolean' && isPushPermission(permission);
+		if (isPushStatus) return { type, id, enabled, permission };
+		if (type === 'open' && typeof path === 'string' && isAppPath(path)) return { type, path };
+		const isNavigation = type === 'navigate' && typeof key === 'string' && (id === undefined || typeof id === 'string');
+		if (isNavigation) return { type, key, id };
 
 		return null;
 	}
@@ -170,4 +243,14 @@ export class WidgetBridge {
 		const stored: UnsupportedServer = { apiUrl: getApiUrl(), version: this.apiService.storedServerVersion() };
 		this.localStorage.setJson(WidgetBridge.LS_UNSUPPORTED_SERVER_KEY, stored);
 	}
+}
+
+function isPushPermission(value: unknown): value is NativePushPermission {
+	return value === 'granted' || value === 'denied' || value === 'prompt';
+}
+
+// Only pages of this app: another site, a scheme, "//host" or "/\host" would leave the app's origin.
+function isAppPath(value: string): boolean {
+	const origin = 'http://app.invalid';
+	return value.startsWith('/') && new URL(value, origin).origin === origin;
 }

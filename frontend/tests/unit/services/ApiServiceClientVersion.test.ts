@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import type ApiServiceClass from '$lib/services/ApiService';
+import type LocalStorageService from '$lib/services/LocalStorageService';
 
 // This file exercises the X-Client-Version header, which depends on
 // PUBLIC_VERSION. It mocks the public env per test and re-imports the service
@@ -314,5 +315,27 @@ describe('outdatedServerVersionToAnnounce', () => {
 		const ApiService = await loadApiService();
 
 		expect(new ApiService().outdatedServerVersionToAnnounce('1.0.15')).toBeNull();
+	});
+});
+
+describe('injected storage', () => {
+	it('remembers the server version in the storage it is given', async () => {
+		const ApiService = await loadApiService({ PUBLIC_VERSION: '1.2.3' }, null);
+		const stored = new Map<string, unknown>([['server_version', { apiUrl: API_URL, version: '1.0.15' }]]);
+		const storage = {
+			get: () => null,
+			set: () => {},
+			getJson: (key: string) => stored.get(key) ?? null,
+			setJson: (key: string, value: unknown) => stored.set(key, value)
+		} as unknown as LocalStorageService;
+		const service = new ApiService('tok', storage);
+
+		expect(service.storedServerVersion()).toBe('1.0.15');
+
+		vi.stubGlobal('fetch', vi.fn().mockResolvedValue(healthResponse('1.1.0')));
+		await service.checkServerVersion();
+
+		expect(stored.get('server_version')).toEqual({ apiUrl: API_URL, version: '1.1.0' });
+		expect(lsStore.has('server_version')).toBe(false);
 	});
 });

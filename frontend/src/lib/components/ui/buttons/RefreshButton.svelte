@@ -1,5 +1,5 @@
 <script lang="ts">
-	import IconRefreshCw from '@lucide/svelte/icons/refresh-cw';
+	import IconRefreshCw from '$lib/icons/lucide/refresh-cw.svelte';
 
 	let {
 		onClick,

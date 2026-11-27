@@ -2,28 +2,32 @@
 	import type { Editor } from '@tiptap/core';
 	import InsertImageModal from './InsertImageModal.svelte';
 	import InsertLinkModal from './InsertLinkModal.svelte';
+	import NoteLinkModal from './NoteLinkModal.svelte';
 	import ToolbarDivider from '$lib/components/notes/editor/ToolbarDivider.svelte';
 	import { fly } from 'svelte/transition';
 	import { clickOutside } from '$lib/helpers/ClickHelper';
 	import { getTranslation } from '$lib/state/Translation.svelte';
-	import Bold from '@lucide/svelte/icons/bold';
-	import Italic from '@lucide/svelte/icons/italic';
-	import Strikethrough from '@lucide/svelte/icons/strikethrough';
-	import Code from '@lucide/svelte/icons/code';
-	import CodeXml from '@lucide/svelte/icons/code-xml';
-	import Heading1 from '@lucide/svelte/icons/heading-1';
-	import Heading2 from '@lucide/svelte/icons/heading-2';
-	import Heading3 from '@lucide/svelte/icons/heading-3';
-	import List from '@lucide/svelte/icons/list';
-	import ListOrdered from '@lucide/svelte/icons/list-ordered';
-	import Quote from '@lucide/svelte/icons/quote';
-	import Minus from '@lucide/svelte/icons/minus';
-	import Link2 from '@lucide/svelte/icons/link-2';
-	import TableIcon from '@lucide/svelte/icons/table';
-	import ImageIcon from '@lucide/svelte/icons/image';
-	import Undo from '@lucide/svelte/icons/undo';
-	import Redo from '@lucide/svelte/icons/redo';
-	import PenLine from '@lucide/svelte/icons/pen-line';
+	import Bold from '$lib/icons/lucide/bold.svelte';
+	import Italic from '$lib/icons/lucide/italic.svelte';
+	import Strikethrough from '$lib/icons/lucide/strikethrough.svelte';
+	import Code from '$lib/icons/lucide/code.svelte';
+	import CodeXml from '$lib/icons/lucide/code-xml.svelte';
+	import Heading1 from '$lib/icons/lucide/heading-1.svelte';
+	import Heading2 from '$lib/icons/lucide/heading-2.svelte';
+	import Heading3 from '$lib/icons/lucide/heading-3.svelte';
+	import List from '$lib/icons/lucide/list.svelte';
+	import ListOrdered from '$lib/icons/lucide/list-ordered.svelte';
+	import Quote from '$lib/icons/lucide/quote.svelte';
+	import Minus from '$lib/icons/lucide/minus.svelte';
+	import Link2 from '$lib/icons/lucide/link-2.svelte';
+	import TableIcon from '$lib/icons/lucide/table.svelte';
+	import ImageIcon from '$lib/icons/lucide/image.svelte';
+	import Undo from '$lib/icons/lucide/undo.svelte';
+	import Redo from '$lib/icons/lucide/redo.svelte';
+	import PenLine from '$lib/icons/lucide/pen-line.svelte';
+	import FileSymlink from '$lib/icons/lucide/file-symlink.svelte';
+	import { getNotes } from '$lib/state/Notes.svelte';
+	import type { Note } from '$lib/types/note';
 
 	export type ActiveStates = {
 		bold: boolean
@@ -43,20 +47,25 @@
 	let { editor, activeStates }: { editor: Editor; activeStates: ActiveStates } = $props();
 
 	const ts = getTranslation();
-
+	const notes = getNotes();
 
 	let imageModalOpen = $state(false);
 	let linkModalOpen = $state(false);
+	let noteLinkModalOpen = $state(false);
 	let linkInitialName = $state('');
 	let open = $state(false);
 
-	function openLinkModal() {
+	function selectedText(): string {
 		const { from, to } = editor.state.selection;
-		linkInitialName = from !== to ? editor.state.doc.textBetween(from, to) : '';
+		return from !== to ? editor.state.doc.textBetween(from, to) : '';
+	}
+
+	function openLinkModal() {
+		linkInitialName = selectedText();
 		linkModalOpen = true;
 	}
 
-	function confirmInsertLink(url: string, name: string) {
+	function insertLink(url: string, name: string) {
 		editor
 			.chain()
 			.focus()
@@ -66,7 +75,16 @@
 				marks: [{ type: 'link', attrs: { href: url } }]
 			})
 			.run();
+	}
+
+	function confirmInsertLink(url: string, name: string) {
+		insertLink(url, name);
 		linkModalOpen = false;
+	}
+
+	function insertNoteLink(note: Note) {
+		insertLink(notes.linkService.hrefForNote(note), selectedText() || note.title);
+		noteLinkModalOpen = false;
 	}
 
 	function insertTable() {
@@ -204,6 +222,9 @@
 	>
 		<Link2 size={15} />
 	</button>
+	<button onclick={() => (noteLinkModalOpen = true)} class="toolbar-btn cursor-pointer" title={ts.get.notes.link_to_note}>
+		<FileSymlink size={15} />
+	</button>
 	<button onclick={insertTable} class="toolbar-btn cursor-pointer" title={ts.get.notes.editor_insert_table}>
 		<TableIcon size={15} />
 	</button>
@@ -212,12 +233,10 @@
 	</button>
 {/snippet}
 
-<!-- Desktop: sticky horizontal toolbar -->
 <div class="sticky top-0 z-10 mb-1 hidden flex-wrap items-center gap-0.5 rounded-lg border border-c-neutral-2 bg-c-bg-surface px-3 py-1.5 shadow-sm md:flex dark:border-s-dark">
 	{@render toolbarContent()}
 </div>
 
-<!-- Mobile: floating toggle button -->
 <button
 	class="fixed bottom-20 right-3 z-30 flex h-12 w-12 cursor-pointer items-center justify-center rounded-full border border-c-neutral-2 bg-c-bg-surface shadow-lg transition-colors hover:bg-c-neutral md:hidden dark:border-s-dark dark:hover:bg-s-dark-3"
 	class:text-s-teal={open}
@@ -228,7 +247,6 @@
 	<PenLine size={18} />
 </button>
 
-<!-- Mobile: backdrop -->
 {#if open}
 	<div
 		class="fixed right-3 top-20 z-30 flex flex-col items-center gap-0.5 rounded-lg border border-c-neutral-2 bg-c-bg-surface px-1.5 py-2 shadow-xl md:hidden dark:border-s-dark"
@@ -241,6 +259,10 @@
 
 {#if imageModalOpen}
 	<InsertImageModal onConfirm={confirmInsertImage} onCancel={() => (imageModalOpen = false)} />
+{/if}
+
+{#if noteLinkModalOpen}
+	<NoteLinkModal onpick={insertNoteLink} onCancel={() => (noteLinkModalOpen = false)} />
 {/if}
 
 {#if linkModalOpen}

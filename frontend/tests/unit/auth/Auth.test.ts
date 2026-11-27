@@ -31,7 +31,9 @@ const { api, storage, monitor, bridge } = vi.hoisted(() => {
 	const bridge = {
 		issueToken: vi.fn(),
 		clear: vi.fn(),
-		destroy: vi.fn()
+		destroy: vi.fn(),
+		hasNativePush: vi.fn(),
+		disablePush: vi.fn()
 	};
 	return { api, storage, monitor, bridge };
 });
@@ -41,6 +43,8 @@ vi.mock('$lib/state/WidgetBridge', () => ({
 		issueToken = bridge.issueToken;
 		clear = bridge.clear;
 		destroy = bridge.destroy;
+		hasNativePush = bridge.hasNativePush;
+		disablePush = bridge.disablePush;
 	}
 }));
 
@@ -91,6 +95,7 @@ function user(overrides: Partial<User> = {}): User {
 			date_format: 'dd.mm.YYYY',
 			time_format: 'H:i',
 			week_start: 'monday',
+			currency: 'EUR',
 			widgets: '',
 			navigation: '',
 			first_visit: true,
@@ -138,9 +143,12 @@ beforeEach(() => {
 	api.put.mockResolvedValue(null);
 	api.update.mockResolvedValue(null);
 	api.delete.mockResolvedValue(null);
+	bridge.hasNativePush.mockReturnValue(false);
+	bridge.disablePush.mockResolvedValue({ enabled: false, permission: 'granted' });
 });
 
 afterEach(() => {
+	vi.useRealTimers();
 	vi.restoreAllMocks();
 });
 
@@ -171,11 +179,8 @@ describe('Auth store', () => {
 			expect(auth.loggedIn).toBe(true);
 			expect(auth.getToken()).toBe('token-1');
 			expect(auth.user?.name).toBe('Refreshed Name');
-			// token was pushed into the ApiService
 			expect(api.updateAuthToken).toHaveBeenCalledWith('token-1');
-			// not within the 5-day refresh threshold
 			expect(api.post).not.toHaveBeenCalled();
-			// session was persisted again after the additional data load
 			expect(storage.setJson).toHaveBeenCalledWith('auth', expect.objectContaining({}));
 		});
 
@@ -597,6 +602,40 @@ describe('Auth store', () => {
 			expect(handler).not.toHaveBeenCalled();
 		});
 
+		it('unregisters the phone before the server revokes the token', async () => {
+			const auth = await signedInAuth();
+			bridge.hasNativePush.mockReturnValue(true);
+			const order: string[] = [];
+			bridge.disablePush.mockImplementation(async () => {
+				order.push('phone');
+				return { enabled: false, permission: 'granted' };
+			});
+			api.postWithStatus.mockImplementation(async () => {
+				order.push('server');
+				return { ok: true, status: 200, data: {} };
+			});
+
+			await auth.signOut();
+
+			expect(order).toEqual(['phone', 'server']);
+			expectSignedOut(auth);
+		});
+
+		it('signs out without waiting for a phone that does not answer', async () => {
+			vi.useFakeTimers();
+			const auth = await signedInAuth();
+			bridge.hasNativePush.mockReturnValue(true);
+			bridge.disablePush.mockReturnValue(new Promise(() => {}));
+			api.postWithStatus.mockResolvedValue({ ok: true, status: 200, data: {} });
+
+			const signedOut = auth.signOut();
+			await vi.advanceTimersByTimeAsync(Auth.SIGN_OUT_TIMEOUT_MS);
+			await signedOut;
+
+			expect(api.postWithStatus).toHaveBeenCalledWith(apiRoutes.auth.logout, {}, expect.any(AbortSignal));
+			expectSignedOut(auth);
+		});
+
 		it('skips the server call without a token', async () => {
 			const auth = new Auth();
 			await flushAsync();
@@ -856,6 +895,42 @@ describe('Auth store', () => {
 
 			expect(result).toBe(false);
 			expect(auth.getWeekStart()).toBe('monday');
+		});
+	});
+
+	describe('currency setting', () => {
+		async function loggedInUser(): Promise<Auth> {
+			const expiresAt = new Date(Date.now() + 6 * 24 * 3600 * 1000).toISOString();
+			storage.getJson.mockReturnValue({ user: user(), authToken: authToken(expiresAt) });
+			const auth = new Auth();
+			await flushAsync();
+			return auth;
+		}
+
+		it('keeps an updated currency in the user settings and persists it', async () => {
+			api.put.mockResolvedValue(true);
+			const auth = await loggedInUser();
+			storage.setJson.mockClear();
+
+			const result = await auth.updateCurrency('USD');
+
+			expect(result).toBe(true);
+			expect(api.put).toHaveBeenCalledWith(
+				expect.stringContaining('/settings/currency'),
+				{ currency: 'USD' }
+			);
+			expect(auth.user?.settings?.currency).toBe('USD');
+			expect(storage.setJson).toHaveBeenCalled();
+		});
+
+		it('keeps the old currency when the API rejects the update', async () => {
+			api.put.mockResolvedValue(false);
+			const auth = await loggedInUser();
+
+			const result = await auth.updateCurrency('USD');
+
+			expect(result).toBe(false);
+			expect(auth.user?.settings?.currency).toBe('EUR');
 		});
 	});
 

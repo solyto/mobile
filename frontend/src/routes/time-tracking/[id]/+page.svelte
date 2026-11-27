@@ -1,13 +1,15 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { goto } from '$app/navigation';
+	import { afterNavigate, goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { fade } from 'svelte/transition';
+	import { formatDuration } from '$lib/helpers/TimeTrackingHelper';
 	import { getTimeTracking } from '$lib/state/TimeTracking.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import { getAuth } from '$lib/state/Auth.svelte';
 	import { urls } from '$lib/config/urls';
+	import { hamburgerClearance } from '$lib/config/navigation';
 	import type {
 		TimeTrackingProject,
 		TimeTrackingEntry,
@@ -21,12 +23,14 @@
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
 	import ConfirmationModal from '$lib/components/ui/ConfirmationModal.svelte';
 	import Heading from '$lib/components/ui/Heading.svelte';
+	import TimeTrackingGroupingService from '$lib/services/TimeTrackingGroupingService';
 	import { getReadableTextColor } from '$lib/helpers/ColorHelper';
 
 	const tt = getTimeTracking();
 	const ts = getTranslation();
 	const auth = getAuth();
 	const loadingIndicator = getLoadingIndicator();
+	const groupingService = new TimeTrackingGroupingService();
 
 	let editModal = $state<boolean>(false);
 	let deleteModal = $state<boolean>(false);
@@ -37,65 +41,62 @@
 		tt.projects.find((p) => p.id === page.params.id) ?? null
 	);
 
-	let projectEntries = $derived(
-		project
-			? groupByDate(
-					tt.entries.filter(
-						(e) => e.project?.id === project!.id && e.stopped_at !== null
-					)
-				)
-			: []
-	);
+	let projectEntries = $derived(groupingService.groupByDay(tt.entries.filter(isFinishedEntryOfProject), dayLabel));
 
 	let totalDuration = $derived(project?.total_duration ?? 0);
 
+	function isFinishedEntryOfProject(entry: TimeTrackingEntry): boolean {
+		return project !== null && entry.project?.id === project.id && entry.stopped_at !== null;
+	}
+
+	function dayLabel(startedAt: string): string {
+		return auth.getDateWithWeekdayInUserPreferredFormat(startedAt);
+	}
+
 	function categoryColor(cat: TimeTrackingCategory): string {
-		return (
-			tt.categories.find((c) => c.id === cat.id)?.color ??
-			cat.color ??
-			'var(--color-c-neutral-4)'
-		);
+		return tt.categories.find((c) => c.id === cat.id)?.color ?? cat.color ?? 'var(--color-c-neutral-4)';
 	}
 
 	function categoryTextColor(cat: TimeTrackingCategory): string {
 		return getReadableTextColor(categoryColor(cat));
 	}
 
-	$effect(() => {
-		if (tt.loaded && !project) {
-			goto(resolve(urls.timeTracking));
-		}
+	afterNavigate(() => {
+		if (!project) goto(resolve(urls.timeTracking));
 	});
-
-	function groupByDate(
-		entries: TimeTrackingEntry[]
-	): { date: string; entries: TimeTrackingEntry[] }[] {
-		const groups: Record<string, TimeTrackingEntry[]> = {};
-
-		for (const entry of entries) {
-			const date = auth.getDateWithWeekdayInUserPreferredFormat(entry.started_at);
-			if (!groups[date]) groups[date] = [];
-			groups[date].push(entry);
-		}
-
-		return Object.entries(groups).map(([date, entries]) => ({ date, entries }));
-	}
 
 	async function onDelete(): Promise<void> {
 		if (!project) return;
 		loadingIndicator.start();
-		await tt.deleteProject(project.id);
-		loadingIndicator.stop();
+		try {
+			await tt.deleteProject(project.id);
+		} finally {
+			loadingIndicator.stop();
+		}
 		await goto(resolve(urls.timeTracking));
+	}
+
+	function openEdit(): void {
+		editModal = true;
+	}
+
+	function closeEdit(): void {
+		editModal = false;
+	}
+
+	function askDelete(): void {
+		deleteModal = true;
+	}
+
+	function cancelDelete(): void {
+		deleteModal = false;
 	}
 </script>
 
 {#if editModal && project}
 	<ProjectCreate
 		projectId={project.id}
-		onClose={() => {
-			editModal = false;
-		}}
+		onClose={closeEdit}
 	/>
 {/if}
 
@@ -105,9 +106,7 @@
 		description={ts.get.timeTracking.deletion_description}
 		type="confirm"
 		onConfirm={onDelete}
-		onCancel={() => {
-			deleteModal = false;
-		}}
+		onCancel={cancelDelete}
 	/>
 {/if}
 
@@ -116,26 +115,15 @@
 		<div
 			class="flex-shrink-0 border-b border-c-neutral-1 bg-c-bg-surface/80 px-4 pt-6 pb-4 backdrop-blur-sm lg:px-8 lg:py-4 dark:border-s-dark-3"
 		>
-			<!-- Below lg: the actions in a bar beside the menu button, the heading beneath it. -->
 			<div class="flex w-full flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-				<div class="flex h-10 flex-row items-center justify-end max-lg:ml-14 lg:order-last">
+				<div class="flex h-10 flex-row items-center justify-end {hamburgerClearance} lg:order-last">
 					<div class="flex flex-row items-center gap-2">
 						<TextButton
 							title={ts.get.timeTracking.add_entry}
 							onclick={() => (showEntryCreate = true)}
 						/>
-						<InlineEditButton
-							label={ts.get.timeTracking.edit_project}
-							onClick={() => {
-								editModal = true;
-							}}
-						/>
-						<InlineDeleteButton
-							label={ts.get.timeTracking.deletion_title}
-							onClick={() => {
-								deleteModal = true;
-							}}
-						/>
+						<InlineEditButton label={ts.get.timeTracking.edit_project} onClick={openEdit} />
+						<InlineDeleteButton label={ts.get.timeTracking.deletion_title} onClick={askDelete} />
 					</div>
 				</div>
 				<div class="flex flex-row items-center gap-4">
@@ -174,7 +162,7 @@
 					{ts.get.timeTracking.total_time}:
 				</span>
 				<span class="text-lg font-bold tabular-nums text-c-primary">
-					{tt.formatDuration(totalDuration)}
+					{formatDuration(totalDuration)}
 				</span>
 			</div>
 

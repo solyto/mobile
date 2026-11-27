@@ -11,7 +11,7 @@ export function contextMenu(node: HTMLElement, open: OpenContextMenu) {
 
 	// iOS fires no contextmenu event on long-press and shows its own link preview instead.
 	node.style.setProperty('-webkit-touch-callout', 'none');
-	node.style.userSelect = 'none';
+	node.classList.add('pointer-coarse:select-none');
 
 	function cancelLongPress(): void {
 		clearTimeout(timer);
@@ -35,10 +35,12 @@ export function contextMenu(node: HTMLElement, open: OpenContextMenu) {
 		}, LONG_PRESS_DELAY);
 	}
 
+	function movedAway(event: PointerEvent): boolean {
+		return Math.abs(event.clientX - startX) > LONG_PRESS_TOLERANCE || Math.abs(event.clientY - startY) > LONG_PRESS_TOLERANCE;
+	}
+
 	function onPointerMove(event: PointerEvent): void {
-		if (Math.abs(event.clientX - startX) > LONG_PRESS_TOLERANCE || Math.abs(event.clientY - startY) > LONG_PRESS_TOLERANCE) {
-			cancelLongPress();
-		}
+		if (movedAway(event)) cancelLongPress();
 	}
 
 	function onClick(event: MouseEvent): void {

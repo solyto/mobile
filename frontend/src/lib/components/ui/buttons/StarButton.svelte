@@ -1,5 +1,5 @@
 <script lang="ts">
-	import IconStar from '@lucide/svelte/icons/star';
+	import IconStar from '$lib/icons/lucide/star.svelte';
 
 	let { onClick, selected }: {
 		onClick: (e: MouseEvent) => void | Promise<void>;

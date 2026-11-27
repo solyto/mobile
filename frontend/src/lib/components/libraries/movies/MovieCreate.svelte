@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { getTranslation } from '$lib/state/Translation.svelte';
+	import { createdEntryValue, genreEntries, selectedIds, tagEntries } from '$lib/helpers/MultiSelectHelper';
 	import TextInput from '$lib/components/forms/TextInput.svelte';
 	import DateInput from '$lib/components/forms/DateInput.svelte';
-	import MultiSelect from '$lib/components/forms/MultiSelect.svelte';
+	import MultiSelect, { type MultiSelectEntry } from '$lib/components/forms/MultiSelect.svelte';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
-	import { API_USER_STORAGE_URL } from '$lib/config/apiRoutes';
-	import { getAuth } from '$lib/state/Auth.svelte';
+	import { libraryCoverUrl } from '$lib/helpers/LibraryCoverHelper';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import { getTags } from '$lib/state/Tags.svelte';
 	import NumberInput from '$lib/components/forms/NumberInput.svelte';
@@ -15,6 +15,7 @@
 	import CreateModal from '$lib/components/libraries/shared/CreateModal.svelte';
 	import { getMovieLibrary } from '$lib/state/MovieLibrary.svelte';
 	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
+	import { SaveAction } from '$lib/helpers/SaveAction.svelte';
 	import CreateModalSearchButton from '$lib/components/libraries/shared/CreateModalSearchButton.svelte';
 	import CreateModalImport from '$lib/components/libraries/shared/CreateModalImport.svelte';
 	import MovieSearch from '$lib/components/libraries/movies/MovieSearch.svelte';
@@ -27,8 +28,8 @@
 	const integrations = getIntegrations();
 	const library = getMovieLibrary();
 	const tags = getTags();
-	const auth = getAuth();
 	const loadingIndicator = getLoadingIndicator();
+	const saving = new SaveAction(() => (activeEntry ? ts.get.libraries.movies.update_error : ts.get.libraries.movies.create_error));
 
 	let activeEntry = $state<Movie | null>(library.activeEntry);
 
@@ -39,12 +40,8 @@
 	let startedAtValue = $state<string>(activeEntry?.started_at?.substring(0, 10) ?? '');
 	let finishedAtValue = $state<string>(activeEntry?.finished_at?.substring(0, 10) ?? '');
 	let categoryValue = $state<string>(activeEntry ? activeEntry.category : 'movie');
-	let selectedGenres = $state<{ label: string; value: string }[]>(
-		activeEntry ? activeEntry.genres.map((g) => ({ label: g.title, value: g.id.toString() })) : []
-	);
-	let selectedTags = $state<{ label: string; value: string }[]>(
-		activeEntry ? activeEntry.tags.map((t) => ({ label: t.name, value: t.id.toString() })) : []
-	);
+	let selectedGenres = $state<MultiSelectEntry[]>(genreEntries(activeEntry?.genres ?? []));
+	let selectedTags = $state<MultiSelectEntry[]>(tagEntries(activeEntry?.tags ?? []));
 	let selectedRating = $state(activeEntry?.rating ?? 0);
 	let isWishlist = $state<boolean>(activeEntry ? activeEntry.wishlist : false);
 	let linkInput = $state<HTMLInputElement | null>(null);
@@ -55,30 +52,12 @@
 	const tmdbImport = { label: 'TMDB', icon: TmdbIcon, onClick: () => importFrom('tmdb', 'themoviedb.org', ts.get.libraries.movies.tmdb_import_validation_error) };
 	const importOptions = integrations.isConfigured('tmdb') ? [imdbImport, tmdbImport] : [imdbImport];
 
-	let genreOptions: { label: string; value: string }[] = $derived(
-		library.genres.map((genre) => ({ label: genre.title, value: genre.id.toString() }))
-	);
-
-	let tagOptions: { label: string; value: string }[] = $derived(
-		tags.tags.map((tag) => ({ label: tag.name, value: tag.id.toString() }))
-	);
-
-	async function onCreateGenre(label: string): Promise<string | null> {
-		const created = await library.createGenre(label);
-		if (!created) {
-			notifications.error(ts.get.libraries.genre_error);
-			return null;
-		}
-		return created.id.toString();
+	function onCreateGenre(label: string): Promise<string | null> {
+		return createdEntryValue(library.createGenre(label), () => notifications.error(ts.get.libraries.genre_error));
 	}
 
-	async function onCreateTag(label: string): Promise<string | null> {
-		const created = await tags.create(label);
-		if (!created) {
-			notifications.error(ts.get.libraries.tag_error);
-			return null;
-		}
-		return created.id.toString();
+	function onCreateTag(label: string): Promise<string | null> {
+		return createdEntryValue(tags.create(label), () => notifications.error(ts.get.libraries.tag_error));
 	}
 
 	const categoryOptions: { label: string; value: string }[] = [
@@ -86,72 +65,54 @@
 		{ label: ts.get.libraries.movies.category_series, value: 'series' }
 	];
 
-	async function onsubmit(): Promise<void> {
-		if (activeEntry) {
-			return await update();
-		} else {
-			return await create();
-		}
-	}
-
-	async function create(): Promise<void> {
-		loadingIndicator.start();
-
-		const request: CreateMovieRequest = {
+	function createRequest(): CreateMovieRequest {
+		return {
 			title: titleValue,
 			category: categoryValue,
 			publication_year: publicationYearValue,
 			started_at: startedAtValue !== '' ? startedAtValue : null,
 			finished_at: finishedAtValue !== '' ? finishedAtValue : null,
 			wishlist: isWishlist,
-			genres: selectedGenres.filter((g) => g.value).map((g) => parseInt(g.value)),
-			tags: selectedTags.filter((t) => t.value).map((t) => parseInt(t.value)),
+			genres: selectedIds(selectedGenres),
+			tags: selectedIds(selectedTags),
 			rating: selectedRating > 0 ? selectedRating : null,
 			cover_path: coverValue != '' ? coverValue : null,
 			link: linkValue != '' ? linkValue : null
 		};
-		const ok = await library.create(request);
-		if (ok) {
-			titleValue = '';
-			categoryValue = '';
-			startedAtValue = '';
-			finishedAtValue = '';
-			coverValue = '';
-			linkValue = '';
-			selectedGenres = [];
-			isWishlist = false;
-			library.closeCreateModal();
-		} else {
-			notifications.error(ts.get.libraries.movies.create_error);
-		}
-
-		loadingIndicator.stop();
 	}
 
-	async function update(): Promise<void> {
-		loadingIndicator.start();
-
-		const request: UpdateMovieRequest = {
+	function updateRequest(): UpdateMovieRequest {
+		return {
 			title: titleValue,
 			category: categoryValue,
 			publication_year: publicationYearValue,
 			started_at: startedAtValue !== '' ? startedAtValue : null,
 			finished_at: finishedAtValue !== '' ? finishedAtValue : null,
 			wishlist: isWishlist,
-			genres: selectedGenres.filter((g) => g.value).map((g) => parseInt(g.value)),
-			tags: selectedTags.filter((t) => t.value).map((t) => parseInt(t.value)),
+			genres: selectedIds(selectedGenres),
+			tags: selectedIds(selectedTags),
 			rating: selectedRating > 0 ? selectedRating : null,
 			...(coverValue !== '' ? { cover_path: coverValue } : {}),
 			link: linkValue != '' ? linkValue : null
 		};
-		const ok = await library.update(activeEntry!, request);
-		if (ok) {
-			library.closeCreateModal();
-		} else {
-			notifications.error(ts.get.libraries.movies.update_error);
-		}
+	}
 
-		loadingIndicator.stop();
+	function resetForm(): void {
+		titleValue = '';
+		categoryValue = '';
+		startedAtValue = '';
+		finishedAtValue = '';
+		coverValue = '';
+		linkValue = '';
+		selectedGenres = [];
+		isWishlist = false;
+	}
+
+	async function onsubmit(): Promise<void> {
+		const ok = await saving.run(() => (activeEntry ? library.update(activeEntry, updateRequest()) : library.create(createRequest())));
+		if (!ok) return;
+		if (!activeEntry) resetForm();
+		library.closeCreateModal();
 	}
 
 	function onSearchSelect(movie: MovieRelease): void {
@@ -173,41 +134,44 @@
 
 		importLoading = true;
 		loadingIndicator.start();
-		const movie = await library.importFrom(provider, linkValue);
+		try {
+			const movie = await library.importFrom(provider, linkValue);
+			if (!movie) {
+				notifications.error(ts.get.libraries.movies.import_error);
+				return;
+			}
 
-		if (!movie) {
-			notifications.error(ts.get.libraries.movies.import_error);
+			titleValue = movie.title;
+			coverValue = movie.cover ?? '';
+			publicationYearValue = movie.release_year;
+
+			if (movie.type === 'tv' || movie.type === 'tvSeries') categoryValue = 'series';
+			else if (movie.type === 'movie') categoryValue = 'movie';
+
+			for (const genre of movie.genres) {
+				const existing = library.genres.find((g) => g.title === genre);
+				if (existing) selectedGenres.push(...genreEntries([existing]));
+			}
+			importDropdownOpen = false;
+		} finally {
 			loadingIndicator.stop();
 			importLoading = false;
-			return;
 		}
+	}
 
-		titleValue = movie.title;
-		coverValue = movie.cover ?? '';
-		publicationYearValue = movie.release_year;
+	function modalTitle(): string {
+		return activeEntry !== null ? ts.get.libraries.movies.edit_movie : ts.get.libraries.movies.add_movie;
+	}
 
-		if (movie.type === 'tv' || movie.type === 'tvSeries') categoryValue = 'series';
-		else if (movie.type === 'movie') categoryValue = 'movie';
-
-		for (const genre of movie.genres) {
-			const existing = library.genres.find((g) => g.title === genre);
-			if (existing) selectedGenres.push({ label: existing.title, value: existing.id.toString() });
-		}
-
-		loadingIndicator.stop();
-		importLoading = false;
-		importDropdownOpen = false;
+	function existingCover(): string | null {
+		return activeEntry ? libraryCoverUrl(library, String(activeEntry.cover)) : null;
 	}
 </script>
 
 <CreateModal
-	title={activeEntry !== null
-		? ts.get.libraries.movies.edit_movie
-		: ts.get.libraries.movies.add_movie}
+	title={modalTitle()}
 	{library}
-	existingCover={activeEntry
-		? `${API_USER_STORAGE_URL}/${auth.user?.id}/${library.config.type}/${activeEntry.cover}`
-		: null}
+	existingCover={existingCover()}
 	newCover={coverValue}
 	bind:selectedRating
 	bind:isWishlist
@@ -219,10 +183,10 @@
 		<Select bind:value={categoryValue} options={categoryOptions} />
 	</ModalFormRow>
 	<ModalFormRow label={ts.get.libraries.genres}>
-		<MultiSelect bind:value={selectedGenres} options={genreOptions} allowUserOptions oncreate={onCreateGenre} />
+		<MultiSelect bind:value={selectedGenres} options={genreEntries(library.genres)} allowUserOptions oncreate={onCreateGenre} />
 	</ModalFormRow>
 	<ModalFormRow label={ts.get.libraries.tags}>
-		<MultiSelect bind:value={selectedTags} options={tagOptions} allowUserOptions oncreate={onCreateTag} />
+		<MultiSelect bind:value={selectedTags} options={tagEntries(tags.tags)} allowUserOptions oncreate={onCreateTag} />
 	</ModalFormRow>
 	<ModalFormRow label={ts.get.libraries.publication_year}>
 		<NumberInput bind:value={publicationYearValue} />

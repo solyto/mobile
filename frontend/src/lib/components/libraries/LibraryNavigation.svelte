@@ -7,7 +7,10 @@
 
 	const ts = getTranslation();
 	const navigation = getLibraryNavigation();
-	const setActiveLibrary = (type: LibraryType) => (navigation.activeLibrary = type);
+
+	function setActiveLibrary(type: LibraryType): void {
+		navigation.setActive(type);
+	}
 </script>
 
 <div
@@ -21,7 +24,7 @@
 			url={item.url}
 			icon={item.icon}
 			isActive={navigation.activeLibrary === item.type}
-			setActive={(type: LibraryType) => setActiveLibrary(type)}
+			setActive={setActiveLibrary}
 		/>
 	{/each}
 </div>

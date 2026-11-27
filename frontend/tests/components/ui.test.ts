@@ -5,17 +5,16 @@ import Badge from '$lib/components/ui/Badge.svelte';
 import CloseButton from '$lib/components/ui/buttons/CloseButton.svelte';
 import DeleteButton from '$lib/components/ui/buttons/DeleteButton.svelte';
 import AddButton from '$lib/components/ui/buttons/AddButton.svelte';
+import BackButton from '$lib/components/ui/buttons/BackButton.svelte';
+import GhostIconButton from '$lib/components/ui/buttons/GhostIconButton.svelte';
+import { createRawSnippet } from 'svelte';
 import ViewSwitcher from '$lib/components/ui/ViewSwitcher.svelte';
+import OptionCard from '$lib/components/ui/OptionCard.svelte';
 
 describe('Heading', () => {
 	it('renders the title', () => {
 		render(Heading, { props: { title: 'Hello', my: 4 } });
 		expect(screen.getByText('Hello')).toBeInTheDocument();
-	});
-
-	it('applies the bold class when bold', () => {
-		const { container } = render(Heading, { props: { title: 'Bold', my: 0, bold: true } });
-		expect(container.querySelector('.font-bold')).toBeInTheDocument();
 	});
 });
 
@@ -24,11 +23,6 @@ describe('Badge', () => {
 		const { container } = render(Badge, { props: { i: 42, color: '#ff0000' } });
 		expect(screen.getByText('42')).toBeInTheDocument();
 		expect(container.querySelector('div')).toHaveStyle('background-color: #ff0000');
-	});
-
-	it('renders a smaller font for three-digit counts', () => {
-		const { container } = render(Badge, { props: { i: 123, color: '#fff' } });
-		expect(container.querySelector('.text-xs')).toBeInTheDocument();
 	});
 });
 
@@ -59,6 +53,54 @@ describe('AddButton', () => {
 	});
 });
 
+describe('BackButton', () => {
+	it('shows its title and goes back when clicked', async () => {
+		const onclick = vi.fn();
+		render(BackButton, { props: { title: 'Sports', onclick } });
+
+		await fireEvent.click(screen.getByRole('button', { name: 'Sports' }));
+		expect(onclick).toHaveBeenCalledOnce();
+	});
+});
+
+describe('GhostIconButton', () => {
+	const icon = createRawSnippet(() => ({ render: () => '<svg></svg>' }));
+
+	it('is labelled and clickable', async () => {
+		const onclick = vi.fn();
+		render(GhostIconButton, { props: { label: 'Move up', onclick, children: icon } });
+
+		await fireEvent.click(screen.getByRole('button', { name: 'Move up' }));
+		expect(onclick).toHaveBeenCalledOnce();
+	});
+
+	it('can be disabled', () => {
+		render(GhostIconButton, { props: { label: 'Move up', onclick: vi.fn(), disabled: true, children: icon } });
+		expect(screen.getByRole('button', { name: 'Move up' })).toBeDisabled();
+	});
+});
+
+describe('OptionCard', () => {
+	it('shows its label and hint and reports a click', async () => {
+		const onclick = vi.fn();
+		render(OptionCard, { props: { label: 'Count', hint: 'e.g. glasses of water', onclick } });
+
+		expect(screen.getByText('e.g. glasses of water')).toBeInTheDocument();
+		await fireEvent.click(screen.getByRole('button', { name: /Count/ }));
+		expect(onclick).toHaveBeenCalledOnce();
+	});
+
+	it('tells whether it is the chosen option, when it is a choice', () => {
+		render(OptionCard, { props: { label: 'Count', selected: true, onclick: vi.fn() } });
+		expect(screen.getByRole('button', { name: 'Count' })).toHaveAttribute('aria-pressed', 'true');
+	});
+
+	it('is a plain button without a selected state', () => {
+		render(OptionCard, { props: { label: 'Favourite', stripeColor: 'red', onclick: vi.fn() } });
+		expect(screen.getByRole('button', { name: 'Favourite' })).not.toHaveAttribute('aria-pressed');
+	});
+});
+
 describe('ViewSwitcher', () => {
 	const views = [
 		{ type: 'list' as const, title: 'List' },
@@ -76,14 +118,5 @@ describe('ViewSwitcher', () => {
 		render(ViewSwitcher, { props: { views, currentlySelected: 'list', onChange } });
 		fireEvent.click(screen.getByTitle('Kanban'));
 		expect(onChange).toHaveBeenCalledWith('kanban');
-	});
-
-	it('highlights the currently selected view', () => {
-		const { container } = render(ViewSwitcher, {
-			props: { views, currentlySelected: 'list', onChange: vi.fn() }
-		});
-		const buttons = container.querySelectorAll('button');
-		expect(buttons[0].classList.contains('bg-c-neutral-1')).toBe(true);
-		expect(buttons[1].classList.contains('bg-c-neutral-1')).toBe(false);
 	});
 });

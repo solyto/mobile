@@ -16,9 +16,16 @@
 
 	onMount(async () => {
 		loadingIndicator.start();
-		await contacts.load();
-		loadingIndicator.stop();
+		try {
+			await contacts.load();
+		} finally {
+			loadingIndicator.stop();
+		}
 	});
+
+	function closeSync(): void {
+		contacts.syncModal = false;
+	}
 </script>
 
 <div class="flex h-full w-full flex-row">
@@ -35,7 +42,7 @@
 		<AddressBookDeleteModal />
 		<ImportModal />
 		{#if contacts.syncModal}
-			<SyncModal onClose={() => (contacts.syncModal = false)} />
+			<SyncModal onClose={closeSync} />
 		{/if}
 	{/if}
 </div>

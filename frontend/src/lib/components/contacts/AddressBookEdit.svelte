@@ -1,9 +1,10 @@
 <script lang="ts">
-	import ColorPicker from 'svelte-awesome-color-picker';
-	import IconEye from '@lucide/svelte/icons/eye';
-	import IconEyeOff from '@lucide/svelte/icons/eye-off';
+	import ColorPicker from '$lib/components/forms/ColorPicker.svelte';
+	import IconEye from '$lib/icons/lucide/eye.svelte';
+	import IconEyeOff from '$lib/icons/lucide/eye-off.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import { clickOutside } from '$lib/helpers/ClickHelper';
+	import InlineActionButton from '$lib/components/ui/buttons/InlineActionButton.svelte';
 	import InlineDeleteButton from '$lib/components/ui/buttons/InlineDeleteButton.svelte';
 	import type { AddressBook, UpdateAddressBookRequest } from '$lib/types/contact';
 	import { getContacts } from '$lib/state/Contacts.svelte';
@@ -15,16 +16,24 @@
 
 	let { addressBook }: { addressBook: AddressBook } = $props();
 
-	let hex = $state<string>(addressBook.color !== null ? addressBook.color : 'var(--color-c-neutral-2)');
+	const NO_COLOR = 'var(--color-c-neutral-2)';
+
+	let hex = $state<string>(addressBook.color ?? NO_COLOR);
 
 	async function onColorChange(): Promise<void> {
-		if (hex === addressBook.color) return;
-		if (hex === null) return;
+		if (hex === NO_COLOR || hex === addressBook.color) return;
 
-		loadingIndicator.start();
 		const request: UpdateAddressBookRequest = { color: hex };
-		await contacts.updateAddressBook(addressBook, request);
-		loadingIndicator.stop();
+		loadingIndicator.start();
+		try {
+			await contacts.updateAddressBook(addressBook, request);
+		} finally {
+			loadingIndicator.stop();
+		}
+	}
+
+	function toggleHidden(): void {
+		contacts.toggleAddressBook(addressBook.id);
 	}
 
 	function onDelete(): void {
@@ -35,33 +44,17 @@
 
 <div class="flex items-center gap-4">
 	<div use:clickOutside={onColorChange}>
-		<ColorPicker
-			bind:hex
-			position="responsive"
-			nullable={false}
-			label=""
-			isTextInput={false}
-			--cp-border-color="var(--color-c-neutral-2)"
-		/>
+		<ColorPicker bind:hex />
 	</div>
 	<span class="min-w-0 flex-1">{addressBook.name}</span>
 	<div class="flex items-center gap-1">
-		<button
-			type="button"
-			class="group relative flex size-[34px] cursor-pointer items-center justify-center rounded-full drop-shadow-md transition-all hover:drop-shadow-xl"
-			class:text-c-primary={!contacts.isAddressBookHidden(addressBook.id)}
-			class:text-c-neutral-3={contacts.isAddressBookHidden(addressBook.id)}
-			title={ts.get.layout.toggle}
-			aria-label={ts.get.layout.toggle}
-			onclick={() => contacts.toggleAddressBook(addressBook.id)}
-		>
-			<span class="absolute inset-0 rounded-full bg-c-primary opacity-0 transition-all group-hover:opacity-100 group-focus-visible:opacity-100"></span>
-			{#if contacts.isAddressBookHidden(addressBook.id)}
-				<IconEyeOff class="relative size-5 group-hover:text-white group-focus-visible:text-white" />
-			{:else}
-				<IconEye class="relative size-5 group-hover:text-white group-focus-visible:text-white" />
-			{/if}
-		</button>
+		<InlineActionButton
+			onClick={toggleHidden}
+			label={ts.get.layout.toggle}
+			icon={contacts.isAddressBookHidden(addressBook.id) ? IconEyeOff : IconEye}
+			color={contacts.isAddressBookHidden(addressBook.id) ? 'text-c-neutral-3' : 'text-c-primary'}
+			fill="bg-c-primary"
+		/>
 		<InlineDeleteButton onClick={onDelete} />
 	</div>
 </div>

@@ -1,0 +1,26 @@
+<!--
+@lucide/svelte v1.59.0 - ISC
+
+This source code is licensed under the ISC license.
+See the LICENSE file in this directory.
+-->
+<script lang="ts">
+	import Icon from './Icon.svelte';
+	import type { LucideIconData, LucideProps } from './types';
+
+	const props: LucideProps = $props();
+
+	const iconData: LucideIconData = {
+		name: 'headphone-off',
+		size: 24,
+		node: [
+			['path', { d: 'M21 14h-1.343' }],
+			['path', { d: 'M9.128 3.47A9 9 0 0 1 21 12v3.343' }],
+			['path', { d: 'm2 2 20 20' }],
+			['path', { d: 'M20.414 20.414A2 2 0 0 1 19 21h-1a2 2 0 0 1-2-2v-3' }],
+			['path', { d: 'M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 2.636-6.364' }]
+		]
+	};
+</script>
+
+<Icon {...props} icon={iconData} />

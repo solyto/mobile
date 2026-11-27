@@ -2,22 +2,23 @@
 	import Toggle from '$lib/components/forms/Toggle.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { onMount } from 'svelte';
-	import { getAuth } from '$lib/state/Auth.svelte';
-	import { apiRoutes } from '$lib/config/apiRoutes';
+	import { getPushNotifications } from '$lib/state/PushNotifications.svelte';
 	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
 
 	const ts = getTranslation();
-	const auth = getAuth();
+	const pushNotifications = getPushNotifications();
 	const notifications = getUiNotifications();
-	const apiService = auth.apiService;
 
 	let checked = $state<boolean>(false);
 	let isLoading = $state<boolean>(false);
-	let vapidPublicKey = $state<string>('');
 
 	onMount(async () => {
-		const res = await apiService.get(apiRoutes.notifications.push.getVapidKey, null);
-		if (res?.data) vapidPublicKey = (res.data as { public_key: string }).public_key;
+		if (pushNotifications.isNative()) {
+			checked = await pushNotifications.nativeStatus().then((status) => status.enabled, () => false);
+			return;
+		}
+
+		await pushNotifications.loadVapidKey();
 
 		await checkPushSubscription();
 	});
@@ -38,21 +39,25 @@
 		}
 	}
 
-	async function togglePushNotifications() {
-		if (isLoading) return;
+	async function togglePushNotifications(wanted: boolean) {
+		if (isLoading) {
+			checked = !wanted;
+			return;
+		}
 
-		const newState = !checked;
 		isLoading = true;
 
 		try {
-			if (newState) {
-				await subscribeToPush();
-				checked = true;
+			if (pushNotifications.isNative()) {
+				await toggleNativePush(wanted);
+			} else if (wanted) {
+				checked = await subscribeToPush();
 			} else {
 				await unsubscribeFromPush();
 				checked = false;
 			}
 		} catch (error) {
+			checked = !wanted;
 			console.error('Push notification error:', error);
 			notifications.error(ts.get.settings.push_notification_error);
 		} finally {
@@ -60,35 +65,40 @@
 		}
 	}
 
-	async function subscribeToPush() {
+	async function toggleNativePush(enabled: boolean) {
+		const status = await pushNotifications.setNative(enabled);
+		checked = status.enabled;
+
+		if (enabled && status.permission === 'denied') {
+			notifications.error(ts.get.settings.notification_permission_denied);
+		}
+	}
+
+	async function subscribeToPush(): Promise<boolean> {
 		const permission = await Notification.requestPermission();
 
 		if (permission !== 'granted') {
-			checked = false;
 			notifications.error(ts.get.settings.notification_permission_denied);
-			return;
+			return false;
 		}
 
-		if (!vapidPublicKey) {
+		if (!pushNotifications.vapidPublicKey) {
 			throw new Error('VAPID public key not loaded');
 		}
 
 		const reg = await navigator.serviceWorker.ready;
 		const sub = await reg.pushManager.subscribe({
 			userVisibleOnly: true,
-			applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+			applicationServerKey: urlBase64ToUint8Array(pushNotifications.vapidPublicKey)
 		});
 
-		const subscriptionData = sub.toJSON();
+		const registered = await pushNotifications.subscribe(sub.toJSON());
 
-		const res = await apiService.create(
-			apiRoutes.notifications.push.subscribe,
-			subscriptionData
-		);
-
-		if (!res) {
+		if (!registered) {
 			throw new Error('Failed to register subscription on server');
 		}
+
+		return true;
 	}
 
 	async function unsubscribeFromPush() {
@@ -98,9 +108,7 @@
 		if (sub) {
 			await sub.unsubscribe();
 
-			await apiService.create(apiRoutes.notifications.push.unsubscribe, {
-				endpoint: sub.endpoint
-			});
+			await pushNotifications.unsubscribe(sub.endpoint);
 		}
 	}
 
@@ -121,7 +129,7 @@
 <div>
 	<Toggle
 		label={ts.get.settings.enable_push_notifications}
-		{checked}
+		bind:checked
 		onchange={togglePushNotifications}
 	/>
 </div>

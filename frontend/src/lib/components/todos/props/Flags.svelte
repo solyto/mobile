@@ -1,44 +1,38 @@
 <script lang="ts">
 	import type { Todo } from '$lib/types/todo';
-	import IconStickyNote from '@lucide/svelte/icons/sticky-note';
-	import IconListTodo from '@lucide/svelte/icons/list-todo';
-	import IconLink from '@lucide/svelte/icons/link';
-	import IconRepeat from '@lucide/svelte/icons/repeat';
+	import IconStickyNote from '$lib/icons/lucide/sticky-note.svelte';
+	import IconListTodo from '$lib/icons/lucide/list-todo.svelte';
+	import IconLink from '$lib/icons/lucide/link.svelte';
+	import IconRepeat from '$lib/icons/lucide/repeat.svelte';
 
 	let { todo }: {
 		todo: Todo;
 	} = $props();
+
+	function hasFlags(): boolean {
+		return todo.description !== null || todo.subtasks.length > 0 || todo.link !== null || todo.recurrence_frequency !== null;
+	}
 </script>
 
-{#if todo.description !== null || todo.subtasks.length > 0 || todo.link !== null || todo.recurrence_frequency !== null}
+{#snippet badge(Icon: typeof IconListTodo, size?: string)}
+	<div class="flex size-6 items-center justify-center rounded-full bg-c-neutral-1 p-[5px] shadow-sm dark:bg-s-dark-3">
+		<Icon {size} />
+	</div>
+{/snippet}
+
+{#if hasFlags()}
 	<div class="absolute top-[-12px] right-0 z-30 flex gap-2">
 		{#if todo.description !== null}
-			<div
-				class="flex size-6 items-center justify-center rounded-full bg-c-neutral-1 p-[5px] shadow-sm dark:bg-s-dark-3"
-			>
-				<IconStickyNote />
-			</div>
+			{@render badge(IconStickyNote)}
 		{/if}
 		{#if todo.subtasks.length > 0}
-			<div
-				class="flex size-6 items-center justify-center rounded-full bg-c-neutral-1 p-[5px] shadow-sm dark:bg-s-dark-3"
-			>
-				<IconListTodo size="14" />
-			</div>
+			{@render badge(IconListTodo, '14')}
 		{/if}
 		{#if todo.link !== null}
-			<div
-				class="flex size-6 items-center justify-center rounded-full bg-c-neutral-1 p-[5px] shadow-sm dark:bg-s-dark-3"
-			>
-				<IconLink size="14" />
-			</div>
+			{@render badge(IconLink, '14')}
 		{/if}
 		{#if todo.recurrence_frequency !== null}
-			<div
-				class="flex size-6 items-center justify-center rounded-full bg-c-neutral-1 p-[5px] shadow-sm dark:bg-s-dark-3"
-			>
-				<IconRepeat size="14" />
-			</div>
+			{@render badge(IconRepeat, '14')}
 		{/if}
 	</div>
 {/if}

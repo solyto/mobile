@@ -1,41 +1,41 @@
 <script lang="ts">
-	import IconStar from '@lucide/svelte/icons/star';
+	import IconStar from '$lib/icons/lucide/star.svelte';
 
 	let { startRating = 0, onchange }: {
 		startRating?: number;
 		onchange?: (rating: number) => void | Promise<void>;
 	} = $props();
 
+	const STARS = [1, 2, 3, 4, 5];
+
 	let rating = $state<number>(startRating);
 
-	function onclick(i: number) {
+	function select(i: number): void {
 		rating = i;
 		startRating = i;
 		onchange?.(i);
 	}
+
+	function highlight(i: number): void {
+		rating = i;
+	}
+
+	function resetHighlight(): void {
+		rating = startRating;
+	}
+
+	function starColor(i: number): string {
+		return rating >= i ? 'text-c-warning' : 'text-s-gray-200';
+	}
 </script>
 
-{#snippet renderStar(i: number)}
-	<IconStar
-		class="cursor-pointer pr-1 transition-all hover:text-c-warning {rating >= i
-			? 'text-c-warning'
-			: 'text-s-gray-200'}"
-		onmouseenter={() => {
-			rating = i;
-		}}
-		onmouseleave={() => {
-			rating = startRating;
-		}}
-		onclick={() => {
-			onclick(i);
-		}}
-	/>
-{/snippet}
-
 <div class="flex flex-row gap-0">
-	{@render renderStar(1)}
-	{@render renderStar(2)}
-	{@render renderStar(3)}
-	{@render renderStar(4)}
-	{@render renderStar(5)}
+	{#each STARS as i (i)}
+		<IconStar
+			class="cursor-pointer pr-1 transition-all hover:text-c-warning {starColor(i)}"
+			onmouseenter={() => highlight(i)}
+			onmouseleave={resetHighlight}
+			onclick={() => select(i)}
+		/>
+	{/each}
 </div>

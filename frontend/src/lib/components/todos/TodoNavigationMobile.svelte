@@ -3,9 +3,10 @@
 	import { getTodos } from '$lib/state/Todos.svelte';
 	import { getTags } from '$lib/state/Tags.svelte';
 	import { Translation } from '$lib/state/Translation.svelte';
-	import type { TodoFilter, TodoNavigationSection } from '$lib/types/todo';
-	import IconChevronRight from '@lucide/svelte/icons/chevron-right';
-	import IconArrowLeft from '@lucide/svelte/icons/arrow-left';
+	import type { Snippet } from 'svelte';
+	import type { TodoFilter, TodoNavigationItem, TodoNavigationSection } from '$lib/types/todo';
+	import IconChevronRight from '$lib/icons/lucide/chevron-right.svelte';
+	import IconArrowLeft from '$lib/icons/lucide/arrow-left.svelte';
 	import CloseButton from '$lib/components/ui/buttons/CloseButton.svelte';
 	import IconSub from '$lib/components/ui/icons/IconSub.svelte';
 	import HamburgerButton from '$lib/components/ui/buttons/HamburgerButton.svelte';
@@ -63,9 +64,67 @@
 		const header = sectionHeaders.find((h) => h.key === current)?.label;
 		return sections.find((s: TodoNavigationSection) => s.header === header);
 	}
+
+	function itemKey(item: TodoNavigationItem): string {
+		return item.filter ? item.filter.type + '-' + item.filter.value : item.label;
+	}
+
+	function isActive(filter: TodoFilter | null): boolean {
+		return filter !== null && todos.isFilterActive(filter);
+	}
+
+	function openMenu(): void {
+		open = true;
+	}
+
+	function showAll(): void {
+		applyFilter(null);
+	}
+
+	function chooseFilter(filter: TodoFilter | null): void {
+		if (filter) applyFilter(filter);
+	}
+
+	function enterFromX(): number {
+		return direction === 'forward' ? window.innerWidth : -window.innerWidth;
+	}
+
+	function leaveToX(): number {
+		return -enterFromX();
+	}
 </script>
 
-<HamburgerButton onclick={() => (open = true)} top={6} />
+{#snippet subHeader(title: string)}
+	<div class="flex shrink-0 items-center justify-between border-b border-c-neutral-2 p-4 dark:border-s-dark-3">
+		<div class="flex items-center gap-3">
+			<button
+				class="cursor-pointer text-c-neutral-5 hover:text-c-neutral-7 dark:text-c-neutral-4 dark:hover:text-c-neutral-2"
+				onclick={goBack}
+			>
+				<IconArrowLeft size={22} />
+			</button>
+			<span class="text-xl font-semibold">{title}</span>
+		</div>
+		<CloseButton onClick={close} inModal={false} />
+	</div>
+{/snippet}
+
+{#snippet filterRow(filter: TodoFilter | null, content: Snippet)}
+	<button
+		class="flex w-full cursor-pointer items-center border-b border-c-neutral-1 px-4 py-4 text-left hover:bg-c-neutral-1 dark:border-s-dark-3 dark:hover:bg-s-dark-3"
+		class:bg-c-neutral-1={isActive(filter)}
+		class:dark:bg-s-dark-3={isActive(filter)}
+		onclick={() => chooseFilter(filter)}
+	>
+		{@render content()}
+	</button>
+{/snippet}
+
+{#snippet emptyHint()}
+	<div class="px-4 py-8 text-center text-c-neutral-4">{ts.get.todos.no_todos}</div>
+{/snippet}
+
+<HamburgerButton onclick={openMenu} top={6} />
 
 {#if open}
 	<div
@@ -76,8 +135,8 @@
 			{#key current ?? 'root'}
 				<div
 					class="absolute inset-0 flex flex-col"
-					in:fly={{ x: direction === 'forward' ? window.innerWidth : -window.innerWidth, duration: 250, opacity: 1 }}
-					out:fly={{ x: direction === 'forward' ? -window.innerWidth : window.innerWidth, duration: 250, opacity: 1 }}
+					in:fly={{ x: enterFromX(), duration: 250, opacity: 1 }}
+					out:fly={{ x: leaveToX(), duration: 250, opacity: 1 }}
 				>
 					{#if current === null}
 						<div class="flex shrink-0 items-center justify-between border-b border-c-neutral-2 p-4 dark:border-s-dark-3">
@@ -87,7 +146,7 @@
 						<div class="flex-1 overflow-y-auto">
 							<button
 								class="flex w-full cursor-pointer items-center justify-between border-b border-c-neutral-1 px-4 py-4 text-left hover:bg-c-neutral-1 dark:border-s-dark-3 dark:hover:bg-s-dark-3"
-								onclick={() => applyFilter(null)}
+								onclick={showAll}
 							>
 								<span class="text-base">{ts.get.todos.all_todos}</span>
 							</button>
@@ -102,112 +161,60 @@
 							{/each}
 						</div>
 					{:else if current === 'workspaces'}
-						<div class="flex shrink-0 items-center justify-between border-b border-c-neutral-2 p-4 dark:border-s-dark-3">
-							<div class="flex items-center gap-3">
-								<button
-									class="cursor-pointer text-c-neutral-5 hover:text-c-neutral-7 dark:text-c-neutral-4 dark:hover:text-c-neutral-2"
-									onclick={goBack}
-								>
-									<IconArrowLeft size={22} />
-								</button>
-								<span class="text-xl font-semibold">{ts.get.todos.workspaces}</span>
-							</div>
-							<CloseButton onClick={close} inModal={false} />
-						</div>
+						{@render subHeader(ts.get.todos.workspaces)}
 						<div class="flex-1 overflow-y-auto">
 							{#each todos.workspaces as workspace (workspace.id)}
-								<button
-									class="flex w-full cursor-pointer items-center border-b border-c-neutral-1 px-4 py-4 text-left hover:bg-c-neutral-1 dark:border-s-dark-3 dark:hover:bg-s-dark-3 {todos.isFilterActive({ type: 'workspace', value: workspace }) ? 'bg-c-neutral-1 dark:bg-s-dark-3' : ''}"
-									onclick={() => { todos.useFilters([{ type: 'workspace', value: workspace }]); close(); }}
-								>
+								{#snippet label()}
 									<span class="text-base">{workspace.title}</span>
-								</button>
+								{/snippet}
+								{@render filterRow({ type: 'workspace', value: workspace }, label)}
 							{/each}
 							{#if todos.workspaces.length === 0}
-								<div class="px-4 py-8 text-center text-c-neutral-4">{ts.get.todos.no_todos}</div>
+								{@render emptyHint()}
 							{/if}
 						</div>
 					{:else if current === 'categories'}
-						<div class="flex shrink-0 items-center justify-between border-b border-c-neutral-2 p-4 dark:border-s-dark-3">
-							<div class="flex items-center gap-3">
-								<button
-									class="cursor-pointer text-c-neutral-5 hover:text-c-neutral-7 dark:text-c-neutral-4 dark:hover:text-c-neutral-2"
-									onclick={goBack}
-								>
-									<IconArrowLeft size={22} />
-								</button>
-								<span class="text-xl font-semibold">{ts.get.todos.categories}</span>
-							</div>
-							<CloseButton onClick={close} inModal={false} />
-						</div>
+						{@render subHeader(ts.get.todos.categories)}
 						<div class="flex-1 overflow-y-auto">
 							{#each todos.filteredCategories as category (category.id)}
-								<button
-									class="flex w-full cursor-pointer items-center border-b border-c-neutral-1 px-4 py-4 text-left hover:bg-c-neutral-1 dark:border-s-dark-3 dark:hover:bg-s-dark-3 {todos.isFilterActive({ type: 'category', value: category.id }) ? 'bg-c-neutral-1 dark:bg-s-dark-3' : ''}"
-									onclick={() => { todos.useFilters([{ type: 'category', value: category.id }]); close(); }}
-								>
+								{#snippet label()}
 									<span class="text-base">
 										{#if category.title.includes('/')}
 											<div class="w-full flex items-center pl-2">
-											    <IconSub /> /{category.title.split('/').pop()}
+												<IconSub /> /{category.title.split('/').pop()}
 											</div>
 										{:else}
 											/{category.title}
 										{/if}
 									</span>
-								</button>
+								{/snippet}
+								{@render filterRow({ type: 'category', value: category.id }, label)}
 							{/each}
 							{#if todos.filteredCategories.length === 0}
-								<div class="px-4 py-8 text-center text-c-neutral-4">{ts.get.todos.no_todos}</div>
+								{@render emptyHint()}
 							{/if}
 						</div>
 					{:else if current === 'tags'}
-						<div class="flex shrink-0 items-center justify-between border-b border-c-neutral-2 p-4 dark:border-s-dark-3">
-							<div class="flex items-center gap-3">
-								<button
-									class="cursor-pointer text-c-neutral-5 hover:text-c-neutral-7 dark:text-c-neutral-4 dark:hover:text-c-neutral-2"
-									onclick={goBack}
-								>
-									<IconArrowLeft size={22} />
-								</button>
-								<span class="text-xl font-semibold">{ts.get.todos.tags}</span>
-							</div>
-							<CloseButton onClick={close} inModal={false} />
-						</div>
+						{@render subHeader(ts.get.todos.tags)}
 						<div class="flex-1 overflow-y-auto">
 							{#each tags.tags as tag (tag.id)}
-								<button
-									class="flex w-full cursor-pointer items-center border-b border-c-neutral-1 px-4 py-4 text-left hover:bg-c-neutral-1 dark:border-s-dark-3 dark:hover:bg-s-dark-3 {todos.isFilterActive({ type: 'tag', value: tag.id }) ? 'bg-c-neutral-1 dark:bg-s-dark-3' : ''}"
-									onclick={() => { todos.useFilters([{ type: 'tag', value: tag.id }]); close(); }}
-								>
+								{#snippet label()}
 									<span class="text-base">#{tag.name}</span>
-								</button>
+								{/snippet}
+								{@render filterRow({ type: 'tag', value: tag.id }, label)}
 							{/each}
 							{#if tags.tags.length === 0}
-								<div class="px-4 py-8 text-center text-c-neutral-4">{ts.get.todos.no_todos}</div>
+								{@render emptyHint()}
 							{/if}
 						</div>
 					{:else}
-						<div class="flex shrink-0 items-center justify-between border-b border-c-neutral-2 p-4 dark:border-s-dark-3">
-							<div class="flex items-center gap-3">
-								<button
-									class="cursor-pointer text-c-neutral-5 hover:text-c-neutral-7 dark:text-c-neutral-4 dark:hover:text-c-neutral-2"
-									onclick={goBack}
-								>
-									<IconArrowLeft size={22} />
-								</button>
-								<span class="text-xl font-semibold">{currentSection()?.header ?? current}</span>
-							</div>
-							<CloseButton onClick={close} inModal={false} />
-						</div>
+						{@render subHeader(currentSection()?.header ?? current)}
 						<div class="flex-1 overflow-y-auto">
-							{#each currentSection()?.items ?? [] as item (item.filter ? item.filter.type + '-' + item.filter.value : item.label)}
-								<button
-									class="flex w-full cursor-pointer items-center border-b border-c-neutral-1 px-4 py-4 text-left hover:bg-c-neutral-1 dark:border-s-dark-3 dark:hover:bg-s-dark-3 {item.filter && todos.isFilterActive(item.filter) ? 'bg-c-neutral-1 dark:bg-s-dark-3' : ''}"
-									onclick={() => { if (item.filter) applyFilter(item.filter); }}
-								>
+							{#each currentSection()?.items ?? [] as item (itemKey(item))}
+								{#snippet label()}
 									<span class="text-base">{item.label}</span>
-								</button>
+								{/snippet}
+								{@render filterRow(item.filter, label)}
 							{/each}
 						</div>
 					{/if}

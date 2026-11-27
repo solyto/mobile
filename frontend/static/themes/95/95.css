@@ -117,7 +117,7 @@ input:not(:checked) + .toggle-track { background-color: #808080; }
 	box-shadow: var(--t-bevel-raised);
 }
 
-/* The calendar views tint their background with c-primary through an inline style */
+/* The calendar views tint their background with c-primary through the calendar-view class */
 .calendar-view { background-color: #ffffff !important; }
 
 ::-webkit-scrollbar { width: 16px; height: 16px; background: #dfdfdf; }

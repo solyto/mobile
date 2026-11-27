@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { getTimeTracking } from '$lib/state/TimeTracking.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
-	import { getAuth } from '$lib/state/Auth.svelte';
 	import Entry from '$lib/components/time-tracking/Entry.svelte';
 	import EntryCreate from '$lib/components/time-tracking/EntryCreate.svelte';
 	import TimerWidget from '$lib/components/time-tracking/TimerWidget.svelte';
@@ -10,41 +9,38 @@
 	import EmptyState from '$lib/components/ui/EmptyState.svelte';
 	import TimeTrackingGroupingService from '$lib/services/TimeTrackingGroupingService';
 	import type { TimeTrackingEntry } from '$lib/types/time_tracking';
+	import type { WeekStart } from '$lib/types/auth';
 	import { getStartOfWeek } from '$lib/helpers/DateHelper';
+	import { hamburgerClearance } from '$lib/config/navigation';
+
+	const RECENT_ENTRIES = 10;
+
+	let { weekStart }: { weekStart: WeekStart } = $props();
 
 	const tt = getTimeTracking();
 	const ts = getTranslation();
-	const auth = getAuth();
 	const groupingService = new TimeTrackingGroupingService();
 
 	let editingEntry = $state<TimeTrackingEntry | null>(null);
 
-	let recentEntries = $derived(
-		tt.entries
-			.filter((e) => e.stopped_at !== null)
-			.slice(0, 10)
-	);
+	let recentEntries = $derived(tt.entries.filter((e) => e.stopped_at !== null).slice(0, RECENT_ENTRIES));
 
-	let weekBreakdown = $derived.by(() => {
-		const startOfWeek = getStartOfWeek(new Date(), auth.getWeekStart());
-		const filtered = tt.entries.filter(
-			(e) => e.stopped_at !== null && new Date(e.started_at) >= startOfWeek
-		);
-		return groupingService.groupByProject(filtered, tt.projects);
-	});
+	let weekBreakdown = $derived(groupingService.groupFinishedSince(tt.entries, tt.projects, getStartOfWeek(new Date(), weekStart)));
 
-	let todayBreakdown = $derived.by(() => {
+	let todayBreakdown = $derived(groupingService.groupFinishedSince(tt.entries, tt.projects, startOfToday()));
+
+	function startOfToday(): Date {
 		const now = new Date();
-		const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-		const filtered = tt.entries.filter(
-			(e) => e.stopped_at !== null && new Date(e.started_at) >= startOfToday
-		);
-		return groupingService.groupByProject(filtered, tt.projects);
-	});
+		return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+	}
+
+	function closeEdit(): void {
+		editingEntry = null;
+	}
 </script>
 
 <div class="flex flex-col gap-8">
-	<div class="max-lg:mt-1 max-lg:ml-14">
+	<div class="max-lg:mt-1 {hamburgerClearance}">
 		<Heading title={ts.get.timeTracking.dashboard} my={0} />
 	</div>
 
@@ -53,16 +49,8 @@
 	{:else}
 		<div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
 			<TimerWidget />
-			<TimeBreakdownWidget
-				title={ts.get.timeTracking.today}
-				breakdown={todayBreakdown}
-				total={todayBreakdown.reduce((s, c) => s + c.minutes, 0)}
-			/>
-			<TimeBreakdownWidget
-				title={ts.get.timeTracking.this_week}
-				breakdown={weekBreakdown}
-				total={weekBreakdown.reduce((s, c) => s + c.minutes, 0)}
-			/>
+			<TimeBreakdownWidget title={ts.get.timeTracking.today} breakdown={todayBreakdown} />
+			<TimeBreakdownWidget title={ts.get.timeTracking.this_week} breakdown={weekBreakdown} />
 		</div>
 	{/if}
 
@@ -79,5 +67,5 @@
 </div>
 
 {#if editingEntry}
-	<EntryCreate entry={editingEntry} onClose={() => (editingEntry = null)} />
+	<EntryCreate entry={editingEntry} onClose={closeEdit} />
 {/if}

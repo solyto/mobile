@@ -49,11 +49,9 @@ describe('Navigation store', () => {
 
 		it('swaps a submenu item with the least used bar item', () => {
 			const s = new Navigation();
-			// visible bar: home, todos, calendar, check-in, libraries (5)
 			s.usage = { todos: 5, calendar: 4, checkIn: 3, libraries: 0 };
 			s.promoteMobileItem('notes');
 
-			// notes moved into the bar at the libraries slot, libraries pushed out
 			expect(s.mobileOrder).toEqual([
 				'home',
 				'todos',
@@ -78,9 +76,7 @@ describe('Navigation store', () => {
 			const s = new Navigation();
 			s.usage = { todos: 5, calendar: 4, checkIn: 3, libraries: 2, notes: 0 };
 			s.promoteMobileItem('notes');
-			// home must never leave the bar
 			expect(s.mobileOrder[0]).toBe('home');
-			// the least used among todos/calendar/check-in/libraries is libraries
 			expect(s.mobileOrder[4]).toBe('notes');
 		});
 	});

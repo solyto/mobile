@@ -4,7 +4,10 @@ import type { StatusResponse } from '$lib/types/api';
 
 const MINUTES_PER_DAY = 1440;
 
+const RESULTS_THAT_CHANGE_EVENTS: EventWriteResult[] = ['ok', 'changed_on_server', 'server_unavailable'];
+
 const WRITE_ERRORS: Record<string, EventWriteResult> = {
+	calendar_read_only: 'read_only',
 	external_event_changed: 'changed_on_server',
 	external_event_unreadable: 'unreadable',
 	external_server_unavailable: 'server_unavailable'
@@ -14,8 +17,7 @@ function spansMoreThanOneDay(event: CalendarEvent): boolean {
 	return getDateDiffInMinutes(event.start_date, event.end_date) > MINUTES_PER_DAY;
 }
 
-// Calendar days after the start day that a timed event still runs into.
-function followingDaysTouched(event: CalendarEvent): Date[] {
+function daysAfterStartTouched(event: CalendarEvent): Date[] {
 	const days: Date[] = [];
 	const current = new Date(event.start_date);
 	current.setHours(0, 0, 0, 0);
@@ -33,6 +35,10 @@ export default class CalendarEventService {
 	writeResult(res: StatusResponse): EventWriteResult {
 		if (res.ok) return 'ok';
 		return WRITE_ERRORS[res.errors[0]] ?? 'failed';
+	}
+
+	needsReload(result: EventWriteResult): boolean {
+		return RESULTS_THAT_CHANGE_EVENTS.includes(result);
 	}
 
 	findCurrentVersion(events: CalendarEvent[], entry: CalendarEvent): CalendarEvent | null {
@@ -70,7 +76,7 @@ export default class CalendarEventService {
 			}
 
 			if (!event.is_all_day) {
-				for (const day of followingDaysTouched(event)) {
+				for (const day of daysAfterStartTouched(event)) {
 					(byDay[formatDate(day)] ??= []).push(event);
 				}
 			}

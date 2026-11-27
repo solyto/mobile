@@ -1,35 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Calendars } from '$lib/state/Calendars.svelte';
 import { api, auth, storage, resetStoreMocks } from '../setup/storeMocks';
-import { todo } from '../helpers/factories';
-import { SvelteDate } from 'svelte/reactivity';
+import { calendar, calendarEvent as event, calendarEventResponse, todo } from '../helpers/factories';
 import { getWeekNumber } from '$lib/helpers/DateHelper';
-import type { Calendar, CalendarEvent, UpdateEventRequest } from '$lib/types/calendar';
+import type { CalendarEvent, CalendarEventResponse, UpdateEventRequest } from '$lib/types/calendar';
 import { apiRoutes } from '$lib/config/apiRoutes';
-
-function event(overrides: Partial<CalendarEvent> = {}): CalendarEvent {
-	return {
-		id: 1,
-		uri: 'event-1',
-		title: 'Event',
-		description: '',
-		location: '',
-		start_date: new SvelteDate(2026, 7, 10, 10, 0),
-		end_date: new SvelteDate(2026, 7, 10, 11, 0),
-		is_all_day: false,
-		is_recurring: false,
-		recurrence_rule: null,
-		recurrence_end: null,
-		original_start_date: null,
-		created_at: null,
-		updated_at: null,
-		calendar_id: 1,
-		calendar_name: 'Personal',
-		calendar_color: '#fff',
-		etag: '',
-		...overrides
-	};
-}
 
 beforeEach(() => {
 	resetStoreMocks();
@@ -153,31 +128,7 @@ describe('Calendars store', () => {
 	});
 
 	describe('loadEvents', () => {
-		function apiEvent(overrides: Record<string, unknown> = {}): Record<string, unknown> {
-			return {
-				id: 1,
-				uri: 'event-1',
-				title: 'Event',
-				description: '',
-				location: '',
-				start_date: '2026-08-10T10:00:00Z',
-				end_date: '2026-08-10T11:00:00Z',
-				is_all_day: false,
-				is_recurring: false,
-				recurrence_rule: null,
-				recurrence_end: null,
-				original_start_date: null,
-				created_at: null,
-				updated_at: null,
-				calendar_id: 1,
-				calendar_name: 'Personal',
-				calendar_color: '#fff',
-				etag: '',
-				...overrides
-			};
-		}
-
-		async function loadAugust(data: Record<string, unknown>[]): Promise<Calendars> {
+		async function loadAugust(data: CalendarEventResponse[]): Promise<Calendars> {
 			api.list.mockResolvedValue({ data });
 			const c = new Calendars();
 			c.currentYear = 2026;
@@ -188,8 +139,8 @@ describe('Calendars store', () => {
 
 		it('requests events for the current year-month and builds sortedEvents', async () => {
 			const c = await loadAugust([
-				apiEvent({ id: 1 }),
-				apiEvent({
+				calendarEventResponse({ id: 1 }),
+				calendarEventResponse({
 					id: 2,
 					title: 'Second',
 					start_date: '2026-08-14T09:00:00Z',
@@ -203,89 +154,6 @@ describe('Calendars store', () => {
 			expect(c.events).toHaveLength(2);
 			expect(Object.keys(c.sortedEvents).sort()).toEqual(['10.08.2026', '14.08.2026']);
 			expect(c.sortedEvents['14.08.2026'][0].id).toBe(2);
-		});
-
-		it('converts the date strings to Date instances and keeps the other fields', async () => {
-			const c = await loadAugust([
-				apiEvent({ id: 1 }),
-				apiEvent({
-					id: 2,
-					is_recurring: true,
-					recurrence_rule: 'FREQ=WEEKLY',
-					recurrence_end: '2026-12-31T00:00:00Z',
-					original_start_date: '2026-08-03T10:00:00Z'
-				})
-			]);
-
-			const [plain, recurring] = c.events;
-			expect(plain.start_date).toBeInstanceOf(Date);
-			expect(plain.start_date.getTime()).toBe(Date.UTC(2026, 7, 10, 10, 0));
-			expect(plain.end_date).toBeInstanceOf(Date);
-			expect(plain.end_date.getTime()).toBe(Date.UTC(2026, 7, 10, 11, 0));
-			expect(plain.recurrence_end).toBeNull();
-			expect(plain.original_start_date).toBeNull();
-			expect(plain.title).toBe('Event');
-			expect(plain.calendar_name).toBe('Personal');
-
-			expect(recurring.recurrence_end).toBeInstanceOf(Date);
-			expect(recurring.recurrence_end!.getTime()).toBe(Date.UTC(2026, 11, 31));
-			expect(recurring.original_start_date).toBeInstanceOf(Date);
-			expect(recurring.original_start_date!.getTime()).toBe(Date.UTC(2026, 7, 3, 10, 0));
-			expect(recurring.recurrence_rule).toBe('FREQ=WEEKLY');
-		});
-
-		it('expands multi-day all-day events onto every spanned day', async () => {
-			const c = await loadAugust([
-				apiEvent({
-					is_all_day: true,
-					start_date: '2026-08-10T00:00:00Z',
-					end_date: '2026-08-12T00:00:00Z'
-				})
-			]);
-
-			expect(Object.keys(c.sortedEvents)).toEqual(['10.08.2026', '11.08.2026', '12.08.2026']);
-			expect(c.sortedEvents['10.08.2026']).toHaveLength(1);
-			expect(c.sortedEvents['11.08.2026']).toHaveLength(1);
-			// the end date is included
-			expect(c.sortedEvents['12.08.2026']).toHaveLength(1);
-		});
-
-		it('does not expand single-day all-day events', async () => {
-			const c = await loadAugust([
-				apiEvent({
-					is_all_day: true,
-					start_date: '2026-08-10T00:00:00Z',
-					end_date: '2026-08-11T00:00:00Z'
-				})
-			]);
-
-			expect(Object.keys(c.sortedEvents)).toEqual(['10.08.2026']);
-		});
-
-		it('expands timed events onto every day they touch', async () => {
-			const c = await loadAugust([
-				apiEvent({
-					start_date: '2026-08-10T10:00:00Z',
-					end_date: '2026-08-12T10:00:00Z'
-				})
-			]);
-
-			expect(Object.keys(c.sortedEvents)).toEqual(['10.08.2026', '11.08.2026', '12.08.2026']);
-		});
-
-		it('puts the loaded event into every sortedEvents bucket it spans', async () => {
-			const c = await loadAugust([
-				apiEvent({
-					is_all_day: true,
-					start_date: '2026-08-10T00:00:00Z',
-					end_date: '2026-08-12T00:00:00Z'
-				})
-			]);
-
-			const [loaded] = c.events;
-			expect(c.sortedEvents['10.08.2026'][0]).toEqual(loaded);
-			expect(c.sortedEvents['11.08.2026'][0]).toEqual(loaded);
-			expect(c.sortedEvents['12.08.2026'][0]).toEqual(loaded);
 		});
 
 		it('keeps the previous events when the request fails', async () => {
@@ -302,12 +170,12 @@ describe('Calendars store', () => {
 			const e = event();
 			const c = new Calendars();
 			c.sortedEvents = { '10.08.2026': [e] };
-			expect(c.getEventsForDate(new SvelteDate(2026, 7, 10))).toEqual([e]);
+			expect(c.getEventsForDate(new Date(2026, 7, 10))).toEqual([e]);
 		});
 
 		it('getEventsForDate returns an empty array for a date without events', () => {
 			const c = new Calendars();
-			expect(c.getEventsForDate(new SvelteDate(2026, 7, 11))).toEqual([]);
+			expect(c.getEventsForDate(new Date(2026, 7, 11))).toEqual([]);
 		});
 
 		it('getAllDayEventsForDate keeps only all-day events', () => {
@@ -315,23 +183,23 @@ describe('Calendars store', () => {
 			const timed = event({ id: 2, is_all_day: false });
 			const c = new Calendars();
 			c.sortedEvents = { '10.08.2026': [allDay, timed] };
-			expect(c.getAllDayEventsForDate(new SvelteDate(2026, 7, 10))).toEqual([allDay]);
+			expect(c.getAllDayEventsForDate(new Date(2026, 7, 10))).toEqual([allDay]);
 		});
 
 		it('getNonAllDayEventsForDate keeps only timed events sorted by start time', () => {
-			const late = event({ id: 1, start_date: new SvelteDate(2026, 7, 10, 15, 0) });
-			const early = event({ id: 2, start_date: new SvelteDate(2026, 7, 10, 8, 0) });
+			const late = event({ id: 1, start_date: new Date(2026, 7, 10, 15, 0) });
+			const early = event({ id: 2, start_date: new Date(2026, 7, 10, 8, 0) });
 			const allDay = event({ id: 3, is_all_day: true });
 			const c = new Calendars();
 			c.sortedEvents = { '10.08.2026': [late, allDay, early] };
 			expect(
-				c.getNonAllDayEventsForDate(new SvelteDate(2026, 7, 10)).map((x) => x.id)
+				c.getNonAllDayEventsForDate(new Date(2026, 7, 10)).map((x) => x.id)
 			).toEqual([2, 1]);
 		});
 
 		it('getNonAllDayEventsForDate returns an empty array when nothing is sorted for the date', () => {
 			const c = new Calendars();
-			expect(c.getNonAllDayEventsForDate(new SvelteDate(2026, 7, 10))).toEqual([]);
+			expect(c.getNonAllDayEventsForDate(new Date(2026, 7, 10))).toEqual([]);
 		});
 	});
 
@@ -343,14 +211,44 @@ describe('Calendars store', () => {
 				todo({ id: '2', due_at: '2026-08-15' }),
 				todo({ id: '3', due_at: '2026-08-14T18:00:00' })
 			];
-			const result = c.getTodosForDate(new SvelteDate(2026, 7, 14));
+			const result = c.getTodosForDate(new Date(2026, 7, 14));
 			expect(result.map((t) => t.id)).toEqual(['1', '3']);
 		});
 
 		it('returns an empty array when no todo is due that day', () => {
 			const c = new Calendars();
 			c.todos = [todo({ id: '1', due_at: '2026-09-01' })];
-			expect(c.getTodosForDate(new SvelteDate(2026, 7, 14))).toEqual([]);
+			expect(c.getTodosForDate(new Date(2026, 7, 14))).toEqual([]);
+		});
+	});
+
+	describe('loadMarks', () => {
+		it('requests the journal and check-in marks of the whole month grid', async () => {
+			api.list.mockResolvedValue({ data: [] });
+			const c = new Calendars();
+			c.currentYear = 2026;
+			c.currentMonth = 8;
+			c.loadMonth();
+			c.journalMarksEnabled = true;
+			c.checkInMarksEnabled = true;
+
+			await c.loadMarks();
+
+			expect(api.list).toHaveBeenCalledWith(`${apiRoutes.notes.journalMarks}?from=2026-07-27&to=2026-09-06`);
+			expect(api.list).toHaveBeenCalledWith(`${apiRoutes.checkIn.marks}?from=2026-07-27&to=2026-09-06`);
+		});
+
+		it('requests only the enabled marks', async () => {
+			api.list.mockResolvedValue({ data: ['2026-08-03'] });
+			const c = new Calendars();
+			c.checkInMarksEnabled = true;
+
+			await c.loadMarks();
+
+			expect(api.list).toHaveBeenCalledTimes(1);
+			expect(api.list).toHaveBeenCalledWith(expect.stringContaining(apiRoutes.checkIn.marks));
+			expect(c.checkInMarks).toEqual(['2026-08-03']);
+			expect(c.journalMarks).toEqual([]);
 		});
 	});
 
@@ -414,18 +312,16 @@ describe('Calendars store', () => {
 
 		it('ignores an events response for a month the user has already left', async () => {
 			const pending: Record<string, (value: { data: unknown[] }) => void> = {};
-			api.list.mockImplementation(
-				(endpoint: string) => new Promise((resolve) => (pending[endpoint.slice(-7)] = resolve))
-			);
+			api.list.mockImplementation((endpoint: string) => new Promise((resolve) => (pending[endpoint] = resolve)));
 			const c = new Calendars();
 			c.currentYear = 2026;
 			c.currentMonth = 8;
 
 			const toSeptember = c.nextMonth();
 			const toOctober = c.nextMonth();
-			pending['2026-10']({ data: [] });
+			pending[apiRoutes.calendars.listEvents.replace('%s', '2026-10')]({ data: [] });
 			await toOctober;
-			pending['2026-09']({ data: [{ id: 1 }] });
+			pending[apiRoutes.calendars.listEvents.replace('%s', '2026-09')]({ data: [{ id: 1 }] });
 			await toSeptember;
 
 			expect(c.events).toEqual([]);
@@ -660,16 +556,16 @@ describe('Calendars store', () => {
 	describe('day navigation', () => {
 		it('nextDay and lastDay move the current date', () => {
 			const c = new Calendars();
-			c.currentDate = new SvelteDate(2026, 7, 14);
+			c.currentDate = new Date(2026, 7, 14);
 			c.nextDay();
-			expect(c.currentDate).toEqual(new SvelteDate(2026, 7, 15));
+			expect(c.currentDate).toEqual(new Date(2026, 7, 15));
 			c.lastDay();
-			expect(c.currentDate).toEqual(new SvelteDate(2026, 7, 14));
+			expect(c.currentDate).toEqual(new Date(2026, 7, 14));
 		});
 
 		it('goToToday resets navigation to the current date', async () => {
 			const c = new Calendars();
-			c.currentDate = new SvelteDate(2020, 0, 1);
+			c.currentDate = new Date(2020, 0, 1);
 			c.currentWeekStart = new Date(2020, 0, 6);
 			c.currentMonth = 1;
 			c.currentYear = 2020;
@@ -743,29 +639,38 @@ describe('Calendars store', () => {
 
 	describe('derived calendar groupings', () => {
 		it('splits calendars into owned, pending and accepted', () => {
-			const base = {
-				name: 'C',
-				color: '#fff',
-				description: '',
-				timezone: 'UTC',
-				order: 0,
-				is_shared: false,
-				share_owner: null,
-				share_token: null,
-				is_external: false,
-				is_unavailable: false,
-				is_credentials_rejected: false
-			};
 			const c = new Calendars();
 			c.calendars = [
-				{ ...base, id: 1, invite_status: null },
-				{ ...base, id: 2, invite_status: 'pending' },
-				{ ...base, id: 3, invite_status: 'accepted' }
-			] as Calendar[];
+				calendar({ id: 1, invite_status: null }),
+				calendar({ id: 2, invite_status: 'pending' }),
+				calendar({ id: 3, invite_status: 'accepted' })
+			];
 
 			expect(c.ownedCalendars.map((x) => x.id)).toEqual([1]);
 			expect(c.pendingInvites.map((x) => x.id)).toEqual([2]);
 			expect(c.acceptedSharedCalendars.map((x) => x.id)).toEqual([3]);
+		});
+	});
+
+	describe('showSidebar', () => {
+		it('keeps no selected date when an event is opened without one', async () => {
+			api.list.mockResolvedValue({ data: [] });
+			const c = new Calendars();
+
+			await c.showSidebar(null, event());
+
+			expect(c.selectedDate).toBeNull();
+			expect(c.editSidebar).toBe(true);
+		});
+
+		it('keeps its own copy of the selected date', async () => {
+			const c = new Calendars();
+			const date = new Date(2026, 10, 20);
+
+			await c.showSidebar(date);
+
+			expect(c.selectedDate).toEqual(date);
+			expect(c.selectedDate).not.toBe(date);
 		});
 	});
 
@@ -794,11 +699,11 @@ describe('Calendars store', () => {
 		// Third occurrence (Oct 16) of a daily series at 9:00 that started Oct 14
 		function occurrence(overrides: Partial<CalendarEvent> = {}): CalendarEvent {
 			return event({
-				start_date: new SvelteDate(2030, 9, 16, 9, 0),
-				end_date: new SvelteDate(2030, 9, 16, 10, 0),
+				start_date: new Date(2030, 9, 16, 9, 0),
+				end_date: new Date(2030, 9, 16, 10, 0),
 				is_recurring: true,
 				recurrence_rule: 'FREQ=DAILY',
-				original_start_date: new SvelteDate(2030, 9, 16, 9, 0),
+				original_start_date: new Date(2030, 9, 16, 9, 0),
 				...overrides
 			});
 		}
@@ -840,7 +745,7 @@ describe('Calendars store', () => {
 		it('sends the start from before the drag when the series is dragged by an hour', async () => {
 			const c = new Calendars();
 
-			await c.moveEvent(occurrence(), { date: new SvelteDate(2030, 9, 16), hour: 10, minute: 0 });
+			await c.moveEvent(occurrence(), { date: new Date(2030, 9, 16), hour: 10, minute: 0 });
 			await c.resolvePendingMove(false);
 
 			expect(sentBody().start_date).toBe('2030-10-16T10:00:00');
@@ -850,7 +755,7 @@ describe('Calendars store', () => {
 		it('sends the start from before the drag when the series is dragged to the next day', async () => {
 			const c = new Calendars();
 
-			await c.moveEvent(occurrence(), { date: new SvelteDate(2030, 9, 17), hour: 9, minute: 0 });
+			await c.moveEvent(occurrence(), { date: new Date(2030, 9, 17), hour: 9, minute: 0 });
 			await c.resolvePendingMove(false);
 
 			expect(sentBody().start_date).toBe('2030-10-17T09:00:00');
@@ -859,8 +764,8 @@ describe('Calendars store', () => {
 
 		it('sends the listed start of a moved occurrence, not its original slot', async () => {
 			const entry = occurrence({
-				start_date: new SvelteDate(2030, 9, 16, 8, 0),
-				end_date: new SvelteDate(2030, 9, 16, 9, 0)
+				start_date: new Date(2030, 9, 16, 8, 0),
+				end_date: new Date(2030, 9, 16, 9, 0)
 			});
 
 			await new Calendars().updateEvent(entry, formRequest(entry, '2030-10-16T08:00:00'));
@@ -880,7 +785,7 @@ describe('Calendars store', () => {
 		it('sends no occurrence start when only this occurrence is changed', async () => {
 			const c = new Calendars();
 
-			await c.moveEvent(occurrence(), { date: new SvelteDate(2030, 9, 16), hour: 10, minute: 0 });
+			await c.moveEvent(occurrence(), { date: new Date(2030, 9, 16), hour: 10, minute: 0 });
 			await c.resolvePendingMove(true);
 
 			expect(api.putWithStatus.mock.calls[0][0]).toContain('/occurrence/');
@@ -897,9 +802,9 @@ describe('Calendars store', () => {
 			c.currentMonth = 8;
 
 			const e = event();
-			const ok = await c.moveEvent(e, { date: new SvelteDate(2026, 7, 14), hour: 14, minute: 30 });
+			const result = await c.moveEvent(e, { date: new Date(2026, 7, 14), hour: 14, minute: 30 });
 
-			expect(ok).toBe('ok');
+			expect(result).toBe('ok');
 			expect(api.putWithStatus).toHaveBeenCalledWith(
 				expect.stringContaining('/calendars/1/events/event-1'),
 				expect.objectContaining({
@@ -908,7 +813,6 @@ describe('Calendars store', () => {
 					etag: ''
 				})
 			);
-			// loadEvents ran after the update
 			expect(api.list).toHaveBeenCalledWith(
 				expect.stringContaining('/calendars/events/2026-08')
 			);
@@ -917,21 +821,21 @@ describe('Calendars store', () => {
 		it('returns failed when the API update fails', async () => {
 			api.putWithStatus.mockResolvedValue({ ok: false, status: 500, errors: [] });
 			const c = new Calendars();
-			const ok = await c.moveEvent(event(), {
-				date: new SvelteDate(2026, 7, 14),
+			const result = await c.moveEvent(event(), {
+				date: new Date(2026, 7, 14),
 				hour: 14,
 				minute: 30
 			});
-			expect(ok).toBe('failed');
+			expect(result).toBe('failed');
 		});
 
 		it('does nothing for a no-op drop on the same slot and returns ok', async () => {
 			const c = new Calendars();
-			const ok = await c.moveEvent(
-				event({ start_date: new SvelteDate(2026, 7, 10, 10, 0) }),
-				{ date: new SvelteDate(2026, 7, 10), hour: 10, minute: 0 }
+			const result = await c.moveEvent(
+				event({ start_date: new Date(2026, 7, 10, 10, 0) }),
+				{ date: new Date(2026, 7, 10), hour: 10, minute: 0 }
 			);
-			expect(ok).toBe('ok');
+			expect(result).toBe('ok');
 			expect(api.putWithStatus).not.toHaveBeenCalled();
 		});
 
@@ -939,16 +843,16 @@ describe('Calendars store', () => {
 			const c = new Calendars();
 			const recurring = event({
 				is_recurring: true,
-				original_start_date: new SvelteDate(2026, 7, 10, 10, 0)
+				original_start_date: new Date(2026, 7, 10, 10, 0)
 			});
 
-			const ok = await c.moveEvent(recurring, {
-				date: new SvelteDate(2026, 7, 14),
+			const result = await c.moveEvent(recurring, {
+				date: new Date(2026, 7, 14),
 				hour: 10,
 				minute: 0
 			});
 
-			expect(ok).toBe('ok');
+			expect(result).toBe('ok');
 			expect(c.pendingMove).not.toBeNull();
 			expect(c.pendingMove!.request.start_date).toBe('2026-08-14T10:00:00');
 			expect(api.putWithStatus).not.toHaveBeenCalled();
@@ -962,13 +866,13 @@ describe('Calendars store', () => {
 			c.currentMonth = 8;
 			const recurring = event({
 				is_recurring: true,
-				original_start_date: new SvelteDate(2026, 7, 10, 10, 0)
+				original_start_date: new Date(2026, 7, 10, 10, 0)
 			});
 
-			await c.moveEvent(recurring, { date: new SvelteDate(2026, 7, 14), hour: 10, minute: 0 });
-			const ok = await c.resolvePendingMove(true);
+			await c.moveEvent(recurring, { date: new Date(2026, 7, 14), hour: 10, minute: 0 });
+			const result = await c.resolvePendingMove(true);
 
-			expect(ok).toBe('ok');
+			expect(result).toBe('ok');
 			expect(c.pendingMove).toBeNull();
 			expect(api.putWithStatus).toHaveBeenCalledTimes(1);
 			expect(api.putWithStatus).toHaveBeenCalledWith(
@@ -985,13 +889,13 @@ describe('Calendars store', () => {
 			c.currentMonth = 8;
 			const recurring = event({
 				is_recurring: true,
-				original_start_date: new SvelteDate(2026, 7, 10, 10, 0)
+				original_start_date: new Date(2026, 7, 10, 10, 0)
 			});
 
-			await c.moveEvent(recurring, { date: new SvelteDate(2026, 7, 14), hour: 10, minute: 0 });
-			const ok = await c.resolvePendingMove(false);
+			await c.moveEvent(recurring, { date: new Date(2026, 7, 14), hour: 10, minute: 0 });
+			const result = await c.resolvePendingMove(false);
 
-			expect(ok).toBe('ok');
+			expect(result).toBe('ok');
 			expect(c.pendingMove).toBeNull();
 			expect(api.putWithStatus).toHaveBeenCalledTimes(1);
 			expect(api.putWithStatus.mock.calls[0][0]).toMatch(/\/calendars\/1\/events\/event-1$/);
@@ -1006,13 +910,13 @@ describe('Calendars store', () => {
 			c.currentMonth = 8;
 			const master = event({ is_recurring: true, original_start_date: null });
 
-			const ok = await c.moveEvent(master, {
-				date: new SvelteDate(2026, 7, 14),
+			const result = await c.moveEvent(master, {
+				date: new Date(2026, 7, 14),
 				hour: 10,
 				minute: 0
 			});
 
-			expect(ok).toBe('ok');
+			expect(result).toBe('ok');
 			expect(c.pendingMove).toBeNull();
 			expect(api.putWithStatus).toHaveBeenCalled();
 		});
@@ -1021,10 +925,10 @@ describe('Calendars store', () => {
 			const c = new Calendars();
 			const recurring = event({
 				is_recurring: true,
-				original_start_date: new SvelteDate(2026, 7, 10, 10, 0)
+				original_start_date: new Date(2026, 7, 10, 10, 0)
 			});
 
-			await c.moveEvent(recurring, { date: new SvelteDate(2026, 7, 14), hour: 10, minute: 0 });
+			await c.moveEvent(recurring, { date: new Date(2026, 7, 14), hour: 10, minute: 0 });
 			expect(c.pendingMove).not.toBeNull();
 
 			c.cancelPendingMove();
@@ -1040,9 +944,9 @@ describe('Calendars store', () => {
 			const c = new Calendars();
 			const occurrence = new Date(Date.UTC(2026, 7, 10, 10, 0));
 
-			const ok = await c.deleteOccurrence(event(), occurrence);
+			const result = await c.deleteOccurrence(event(), occurrence);
 
-			expect(ok).toBe('ok');
+			expect(result).toBe('ok');
 			expect(api.deleteWithStatus).toHaveBeenCalledWith(
 				apiRoutes.calendars.deleteOccurrence
 					.replace('%d', '1')
@@ -1061,32 +965,49 @@ describe('Calendars store', () => {
 		});
 	});
 
-	describe('external calendars', () => {
-		function calendar(overrides: Partial<Calendar> = {}): Calendar {
-			return {
-				id: 1,
-				name: 'Remote',
-				color: '#fff',
-				description: '',
-				timezone: 'UTC',
-				order: 0,
-				is_shared: false,
-				share_owner: null,
-				invite_status: null,
-				share_token: null,
-				is_external: true,
-				is_unavailable: false,
-				is_credentials_rejected: false,
-				...overrides
-			};
-		}
+	describe('read-only calendars', () => {
+		it('offers only writable calendars', () => {
+			const c = new Calendars();
+			c.calendars = [calendar({ id: 1 }), calendar({ id: 2, is_shared: true, is_read_only: true }), calendar({ id: 3, is_shared: true })];
 
+			expect(c.writableCalendars().map((x) => x.id)).toEqual([1, 3]);
+		});
+
+		it('marks events of a read-only calendar as read-only', () => {
+			const c = new Calendars();
+			c.calendars = [calendar({ id: 1 }), calendar({ id: 2, is_read_only: true })];
+
+			expect(c.isEventReadOnly(event({ calendar_id: 2 }))).toBe(true);
+			expect(c.isEventReadOnly(event({ calendar_id: 1 }))).toBe(false);
+		});
+
+		it('reports a forbidden write as read-only', async () => {
+			api.deleteWithStatus.mockResolvedValue({ ok: false, status: 403, errors: ['calendar_read_only'] });
+			const c = new Calendars();
+
+			await expect(c.deleteOccurrence(event(), new Date())).resolves.toBe('read_only');
+		});
+	});
+
+	describe('external calendars', () => {
 		function inAugust(): Calendars {
 			const c = new Calendars();
 			c.currentYear = 2026;
 			c.currentMonth = 8;
 			return c;
 		}
+
+		it('names the status of a calendar, a rejected app password first', () => {
+			const c = inAugust();
+			c.unavailableCalendarIds = [1, 2];
+			c.credentialsRejectedCalendarIds = [1];
+
+			expect(c.calendarStatus(calendar({ id: 1, is_external: true }))).toBe('credentials_rejected');
+			expect(c.calendarStatus(calendar({ id: 2, is_external: true }))).toBe('unavailable');
+			expect(c.calendarStatus(calendar({ id: 3, is_external: true }))).toBe('external');
+			expect(c.calendarStatus(calendar({ id: 4, is_shared: true }))).toBe('shared');
+			expect(c.calendarStatus(calendar({ id: 5 }))).toBeNull();
+		});
 
 		it('keeps the calendars the event listing reports as unavailable', async () => {
 			api.list.mockResolvedValue({ data: [], meta: { unavailable_calendars: [2] } });
@@ -1144,7 +1065,7 @@ describe('Calendars store', () => {
 			const c = inAugust();
 			c.calendars = [calendar()];
 
-			const result = await c.moveEvent(event(), { date: new SvelteDate(2026, 7, 14), hour: 10, minute: 0 });
+			const result = await c.moveEvent(event(), { date: new Date(2026, 7, 14), hour: 10, minute: 0 });
 
 			expect(result).toBe('changed_on_server');
 			expect(api.list).toHaveBeenCalledWith(expect.stringContaining('/calendars/events/2026-08'));

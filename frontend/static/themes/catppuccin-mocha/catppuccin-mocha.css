@@ -12,6 +12,8 @@
 	--color-c-heading-base: #cdd6f4;
 	--color-c-btn: #89b4fa;
 	--color-c-btn-hover: #74c7ec;
+	--color-c-btn-text: #1e1e2e;
+	--color-c-btn-icon: #1e1e2e;
 	--color-c-action: #fab387;
 	--color-c-action-hover: #f9e2af;
 	--color-c-action-text: #1e1e2e;
@@ -19,7 +21,9 @@
 	--color-c-action-icon-hover: #1e1e2e;
 	--color-c-danger: #f38ba8;
 	--color-c-danger-hover: #eba0ac;
+	--color-c-danger-icon: #1e1e2e;
 	--color-c-success: #a6e3a1;
+	--color-c-success-icon: #1e1e2e;
 	--color-c-warning: #f9e2af;
 
 	--color-c-bg: #1e1e2e;
@@ -37,12 +41,12 @@
 
 	--color-white: #cdd6f4;
 
-	--color-c-neutral: #181825;
-	--color-c-neutral-1: #1e1e2e;
-	--color-c-neutral-2: #313244;
+	--color-c-neutral: #282839;
+	--color-c-neutral-1: #45475a;
+	--color-c-neutral-2: #45475a;
 	--color-c-neutral-3: #45475a;
 	--color-c-neutral-4: #585b70;
-	--color-c-neutral-5: #6c7086;
+	--color-c-neutral-5: #9399b2;
 	--color-c-neutral-6: #9399b2;
 	--color-c-neutral-7: #bac2de;
 	--color-c-neutral-8: #cdd6f4;

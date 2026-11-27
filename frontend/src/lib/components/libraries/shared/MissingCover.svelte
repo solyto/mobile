@@ -1,10 +1,10 @@
 <script lang="ts">
-	import IconMusic from '@lucide/svelte/icons/music';
-	import IconBook from '@lucide/svelte/icons/book';
-	import IconCookingPot from '@lucide/svelte/icons/cooking-pot';
-	import IconClapperboard from '@lucide/svelte/icons/clapperboard';
-	import IconLeaf from '@lucide/svelte/icons/leaf';
-	import IconGamepad2 from '@lucide/svelte/icons/gamepad-2';
+	import IconMusic from '$lib/icons/lucide/eighth-notes.svelte';
+	import IconBook from '$lib/icons/lucide/book.svelte';
+	import IconCookingPot from '$lib/icons/lucide/cooking-pot.svelte';
+	import IconClapperboard from '$lib/icons/lucide/clapperboard.svelte';
+	import IconLeaf from '$lib/icons/lucide/leaf.svelte';
+	import IconGamepad2 from '$lib/icons/lucide/gamepad-2.svelte';
 	import type { LibraryConfig } from '$lib/types/library';
 
 	let { library }: { library: { config: LibraryConfig } } = $props();

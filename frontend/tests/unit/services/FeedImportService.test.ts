@@ -1,36 +1,16 @@
 import { describe, it, expect } from 'vitest';
 import FeedImportService from '$lib/services/FeedImportService';
-import type { FeedImportEntry, FeedImportState } from '$lib/types/feed';
+import { feedImportEntry, feedImportState } from '../helpers/factories';
 
 const service = new FeedImportService();
 
-function entry(overrides: Partial<FeedImportEntry> = {}): FeedImportEntry {
-	return {
-		url: 'https://example.com/feed.xml',
-		title: 'Example',
-		already_subscribed: false,
-		status: null,
-		...overrides
-	};
-}
-
-function state(overrides: Partial<FeedImportState> = {}): FeedImportState {
-	return {
-		stage: 'parsed',
-		total: 0,
-		processed: 0,
-		feeds: [],
-		...overrides
-	};
-}
-
 describe('initialSelection', () => {
 	it('selects every feed except the ones already subscribed', () => {
-		const parsed = state({
+		const parsed = feedImportState({
 			feeds: [
-				entry({ url: 'https://a.test/feed' }),
-				entry({ url: 'https://b.test/feed', already_subscribed: true }),
-				entry({ url: 'https://c.test/feed' })
+				feedImportEntry({ url: 'https://a.test/feed' }),
+				feedImportEntry({ url: 'https://b.test/feed', already_subscribed: true }),
+				feedImportEntry({ url: 'https://c.test/feed' })
 			]
 		});
 
@@ -38,18 +18,18 @@ describe('initialSelection', () => {
 	});
 
 	it('is empty when every feed is already subscribed', () => {
-		const parsed = state({ feeds: [entry({ already_subscribed: true })] });
+		const parsed = feedImportState({ feeds: [feedImportEntry({ already_subscribed: true })] });
 
 		expect(service.initialSelection(parsed)).toEqual([]);
 	});
 });
 
 describe('allSelected and toggleAll', () => {
-	const parsed = state({
+	const parsed = feedImportState({
 		feeds: [
-			entry({ url: 'https://a.test/feed' }),
-			entry({ url: 'https://b.test/feed', already_subscribed: true }),
-			entry({ url: 'https://c.test/feed' })
+			feedImportEntry({ url: 'https://a.test/feed' }),
+			feedImportEntry({ url: 'https://b.test/feed', already_subscribed: true }),
+			feedImportEntry({ url: 'https://c.test/feed' })
 		]
 	});
 
@@ -82,16 +62,16 @@ describe('toggle', () => {
 
 describe('group', () => {
 	it('puts each status in its group and keeps the reason for failures', () => {
-		const finished = state({
+		const finished = feedImportState({
 			stage: 'finished',
 			total: 5,
 			processed: 5,
 			feeds: [
-				entry({ url: 'https://a.test/feed', title: 'A', status: 'subscribed' }),
-				entry({ url: 'https://b.test/feed', title: 'B', status: 'already_subscribed' }),
-				entry({ url: 'https://c.test/feed', title: 'C', status: 'unreachable' }),
-				entry({ url: 'https://d.test/feed', title: 'D', status: 'not_a_feed' }),
-				entry({ url: 'https://e.test/feed', title: 'E', status: 'limit_reached' })
+				feedImportEntry({ url: 'https://a.test/feed', title: 'A', status: 'subscribed' }),
+				feedImportEntry({ url: 'https://b.test/feed', title: 'B', status: 'already_subscribed' }),
+				feedImportEntry({ url: 'https://c.test/feed', title: 'C', status: 'unreachable' }),
+				feedImportEntry({ url: 'https://d.test/feed', title: 'D', status: 'not_a_feed' }),
+				feedImportEntry({ url: 'https://e.test/feed', title: 'E', status: 'limit_reached' })
 			]
 		});
 
@@ -107,9 +87,9 @@ describe('group', () => {
 	});
 
 	it('leaves pending and unprocessed entries out of every group', () => {
-		const running = state({
+		const running = feedImportState({
 			stage: 'running',
-			feeds: [entry({ status: 'pending' }), entry({ status: null })]
+			feeds: [feedImportEntry({ status: 'pending' }), feedImportEntry({ status: null })]
 		});
 
 		expect(service.group(running)).toEqual({ added: [], alreadySubscribed: [], failed: [] });
@@ -118,10 +98,10 @@ describe('group', () => {
 
 describe('progress', () => {
 	it('is processed divided by total', () => {
-		expect(service.progress(state({ total: 4, processed: 1 }))).toBe(0.25);
+		expect(service.progress(feedImportState({ total: 4, processed: 1 }))).toBe(0.25);
 	});
 
 	it('is 0 when total is 0', () => {
-		expect(service.progress(state({ total: 0, processed: 0 }))).toBe(0);
+		expect(service.progress(feedImportState({ total: 0, processed: 0 }))).toBe(0);
 	});
 });

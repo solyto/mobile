@@ -3,6 +3,7 @@
 	import { getTags } from '$lib/state/Tags.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
+	import { createdEntryValue, tagEntries } from '$lib/helpers/MultiSelectHelper';
 
 	const ts = getTranslation();
 	const tags = getTags();
@@ -13,18 +14,9 @@
 		onchange?: (value: MultiSelectEntry[]) => void;
 	} = $props();
 
-	function tagOptions(): MultiSelectEntry[] {
-		return tags.tags.map((tag) => ({ label: tag.name, value: tag.id.toString() }));
-	}
-
-	async function onCreateTag(label: string): Promise<string | null> {
-		const created = await tags.create(label);
-		if (!created) {
-			notifications.error(ts.get.finances.tag_error);
-			return null;
-		}
-		return created.id.toString();
+	function onCreateTag(label: string): Promise<string | null> {
+		return createdEntryValue(tags.create(label), () => notifications.error(ts.get.finances.tag_error));
 	}
 </script>
 
-<MultiSelect bind:value options={tagOptions()} placeholder={ts.get.finances.tags} allowUserOptions oncreate={onCreateTag} {onchange} />
+<MultiSelect bind:value options={tagEntries(tags.tags)} placeholder={ts.get.finances.tags} allowUserOptions oncreate={onCreateTag} {onchange} />

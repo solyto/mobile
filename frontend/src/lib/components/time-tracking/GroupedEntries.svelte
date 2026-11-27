@@ -1,41 +1,38 @@
 <script lang="ts">
 	import { fade } from 'svelte/transition';
+	import { formatDuration } from '$lib/helpers/TimeTrackingHelper';
 	import { getTimeTracking } from '$lib/state/TimeTracking.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { getAuth } from '$lib/state/Auth.svelte';
 	import EntryCreate from '$lib/components/time-tracking/EntryCreate.svelte';
 	import Entry from '$lib/components/time-tracking/Entry.svelte';
+	import TimeTrackingGroupingService from '$lib/services/TimeTrackingGroupingService';
 	import type { TimeTrackingEntry } from '$lib/types/time_tracking';
 
 	const tt = getTimeTracking();
 	const ts = getTranslation();
 	const auth = getAuth();
+	const groupingService = new TimeTrackingGroupingService();
 
 	let editingEntry = $state<TimeTrackingEntry | null>(null);
 
-	let groupedEntries = $derived(groupByDate(tt.entries.filter((e) => e.stopped_at !== null)));
+	let groupedEntries = $derived(groupingService.groupByDay(tt.entries.filter((e) => e.stopped_at !== null), dayLabel));
 
-	function groupByDate(
-		entries: TimeTrackingEntry[]
-	): { date: string; entries: TimeTrackingEntry[] }[] {
-		const groups: Record<string, TimeTrackingEntry[]> = {};
-
-		for (const entry of entries) {
-			const date = auth.getDateWithWeekdayInUserPreferredFormat(entry.started_at);
-			if (!groups[date]) groups[date] = [];
-			groups[date].push(entry);
-		}
-
-		return Object.entries(groups).map(([date, entries]) => ({ date, entries }));
+	function dayLabel(startedAt: string): string {
+		return auth.getDateWithWeekdayInUserPreferredFormat(startedAt);
 	}
 
 	function totalMinutes(entries: TimeTrackingEntry[]): number {
 		return entries.reduce((sum, entry) => sum + entry.duration_minutes, 0);
 	}
+
+	function closeEdit(): void {
+		editingEntry = null;
+	}
 </script>
 
 {#if editingEntry}
-	<EntryCreate entry={editingEntry} onClose={() => (editingEntry = null)} />
+	<EntryCreate entry={editingEntry} onClose={closeEdit} />
 {/if}
 
 {#if groupedEntries.length === 0}
@@ -49,17 +46,11 @@
 						{group.date}
 					</span>
 					<div class="h-px flex-1 bg-c-neutral-2 dark:bg-s-dark-3"></div>
-					<span class="text-sm tabular-nums text-c-neutral-5 dark:text-c-neutral-4">{tt.formatDuration(totalMinutes(group.entries))}</span>
+					<span class="text-sm tabular-nums text-c-neutral-5 dark:text-c-neutral-4">{formatDuration(totalMinutes(group.entries))}</span>
 				</div>
 				<div class="flex flex-col divide-y">
 					{#each group.entries as entry (entry.id)}
-						<Entry
-							{entry}
-							showProject
-							showEdit
-							showDelete
-							onEdit={(e) => (editingEntry = e)}
-						/>
+						<Entry {entry} showProject showEdit showDelete onEdit={(e) => (editingEntry = e)} />
 					{/each}
 				</div>
 			</div>

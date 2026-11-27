@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onDestroy } from 'svelte';
 	import { fade } from 'svelte/transition';
 	import { getAuth } from '$lib/state/Auth.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
@@ -7,6 +7,10 @@
 	import { PLATFORM } from '$lib/config/platform';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
 	import TextInput from '$lib/components/forms/TextInput.svelte';
+	import ResendButton from '$lib/components/auth/ResendButton.svelte';
+	import { Cooldown } from '$lib/helpers/Cooldown.svelte';
+
+	const RESEND_COOLDOWN_SECONDS = 60;
 
 	let { title, hint }: { title?: string; hint: string } = $props();
 
@@ -17,14 +21,9 @@
 	let email = $state<string>('');
 	let emailError = $state<boolean>(false);
 	let sent = $state<boolean>(false);
-	let resendCooldown = $state<number>(0);
-	let resendTimer: ReturnType<typeof setInterval> | null = null;
+	const cooldown = new Cooldown(RESEND_COOLDOWN_SECONDS);
 
-	onMount(() => {
-		return () => {
-			if (resendTimer) clearInterval(resendTimer);
-		};
-	});
+	onDestroy(() => cooldown.destroy());
 
 	async function send(): Promise<void> {
 		loadingIndicator.start();
@@ -34,7 +33,7 @@
 			loadingIndicator.stop();
 		}
 		sent = true;
-		startCooldown();
+		cooldown.start();
 	}
 
 	async function onsubmit(e: SubmitEvent): Promise<void> {
@@ -44,19 +43,8 @@
 		await send();
 	}
 
-	function startCooldown(): void {
-		resendCooldown = 60;
-		resendTimer = setInterval(() => {
-			resendCooldown--;
-			if (resendCooldown <= 0 && resendTimer) {
-				clearInterval(resendTimer);
-				resendTimer = null;
-			}
-		}, 1000);
-	}
-
 	async function resend(): Promise<void> {
-		if (resendCooldown > 0) return;
+		if (cooldown.active) return;
 		await send();
 	}
 </script>
@@ -67,15 +55,7 @@
 			<p class="text-base font-bold dark:text-white">{ts.get.auth.forgot_password_sent_title}</p>
 			<p class="mt-1 text-sm dark:text-white/70">{ts.get.auth.resend_verification_sent_desc}</p>
 		</div>
-		<button
-			type="button"
-			class="mt-2 text-xs text-s-primary disabled:opacity-40"
-			disabled={resendCooldown > 0}
-			onclick={resend}
-		>
-			{ts.get.auth.forgot_password_resend}
-			{#if resendCooldown > 0}({resendCooldown}s){/if}
-		</button>
+		<ResendButton {cooldown} onclick={resend} />
 	</div>
 {:else}
 	<form class="flex flex-col gap-4" {onsubmit}>

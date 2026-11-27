@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { DevRequest, DevRequestStatus } from '$lib/types/dev_request';
 	import { getTranslation } from '$lib/state/Translation.svelte';
+	import { devRequestStatusLabels } from '$lib/helpers/DevRequestHelper';
 
 	let { entry }: { entry: DevRequest } = $props();
 
@@ -11,24 +12,17 @@
 		pending: 'bg-c-action',
 		'in-progress': 'bg-c-btn-hover',
 		'waiting-for-deployment': 'bg-c-warning',
+		'waiting-for-user': 'bg-c-primary',
 		completed: 'bg-c-success',
 		cancelled: 'bg-c-danger'
 	};
 
-	function getLabel(status: DevRequestStatus): string {
-		const labels: Record<DevRequestStatus, string> = {
-			backlog: ts.get.dev.requests.status_backlog,
-			pending: ts.get.dev.requests.status_pending,
-			'in-progress': ts.get.dev.requests.status_in_progress,
-			'waiting-for-deployment': ts.get.dev.requests.status_waiting_for_deployment,
-			completed: ts.get.dev.requests.status_completed,
-			cancelled: ts.get.dev.requests.status_cancelled
-		};
-		return labels[status];
+	function label(): string {
+		return devRequestStatusLabels(ts.get.dev.requests)[entry.status];
 	}
 </script>
 
 <span class="flex items-center gap-1.5 text-sm md:whitespace-nowrap 2xl:gap-2">
 	<span class="size-2 shrink-0 rounded-full {DOT_COLORS[entry.status]}"></span>
-	{getLabel(entry.status)}
+	{label()}
 </span>

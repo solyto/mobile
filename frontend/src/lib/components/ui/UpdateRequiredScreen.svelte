@@ -14,9 +14,8 @@
 		return ts.get.update_required.instruction_web;
 	}
 
-	// The service worker serves cached pages first, so a plain reload can bring
-	// back the old build; fetching the new worker first replaces its cache.
-	// The update fails when offline, which must not stop the reload.
+	// The service worker serves cached pages first, so the new worker is fetched before reloading to
+	// replace its cache; offline, that update fails, which must not stop the reload.
 	async function reloadLatestVersion(): Promise<void> {
 		try {
 			const registration = await navigator.serviceWorker?.getRegistration();

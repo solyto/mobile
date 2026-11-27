@@ -1,5 +1,6 @@
 <script lang="ts">
-	import IconTrash from '@lucide/svelte/icons/trash-2';
+	import IconTrash from '$lib/icons/lucide/trash.svelte';
+	import FillOnHoverButton from '$lib/components/ui/buttons/FillOnHoverButton.svelte';
 
 	let {
 		onClick,
@@ -17,16 +18,7 @@
 </script>
 
 {#if buttonStyle === 'fill-on-hover'}
-	<button
-		type="button"
-		class="group relative flex size-[34px] cursor-pointer items-center justify-center rounded-full text-c-neutral-3"
-		onclick={onClick}
-		{title}
-		aria-label={title || undefined}
-	>
-		<span class="absolute h-0 w-0 rounded-full bg-c-danger transition-all group-hover:h-full group-hover:w-full group-focus-visible:h-full group-focus-visible:w-full"></span>
-		<IconTrash class="relative {iconClass} transition-colors group-hover:text-white group-focus-visible:text-white" />
-	</button>
+	<FillOnHoverButton {onClick} {title} icon={IconTrash} fill="bg-c-danger" {iconClass} />
 {:else}
 	<button
 		class="z-40 flex cursor-pointer items-center justify-center rounded-full drop-shadow-md transition-all hover:drop-shadow-xl"

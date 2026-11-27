@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onDestroy, tick } from 'svelte';
-	import IconPen from '@lucide/svelte/icons/pen';
+	import IconPen from '$lib/icons/lucide/pen.svelte';
 	import { getKeyManager } from '$lib/state/KeyManager.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import TextInput from '$lib/components/forms/TextInput.svelte';

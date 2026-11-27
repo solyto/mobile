@@ -32,9 +32,12 @@
 		if (!todos.editingTodo) return;
 
 		loadingIndicator.start();
-		await todos.delete(todos.editingTodo);
-		notifications.success(ts.get.todos.delete_success);
-		loadingIndicator.stop();
+		try {
+			await todos.delete(todos.editingTodo);
+			notifications.success(ts.get.todos.delete_success);
+		} finally {
+			loadingIndicator.stop();
+		}
 		deleteConfirmOpen = false;
 		todos.closeEdit();
 	}
@@ -50,21 +53,31 @@
 		confetti(createConfettiOptions({ x, y }, 'default'));
 
 		loadingIndicator.start();
-		await todos.changeCompleted(todos.editingTodo, true);
-		todos.editingTodo.is_completed = true;
-		loadingIndicator.stop();
+		try {
+			await todos.changeCompleted(todos.editingTodo, true);
+			todos.editingTodo.is_completed = true;
+		} finally {
+			loadingIndicator.stop();
+		}
 		todos.closeEdit();
+	}
+
+	function closeEdit(): void {
+		todos.closeEdit();
+	}
+
+	function askDelete(): void {
+		deleteConfirmOpen = true;
+	}
+
+	function cancelDelete(): void {
+		deleteConfirmOpen = false;
 	}
 </script>
 
 {#if todos.editingTodo}
 	{@const todo = todos.editingTodo}
-	<ContentModal
-		onClose={() => todos.closeEdit()}
-		{onComplete}
-		onDelete={() => (deleteConfirmOpen = true)}
-		rounded="2xl"
-	>
+	<ContentModal onClose={closeEdit} {onComplete} onDelete={askDelete} rounded="2xl">
 		<div class="flex w-full flex-col gap-4">
 			<div class="w-full">
 				<Title {todo} />
@@ -112,7 +125,7 @@
 			description={ts.get.todos.delete_confirm_message}
 			type="confirm-delete"
 			onConfirm={onDeleteConfirm}
-			onCancel={() => (deleteConfirmOpen = false)}
+			onCancel={cancelDelete}
 		/>
 	{/if}
 {/if}

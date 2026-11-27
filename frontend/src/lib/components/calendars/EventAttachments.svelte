@@ -8,9 +8,9 @@
 	import InputAutocomplete from '$lib/components/forms/InputAutocomplete.svelte';
 	import QuickSelectOverlay from '$lib/components/ui/QuickSelectOverlay.svelte';
 	import TodoEntry from '$lib/components/calendars/TodoEntry.svelte';
-	import IconPlus from '@lucide/svelte/icons/plus';
-	import IconX from '@lucide/svelte/icons/x';
-	import IconNotebook from '@lucide/svelte/icons/notebook';
+	import IconPlus from '$lib/icons/lucide/plus.svelte';
+	import IconX from '$lib/icons/lucide/x.svelte';
+	import IconNotebook from '$lib/icons/lucide/notebook.svelte';
 	import { urls } from '$lib/config/urls';
 	import type { Todo } from '$lib/types/todo';
 	import type { Note } from '$lib/types/note';

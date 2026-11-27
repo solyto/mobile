@@ -10,6 +10,7 @@
 	import DeleteButton from '$lib/components/ui/buttons/DeleteButton.svelte';
 	import MovableHoverBox from '$lib/components/ui/MovableHoverBox.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
+	import { HoverExplanation } from '$lib/helpers/HoverExplanation.svelte';
 
 	const loadingIndicator = getLoadingIndicator();
 	const keyManager = getKeyManager();
@@ -26,9 +27,7 @@
 	let titleInput = $state<HTMLInputElement | null>(null);
 	let titleValue = $state<string>(subtask.title);
 	let keyHandlers: { [key: string]: string | null } = { Enter: null, Escape: null };
-	let showExplanationBox = $state<boolean>(false);
-	let explanationBoxX = $state<number>(0);
-	let explanationBoxY = $state<number>(0);
+	const explanation = new HoverExplanation();
 
 	async function toggleChangeTitle(): Promise<void> {
 		changeTitle = !changeTitle;
@@ -59,38 +58,35 @@
 	}
 
 	async function onsubmit(): Promise<void> {
-		loadingIndicator.start();
 		keyManager.unregisterAll(keyHandlers);
-		let subtaskTitle = titleValue.trim();
+		const subtaskTitle = titleValue.trim();
+		if (subtaskTitle === '') return;
 
-		if (subtaskTitle === '') {
-			return;
+		loadingIndicator.start();
+		try {
+			await todos.changeSubtaskTitle(todo, subtask, subtaskTitle);
+		} finally {
+			loadingIndicator.stop();
 		}
-
-		await todos.changeSubtaskTitle(todo, subtask, subtaskTitle);
-		loadingIndicator.stop();
 	}
 
 	async function onDelete(): Promise<void> {
 		loadingIndicator.start();
-		await todos.deleteSubtask(todo, subtask);
-		keyManager.unregisterAll(keyHandlers);
-		loadingIndicator.stop();
+		try {
+			await todos.deleteSubtask(todo, subtask);
+			keyManager.unregisterAll(keyHandlers);
+		} finally {
+			loadingIndicator.stop();
+		}
 	}
 
-	function setExplanationBoxPosition(e: MouseEvent) {
-		explanationBoxX = e.clientX;
-		explanationBoxY = e.clientY;
+	function toggleCompleted(event: Event): void {
+		handleCheckboxClick(subtask);
 	}
 </script>
 
 <div class="flex items-center gap-2" transition:fade>
-	<Checkbox
-		isChecked={subtask.is_completed}
-		onchange={() => {
-			handleCheckboxClick(subtask);
-		}}
-	/>
+	<Checkbox isChecked={subtask.is_completed} onchange={toggleCompleted} />
 	<div class="min-w-0 flex-1">
 		{#if changeTitle}
 			<TextInput bind:input={titleInput} bind:value={titleValue} {onblur} />
@@ -99,19 +95,15 @@
 				role="button"
 				tabindex="0"
 				ondblclick={toggleChangeTitle}
-				onmouseover={() => (showExplanationBox = true)}
-				onmouseout={() => (showExplanationBox = false)}
-				onfocus={() => (showExplanationBox = true)}
-				onblur={() => (showExplanationBox = false)}
-				onmousemove={(e) => setExplanationBoxPosition(e)}
+				{...explanation.handlers}
 			>
 				{subtask.title}
 			</div>
 			<MovableHoverBox
 				content={ts.get.layout.double_click_to_edit}
-				show={showExplanationBox}
-				x={explanationBoxX}
-				y={explanationBoxY}
+				show={explanation.visible}
+				x={explanation.x}
+				y={explanation.y}
 			/>
 		{/if}
 	</div>

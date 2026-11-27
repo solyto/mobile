@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { getTranslation } from '$lib/state/Translation.svelte';
-	import Check from '@lucide/svelte/icons/check';
-	import X from '@lucide/svelte/icons/x';
+	import Check from '$lib/icons/lucide/check.svelte';
+	import X from '$lib/icons/lucide/x.svelte';
 
 	let { password }: { password: string } = $props();
 

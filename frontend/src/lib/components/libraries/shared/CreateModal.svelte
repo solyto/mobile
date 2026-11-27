@@ -31,9 +31,49 @@
 		selectedRating?: number | null;
 		isWishlist?: boolean;
 	} = $props();
+
+	let failedCover = $state<string | null>(null);
+
+	function closeModal(): void {
+		library.closeCreateModal();
+	}
+
+	function removeCover(event: MouseEvent): void {
+		event.stopPropagation();
+		onCoverRemove?.();
+	}
+
+	function setRating(rating: number): void {
+		selectedRating = rating;
+	}
+
+	function toggleWishlist(): void {
+		isWishlist = !isWishlist;
+	}
 </script>
 
-<ContentModal rounded="2xl" p="8" onClose={() => library.closeCreateModal()} {title} forcePopup={!library.config.hasSmallForm} showTitleOnMobile={!library.config.hasCovers}>
+{#snippet uploadOverlay()}
+	<div class="absolute inset-0 flex items-center justify-center rounded-lg bg-black/0 transition-all group-hover:bg-black/30">
+		<svg class="size-8 text-white opacity-0 transition-opacity group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+		</svg>
+	</div>
+{/snippet}
+
+{#snippet removeCoverButton()}
+	<button
+		type="button"
+		aria-label={ts.get.libraries.remove_cover}
+		onclick={removeCover}
+		class="absolute right-1 top-1 flex size-6 items-center justify-center rounded-full bg-black/50 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/70"
+	>
+		<svg class="size-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+		</svg>
+	</button>
+{/snippet}
+
+<ContentModal rounded="2xl" p="8" onClose={closeModal} {title} forcePopup={!library.config.hasSmallForm} showTitleOnMobile={!library.config.hasCovers}>
 	<div class="flex flex-col gap-8 overflow-x-hidden md:flex-row">
 		{#if library.config.hasCovers || library.config.hasRatings || library.config.hasWishlist}
 			<div class="flex flex-col items-center gap-2">
@@ -46,30 +86,22 @@
 								onclick={onCoverClick}
 								class="group relative flex size-48 items-center justify-center rounded-lg bg-c-neutral-2 dark:bg-c-neutral-5 {onCoverClick ? 'cursor-pointer' : 'cursor-default'}"
 							>
-								<img
-									src={existingCover}
-									alt="Cover"
-									class="max-h-full max-w-full rounded-lg object-contain"
-									in:fade={{ duration: 200 }}
-								/>
+								{#if failedCover === existingCover}
+									<MissingCover {library} />
+								{:else}
+									<img
+										src={existingCover}
+										alt={ts.get.libraries.cover}
+										class="max-h-full max-w-full rounded-lg object-contain"
+										in:fade={{ duration: 200 }}
+										onerror={() => (failedCover = existingCover ?? null)}
+									/>
+								{/if}
 								{#if onCoverClick}
-									<div class="absolute inset-0 flex items-center justify-center rounded-lg bg-black/0 transition-all group-hover:bg-black/30">
-										<svg class="size-8 text-white opacity-0 transition-opacity group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-										</svg>
-									</div>
+									{@render uploadOverlay()}
 								{/if}
 								{#if onCoverRemove}
-									<button
-										type="button"
-										aria-label="Remove cover"
-										onclick={(e) => { e.stopPropagation(); onCoverRemove!(); }}
-										class="absolute right-1 top-1 flex size-6 items-center justify-center rounded-full bg-black/50 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/70"
-									>
-										<svg class="size-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
-										</svg>
-									</button>
+									{@render removeCoverButton()}
 								{/if}
 							</div>
 						{:else if newCover}
@@ -81,28 +113,15 @@
 							>
 								<img
 									src={newCover}
-									alt="cover"
+									alt={ts.get.libraries.cover}
 									class="max-h-full max-w-full rounded-lg object-contain"
 									transition:fade={{ duration: 200 }}
 								/>
 								{#if onCoverClick}
-									<div class="absolute inset-0 flex items-center justify-center rounded-lg bg-black/0 transition-all group-hover:bg-black/30">
-										<svg class="size-8 text-white opacity-0 transition-opacity group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-										</svg>
-									</div>
+									{@render uploadOverlay()}
 								{/if}
 								{#if onCoverRemove}
-									<button
-										type="button"
-										aria-label="Remove cover"
-										onclick={(e) => { e.stopPropagation(); onCoverRemove!(); }}
-										class="absolute right-1 top-1 flex size-6 items-center justify-center rounded-full bg-black/50 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/70"
-									>
-										<svg class="size-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
-										</svg>
-									</button>
+									{@render removeCoverButton()}
 								{/if}
 							</div>
 						{:else}
@@ -124,22 +143,12 @@
 					</div>
 				{/if}
 				{#if library.config.hasRatings}
-					<Rating
-						startRating={selectedRating ?? 0}
-						onchange={(rating: number) => {
-							selectedRating = rating;
-						}}
-					/>
+					<Rating startRating={selectedRating ?? 0} onchange={setRating} />
 				{/if}
 				{#if library.config.hasWishlist}
 					<div class="mt-4 flex w-8/10 flex-row items-center gap-2">
 						<span class="w-48 text-sm font-bold">{ts.get.libraries.wishlist}</span>
-						<Checkbox
-							isChecked={isWishlist}
-							onchange={() => {
-								isWishlist = !isWishlist;
-							}}
-						/>
+						<Checkbox isChecked={isWishlist} onchange={toggleWishlist} />
 					</div>
 				{/if}
 			</div>

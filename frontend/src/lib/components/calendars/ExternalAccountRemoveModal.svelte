@@ -14,7 +14,7 @@
 		const account = externalCalendars.removal;
 		if (!account) return;
 
-		externalCalendars.removal = null;
+		externalCalendars.cancelRemoval();
 		loadingIndicator.start();
 		const ok = await externalCalendars.deleteAccount(account);
 		loadingIndicator.stop();
@@ -33,6 +33,6 @@
 		description={ts.get.calendar.account_remove_description}
 		type="confirm-delete"
 		onConfirm={remove}
-		onCancel={() => (externalCalendars.removal = null)}
+		onCancel={() => externalCalendars.cancelRemoval()}
 	/>
 {/if}

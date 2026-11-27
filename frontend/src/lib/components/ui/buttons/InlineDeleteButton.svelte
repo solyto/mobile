@@ -1,5 +1,6 @@
 <script lang="ts">
-	import IconTrash from '@lucide/svelte/icons/trash-2';
+	import IconTrash from '$lib/icons/lucide/trash.svelte';
+	import InlineActionButton from '$lib/components/ui/buttons/InlineActionButton.svelte';
 
 	let { onClick, label = null, class: customClass = '' }: {
 		onClick: (e: MouseEvent) => void | Promise<void>;
@@ -8,17 +9,4 @@
 	} = $props();
 </script>
 
-<div
-	class="group relative z-40 flex size-[34px] cursor-pointer items-center justify-center rounded-full border-c-neutral-3 text-c-danger drop-shadow-md transition-all hover:drop-shadow-xl {customClass}"
->
-	<button
-		type="button"
-		aria-label={label ?? undefined}
-		title={label ?? undefined}
-		class="absolute inset-0 flex cursor-pointer items-center justify-center rounded-full bg-c-danger text-white opacity-0 transition-all group-hover:opacity-100 focus-visible:opacity-100 hover:shadow-sm"
-		onclick={onClick}
-	>
-		<IconTrash class="size-5" />
-	</button>
-	<IconTrash class="size-5" />
-</div>
+<InlineActionButton {onClick} {label} icon={IconTrash} color="text-c-danger" fill="bg-c-danger" class={customClass} />

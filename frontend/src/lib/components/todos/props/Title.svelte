@@ -7,6 +7,7 @@
 	import MovableHoverBox from '$lib/components/ui/MovableHoverBox.svelte';
 	import TextInput from '$lib/components/forms/TextInput.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
+	import { HoverExplanation } from '$lib/helpers/HoverExplanation.svelte';
 
 	const todos = getTodos();
 	const loadingIndicator = getLoadingIndicator();
@@ -19,13 +20,11 @@
 	let titleInput = $state<HTMLInputElement | null>(null);
 	let titleValue = $state<string>(todo.title);
 	let keyHandlers: { [key: string]: string | null } = { Enter: null, Escape: null };
-	let showExplanationBox = $state<boolean>(false);
-	let explanationBoxX = $state<number>(0);
-	let explanationBoxY = $state<number>(0);
+	const explanation = new HoverExplanation();
 
 	async function toggleChangeTitle(): Promise<void> {
 		changeTitle = !changeTitle;
-		showExplanationBox = false;
+		explanation.hide();
 
 		if (changeTitle) {
 			await tick();
@@ -53,21 +52,16 @@
 	}
 
 	async function onsubmit(): Promise<void> {
-		loadingIndicator.start();
 		keyManager.unregisterKeyDown(keyHandlers.Enter);
-		let todoTitle = titleValue.trim();
+		const todoTitle = titleValue.trim();
+		if (todoTitle === '') return;
 
-		if (todoTitle === '') {
-			return;
+		loadingIndicator.start();
+		try {
+			await todos.changeTitle(todo, todoTitle);
+		} finally {
+			loadingIndicator.stop();
 		}
-
-		await todos.changeTitle(todo, todoTitle);
-		loadingIndicator.stop();
-	}
-
-	function setExplanationBoxPosition(e: MouseEvent) {
-		explanationBoxX = e.clientX;
-		explanationBoxY = e.clientY;
 	}
 </script>
 
@@ -81,18 +75,14 @@
 		role="button"
 		tabindex="0"
 		ondblclick={toggleChangeTitle}
-		onmouseover={() => (showExplanationBox = true)}
-		onmouseout={() => (showExplanationBox = false)}
-		onfocus={() => (showExplanationBox = true)}
-		onblur={() => (showExplanationBox = false)}
-		onmousemove={(e) => setExplanationBoxPosition(e)}
+		{...explanation.handlers}
 	>
 		{todo.title}
 	</span>
 	<MovableHoverBox
 		content={ts.get.layout.double_click_to_edit}
-		show={showExplanationBox}
-		x={explanationBoxX}
-		y={explanationBoxY}
+		show={explanation.visible}
+		x={explanation.x}
+		y={explanation.y}
 	/>
 {/if}

@@ -17,6 +17,7 @@ import {
 	getISODateInfo,
 	getCalendarMonth,
 	getCalendarWeek,
+	getCalendarWeeks,
 	getISOWeek,
 	getWeekNumberOfWeek,
 	getWeekdayOrder
@@ -350,5 +351,21 @@ describe('getWeekdayOrder', () => {
 
 	it('lists ISO weekdays from Sunday to Saturday', () => {
 		expect(getWeekdayOrder('sunday')).toEqual([7, 1, 2, 3, 4, 5, 6]);
+	});
+});
+
+describe('getCalendarWeeks', () => {
+	const firstDays = (weeks: { date: Date }[][]) => weeks.map((week) => getUrlFormat(week[0].date));
+
+	it('keeps the six weeks November 2026 touches, starting on Monday', () => {
+		expect(firstDays(getCalendarWeeks(2026, 10, 'monday'))).toEqual(['2026-10-26', '2026-11-02', '2026-11-09', '2026-11-16', '2026-11-23', '2026-11-30']);
+	});
+
+	it('keeps exactly four weeks for February 2027, which starts on a Monday', () => {
+		expect(firstDays(getCalendarWeeks(2027, 1, 'monday'))).toEqual(['2027-02-01', '2027-02-08', '2027-02-15', '2027-02-22']);
+	});
+
+	it('starts the weeks on Sunday when the user does', () => {
+		expect(firstDays(getCalendarWeeks(2026, 10, 'sunday'))).toEqual(['2026-11-01', '2026-11-08', '2026-11-15', '2026-11-22', '2026-11-29']);
 	});
 });

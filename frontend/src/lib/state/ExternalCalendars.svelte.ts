@@ -26,6 +26,7 @@ export class ExternalCalendars {
 	apiService: ApiService;
 	calendars: Calendars;
 	service = new ExternalCalendarService();
+	// A reply that arrives after its dialog was closed or replaced must leave the current dialog alone.
 	private dialogGeneration = 0;
 
 	constructor(
@@ -68,7 +69,7 @@ export class ExternalCalendars {
 			apiRoutes.calendars.externalAccounts.update.replace('%d', account.id.toString()),
 			request
 		));
-		if (result.ok) await Promise.all([this.load(), this.calendars.loadCalendars(), this.calendars.loadEvents()]);
+		if (result.ok) await this.reloadAccountsAndCalendars();
 		return result;
 	}
 
@@ -104,6 +105,14 @@ export class ExternalCalendars {
 		if (account) this.openDialog({ step: 'credentials', account });
 	}
 
+	askToRemove(account: ExternalCalendarAccount): void {
+		this.removal = account;
+	}
+
+	cancelRemoval(): void {
+		this.removal = null;
+	}
+
 	openDialog(dialog: ExternalAccountDialog): void {
 		this.dialogGeneration++;
 		this.dialog = dialog;
@@ -134,8 +143,12 @@ export class ExternalCalendars {
 	}
 
 	private async refreshAfterCalendarChange(): Promise<void> {
-		await Promise.all([this.load(), this.calendars.loadCalendars(), this.calendars.loadEvents()]);
+		await this.reloadAccountsAndCalendars();
 		this.auth.widgetBridge.notifyChanged();
+	}
+
+	private async reloadAccountsAndCalendars(): Promise<void> {
+		await Promise.all([this.load(), this.calendars.loadCalendars(), this.calendars.loadEvents()]);
 	}
 }
 

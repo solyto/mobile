@@ -1,0 +1,28 @@
+<!--
+@lucide/svelte v1.59.0 - ISC
+
+This source code is licensed under the ISC license.
+See the LICENSE file in this directory.
+-->
+<script lang="ts">
+	import Icon from './Icon.svelte';
+	import type { LucideIconData, LucideProps } from './types';
+
+	const props: LucideProps = $props();
+
+	const iconData: LucideIconData = {
+		name: 'printer-3d',
+		size: 24,
+		node: [
+			['path', { d: 'M10 11v1' }],
+			['path', { d: 'M12 8h8' }],
+			['path', { d: 'M15 20v-3a1 1 0 00-1-1H9a1 1 0 00-1 1v3' }],
+			['path', { d: 'M4 20h16' }],
+			['path', { d: 'M4 22V4a2 2 0 012-2h12a2 2 0 012 2v18' }],
+			['path', { d: 'M4 8h4' }],
+			['path', { d: 'M8.635 10.093A2 2 0 018 8.631V7a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-.293.707l-1 1a1 1 0 01-1.414 0z' }]
+		]
+	};
+</script>
+
+<Icon {...props} icon={iconData} />

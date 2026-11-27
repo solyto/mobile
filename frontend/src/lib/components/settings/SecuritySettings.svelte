@@ -1,9 +1,10 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import { startRegistration, type RegistrationResponseJSON } from '@simplewebauthn/browser';
 	import { getAuth } from '$lib/state/Auth.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
+	import { getKeyManager } from '$lib/state/KeyManager.svelte';
 	import SettingsSection from '$lib/components/settings/SettingsSection.svelte';
 	import PasswordSettings from '$lib/components/settings/PasswordSettings.svelte';
 	import AccountDeletionSettings from '$lib/components/settings/AccountDeletionSettings.svelte';
@@ -12,15 +13,16 @@
 	import IconButton from '$lib/components/ui/buttons/IconButton.svelte';
 	import ConfirmationModal from '$lib/components/ui/ConfirmationModal.svelte';
 	import type { Passkey } from '$lib/types/auth';
-	import IconKey from '@lucide/svelte/icons/key';
-	import IconTrash2 from '@lucide/svelte/icons/trash-2';
-	import IconCheck from '@lucide/svelte/icons/check';
-	import IconPencil from '@lucide/svelte/icons/pencil';
-	import IconX from '@lucide/svelte/icons/x';
+	import IconKey from '$lib/icons/lucide/key.svelte';
+	import IconTrash2 from '$lib/icons/lucide/trash.svelte';
+	import IconCheck from '$lib/icons/lucide/check.svelte';
+	import IconPencil from '$lib/icons/lucide/pencil.svelte';
+	import IconX from '$lib/icons/lucide/x.svelte';
 
 	const auth = getAuth();
 	const ts = getTranslation();
 	const notifications = getUiNotifications();
+	const keyManager = getKeyManager();
 
 	let passkeys = $state<Passkey[]>([]);
 	let loading = $state(false);
@@ -31,6 +33,16 @@
 	let editingId = $state<string | null>(null);
 	let editingName = $state('');
 	let confirmDeletePasskey = $state<Passkey | null>(null);
+	let nameInput = $state<HTMLInputElement | HTMLTextAreaElement | null>(null);
+	let editInput = $state<HTMLInputElement | HTMLTextAreaElement | null>(null);
+
+	const FIELD_KEY_OPTIONS = { priority: 0, preventDefault: false, preventOthers: false } as const;
+	const keyHandlers: Record<string, string | null> = {
+		Enter: keyManager.registerKeyDown('Enter', onEnter, FIELD_KEY_OPTIONS),
+		Escape: keyManager.registerKeyDown('Escape', onEscape, FIELD_KEY_OPTIONS)
+	};
+
+	onDestroy(() => keyManager.unregisterAll(keyHandlers));
 
 	onMount(async () => {
 		await loadPasskeys();
@@ -84,9 +96,14 @@
 		newPasskeyName = '';
 	}
 
-	function onNameKeyDown(event: KeyboardEvent) {
-		if (event.key === 'Enter') confirmAddPasskey();
-		if (event.key === 'Escape') cancelAddPasskey();
+	function onEnter(event: KeyboardEvent): void {
+		if (event.target === nameInput) confirmAddPasskey();
+		if (event.target === editInput && editingId) saveEdit(editingId);
+	}
+
+	function onEscape(event: KeyboardEvent): void {
+		if (event.target === nameInput) cancelAddPasskey();
+		if (event.target === editInput) editingId = null;
 	}
 
 	async function deletePasskey() {
@@ -114,11 +131,6 @@
 		}
 	}
 
-	function onEditKeyDown(event: KeyboardEvent, id: string) {
-		if (event.key === 'Enter') saveEdit(id);
-		if (event.key === 'Escape') editingId = null;
-	}
-
 	function formatDate(dateStr: string | null): string {
 		if (!dateStr) return ts.get.settings.passkey_never_used;
 		return auth.getDateInUserPreferredFormat(dateStr);
@@ -135,8 +147,7 @@
 	}
 </script>
 
-<div class="flex flex-col gap-8">
-<div class="flex gap-8 max-lg:flex-col">
+<div class="grid grid-cols-1 items-start gap-8 lg:grid-cols-2 xl:grid-cols-3">
 <PasswordSettings />
 <SettingsSection label={ts.get.settings.passkeys}>
 	{#if loading}
@@ -152,7 +163,7 @@
 
 					{#if editingId === passkey.id}
 						<div class="min-w-0 flex-1">
-							<TextInput bind:value={editingName} onkeydown={(e: KeyboardEvent) => onEditKeyDown(e, passkey.id)} />
+							<TextInput bind:input={editInput} bind:value={editingName} />
 						</div>
 						<div class="flex shrink-0 items-center gap-1">
 							<IconButton type="btn" onclick={() => saveEdit(passkey.id)}>
@@ -187,9 +198,9 @@
 		<div class="mt-4 flex items-center gap-2">
 			<div class="flex-1">
 				<TextInput
+					bind:input={nameInput}
 					bind:value={newPasskeyName}
 					placeholder={ts.get.settings.passkey_name_placeholder}
-					onkeydown={onNameKeyDown}
 				/>
 			</div>
 			<IconButton type="btn" onclick={confirmAddPasskey}>
@@ -205,7 +216,6 @@
 		</div>
 	{/if}
 </SettingsSection>
-</div>
 <AccountDeletionSettings />
 </div>
 

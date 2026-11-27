@@ -22,9 +22,12 @@
 
 	async function onConfirm(): Promise<void> {
 		loadingIndicator.start();
-		await todos.delete(todo);
-		notifications.success(ts.get.todos.delete_success);
-		loadingIndicator.stop();
+		try {
+			await todos.delete(todo);
+			notifications.success(ts.get.todos.delete_success);
+		} finally {
+			loadingIndicator.stop();
+		}
 	}
 
 	function onCancel(): void {

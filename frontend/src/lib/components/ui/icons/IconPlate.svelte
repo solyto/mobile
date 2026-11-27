@@ -1,5 +1,5 @@
 <script lang="ts">
-	import IconPizza from '@lucide/svelte/icons/pizza';
+	import IconPizza from '$lib/icons/lucide/pizza.svelte';
 
 	let { fill }: { fill: 0 | 25 | 50 | 75 | 100 } = $props();
 </script>

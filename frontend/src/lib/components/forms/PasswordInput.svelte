@@ -1,8 +1,8 @@
 <script lang="ts">
 	import type { HTMLInputAttributes } from 'svelte/elements';
 	import { getTranslation } from '$lib/state/Translation.svelte';
-	import Eye from '@lucide/svelte/icons/eye';
-	import EyeOff from '@lucide/svelte/icons/eye-off';
+	import Eye from '$lib/icons/lucide/eye.svelte';
+	import EyeOff from '$lib/icons/lucide/eye-off.svelte';
 
 	let {
 		input = $bindable(),

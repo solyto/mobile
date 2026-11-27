@@ -4,8 +4,15 @@ import {
 	compareVersions,
 	fixedInState,
 	isOlderVersion,
-	isVersion
+	isVersion,
+	outdatedServerMessage
 } from '$lib/helpers/VersionHelper';
+import { en } from '$lib/i18n/en';
+import { de } from '$lib/i18n/de';
+import { es } from '$lib/i18n/es';
+import { fr } from '$lib/i18n/fr';
+import { it as itLocale } from '$lib/i18n/it';
+import { ru } from '$lib/i18n/ru';
 
 describe('compareVersions', () => {
 	it('compares each part numerically', () => {
@@ -85,5 +92,20 @@ describe('isVersion', () => {
 		for (const value of ['', '1', '1.2', '1.2.3.4', 'v1.2.3', '1.2.x', '1..3', ' 1.2.3']) {
 			expect(isVersion(value)).toBe(false);
 		}
+	});
+});
+
+describe('outdatedServerMessage', () => {
+	it('names the server and app version in every language', () => {
+		const messages = [en, de, es, fr, itLocale, ru].map((locale) => outdatedServerMessage('1.0.15', '1.1.4', locale.update_required));
+
+		expect(messages).toEqual([
+			'Your server runs version 1.0.15, but this app is 1.1.4. Some things may not work until the server is updated.',
+			'Dein Server läuft mit Version 1.0.15, diese App ist aber 1.1.4. Manches funktioniert eventuell erst, wenn der Server aktualisiert ist.',
+			'Tu servidor usa la versión 1.0.15, pero esta aplicación es la 1.1.4. Puede que algunas cosas no funcionen hasta que actualices el servidor.',
+			"Ton serveur utilise la version 1.0.15, mais cette application est en 1.1.4. Certaines fonctions peuvent ne pas marcher tant que le serveur n'est pas mis à jour.",
+			'Il tuo server usa la versione 1.0.15, ma questa app è la 1.1.4. Alcune cose potrebbero non funzionare finché il server non viene aggiornato.',
+			'На сервере установлена версия 1.0.15, а в приложении — 1.1.4. Некоторые функции могут не работать до обновления сервера.'
+		]);
 	});
 });

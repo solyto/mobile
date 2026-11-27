@@ -11,8 +11,7 @@
 	import { setDevRequests } from '$lib/state/DevRequests.svelte';
 	import { setLoadedCovers } from '$lib/state/LoadedCovers.svelte';
 
-	// Order matters: Translation reads getAuth() at field initialisation, and
-	// Todos defaults to getAuth() in its constructor, so Auth is seeded first.
+	// Translation and Todos default to getAuth() in their constructors, so Auth is seeded first.
 	const auth = setAuth();
 	const ts = setTranslation();
 	const keyManager = setKeyManager();
@@ -38,7 +37,6 @@
 		prepare?: (stores: Record<string, unknown>) => Record<string, unknown>;
 	} = $props();
 
-	// Apply per-test store overrides onto the freshly created instances
 	const instances: Record<string, unknown> = {
 		auth,
 		ts,
@@ -51,14 +49,12 @@
 		devRequests,
 		loadedCovers
 	};
-	// Runs once at mount: the harness is set up per test and never re-rendered with new props
 	function setUp(): void {
 		for (const [name, overrides] of Object.entries(stores)) {
 			const instance = instances[name];
 			if (instance) Object.assign(instance, overrides);
 		}
 
-		// Let the test pass the created instances (e.g. ts/auth) into the props
 		if (prepare) {
 			const prepared = prepare(instances);
 			if (prepared) props = prepared;

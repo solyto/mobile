@@ -11,6 +11,7 @@
 	import MovableHoverBox from '$lib/components/ui/MovableHoverBox.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { getViewPoint } from '$lib/state/Viewpoint.svelte';
+	import { HoverExplanation } from '$lib/helpers/HoverExplanation.svelte';
 
 	const todos = getTodos();
 	const loadingIndicator = getLoadingIndicator();
@@ -23,17 +24,10 @@
 	let changeDescription = $state<boolean>(false);
 	let descriptionInput = $state<HTMLTextAreaElement | null>(null);
 	let descriptionValue = $state<string>(todo.description ?? '');
-	let addSubtaskVisible = $state<boolean>(false);
-	let subtaskInput = $state<HTMLInputElement | null>(null);
-	let subtaskValue = $state<string>('');
-	let showExplanationBox = $state<boolean>(false);
-	let explanationBoxX = $state<number>(0);
-	let explanationBoxY = $state<number>(0);
+	const explanation = new HoverExplanation();
 	let keyHandlers: { [key: string]: string | null } = {
 		EnterSave: null,
 		EnterNewLine: null,
-		EnterSubtask: null,
-		EscapeSubtask: null,
 		Escape: null
 	};
 
@@ -88,54 +82,20 @@
 	}
 
 	async function onsubmit(): Promise<void> {
-		loadingIndicator.start();
 		keyManager.unregisterKeyDown(keyHandlers.EnterSave);
-		let todoDescription = descriptionValue.trim();
+		const todoDescription = descriptionValue.trim();
+		if (todoDescription === '') return;
 
-		if (todoDescription === '') {
-			return;
-		}
-
-		await todos.changeDescription(todo, todoDescription);
-		loadingIndicator.stop();
-	}
-
-	async function toggleAddSubtask(): Promise<void> {
-		addSubtaskVisible = !addSubtaskVisible;
-
-		if (addSubtaskVisible) {
-			await tick();
-			subtaskInput?.focus();
-			keyHandlers.EnterSubtask = keyManager.registerKeyDown('Enter', handleSubtaskEnter, {
-				priority: 2
-			});
-			keyHandlers.EscapeSubtask = keyManager.registerKeyDown('Escape', handleSubtaskEscape);
-		}
-	}
-
-	function handleSubtaskEscape(event: KeyboardEvent): void {
-		subtaskOnblur();
-	}
-
-	function subtaskOnblur(): void {
-		addSubtaskVisible = false;
-		keyManager.unregisterKeyDowns([keyHandlers.EnterSubtask, keyHandlers.EscapeSubtask]);
-	}
-
-	async function handleSubtaskEnter(event: KeyboardEvent): Promise<void> {
-		let subtask = subtaskValue.trim();
-		if (subtask !== '') {
-			loadingIndicator.start();
-			const res = await todos.addSubtask(todo, subtask);
-			if (res) subtaskValue = '';
+		loadingIndicator.start();
+		try {
+			await todos.changeDescription(todo, todoDescription);
+		} finally {
 			loadingIndicator.stop();
 		}
-		await toggleAddSubtask();
 	}
 
-	function setExplanationBoxPosition(e: MouseEvent) {
-		explanationBoxX = e.clientX;
-		explanationBoxY = e.clientY;
+	function editOnTap(): void {
+		if (viewPoint.isMobile) toggleChangeDescription();
 	}
 </script>
 
@@ -153,12 +113,8 @@
 			role="button"
 			tabindex="0"
 			ondblclick={toggleChangeDescription}
-			onclick={() => viewPoint.isMobile && toggleChangeDescription()}
-			onmouseover={() => (showExplanationBox = true)}
-			onmouseout={() => (showExplanationBox = false)}
-			onfocus={() => (showExplanationBox = true)}
-			onblur={() => (showExplanationBox = false)}
-			onmousemove={(e) => setExplanationBoxPosition(e)}
+			onclick={editOnTap}
+			{...explanation.handlers}
 		>
 			{#if todo.description}
 				<!-- eslint-disable-next-line svelte/no-at-html-tags -- sanitised with DOMPurify -->
@@ -169,9 +125,9 @@
 		</div>
 		<MovableHoverBox
 			content={ts.get.layout.double_click_to_edit}
-			show={showExplanationBox}
-			x={explanationBoxX}
-			y={explanationBoxY}
+			show={explanation.visible}
+			x={explanation.x}
+			y={explanation.y}
 		/>
 	{/if}
 </div>

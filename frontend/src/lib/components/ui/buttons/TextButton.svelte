@@ -16,6 +16,10 @@
 		disabled?: boolean;
 		class?: string;
 	} = $props();
+
+	let brightensOnHover = $derived(type === 'success' || type === 'primary' || type === 'warning');
+	let hasButtonText = $derived(type === 'btn' || type === 'danger' || type === 'success');
+	let linkHasButtonText = $derived(hasButtonText || type === 'action');
 </script>
 
 {#if href === null}
@@ -34,7 +38,7 @@
 		class:bg-c-success={type === 'success'}
 		class:bg-c-primary={type === 'primary'}
 		class:bg-c-warning={type === 'warning'}
-		class:hover:brightness-90={(type === 'success' || type === 'primary' || type === 'warning') && !disabled}
+		class:hover:brightness-90={brightensOnHover && !disabled}
 		class:bg-c-neutral-1={type === 'slight'}
 		class:hover:bg-c-neutral-3={type === 'slight' && !disabled}
 		class:dark:bg-s-dark-3={type === 'slight'}
@@ -42,9 +46,9 @@
 		class:dark:text-white={type === 'slight'}
 		class:text-c-neutral-7={type === 'slight'}
 		class:text-c-action-text={type === 'warning' || type === 'action'}
-		class:text-c-btn-text={type !== 'plain' && type !== 'slight' && type !== 'warning' && type !== 'action' && type !== 'primary'}
+		class:text-c-btn-text={hasButtonText}
 		class:text-c-primary-text={type === 'primary'}
-		class:hover:text-white={type !== 'plain' && type !== 'slight' && type !== 'warning' && type !== 'action' && type !== 'primary' && !disabled}
+		class:hover:text-white={hasButtonText && !disabled}
 		class:hover:text-c-primary-text-hover={type === 'primary' && !disabled}
 		class:text-left={align === 'left'}
 		class:text-right={align === 'right'}
@@ -68,7 +72,7 @@
 		class:bg-c-success={type === 'success'}
 		class:bg-c-primary={type === 'primary'}
 		class:bg-c-warning={type === 'warning'}
-		class:hover:brightness-90={type === 'success' || type === 'primary' || type === 'warning'}
+		class:hover:brightness-90={brightensOnHover}
 		class:bg-c-neutral-1={type === 'slight'}
 		class:hover:bg-c-neutral-3={type === 'slight'}
 		class:dark:bg-s-dark-3={type === 'slight'}
@@ -76,9 +80,9 @@
 		class:dark:text-white={type === 'slight'}
 		class:text-c-neutral-7={type === 'slight'}
 		class:text-c-action-text={type === 'warning'}
-		class:text-c-btn-text={type !== 'plain' && type !== 'slight' && type !== 'warning' && type !== 'primary'}
+		class:text-c-btn-text={linkHasButtonText}
 		class:text-c-primary-text={type === 'primary'}
-		class:hover:text-white={type !== 'plain' && type !== 'slight' && type !== 'warning' && type !== 'primary'}
+		class:hover:text-white={linkHasButtonText}
 		class:hover:text-c-primary-text-hover={type === 'primary'}
 		class:text-left={align === 'left'}
 		class:text-right={align === 'right'}

@@ -2,15 +2,20 @@
 	import { fade } from 'svelte/transition';
 	import EntryCover from '$lib/components/libraries/shared/EntryCover.svelte';
 	import EntryContent from '$lib/components/libraries/shared/EntryContent.svelte';
-	import type { Library, LibraryEntry } from '$lib/types/library';
+	import type { DetailLibrary, Library, LibraryEntry } from '$lib/types/library';
+	import type { Link } from '$lib/types/library_link';
 
 	let { library }: { library: Library } = $props();
+
+	function openDetail(entry: LibraryEntry | Link): void {
+		(library as DetailLibrary).openDetailModal(entry as LibraryEntry);
+	}
 </script>
 
 <div class="flex w-full flex-col flex-wrap gap-2 md:p-2">
 	{#each library.filteredEntries as entry (entry.id)}
 		<button
-			onclick={() => (library as { openDetailModal(entry: LibraryEntry): void }).openDetailModal(entry as LibraryEntry)}
+			onclick={() => openDetail(entry)}
 			class="max-w-full cursor-pointer max-md:w-full"
 		>
 			<div

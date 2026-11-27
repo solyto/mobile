@@ -37,8 +37,7 @@ describe('getGraphValues', () => {
 		[36, 36],
 		[60, 60]
 	])('returns %i months as %i points, ending at the current month', (range, points) => {
-		service.setData([field(1, 'Cash')]);
-		const result = service.getGraphValues(range);
+		const result = service.getGraphValues([field(1, 'Cash')], range);
 
 		expect(result).toHaveLength(points);
 		expect(result.map((e) => e.date)).toEqual([...result.map((e) => e.date)].sort());
@@ -48,8 +47,7 @@ describe('getGraphValues', () => {
 	it('builds consecutive months when today is the 31st', () => {
 		vi.useFakeTimers();
 		vi.setSystemTime(new Date(2026, 2, 31, 12));
-		service.setData([field(1, 'Cash')]);
-		const result = service.getGraphValues(12);
+		const result = service.getGraphValues([field(1, 'Cash')], 12);
 
 		expect(result.map((e) => e.date)).toEqual([
 			'2025-04-01',
@@ -70,11 +68,10 @@ describe('getGraphValues', () => {
 	it('starts "all" at the month of the earliest value of any field', () => {
 		vi.useFakeTimers();
 		vi.setSystemTime(new Date(2026, 10, 17, 12));
-		service.setData([
+		const result = service.getGraphValues([
 			field(1, 'Cash', { values: [{ id: 1, date: '2024-05-20', value: 5 }] }),
 			field(2, 'Stocks', { values: [{ id: 2, date: '2022-08-31', value: 3 }] })
-		]);
-		const result = service.getGraphValues('all');
+		], 'all');
 
 		expect(result[0].date).toBe('2022-08-01');
 		expect(result[0].values).toEqual([
@@ -86,8 +83,7 @@ describe('getGraphValues', () => {
 	});
 
 	it('returns only the current month for "all" without any values', () => {
-		service.setData([field(1, 'Cash')]);
-		const result = service.getGraphValues('all');
+		const result = service.getGraphValues([field(1, 'Cash')], 'all');
 
 		expect(result).toHaveLength(1);
 	});
@@ -95,15 +91,14 @@ describe('getGraphValues', () => {
 	it('carries a value from before the range into the first point', () => {
 		vi.useFakeTimers();
 		vi.setSystemTime(new Date(2026, 10, 17, 12));
-		service.setData([
+		const result = service.getGraphValues([
 			field(1, 'Cash', {
 				values: [
 					{ id: 1, date: '2023-01-10', value: 4 },
 					{ id: 2, date: '2023-10-31', value: 8 }
 				]
 			})
-		]);
-		const result = service.getGraphValues(36);
+		], 36);
 
 		expect(result[0].date).toBe('2023-12-01');
 		expect(result[0].values).toEqual([{ field: 'Cash', value: 8 }]);
@@ -111,14 +106,13 @@ describe('getGraphValues', () => {
 
 	it('uses the current value in the current month and 0 for fields without values', () => {
 		const now = new Date();
-		service.setData([
+		const result = service.getGraphValues([
 			field(1, 'Cash', {
 				currentValue: { id: 1, date: ymd(now), value: 90 },
 				values: [{ id: 1, date: ymd(now), value: 90 }]
 			}),
 			field(2, 'Stocks')
-		]);
-		const result = service.getGraphValues(12);
+		], 12);
 		const last = result[result.length - 1];
 
 		expect(last.values).toContainEqual({ field: 'Cash', value: 90 });
@@ -127,8 +121,7 @@ describe('getGraphValues', () => {
 
 	it('carries the latest value of a month through the graph', () => {
 		const twoMonthsAgo = monthsAgo(2);
-		service.setData([field(1, 'Cash', { values: [{ id: 1, date: twoMonthsAgo, value: 50 }] })]);
-		const result = service.getGraphValues(12);
+		const result = service.getGraphValues([field(1, 'Cash', { values: [{ id: 1, date: twoMonthsAgo, value: 50 }] })], 12);
 		const month = result.find((e) => e.date.startsWith(twoMonthsAgo.substring(0, 7)));
 
 		expect(month?.values).toContainEqual({ field: 'Cash', value: 50 });
@@ -136,10 +129,9 @@ describe('getGraphValues', () => {
 
 	it('uses the last value before the 12-month window as a baseline', () => {
 		const thirteenMonthsAgo = monthsAgo(13);
-		service.setData([
+		const result = service.getGraphValues([
 			field(1, 'Cash', { values: [{ id: 1, date: thirteenMonthsAgo, value: 7 }] })
-		]);
-		const result = service.getGraphValues(12);
+		], 12);
 
 		expect(result.every((e) => e.values[0].value === 7)).toBe(true);
 	});
@@ -147,15 +139,14 @@ describe('getGraphValues', () => {
 	it('takes the most recent value within a month', () => {
 		const now = new Date();
 		const month = ymd(now).substring(0, 7);
-		service.setData([
+		const result = service.getGraphValues([
 			field(1, 'Cash', {
 				values: [
 					{ id: 1, date: `${month}-01`, value: 10 },
 					{ id: 2, date: `${month}-20`, value: 20 }
 				]
 			})
-		]);
-		const result = service.getGraphValues(12);
+		], 12);
 		const last = result[result.length - 1];
 
 		expect(last.values).toContainEqual({ field: 'Cash', value: 20 });
@@ -174,6 +165,36 @@ describe('WealthStatisticsService.getTrendMin', () => {
 	it('returns undefined when the lowest value is zero or negative', () => {
 		expect(service.getTrendMin([1000, 0])).toBeUndefined();
 		expect(service.getTrendMin([1000, -500])).toBeUndefined();
+	});
+});
+
+describe('chart series', () => {
+	const stats = [
+		{ date: '2026-10-01', values: [{ field: 'Cash', value: 10 }, { field: 'Stocks', value: 5 }] },
+		{ date: '2026-11-01', values: [{ field: 'Cash', value: 20 }] }
+	];
+
+	it('adds up all fields per point', () => {
+		expect(service.getTotals(stats)).toEqual([15, 20]);
+	});
+
+	it('lists each field\'s values per point, 0 where a point has none', () => {
+		expect(service.getSeriesByField([field(1, 'Cash'), field(2, 'Stocks')], stats)).toEqual([
+			{ title: 'Cash', values: [10, 20] },
+			{ title: 'Stocks', values: [5, 0] }
+		]);
+	});
+
+	it('has no series without points', () => {
+		expect(service.getSeriesByField([field(1, 'Cash')], [])).toEqual([]);
+	});
+
+	it('shares each field\'s current value, 0 without one', () => {
+		const cash = field(1, 'Cash', { currentValue: { id: 1, date: '2026-11-01', value: 30 } });
+		expect(service.getDistribution([cash, field(2, 'Stocks')])).toEqual([
+			{ name: 'Cash', value: 30 },
+			{ name: 'Stocks', value: 0 }
+		]);
 	});
 });
 

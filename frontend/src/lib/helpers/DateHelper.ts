@@ -26,24 +26,23 @@ export function formatDate(input: string | Date, dateFormat: string | null = nul
 	return `${day}.${month}.${year}`;
 }
 
-/** Parses the "dd.mm.YYYY" value of a data-calendar-day attribute back into a Date. */
 export function parseDateSlug(slug: string): Date | null {
 	const parts = slug.split('.');
 	if (parts.length !== 3) return null;
-	const day = parseInt(parts[0], 10);
-	const month = parseInt(parts[1], 10);
-	const year = parseInt(parts[2], 10);
-	if (!day || !month || !year) return null;
-	return new Date(year, month - 1, day);
+	return localDateFromParts(parts[2], parts[1], parts[0]);
 }
 
-/** Parses a "YYYY-mm-dd" value (see getUrlFormat) into a local date. `new Date()` would read it as UTC midnight. */
+// `new Date('YYYY-mm-dd')` would read the value as UTC midnight.
 export function parseUrlFormat(value: string): Date | null {
 	const parts = value.split('-');
 	if (parts.length !== 3) return null;
-	const year = parseInt(parts[0], 10);
-	const month = parseInt(parts[1], 10);
-	const day = parseInt(parts[2], 10);
+	return localDateFromParts(parts[0], parts[1], parts[2]);
+}
+
+function localDateFromParts(yearPart: string, monthPart: string, dayPart: string): Date | null {
+	const year = parseInt(yearPart, 10);
+	const month = parseInt(monthPart, 10);
+	const day = parseInt(dayPart, 10);
 	if (!day || !month || !year) return null;
 	return new Date(year, month - 1, day);
 }
@@ -54,11 +53,46 @@ export function formatFloatingDate(date: Date) {
 	return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 }
 
+export function floatingToUtc(floating: string, timeZone: string): Date {
+	const [year, month, day, hours, minutes, seconds] = floating.split(/[-T:]/).map(Number);
+	const wallClock = Date.UTC(year, month - 1, day, hours, minutes, seconds);
+	// The offset is read twice: the first guess can land on the other side of a DST change.
+	const guess = wallClock - offsetInTimeZone(wallClock, timeZone);
+
+	return new Date(wallClock - offsetInTimeZone(guess, timeZone));
+}
+
+export function dateInTimeZone(instant: Date, timeZone: string): string {
+	return new Date(wallClockInTimeZone(instant.getTime(), timeZone)).toISOString().slice(0, 10);
+}
+
+function offsetInTimeZone(timestamp: number, timeZone: string): number {
+	return wallClockInTimeZone(timestamp, timeZone) - timestamp;
+}
+
+function wallClockInTimeZone(timestamp: number, timeZone: string): number {
+	const parts = new Intl.DateTimeFormat('en-US', {
+		timeZone,
+		hourCycle: 'h23',
+		year: 'numeric',
+		month: 'numeric',
+		day: 'numeric',
+		hour: 'numeric',
+		minute: 'numeric',
+		second: 'numeric'
+	}).formatToParts(new Date(timestamp));
+	const part = (type: Intl.DateTimeFormatPartTypes) => Number(parts.find((p) => p.type === type)?.value);
+
+	return Date.UTC(part('year'), part('month') - 1, part('day'), part('hour'), part('minute'), part('second'));
+}
+
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+
 export function formatDateWithoutYear(
 	input: string | Date,
 	dateFormat: string | null = null
 ): string {
-	const date = new Date(input),
+	const date = (typeof input === 'string' && DATE_ONLY.test(input) ? parseUrlFormat(input) : null) ?? new Date(input),
 		day = String(date.getDate()).padStart(2, '0'),
 		month = String(date.getMonth() + 1).padStart(2, '0');
 
@@ -172,6 +206,13 @@ export function getDateMinusDays(date: Date, days: number): Date {
 	dateMinusDays.setDate(dateMinusDays.getDate() - days);
 
 	return dateMinusDays;
+}
+
+export function getStartOfMonthMonthsAgo(date: Date, months: number): Date {
+	const start = new Date(date);
+	start.setMonth(start.getMonth() - months, 1);
+
+	return start;
 }
 
 export function getDatePlusDays(date: Date, days: number): Date {
@@ -306,9 +347,10 @@ export function getDateDiffInMinutes(date1: Date, date2: Date): number {
 	return Math.floor(diffInMs / (1000 * 60));
 }
 
+// Rounded, so a 23- or 25-hour day across a daylight saving change still counts as one.
 export function getDateDiffInDays(date1: Date, date2: Date): number {
 	const diffInMs = date2.getTime() - date1.getTime();
-	return Math.trunc(diffInMs / (1000 * 60 * 60 * 24));
+	return Math.round(diffInMs / (1000 * 60 * 60 * 24));
 }
 
 export function getCurrentTimestamp(): number {
@@ -395,6 +437,17 @@ export function getCalendarMonth(year?: number, month?: number, weekStart: WeekS
 	return days;
 }
 
+// Only the weeks that hold a day of the month, so a month spans four to six rows.
+export function getCalendarWeeks(year: number, month: number, weekStart: WeekStart): CalendarDay[][] {
+	const days = getCalendarMonth(year, month, weekStart);
+	const weeks: CalendarDay[][] = [];
+	for (let i = 0; i < days.length; i += 7) {
+		const week = days.slice(i, i + 7);
+		if (week.some((day) => !day.is_grayed_out)) weeks.push(week);
+	}
+	return weeks;
+}
+
 export function getCalendarWeek(startOfWeek: Date): CalendarDay[] {
 	const days: CalendarDay[] = [];
 
@@ -423,33 +476,25 @@ export function getWeekdayOrder(weekStart: WeekStart): number[] {
 	return weekStart === 'sunday' ? [7, 1, 2, 3, 4, 5, 6] : [1, 2, 3, 4, 5, 6, 7];
 }
 
-/** The 24 hours of a day as zero-padded strings, '00' to '23'. */
 export function getHoursOfDay(): string[] {
 	return Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
 }
 
-/** Off hours are before 06:00 and from 22:00 on. */
 export function isOffHour(hour: string): boolean {
 	return parseInt(hour) < 6 || parseInt(hour) >= 22;
 }
 
-/** Height of one hour row in the mobile day and week grids, in rem. Off hours are compressed. */
 export function getMobileHourHeightRem(hour: string): number {
 	return isOffHour(hour) ? 1.5 : 3.5;
 }
 
-/** The `grid-template-rows` tracks for the 24 hour rows of the mobile day and week grids. */
 export function getMobileHourRows(): string {
 	return getHoursOfDay()
 		.map((hour) => `${getMobileHourHeightRem(hour)}rem`)
 		.join(' ');
 }
 
-/**
- * Distance in rem from 00:00 to a time of day in the mobile grid, where `hourOfDay` is a
- * fractional hour from 0 to 24 (e.g. 16.5 for 16:30, 24 for the end of the day).
- * Rows have different heights, so this adds up the actual rows instead of multiplying.
- */
+// Rows differ in height, so the rows up to `hourOfDay` (16.5 = 16:30, 24 = end of day) are added up.
 export function getMobileTimeOffsetRem(hourOfDay: number): number {
 	const hours = getHoursOfDay();
 	const fullHours = Math.min(Math.floor(hourOfDay), 24);
@@ -466,7 +511,7 @@ export function getMobileTimeOffsetRem(hourOfDay: number): number {
 	return offset;
 }
 
-/** The days after `start`, one day apart, up to and including the first one that reaches `end`. */
+// The days after `start`, up to and including the first one that reaches `end`.
 export function eachDayBetween(start: Date, end: Date): Date[] {
 	const days: Date[] = [];
 	const current = new Date(start);

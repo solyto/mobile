@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Tag } from '$lib/types/tag';
 	import { fade } from 'svelte/transition';
-	import ColorPicker from 'svelte-awesome-color-picker';
+	import ColorPicker from '$lib/components/forms/ColorPicker.svelte';
 	import { getTags } from '$lib/state/Tags.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import DeleteButton from '$lib/components/ui/buttons/DeleteButton.svelte';
@@ -21,15 +21,20 @@
 
 		if (hex === tag.color) return;
 
-		loadingIndicator.start();
-		await tags.changeColor(tag, hex);
-		loadingIndicator.stop();
+		await withLoadingIndicator(() => tags.changeColor(tag, hex));
 	}
 
-	async function onDelete(tag: Tag): Promise<void> {
+	async function onDelete(): Promise<void> {
+		await withLoadingIndicator(() => tags.delete(tag.id));
+	}
+
+	async function withLoadingIndicator(action: () => Promise<unknown>): Promise<void> {
 		loadingIndicator.start();
-		await tags.delete(tag.id);
-		loadingIndicator.stop();
+		try {
+			await action();
+		} finally {
+			loadingIndicator.stop();
+		}
 	}
 </script>
 
@@ -38,18 +43,10 @@
 	in:fade={{ duration: 100 }}
 >
 	<div use:clickOutside={onColorChange}>
-		<ColorPicker
-			bind:hex
-			bind:isOpen={pickerOpen}
-			position="responsive"
-			nullable={false}
-			label=""
-			isTextInput={false}
-			--cp-border-color="var(--color-c-neutral-2)"
-		/>
+		<ColorPicker bind:hex bind:isOpen={pickerOpen} />
 	</div>
 	<span>#{tag.name}</span>
 	<div class="ml-2">
-		<DeleteButton onClick={() => onDelete(tag)} inModal={false} buttonStyle="minimal" />
+		<DeleteButton onClick={onDelete} inModal={false} buttonStyle="minimal" />
 	</div>
 </div>

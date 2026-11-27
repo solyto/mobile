@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import IconLoaderCircle from '@lucide/svelte/icons/loader-circle';
+	import IconLoaderCircle from '$lib/icons/lucide/loader-circle.svelte';
 	import ContentModal from '$lib/components/ui/ContentModal.svelte';
 	import ProgressBar from '$lib/components/ui/ProgressBar.svelte';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
@@ -10,6 +10,7 @@
 	import { NetworkError } from '$lib/services/ApiService';
 	import { getFeedImport } from '$lib/state/FeedImport.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
+	import { pluralize } from '$lib/helpers/FormatHelper';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import type { FeedImportPollError, FeedImportStage, FeedImportState } from '$lib/types/feed';
 
@@ -156,6 +157,10 @@
 		return pollError === 'rate_limited' ? ts.get.layout.rate_limited : ts.get.layout.network_error;
 	}
 
+	function nothingToImport(state: FeedImportState): boolean {
+		return service.initialSelection(state).length === 0;
+	}
+
 	function toggle(url: string): void {
 		selected = service.toggle(selected, url);
 	}
@@ -170,9 +175,7 @@
 	}
 
 	function selectedLabel(): string {
-		return selected.length === 1
-			? ts.get.feeds.import_selected_singular
-			: ts.get.feeds.import_selected_plural.replace('{n}', String(selected.length));
+		return pluralize(selected.length, ts.get.feeds.import_selected_singular, ts.get.feeds.import_selected_plural);
 	}
 
 	function progressLabel(state: FeedImportState): string {
@@ -232,7 +235,7 @@
 			<FileUpload accept=".opml,.xml" onfile={upload} />
 		{:else if shown === 'preview' && feedImport.state}
 			{@const importState = feedImport.state}
-			{#if service.initialSelection(importState).length === 0}
+			{#if nothingToImport(importState)}
 				<p class="text-sm">{ts.get.feeds.import_all_subscribed}</p>
 			{:else}
 				<div class="flex items-center justify-between gap-4">
@@ -265,7 +268,7 @@
 					</div>
 				{/each}
 			</div>
-			{#if service.initialSelection(importState).length === 0}
+			{#if nothingToImport(importState)}
 				{@render leaveActions()}
 			{:else}
 				<TextButton type="primary" title={ts.get.feeds.import_button} disabled={busy || selected.length === 0} onclick={startImport} />

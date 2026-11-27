@@ -7,6 +7,6 @@
 
 <div class="flex w-full flex-col divide-y md:p-2">
 	{#each library.filteredEntries as entry (entry.id)}
-		<LinkEntry {entry} {library} showCategory={typeof library.activeFilter !== 'number'} />
+		<LinkEntry {entry} {library} showCategory={!library.isCategoryChosen()} />
 	{/each}
 </div>

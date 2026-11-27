@@ -5,7 +5,7 @@
 </script>
 
 <div class="flex items-center justify-center gap-2">
-	<img src={logo} alt="logo" class="size-16 animate-bounce" />
+	<img src={logo} alt="solyto" class="size-16 animate-bounce" />
 	{#if label}
 		<span
 			class="animate-pulse text-c-heading text-shadow-2xs text-shadow-white dark:text-c-primary"

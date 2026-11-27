@@ -13,6 +13,7 @@
 	import InlineAutocomplete from '$lib/components/forms/InlineAutocomplete.svelte';
 	import { getViewPoint } from '$lib/state/Viewpoint.svelte';
 	import BottomSheetModal from '$lib/components/ui/BottomSheetModal.svelte';
+	import { getDueDateSuggestions } from '$lib/helpers/TodoHelper';
 
 	const keyManager = getKeyManager();
 	const todos = getTodos();
@@ -28,19 +29,6 @@
 	let autocompleteOpen = $state<boolean>(false);
 	let keyHandlers: { [key: string]: string | null } = { Enter: null, Escape: null };
 
-	function getDueDateSuggestions(): { label: string; value: string }[] {
-		const today = new Date();
-		return Array.from({ length: 7 }, (_, i) => {
-			const date = new Date(today);
-			date.setDate(today.getDate() + i);
-			const iso = date.toISOString().slice(0, 10);
-			if (i === 0) return { label: ts.get.todos.due_today, value: iso };
-			if (i === 1) return { label: ts.get.todos.due_tomorrow, value: iso };
-			const weekdayKey = date.getDay() === 0 ? 7 : date.getDay();
-			return { label: ts.get.calendar.weekdays[weekdayKey as keyof typeof ts.get.calendar.weekdays], value: iso };
-		});
-	}
-
 	const recurrenceOptions = [
 		{ label: ts.get.todos.recurrence_daily, value: 'daily' },
 		{ label: ts.get.todos.recurrence_weekly, value: 'weekly' },
@@ -48,10 +36,18 @@
 		{ label: ts.get.todos.recurrence_yearly, value: 'yearly' }
 	];
 
+	const syntaxHints = [
+		{ prefix: '/', label: ts.get.todos.category },
+		{ prefix: '#', label: ts.get.todos.tag },
+		{ prefix: 'due:', label: ts.get.todos.due_date },
+		{ prefix: 'repeat:', label: ts.get.todos.recurrence },
+		{ prefix: 'link:', label: ts.get.todos.link }
+	];
+
 	const autocompleteTriggers = $derived([
 		{ prefix: '#', items: tags.tags.map((t) => ({ label: t.name })) },
 		{ prefix: '/', items: todos.categories.map((c) => ({ label: c.title })) },
-		{ prefix: 'due:', items: getDueDateSuggestions() },
+		{ prefix: 'due:', items: getDueDateSuggestions(new Date(), ts.get.todos, ts.get.calendar.weekdays) },
 		{ prefix: 'repeat:', items: recurrenceOptions }
 	]);
 
@@ -83,22 +79,31 @@
 		}
 
 		loadingIndicator.start();
+		try {
+			const keepFormOpen = await createFromInput();
+			if (!keepFormOpen) await toggleForm();
+		} finally {
+			loadingIndicator.stop();
+		}
+	}
 
-		if (userInput.trim() !== '') {
-			const res = await todos.quickCreate(userInput);
-			if (res.ok) {
-				if (res.recurrenceIgnored) {
-					notifications.warning(ts.get.todos.recurrence_requires_due);
-					loadingIndicator.stop();
-					return;
-				}
-				userInput = '';
-				notifications.success(ts.get.todos.create_success);
-			}
+	async function createFromInput(): Promise<boolean> {
+		if (userInput.trim() === '') return false;
+
+		const res = await todos.quickCreate(userInput);
+		if (!res.ok) return false;
+		if (res.recurrenceIgnored) {
+			notifications.warning(ts.get.todos.recurrence_requires_due);
+			return true;
 		}
 
-		await toggleForm();
-		loadingIndicator.stop();
+		userInput = '';
+		notifications.success(ts.get.todos.create_success);
+		return false;
+	}
+
+	function openSettings(): void {
+		todos.openSettingsModal();
 	}
 
 	function handleEscape(event: KeyboardEvent): void {
@@ -110,50 +115,31 @@
 	}
 </script>
 
-<div
-	class="relative mb-4 flex h-14 w-full flex-row justify-end p-2 pr-0"
->
+<div class="relative mb-4 flex h-14 w-full flex-row justify-end p-2 pr-0">
 	{#if formOpen}
 		{#if viewPoint.isDesktop}
 			<InlineAutocomplete
 				bind:input
 				bind:value={userInput}
 				{onblur}
-				placeholder="Enter todo"
+				placeholder={ts.get.todos.enter_todo}
 				triggers={autocompleteTriggers}
 				bind:open={autocompleteOpen}
 			/>
-			<div
-				class="absolute top-[-24px] right-8 flex items-center gap-8 text-xs max-md:hidden"
-				in:fade
-			>
-				<div class="flex items-center gap-1">
-					<div class="bg-c-neutral-1 px-2 py-1 dark:bg-s-dark-2">/</div>
-					<span>{ts.get.todos.category}</span>
-				</div>
-				<div class="flex items-center gap-1">
-					<div class="bg-c-neutral-1 px-2 py-1 dark:bg-s-dark-2">#</div>
-					<span>{ts.get.todos.tag}</span>
-				</div>
-				<div class="flex items-center gap-1">
-					<div class="bg-c-neutral-1 px-2 py-1 dark:bg-s-dark-2">due:</div>
-					<span>{ts.get.todos.due_date}</span>
-				</div>
-				<div class="flex items-center gap-1">
-					<div class="bg-c-neutral-1 px-2 py-1 dark:bg-s-dark-2">repeat:</div>
-					<span>{ts.get.todos.recurrence}</span>
-				</div>
-				<div class="flex items-center gap-1">
-					<div class="bg-c-neutral-1 px-2 py-1 dark:bg-s-dark-2">link:</div>
-					<span>{ts.get.todos.link}</span>
-				</div>
+			<div class="absolute top-[-24px] right-8 flex items-center gap-8 text-xs max-md:hidden" in:fade>
+				{#each syntaxHints as hint (hint.prefix)}
+					<div class="flex items-center gap-1">
+						<div class="bg-c-neutral-1 px-2 py-1 dark:bg-s-dark-2">{hint.prefix}</div>
+						<span>{hint.label}</span>
+					</div>
+				{/each}
 			</div>
 		{:else}
 			<BottomSheetModal title={ts.get.todos.new_todo} onClose={onblur}>
 				<InlineAutocomplete
 					bind:input
 					bind:value={userInput}
-					placeholder="Enter todo"
+					placeholder={ts.get.todos.enter_todo}
 					triggers={autocompleteTriggers}
 					bind:open={autocompleteOpen}
 				/>
@@ -162,7 +148,7 @@
 		{/if}
 	{:else}
 		<div class="flex items-center gap-2">
-			<SettingsButton title={ts.get.nav.settings} onclick={() => todos.openSettingsModal()} />
+			<SettingsButton title={ts.get.nav.settings} onclick={openSettings} />
 			<TextButton title={ts.get.todos.new_todo} onclick={toggleForm} />
 		</div>
 	{/if}

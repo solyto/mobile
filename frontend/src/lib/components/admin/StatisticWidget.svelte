@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Component } from 'svelte';
 	import { scale } from 'svelte/transition';
-	import { humanReadableNumber } from '$lib/helpers/NumberHelper.js';
+	import { humanReadableNumber } from '$lib/helpers/NumberHelper';
 
 	let {
 		label,
@@ -43,8 +43,6 @@
 	</div>
 	<div class="flex flex-col">
 		<span class="text-sm text-c-neutral-5 dark:text-c-neutral-4">{label}</span>
-		<span class="text-2xl font-semibold text-c-neutral-9 dark:text-white"
-			>{humanReadableNumber(number)}</span
-		>
+		<span class="text-2xl font-semibold text-c-neutral-9 dark:text-white">{humanReadableNumber(number)}</span>
 	</div>
 </div>

@@ -5,9 +5,11 @@
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
 	import AddButton from '$lib/components/ui/buttons/AddButton.svelte';
 	import TextInput from '$lib/components/forms/TextInput.svelte';
+	import { getTranslation } from '$lib/state/Translation.svelte';
 
 	const keyManager = getKeyManager();
 	const loadingIndicator = getLoadingIndicator();
+	const ts = getTranslation();
 
 	let {
 		label,
@@ -47,14 +49,17 @@
 
 	async function handleEnter(event: KeyboardEvent): Promise<void> {
 		loadingIndicator.start();
-		if (title.trim() !== '') {
-			await create(title);
-			title = '';
-		}
+		try {
+			if (title.trim() !== '') {
+				await create(title);
+				title = '';
+			}
 
-		await toggleForm();
-		loadingIndicator.stop();
-		keyManager.unregisterKeyDown(keyHandlers.Enter);
+			await toggleForm();
+			keyManager.unregisterAll(keyHandlers);
+		} finally {
+			loadingIndicator.stop();
+		}
 	}
 
 	function handleEscape(event: KeyboardEvent): void {
@@ -65,7 +70,7 @@
 <div>
 	{#if formOpen}
 		<div class="w-48">
-			<TextInput bind:input bind:value={title} {onblur} placeholder="Name" />
+			<TextInput bind:input bind:value={title} {onblur} placeholder={ts.get.layout.name} />
 		</div>
 	{:else if useAddButton}
 		<AddButton onClick={toggleForm} />

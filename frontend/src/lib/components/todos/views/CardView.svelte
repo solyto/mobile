@@ -14,6 +14,6 @@
 		<CompactEntry {todo} {handleCheck} minimal={false} />
 	{/each}
 	{#if todos.filteredTodos.length === 0}
-		<NoTodos />
+		<NoTodos noTodosYet={todos.noTodosYet} />
 	{/if}
 </div>

@@ -3,22 +3,22 @@
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
-	import type { Contact, CreateContactForm, CreateContactRequest } from '$lib/types/contact';
+	import type { CreateContactForm } from '$lib/types/contact';
+	import ContactFormService from '$lib/services/ContactFormService';
 	import TextInput from '$lib/components/forms/TextInput.svelte';
-	import IconMapPinHouse from '@lucide/svelte/icons/map-pin-house';
-	import IconUser from '@lucide/svelte/icons/user';
-	import IconPhone from '@lucide/svelte/icons/phone';
-	import IconMail from '@lucide/svelte/icons/mail';
-	import IconBuilding from '@lucide/svelte/icons/building-2';
-	import IconStickyNote from '@lucide/svelte/icons/sticky-note';
-	import IconUsersRound from '@lucide/svelte/icons/users-round';
-	import IconBookUser from '@lucide/svelte/icons/book-user';
+	import IconMapPinHouse from '$lib/icons/lucide/map-pin-house.svelte';
+	import IconUser from '$lib/icons/lucide/user.svelte';
+	import IconPhone from '$lib/icons/lucide/phone.svelte';
+	import IconMail from '$lib/icons/lucide/mail.svelte';
+	import IconBuilding from '$lib/icons/lucide/building-complex.svelte';
+	import IconStickyNote from '$lib/icons/lucide/sticky-note.svelte';
+	import IconUsersRound from '$lib/icons/lucide/users-round.svelte';
+	import IconBookUser from '$lib/icons/lucide/book-user.svelte';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
 	import ChooseAddressBook from '$lib/components/contacts/ChooseAddressBook.svelte';
-	import PhoneEdit from '$lib/components/contacts/PhoneEdit.svelte';
+	import ContactTypeValueEdit from '$lib/components/contacts/ContactTypeValueEdit.svelte';
 	import AddButton from '$lib/components/ui/buttons/AddButton.svelte';
 	import InlineDeleteButton from '$lib/components/ui/buttons/InlineDeleteButton.svelte';
-	import EmailEdit from '$lib/components/contacts/EmailEdit.svelte';
 	import { getContacts } from '$lib/state/Contacts.svelte';
 
 	const contacts = getContacts();
@@ -26,55 +26,37 @@
 	const loadingIndicator = getLoadingIndicator();
 	const notifications = getUiNotifications();
 
-	const canSubmit = $derived(submittable());
+	const formService = new ContactFormService();
+	const PHONE_TYPES = ['cell', 'home', 'work', 'other'];
+	const EMAIL_TYPES = ['home', 'work', 'other'];
 
-	const emptyForm: CreateContactForm = {
-		address_book_id: contacts.addressBooks[0].id,
-		first_name: '',
-		last_name: '',
-		middle_name: '',
-		prefix: '',
-		suffix: '',
-		email: [],
-		phone: [],
-		groups: '',
-		organization: '',
-		title: '',
-		note: '',
-		street: '',
-		city: '',
-		state: '',
-		postal_code: '',
-		country: ''
-	};
-	let form = $state<CreateContactForm>(
-		contacts.activeContact ? formFromContact(contacts.activeContact) : structuredClone(emptyForm)
-	);
+	let form = $state<CreateContactForm>(initialForm());
 
-	function formFromContact(c: Contact): CreateContactForm {
-		return {
-			address_book_id: c.address_book_id,
-			first_name: c.first_name,
-			last_name: c.last_name,
-			middle_name: c.middle_name,
-			prefix: c.prefix,
-			suffix: c.suffix,
-			email: c.email ? [...c.email] : [],
-			phone: c.phone ? [...c.phone] : [],
-			groups: c.groups?.join(', ') || '',
-			organization: c.organization,
-			title: c.title,
-			note: c.note,
-			street: c.street,
-			city: c.city,
-			state: c.state,
-			postal_code: c.postal_code,
-			country: c.country
-		};
+	const canSubmit = $derived(formService.hasName(form));
+
+	function initialForm(): CreateContactForm {
+		if (contacts.activeContact) return formService.fromContact(contacts.activeContact);
+		return formService.emptyForm(contacts.addressBooks[0].id);
 	}
 
-	function submittable(): boolean {
-		return form.first_name.trim() !== '' && form.last_name.trim() !== '';
+	function close(): void {
+		contacts.closeCreateModal();
+	}
+
+	function addPhone(): void {
+		form.phone.push({ value: '', type: 'mobile' });
+	}
+
+	function removePhone(index: number): void {
+		form.phone.splice(index, 1);
+	}
+
+	function addEmail(): void {
+		form.email.push({ value: '', type: 'home' });
+	}
+
+	function removeEmail(index: number): void {
+		form.email.splice(index, 1);
 	}
 
 	async function onsubmit(): Promise<void> {
@@ -83,59 +65,48 @@
 			return;
 		}
 
+		const request = formService.toRequest(form);
+
 		loadingIndicator.start();
-		const request: CreateContactRequest = {
-			...form,
-			full_name: `${form.first_name}${form.middle_name ? ' ' + form.middle_name : ''}${form.last_name ? ' ' + form.last_name : ''}`,
-			email: form.email.length > 0 ? JSON.stringify(form.email) : null,
-			phone: form.phone.length > 0 ? JSON.stringify(form.phone) : null,
-			groups:
-				form.groups.length > 0
-					? JSON.stringify(form.groups.split(',').map((g) => g.trim()))
-					: null
-		};
+		let saved: boolean;
+		try {
+			saved = contacts.activeContact ? await contacts.update(contacts.activeContact, request) : await contacts.create(request);
+		} finally {
+			loadingIndicator.stop();
+		}
 
-		const res = contacts.activeContact
-			? await contacts.update(contacts.activeContact, request)
-			: await contacts.create(request);
-
-		loadingIndicator.stop();
-
-		if (!res) {
+		if (!saved) {
 			notifications.error(ts.get.contacts.save_error);
 			return;
 		}
 
-		form = structuredClone(emptyForm);
+		form = formService.emptyForm(contacts.addressBooks[0].id);
 		contacts.closeCreateModal();
 	}
 </script>
 
 <ContentModal
-	title={contacts.activeContact ? 'Update Contact' : 'Add a Contact'}
+	title={contacts.activeContact ? ts.get.contacts.update_title : ts.get.contacts.add_title}
 	rounded="2xl"
 	p="4"
-	onClose={() => contacts.closeCreateModal()}
+	onClose={close}
 >
 	<div class="flex flex-col gap-2">
 		<div class="flex items-center gap-4">
 			<IconBookUser class="size-4 text-c-btn" />
-			<ChooseAddressBook
-				bind:addressBook={form.address_book_id}
-				availableAddressBooks={contacts.addressBooks}
-			/>
+			<ChooseAddressBook bind:addressBook={form.address_book_id} availableAddressBooks={contacts.addressBooks} />
 		</div>
 		<div class="mt-2 flex gap-4">
 			<IconUser class="mt-2 size-4 text-c-btn" />
 			<div class="flex w-full flex-col gap-2">
 				<div class="flex gap-2">
-					<TextInput placeholder="First name" bind:value={form.first_name} />
-					<TextInput placeholder="Last name" bind:value={form.last_name} />
+					<TextInput placeholder={ts.get.contacts.first_name} bind:value={form.first_name} />
+					<TextInput placeholder={ts.get.contacts.last_name} bind:value={form.last_name} />
 				</div>
 				<div class="flex gap-2">
-					<TextInput placeholder="Prefix" bind:value={form.prefix} />
-					<TextInput placeholder="Middle name" bind:value={form.middle_name} />
-					<TextInput placeholder="Suffix" bind:value={form.suffix} />
+					<TextInput placeholder={ts.get.contacts.prefix} bind:value={form.prefix} />
+					<TextInput placeholder={ts.get.contacts.middle_name} bind:value={form.middle_name} />
+					<TextInput placeholder={ts.get.contacts.suffix} bind:value={form.suffix} />
 				</div>
 			</div>
 		</div>
@@ -144,55 +115,49 @@
 			<div class="flex flex-col gap-2">
 				{#each form.phone as phone, index (index)}
 					<div class="flex gap-2">
-						<PhoneEdit bind:value={phone.value} bind:type={phone.type} />
-						<InlineDeleteButton onClick={() => { form.phone.splice(index, 1); }} />
+						<ContactTypeValueEdit bind:value={phone.value} bind:type={phone.type} placeholder={ts.get.contacts.phone_placeholder} types={PHONE_TYPES} otherIcon={IconPhone} />
+						<InlineDeleteButton onClick={() => removePhone(index)} />
 					</div>
 				{/each}
 			</div>
-			<AddButton
-				colorOnHover={true}
-				onClick={() => form.phone.push({ value: '', type: 'mobile' })}
-			/>
+			<AddButton colorOnHover={true} onClick={addPhone} />
 		</div>
 		<div class="mt-2 flex items-center gap-4">
 			<IconMail class="size-4 text-c-btn" />
 			<div class="flex flex-col gap-2">
 				{#each form.email as email, index (index)}
 					<div class="flex gap-2">
-						<EmailEdit bind:value={email.value} bind:type={email.type} />
-						<InlineDeleteButton onClick={() => { form.email.splice(index, 1); }} />
+						<ContactTypeValueEdit bind:value={email.value} bind:type={email.type} placeholder={ts.get.contacts.email_placeholder} types={EMAIL_TYPES} otherIcon={IconMail} />
+						<InlineDeleteButton onClick={() => removeEmail(index)} />
 					</div>
 				{/each}
 			</div>
-			<AddButton
-				colorOnHover={true}
-				onClick={() => form.email.push({ value: '', type: 'home' })}
-			/>
+			<AddButton colorOnHover={true} onClick={addEmail} />
 		</div>
 		<div class="mt-2 flex items-center gap-4">
 			<IconUsersRound class="size-4 text-c-btn" />
-			<TextInput placeholder="Groups" bind:value={form.groups} />
+			<TextInput placeholder={ts.get.contacts.groups} bind:value={form.groups} />
 		</div>
 		<div class="mt-2 flex items-center gap-4">
 			<IconBuilding class="size-4 text-c-btn" />
-			<TextInput placeholder="Organization" bind:value={form.organization} />
+			<TextInput placeholder={ts.get.contacts.organization} bind:value={form.organization} />
 		</div>
 		<div class="mt-2 flex gap-4">
 			<IconMapPinHouse class="mt-2 size-4 text-c-btn" />
 			<div class="flex w-full flex-col gap-2">
 				<div class="flex gap-2">
-					<TextInput placeholder="Street" bind:value={form.street} />
-					<TextInput placeholder="City" bind:value={form.city} />
+					<TextInput placeholder={ts.get.contacts.street} bind:value={form.street} />
+					<TextInput placeholder={ts.get.contacts.city} bind:value={form.city} />
 				</div>
 				<div class="flex gap-2">
-					<TextInput placeholder="Postal Code" bind:value={form.postal_code} />
-					<TextInput placeholder="Country" bind:value={form.country} />
+					<TextInput placeholder={ts.get.contacts.postal_code} bind:value={form.postal_code} />
+					<TextInput placeholder={ts.get.contacts.country} bind:value={form.country} />
 				</div>
 			</div>
 		</div>
 		<div class="mt-4 flex items-start gap-4">
 			<IconStickyNote class="mt-2 size-4 text-c-btn" />
-			<TextInput placeholder="Notes" multiLine={true} height={80} bind:value={form.note} />
+			<TextInput placeholder={ts.get.contacts.notes} multiLine={true} height={80} bind:value={form.note} />
 		</div>
 		<div class="mt-8 flex w-full flex-row items-center justify-end">
 			<TextButton title={ts.get.layout.save} onclick={onsubmit} disabled={!canSubmit} />

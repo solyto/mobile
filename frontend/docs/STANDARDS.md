@@ -684,7 +684,7 @@ Check: `grep -rl '<input' src --include='*.svelte' | grep -v /forms/` lists
 Not a single user-facing word is written as a literal in a component: not a
 button label, not a placeholder, not a unit, not a fallback like
 `'occurrence(s)'`. If the key does not exist, add it to every locale
-file (`en`, `de`, `es`, `fr`, `it`); `npm run check` enforces that the files
+file (`en`, `de`, `es`, `fr`, `it`, `ru`); `npm run check` enforces that the files
 match each other.
 
 What the tooling does **not** catch: a hardcoded string in a component.
@@ -1082,7 +1082,10 @@ provider is a bug.
 
 Member order inside a store: `static readonly` constants, `$state` fields,
 collaborators (`auth`, `apiService`, `localStorage`, services), constructor,
-public methods, private methods.
+public methods, private methods. A pure, stateless service that a
+`$derived` field reads is a `readonly` field initialiser declared before
+that field (`CheckInData.trackerService`): it needs no injection, and a
+constructor assignment would come too late for TypeScript.
 
 Collaborators are constructor parameters with defaults, so `new Todos()`
 still works everywhere and a test can pass mocks without module mocking:
@@ -1119,7 +1122,10 @@ defaults and needs no context at all.
 
 Every endpoint is a named entry in `src/lib/config/apiRoutes.ts` with
 `%s`/`%d` id slots. No store or component builds a URL string or calls
-`fetch`. Known violation in the backlog: `weather/ManageWeatherCity.svelte`
+`fetch`. One exception: a store may add query parameters to an `apiRoutes`
+entry, in one private method using `URLSearchParams`
+(`CheckInData.valuesUrl`); the endpoint itself always comes from
+`apiRoutes`, and components never build URLs. Known violation in the backlog: `weather/ManageWeatherCity.svelte`
 (backlog 22). The
 pre-auth health check in `routes/setup/+page.svelte` is the one accepted
 direct call.
@@ -1168,6 +1174,12 @@ loadingIndicator.stop();
 Validate before `start()`, or `stop()` before every early `return`, or use
 `try/finally`. A `start()` followed by a bare `return` leaves the global
 spinner up.
+
+A component save that shows the indicator and an error message on failure
+goes through `helpers/SaveAction.svelte.ts`: `saving.run(action)`, or
+`saving.runIfIdle(action)` with `disabled={saving.busy}` for a button that
+must not save twice (check-in, goals and alerts use it; other areas move
+to it as they are cleaned up).
 
 ### 15.8 Pure logic lives in `services/` and `helpers/`
 

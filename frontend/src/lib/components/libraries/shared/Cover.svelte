@@ -1,38 +1,47 @@
 <script lang="ts">
-	import type { LibraryConfig, LibraryEntry } from '$lib/types/library';
+	import type { LibraryConfig, LibraryEntry, LibraryType } from '$lib/types/library';
 	import type { Quote } from '$lib/types/library_quote';
-	import { API_USER_STORAGE_URL } from '$lib/config/apiRoutes';
-	import { getAuth } from '$lib/state/Auth.svelte';
+	import type { Auth } from '$lib/state/Auth.svelte';
+	import { libraryCoverUrl } from '$lib/helpers/LibraryCoverHelper';
+	import { getTranslation } from '$lib/state/Translation.svelte';
 	import MissingCover from '$lib/components/libraries/shared/MissingCover.svelte';
+
+	const ts = getTranslation();
+	const FIXED_WIDTH_TYPES: LibraryType[] = ['books', 'movies', 'recipes', 'games', 'plants'];
 
 	let { entry, library }: {
 		entry: Exclude<LibraryEntry, Quote>;
-		library: { config: LibraryConfig };
+		library: { auth: Auth; config: LibraryConfig };
 	} = $props();
 
-	const auth = getAuth();
+	let failedSrc = $state<string | null>(null);
+
+	function coverName(): string {
+		if ('artist' in entry) return `${entry.artist} - ${entry.title}`;
+		if ('title' in entry) return entry.title;
+		return entry.name ?? entry.latin_name ?? '';
+	}
 
 	function coverAlt(): string {
-		if ('artist' in entry) return `${entry.artist} - ${entry.title} cover`;
-		if ('name' in entry) return `${entry.name} cover`;
-		return `${entry.title} cover`;
+		return ts.get.libraries.cover_of.replace('%s', coverName());
+	}
+
+	function hasFixedWidth(): boolean {
+		return FIXED_WIDTH_TYPES.includes(library.config.type);
 	}
 </script>
 
-{#if entry.cover}
+{#if entry.cover && failedSrc !== libraryCoverUrl(library, entry.cover)}
 	<div
 		class="flex items-center justify-center rounded-lg bg-c-neutral-1 dark:bg-s-dark-3"
 		class:size-48={library.config.type === 'music'}
-		class:w-48={library.config.type === 'books' ||
-			library.config.type === 'movies' ||
-			library.config.type === 'recipes' ||
-			library.config.type === 'games' ||
-			library.config.type === 'plants'}
+		class:w-48={hasFixedWidth()}
 	>
 		<img
-			src={`${API_USER_STORAGE_URL}/${auth.user?.id}/${library.config.type}/${entry.cover}`}
+			src={libraryCoverUrl(library, entry.cover)}
 			alt={coverAlt()}
 			class="max-h-full max-w-full rounded-lg object-contain transition-all duration-300"
+			onerror={(event) => (failedSrc = (event.currentTarget as HTMLImageElement).getAttribute('src'))}
 		/>
 	</div>
 {:else}

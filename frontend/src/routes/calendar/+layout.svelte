@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onDestroy } from 'svelte';
 	import { setCalendars } from '$lib/state/Calendars.svelte';
 	import { setCalendarImport } from '$lib/state/CalendarImport.svelte';
 	import { setExternalCalendars } from '$lib/state/ExternalCalendars.svelte';
@@ -8,12 +9,14 @@
 
 	setCalendars();
 	setExternalCalendars();
-	setCalendarImport();
+	const calendarImport = setCalendarImport();
 	setCalendarSharing();
 	setCalendarDrag();
 	setTodos();
 
 	let { children } = $props();
+
+	onDestroy(() => calendarImport.destroy());
 </script>
 
 {@render children?.()}

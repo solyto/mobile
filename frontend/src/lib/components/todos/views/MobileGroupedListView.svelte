@@ -3,6 +3,7 @@
 	import { fade } from 'svelte/transition';
 	import CompactEntry from '$lib/components/todos/views/CompactEntry.svelte';
 	import NoTodos from '$lib/components/todos/NoTodos.svelte';
+	import CategoryGroupHeading from '$lib/components/todos/views/CategoryGroupHeading.svelte';
 	import { getTodos } from '$lib/state/Todos.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import TodoGroupingService from '$lib/services/TodoGroupingService';
@@ -17,17 +18,12 @@
 </script>
 
 {#if todos.filteredTodos.length === 0}
-	<NoTodos />
+	<NoTodos noTodosYet={todos.noTodosYet} />
 {:else}
 	<div class="flex flex-col gap-8">
 		{#each groups as group (group.category?.id ?? 'uncategorized')}
 			<div in:fade>
-				<h3 class="mb-3 text-lg font-bold text-c-neutral-7 dark:text-c-neutral-3">
-					{group.category?.title ?? ts.get.todos.uncategorized}
-					<span class="ml-2 text-sm font-normal text-c-neutral-4 dark:text-c-neutral-5">
-						{group.todos.length}
-					</span>
-				</h3>
+				<CategoryGroupHeading title={group.category?.title ?? ts.get.todos.uncategorized} count={group.todos.length} />
 				<div class="flex flex-col space-y-4">
 					{#each group.todos as todo (todo.id)}
 						<CompactEntry {todo} {handleCheck} minimal={false} />

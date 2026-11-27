@@ -1,39 +1,26 @@
 <script lang="ts">
-	import IconBookmarkPlus from '@lucide/svelte/icons/bookmark-plus';
-	import IconBookmarkCheck from '@lucide/svelte/icons/bookmark-check';
-	import { getLinkLibrary } from '$lib/state/LinkLibrary.svelte';
+	import IconBookmarkPlus from '$lib/icons/lucide/bookmark-plus.svelte';
+	import IconBookmarkCheck from '$lib/icons/lucide/bookmark-check.svelte';
 	import type { FeedItem } from '$lib/types/feed';
 	import { getFeeds } from '$lib/state/Feeds.svelte';
 	import { scale } from 'svelte/transition';
-	import type { CreateLinkRequest } from '$lib/types/library_link';
 
 	let { item }: {
 		item: FeedItem;
 	} = $props();
 
-	const linkLibrary = getLinkLibrary();
 	const feeds = getFeeds();
 
-	async function saveToLibrary(e: Event): Promise<void> {
+	async function toggleSaved(e: Event): Promise<void> {
 		e.preventDefault();
 
-		if (feeds.isInLibrary(item.id)) {
-			const res = await linkLibrary.deleteByLink(item.link);
-			if (res) feeds.unsaveToLibrary(item);
-		} else {
-			const request: CreateLinkRequest = {
-				title: item.title,
-				url: item.link,
-				category_id: null
-			};
-			const res = await linkLibrary.create(request);
-			if (res) feeds.saveToLibrary(item);
-		}
+		if (item.saved_link_id) await feeds.unsaveFromLibrary(item);
+		else await feeds.saveToLibrary(item);
 	}
 </script>
 
-<button class="cursor-pointer" onclick={(e) => saveToLibrary(e)}>
-	{#if feeds.isInLibrary(item.id)}
+<button class="cursor-pointer" onclick={toggleSaved}>
+	{#if item.saved_link_id}
 		<div in:scale><IconBookmarkCheck class="block p-1 text-c-primary" /></div>
 	{:else}
 		<div in:scale><IconBookmarkPlus class="block p-1 text-c-neutral-5 hover:text-c-btn-hover dark:text-c-neutral-4" /></div>

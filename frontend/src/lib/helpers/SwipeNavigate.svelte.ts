@@ -77,14 +77,12 @@ export class SwipeNavigate {
 				await tick();
 				if (this.#target) void this.#target.offsetWidth;
 
-				// Slide in
 				this.#animating = true;
 				this.#dragX = 0;
 				await new Promise<void>((r) => setTimeout(r, this.#duration));
 
 				this.#animating = false;
 			} else {
-				// Snap back
 				this.#animating = true;
 				this.#dragX = 0;
 				await new Promise<void>((r) => setTimeout(r, this.#duration));

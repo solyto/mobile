@@ -2,11 +2,15 @@ import type { Plant, CreatePlantRequest, UpdatePlantRequest, PlantLocation } fro
 import { getContext, setContext } from 'svelte';
 import { getAuth, type Auth } from '$lib/state/Auth.svelte';
 import ApiService from '$lib/services/ApiService';
+import LocalStorageService from '$lib/services/LocalStorageService';
 import { apiRoutes } from '$lib/config/apiRoutes';
 import LibraryFilterService from '$lib/services/LibraryFilterService';
 import type { LibraryConfig } from '$lib/types/library';
 
 export class PlantLibrary {
+	static readonly LS_VIEW_KEY: string = 'plants_view';
+	static readonly VIEWS = ['list', 'cards'] as const;
+
 	config: LibraryConfig = {
 		type: 'plants',
 		hasCovers: true,
@@ -33,14 +37,20 @@ export class PlantLibrary {
 	unidentifiedFilter = $state<boolean>(false);
 	searchTerm = $state<string>('');
 	activeFilter: 'none' | 'search' | 'location' | 'unidentified' = 'none';
-	view = $state<'list' | 'cards'>('cards');
+	view = $state<(typeof PlantLibrary.VIEWS)[number]>('cards');
 	auth: Auth;
 	filterService = new LibraryFilterService();
 	apiService: ApiService;
+	localStorage: LocalStorageService;
 
-	constructor(auth: Auth = getAuth(), apiService: ApiService = auth.apiService) {
+	constructor(
+		auth: Auth = getAuth(),
+		apiService: ApiService = auth.apiService,
+		localStorage: LocalStorageService = new LocalStorageService()
+	) {
 		this.auth = auth;
 		this.apiService = apiService;
+		this.localStorage = localStorage;
 	}
 
 	async load(): Promise<void> {
@@ -54,37 +64,27 @@ export class PlantLibrary {
 
 	search(): void {
 		this.activeFilter = 'search';
-		this.filteredEntries = this.filterService.search(this.entries, this.searchTerm, [
-			'name',
-			'latin_name'
-		]);
+		this.reapplyFilter();
 	}
 
 	addLocationFilter(location: PlantLocation | null): void {
 		this.locationFilter = location;
 		this.activeFilter = 'location';
-		this.filteredEntries = this.filterService.byLocation(this.entries, location);
+		this.reapplyFilter();
 	}
 
 	filterByUnidentified(): void {
 		this.unidentifiedFilter = true;
 		this.locationFilter = null;
 		this.activeFilter = 'unidentified';
-		this.filteredEntries = this.filterService.byUnidentified(this.entries);
+		this.reapplyFilter();
 	}
 
 	clearFilters(): void {
 		this.locationFilter = null;
 		this.unidentifiedFilter = false;
 		this.activeFilter = 'none';
-		this.filteredEntries = this.entries;
-	}
-
-	private reapplyFilter(): void {
-		if (this.activeFilter === 'search') this.search();
-		else if (this.activeFilter === 'location') this.addLocationFilter(this.locationFilter);
-		else if (this.activeFilter === 'unidentified') this.filterByUnidentified();
-		else this.filteredEntries = this.entries;
+		this.reapplyFilter();
 	}
 
 	openCreateModal(entry?: Plant): void {
@@ -107,6 +107,13 @@ export class PlantLibrary {
 	closeDetailModal(): void {
 		this.detailModalVisible = false;
 		this.activeEntry = null;
+	}
+
+	changeView(view: string): void {
+		const known = PlantLibrary.VIEWS.find((candidate) => candidate === view);
+		if (!known) return;
+		this.view = known;
+		this.localStorage.set(PlantLibrary.LS_VIEW_KEY, known);
 	}
 
 	switchView(): void {
@@ -146,6 +153,23 @@ export class PlantLibrary {
 		const res = await this.apiService.delete(apiRoutes.libraries.plants.delete, entry.id);
 		if (res) await this.load();
 		return res;
+	}
+
+	private reapplyFilter(): void {
+		this.filteredEntries = this.filterEntries();
+	}
+
+	private filterEntries(): Plant[] {
+		switch (this.activeFilter) {
+			case 'search':
+				return this.filterService.search(this.entries, this.searchTerm, ['name', 'latin_name']);
+			case 'location':
+				return this.filterService.byLocation(this.entries, this.locationFilter);
+			case 'unidentified':
+				return this.filterService.byUnidentified(this.entries);
+			default:
+				return this.entries;
+		}
 	}
 }
 

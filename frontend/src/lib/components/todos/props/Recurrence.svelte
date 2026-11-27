@@ -7,7 +7,7 @@
 	import { clickOutside } from '$lib/helpers/ClickHelper';
 	import { getViewPoint } from '$lib/state/Viewpoint.svelte';
 	import { scale } from 'svelte/transition';
-	import IconRepeat from '@lucide/svelte/icons/repeat';
+	import IconRepeat from '$lib/icons/lucide/repeat.svelte';
 	import NumberInput from '$lib/components/forms/NumberInput.svelte';
 	import DateInput from '$lib/components/forms/DateInput.svelte';
 	import SegmentedControl from '$lib/components/forms/SegmentedControl.svelte';
@@ -58,13 +58,11 @@
 	async function save(): Promise<void> {
 		isOpen = false;
 		loadingIndicator.start();
-		await todos.changeRecurrence(
-			todo,
-			selectedFrequency,
-			selectedInterval,
-			selectedEndsAt || null
-		);
-		loadingIndicator.stop();
+		try {
+			await todos.changeRecurrence(todo, selectedFrequency, selectedInterval, selectedEndsAt || null);
+		} finally {
+			loadingIndicator.stop();
+		}
 	}
 
 	async function remove(): Promise<void> {
@@ -72,8 +70,11 @@
 		selectedInterval = 1;
 		selectedEndsAt = '';
 		loadingIndicator.start();
-		await todos.changeRecurrence(todo, null);
-		loadingIndicator.stop();
+		try {
+			await todos.changeRecurrence(todo, null);
+		} finally {
+			loadingIndicator.stop();
+		}
 		close();
 	}
 

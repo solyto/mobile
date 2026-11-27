@@ -1,5 +1,5 @@
 <script lang="ts">
-	import IconMenu from '@lucide/svelte/icons/menu';
+	import IconMenu from '$lib/icons/lucide/menu.svelte';
 
 	let { onclick, top, left }: {
 		onclick: () => void;

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { scale } from 'svelte/transition';
-	import IconBell from '@lucide/svelte/icons/bell';
+	import IconBell from '$lib/icons/lucide/bell.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
 	import { getUserNotifications } from '$lib/state/UserNotifications.svelte';

@@ -10,7 +10,7 @@
 
 	const ts = getTranslation();
 
-	type Mode = 'url' | 'clipboard' | 'upload'
+	type Mode = 'url' | 'clipboard' | 'upload';
 	let mode = $state<Mode>('url');
 	let urlValue = $state('');
 	let uploadedBase64 = $state('');
@@ -59,7 +59,6 @@
 </script>
 
 <ConfirmationModal title={ts.get.notes.insert_image} onConfirm={confirm} onCancel={onCancel} width="w-112">
-	<!-- Tabs -->
 	<div class="mb-4 flex gap-1 rounded-lg bg-c-neutral-1 p-1 dark:bg-s-dark-3">
 		{#each (['url', 'clipboard', 'upload'] as Mode[]) as tab (tab)}
 			<button
@@ -88,7 +87,7 @@
 		{:else if mode === 'clipboard'}
 			<div class="flex flex-col items-center gap-3 py-2" in:fly={{ x: 20 }}>
 				{#if clipboardPreview}
-					<img src={clipboardPreview} alt="Clipboard preview" class="max-h-48 rounded-lg object-contain" />
+					<img src={clipboardPreview} alt={ts.get.notes.insert_image_clipboard_preview} class="max-h-48 rounded-lg object-contain" />
 				{:else}
 					<button
 						onclick={pasteFromClipboard}
@@ -104,7 +103,7 @@
 		{:else}
 			<div in:fly={{ x: 20 }}>
 				{#if uploadedBase64}
-					<img src={uploadedBase64} alt="Upload preview" class="max-h-48 w-full rounded-lg object-contain" />
+					<img src={uploadedBase64} alt={ts.get.notes.insert_image_upload_preview} class="max-h-48 w-full rounded-lg object-contain" />
 				{:else}
 					<FileUpload bind:value={uploadedBase64} />
 				{/if}

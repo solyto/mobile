@@ -4,6 +4,7 @@
 	import { getPlugins } from '$lib/state/Plugins.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
+	import { SaveAction } from '$lib/helpers/SaveAction.svelte';
 	import PluginService from '$lib/services/PluginService';
 	import SettingsSection from '$lib/components/settings/SettingsSection.svelte';
 	import Toggle from '$lib/components/forms/Toggle.svelte';
@@ -17,6 +18,7 @@
 	const loadingIndicator = getLoadingIndicator();
 	const notifications = getUiNotifications();
 	const pluginService = new PluginService();
+	const saving = new SaveAction(() => ts.get.settings.ai_plugin_save_error);
 
 	const HINT = 'text-sm text-c-neutral-5';
 
@@ -25,10 +27,13 @@
 
 	onMount(async () => {
 		loadingIndicator.start();
-		await plugins.load();
-		draft = pluginService.toDraft(plugins.ai);
-		loadAttempted = true;
-		loadingIndicator.stop();
+		try {
+			await plugins.load();
+			draft = pluginService.toDraft(plugins.ai);
+			loadAttempted = true;
+		} finally {
+			loadingIndicator.stop();
+		}
 	});
 
 	function providerOptions(): { label: string; value: string }[] {
@@ -68,14 +73,9 @@
 			return false;
 		}
 
-		loadingIndicator.start();
-		const ok = await plugins.updateAi(request);
-		loadingIndicator.stop();
+		const ok = await saving.run(() => plugins.updateAi(request));
+		if (!ok) return false;
 
-		if (!ok) {
-			notifications.error(ts.get.settings.ai_plugin_save_error);
-			return false;
-		}
 		draft = pluginService.toDraft(plugins.ai);
 		notifications.success(ts.get.settings.ai_plugin_saved);
 		return true;

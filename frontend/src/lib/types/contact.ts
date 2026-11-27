@@ -91,12 +91,6 @@ export interface UpdateAddressBookRequest {
 	color: string;
 }
 
-export interface ImportForm {
-	url: string;
-	username: string;
-	secret: string;
-}
-
 export interface ImportRequest {
 	url: string;
 	username: string;
@@ -107,12 +101,20 @@ export interface SelectImportAddressBooksRequest {
 	address_books: string[];
 }
 
+export type ImportSource = 'carddav' | 'file';
+
+export type ImportStage = 'started' | 'select' | 'address-books' | 'contacts' | 'finished' | 'failed';
+
+export type ImportFileTarget = { type: 'new'; name: string; color: string } | { type: 'existing'; addressBookId: number };
+
 export interface ImportState {
-	stage: 'started' | 'select' | 'address-books' | 'contacts' | 'finished';
-	address_books: string[];
+	stage: ImportStage;
+	source: ImportSource;
+	address_books: string[] | null;
 	address_books_count: number;
 	address_books_done: number;
 	address_books_current: string | null;
 	contacts_count: number;
 	contacts_done: number;
+	contacts_skipped: number;
 }

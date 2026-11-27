@@ -30,7 +30,7 @@ export class Clipboard {
 	async create(request: CreateClipboardEntryRequest): Promise<boolean> {
 		const res = await this.apiService.create(apiRoutes.clipboard.create, request);
 		if (res) await this.load();
-		return Promise.resolve(res !== null);
+		return res !== null;
 	}
 
 	async createImage(file: File): Promise<'ok' | 'too_large' | 'error'> {

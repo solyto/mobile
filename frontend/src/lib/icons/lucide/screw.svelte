@@ -1,0 +1,26 @@
+<!--
+@lucide/svelte v1.59.0 - ISC
+
+This source code is licensed under the ISC license.
+See the LICENSE file in this directory.
+-->
+<script lang="ts">
+	import Icon from './Icon.svelte';
+	import type { LucideIconData, LucideProps } from './types';
+
+	const props: LucideProps = $props();
+
+	const iconData: LucideIconData = {
+		name: 'screw',
+		size: 24,
+		node: [
+			['path', { d: 'M10 9v10' }],
+			['path', { d: 'M14 13v2' }],
+			['path', { d: 'M16.5 10.5 5.706 21.294A2.4 2.4 0 014.002 22H2.5a.5.5 0 01-.5-.5v-1.502a2.4 2.4 0 01.706-1.704L13.5 7.5' }],
+			['path', { d: 'M20.819 11.575a6 6 0 00.969-5.162.6.6 0 00-.981-.219l-.455.454a1.2 1.2 0 01-1.704 0l-1.296-1.296a1.2 1.2 0 010-1.704l.454-.453a.595.595 0 00-.219-.98 6 6 0 00-5.162.967 2 2 0 00-.222 3.019l5.596 5.597a2 2 0 003.02-.222' }],
+			['path', { d: 'M6 13v8' }]
+		]
+	};
+</script>
+
+<Icon {...props} icon={iconData} />

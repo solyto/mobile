@@ -1,28 +1,24 @@
 <script lang="ts">
 	import type { TodoCategory } from '$lib/types/todo';
 	import { fade } from 'svelte/transition';
-	import { tick, onDestroy } from 'svelte';
-	import IconPen from '@lucide/svelte/icons/pen';
+	import { onDestroy } from 'svelte';
+	import IconPen from '$lib/icons/lucide/pen.svelte';
 	import { getTodos } from '$lib/state/Todos.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
-	import { getKeyManager } from '$lib/state/KeyManager.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import DeleteButton from '$lib/components/ui/buttons/DeleteButton.svelte';
 	import ConfirmationModal from '$lib/components/ui/ConfirmationModal.svelte';
 	import TextInput from '$lib/components/forms/TextInput.svelte';
+	import { InlineRename } from '$lib/helpers/InlineRename.svelte';
 
 	const todos = getTodos();
 	const loadingIndicator = getLoadingIndicator();
-	const keyManager = getKeyManager();
 	const ts = getTranslation();
 
 	let { category }: { category: TodoCategory } = $props();
 
-	let editing = $state<boolean>(false);
 	let deleteModalOpen = $state<boolean>(false);
-	let title = $state<string>('');
-	let input = $state<HTMLInputElement | null>(null);
-	let keyHandlers: Record<string, string | null> = { Enter: null, Escape: null };
+	const rename = new InlineRename(currentTitle, saveTitle);
 
 	function openDeleteModal(): void {
 		deleteModalOpen = true;
@@ -35,50 +31,34 @@
 	async function onDelete(): Promise<void> {
 		deleteModalOpen = false;
 		loadingIndicator.start();
-		await todos.deleteCategory(category);
-		loadingIndicator.stop();
+		try {
+			await todos.deleteCategory(category);
+		} finally {
+			loadingIndicator.stop();
+		}
 	}
 
-	async function startEdit(): Promise<void> {
-		keyManager.unregisterAll(keyHandlers);
-		editing = true;
-		title = category.title;
-		keyHandlers.Enter = keyManager.registerKeyDown('Enter', () => saveEdit(), { priority: 2 });
-		keyHandlers.Escape = keyManager.registerKeyDown('Escape', () => cancelEdit(), { priority: 2 });
-		await tick();
-		input?.focus();
+	function currentTitle(): string {
+		return category.title;
 	}
 
-	async function saveEdit(): Promise<void> {
-		if (!editing) return;
-		keyManager.unregisterAll(keyHandlers);
-		editing = false;
-		const trimmed = title.trim();
-		if (!trimmed || trimmed === category.title) return;
-		loadingIndicator.start();
-		await todos.updateCategory(category, { title: trimmed });
-		loadingIndicator.stop();
+	function saveTitle(title: string): Promise<boolean> {
+		return todos.updateCategory(category, { title });
 	}
 
-	function cancelEdit(): void {
-		keyManager.unregisterAll(keyHandlers);
-		editing = false;
-		title = category.title;
-	}
-
-	onDestroy(() => keyManager.unregisterAll(keyHandlers));
+	onDestroy(() => rename.destroy());
 </script>
 
 <div
 	class="group flex min-h-11 break-inside-avoid items-center gap-2 px-2 text-base md:mb-2 md:min-h-0 md:w-fit md:max-w-full md:gap-0 md:bg-c-neutral-1 md:py-1 md:text-sm md:dark:bg-c-neutral-7 md:dark:text-white"
 	in:fade
 >
-	{#if editing}
+	{#if rename.editing}
 		<div class="w-full py-1 md:w-48 md:py-0">
 			<TextInput
-				bind:input
-				bind:value={title}
-				onblur={saveEdit}
+				bind:input={rename.input}
+				bind:value={rename.title}
+				onblur={rename.finish}
 				placeholder={ts.get.todos.rename_category}
 			/>
 		</div>
@@ -88,7 +68,7 @@
 			<button
 				class="flex shrink-0 cursor-pointer items-center justify-center rounded-full text-c-neutral-3 transition-all hover:text-c-heading"
 				title={ts.get.todos.rename_category}
-				onclick={startEdit}
+				onclick={rename.start}
 			>
 				<IconPen class="size-5 md:size-4" />
 			</button>

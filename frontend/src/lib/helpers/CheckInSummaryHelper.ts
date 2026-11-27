@@ -2,6 +2,7 @@ import type { CheckIn, CheckInType } from '$lib/types/check_in';
 import type { CheckInSummaryRecords } from '$lib/types/translation';
 import { SPORT_BY_ID } from '$lib/types/check_in';
 import { isDateToday, isDateYesterday } from '$lib/helpers/DateHelper';
+import { pluralize } from '$lib/helpers/FormatHelper';
 
 // Every tracker is stored on the same scale: 5 is the good end (for alcohol
 // and smoking that means none), as in the check-in form and the score.
@@ -112,10 +113,7 @@ export function buildPeriodSummary(
 			if (tracker === 'sports') {
 				const count = checkIns.filter((c) => c.sports !== null).length;
 				if (count === 0) continue;
-				const phrase =
-					count === 1
-						? p.period_sports_singular
-						: p.period_sports_plural.replace('{n}', String(count));
+				const phrase = pluralize(count, p.period_sports_singular, p.period_sports_plural);
 				// value 3 = neutral so sports never triggers contrast logic
 				items.push({ tracker, value: 3, phrase });
 				continue;

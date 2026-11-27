@@ -6,9 +6,10 @@ export class CookieConsent {
 	static readonly LS_ACKNOWLEDGED_KEY: string = 'cookie_consent_acknowledged';
 
 	acknowledged = $state<boolean>(true);
-	localStorage = new LocalStorageService();
+	localStorage: LocalStorageService;
 
-	constructor() {
+	constructor(localStorage: LocalStorageService = new LocalStorageService()) {
+		this.localStorage = localStorage;
 		if (browser) this.acknowledged = this.localStorage.getBool(CookieConsent.LS_ACKNOWLEDGED_KEY) ?? false;
 	}
 

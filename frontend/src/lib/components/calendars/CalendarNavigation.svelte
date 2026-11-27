@@ -14,11 +14,12 @@
 	import DayNavigation from '$lib/components/calendars/views/day/DayNavigation.svelte';
 	import ListNavigation from '$lib/components/calendars/views/day/ListNavigation.svelte';
 	import IconList from '$lib/components/ui/icons/IconList.svelte';
-	import { getCalendars } from '$lib/state/Calendars.svelte';
+	import { getCalendars, type Calendars } from '$lib/state/Calendars.svelte';
 	import { getCalendarImport } from '$lib/state/CalendarImport.svelte';
 	import ImportButton from '$lib/components/ui/buttons/ImportButton.svelte';
 	import CloudButton from '$lib/components/ui/buttons/CloudButton.svelte';
 	import { page } from '$app/state';
+	import type { Component } from 'svelte';
 
 	let editMode = $state<boolean>(page.url.searchParams.has('invitations'));
 
@@ -30,10 +31,33 @@
 		...calendars.ownedCalendars,
 		...calendars.acceptedSharedCalendars
 	]);
+
+	const viewButtons: { view: (typeof Calendars.VIEWS)[number]; icon: Component<{ selected: boolean }> }[] = [
+		{ view: 'month', icon: IconMonth },
+		{ view: 'week', icon: IconWeek },
+		{ view: 'day', icon: IconDay },
+		{ view: 'list', icon: IconList }
+	];
+
+	function openEditMode(): void {
+		editMode = true;
+	}
+
+	function closeEditMode(): void {
+		editMode = false;
+	}
+
+	function openImport(): void {
+		calendarImport.open();
+	}
+
+	function openSync(): void {
+		calendars.syncModal = true;
+	}
 </script>
 
 <div
-	class="absolute z-40 hidden h-full max-h-screen w-16 flex-col overflow-y-auto bg-c-bg-surface drop-shadow-xl transition-all lg:relative lg:flex"
+	class="absolute z-40 hidden h-full max-h-screen w-16 flex-col overflow-y-auto bg-c-bg drop-shadow-xl transition-all lg:relative lg:flex dark:border-r-1 dark:border-s-dark-2 dark:drop-shadow-sm dark:drop-shadow-s-dark-shadow"
 	class:lg:w-96={editMode}
 	in:fade
 >
@@ -53,46 +77,16 @@
 				</div>
 				<Divider />
 				<div class="flex w-full flex-col items-center justify-center">
-					<button
-						class="relative flex w-full cursor-pointer justify-center p-4 transition-all hover:bg-c-neutral dark:hover:bg-s-dark-3"
-						onclick={() => {
-							calendars.changeView('month');
-						}}
-						title={ts.get.calendar.month}
-					>
-						<IconMonth selected={calendars.view === 'month'} />
-						<NavIndicator active={calendars.view === 'month'} />
-					</button>
-					<button
-						class="relative flex w-full cursor-pointer justify-center p-4 transition-all hover:bg-c-neutral dark:hover:bg-s-dark-3"
-						onclick={() => {
-							calendars.changeView('week');
-						}}
-						title={ts.get.calendar.week}
-					>
-						<IconWeek selected={calendars.view === 'week'} />
-						<NavIndicator active={calendars.view === 'week'} />
-					</button>
-					<button
-						class="relative flex w-full cursor-pointer justify-center p-4 transition-all hover:bg-c-neutral dark:hover:bg-s-dark-3"
-						onclick={() => {
-							calendars.changeView('day');
-						}}
-						title={ts.get.calendar.day}
-					>
-						<IconDay selected={calendars.view === 'day'} />
-						<NavIndicator active={calendars.view === 'day'} />
-					</button>
-					<button
-						class="relative flex w-full cursor-pointer justify-center p-4 transition-all hover:bg-c-neutral dark:hover:bg-s-dark-3"
-						onclick={() => {
-							calendars.changeView('list');
-						}}
-						title={ts.get.calendar.list}
-					>
-						<IconList selected={calendars.view === 'list'} />
-						<NavIndicator active={calendars.view === 'list'} />
-					</button>
+					{#each viewButtons as button (button.view)}
+						<button
+							class="relative flex w-full cursor-pointer justify-center p-4 transition-all hover:bg-c-neutral dark:hover:bg-s-dark-3"
+							onclick={() => calendars.changeView(button.view)}
+							title={ts.get.calendar[button.view]}
+						>
+							<button.icon selected={calendars.view === button.view} />
+							<NavIndicator active={calendars.view === button.view} />
+						</button>
+					{/each}
 				</div>
 			</div>
 			<Divider />
@@ -103,35 +97,15 @@
 			</div>
 			<Divider />
 			<div class="flex aspect-square w-full flex-col items-center justify-center gap-4">
-				<EditButton
-					inModal={false}
-					onClick={() => {
-						editMode = true;
-					}}
-					title={ts.get.calendar.manage_calendars}
-				/>
-				<ImportButton
-					onClick={() => {
-						calendarImport.importModal = true;
-					}}
-					title={ts.get.calendar.import_calendars}
-				/>
-				<CloudButton
-					onClick={() => {
-						calendars.syncModal = true;
-					}}
-					title={ts.get.calendar.synchronize}
-				/>
+				<EditButton inModal={false} onClick={openEditMode} title={ts.get.calendar.manage_calendars} />
+				<ImportButton onClick={openImport} title={ts.get.calendar.import_calendars} />
+				<CloudButton onClick={openSync} title={ts.get.calendar.synchronize} />
 			</div>
 		</div>
 	{/if}
 	{#if editMode}
 		<div in:blur>
-			<ManageCalendars
-				onClose={() => {
-					editMode = false;
-				}}
-			/>
+			<ManageCalendars onClose={closeEditMode} />
 		</div>
 	{/if}
 </div>

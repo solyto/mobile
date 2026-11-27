@@ -10,8 +10,11 @@
 
 	onMount(async () => {
 		loadingIndicator.start();
-		await library.load();
-		loadingIndicator.stop();
+		try {
+			await library.load();
+		} finally {
+			loadingIndicator.stop();
+		}
 	});
 
 	let { children } = $props();

@@ -13,13 +13,7 @@ export class UiNotifications {
 		};
 
 		this.queue.push(notification);
-
-		setTimeout(
-			() => {
-				this.queue = this.queue.filter((n) => n.id !== notification.id);
-			},
-			notification.timeout ? notification.timeout : this.defaultTimeout
-		);
+		setTimeout(() => this.remove(notification.id), notification.timeout || this.defaultTimeout);
 	}
 
 	success(message: string): void {

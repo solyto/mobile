@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
-	import Play from '@lucide/svelte/icons/play';
-	import Pause from '@lucide/svelte/icons/pause';
-	import SkipForward from '@lucide/svelte/icons/skip-forward';
-	import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
+	import Play from '$lib/icons/lucide/play.svelte';
+	import Pause from '$lib/icons/lucide/pause.svelte';
+	import SkipForward from '$lib/icons/lucide/skip-forward.svelte';
+	import RotateCcw from '$lib/icons/lucide/rotate-ccw.svelte';
 
 	const ts = getTranslation();
 

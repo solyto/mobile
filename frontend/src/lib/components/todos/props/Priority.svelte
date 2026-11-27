@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { scale } from 'svelte/transition';
 	import type { Todo, TodoPriority } from '$lib/types/todo';
-	import IconUp from '@lucide/svelte/icons/circle-arrow-up';
-	import IconRight from '@lucide/svelte/icons/circle-arrow-right';
-	import IconDown from '@lucide/svelte/icons/circle-arrow-down';
+	import IconUp from '$lib/icons/lucide/circle-arrow-up.svelte';
+	import IconRight from '$lib/icons/lucide/circle-arrow-right.svelte';
+	import IconDown from '$lib/icons/lucide/circle-arrow-down.svelte';
 	import { getTodos } from '$lib/state/Todos.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import QuickSelectOverlay from '$lib/components/ui/QuickSelectOverlay.svelte';
@@ -29,30 +29,54 @@
 		filled?: boolean;
 	} = $props();
 
+	type PriorityOption = {
+		priority: TodoPriority;
+		icon: typeof IconUp;
+		color: string;
+		filledColor: string;
+	};
+
+	const PRIORITIES: PriorityOption[] = [
+		{ priority: 'high', icon: IconUp, color: 'text-c-danger', filledColor: 'text-c-danger-icon' },
+		{ priority: 'medium', icon: IconRight, color: 'text-c-btn', filledColor: 'text-c-btn-icon' },
+		{ priority: 'low', icon: IconDown, color: 'text-c-success', filledColor: 'text-c-success-icon' }
+	];
+
 	const todos = getTodos();
 	const loadingIndicator = getLoadingIndicator();
 
 	let priorityMenuVisible = $state<boolean>(false);
 	let trigger = $state<HTMLDivElement | null>(null);
+	let current = $derived(PRIORITIES.find((option) => option.priority === todo.priority));
 
 	function togglePriorityMenu(): void {
 		priorityMenuVisible = !priorityMenuVisible;
 	}
 
+	function closePriorityMenu(): void {
+		priorityMenuVisible = false;
+	}
+
 	async function handlePriorityChange(todo: Todo, priority: TodoPriority): Promise<void> {
 		loadingIndicator.start();
 		togglePriorityMenu();
-		await todos.changePriority(todo, priority);
-
-		loadingIndicator.stop();
+		try {
+			await todos.changePriority(todo, priority);
+		} finally {
+			loadingIndicator.stop();
+		}
 	}
 
-	function getIconClass(colorClass: string): string {
+	function getIconClass(option: PriorityOption): string {
 		if (filled) {
-			return 'cursor-pointer text-white';
+			return `cursor-pointer ${option.filledColor}`;
 		}
 
-		return `cursor-pointer rounded-full ${colorClass} hover:bg-c-neutral dark:hover:bg-s-dark-3`;
+		return `cursor-pointer rounded-full ${option.color} hover:bg-c-neutral dark:hover:bg-s-dark-3`;
+	}
+
+	function fillsRow(): boolean {
+		return todos.isRowView && !compact;
 	}
 </script>
 
@@ -60,59 +84,35 @@
 	bind:this={trigger}
 	class={[
 		'relative flex items-center rounded-l-md transition-all duration-300 max-2xl:rounded-full',
-		filled && 'todo-priority-filled',
 		filled && getPriorityColorClass(todo.priority)
 	]}
 	class:justify-center={!left}
 	class:justify-start={left}
-	class:p-4={(todos.view === 'list' || todos.view === 'grouped') && !simple && !compact}
-	class:2xl:w-full={(todos.view === 'list' || todos.view === 'grouped') && !compact}
-	class:2xl:h-full={(todos.view === 'list' || todos.view === 'grouped') && !compact}
+	class:p-4={fillsRow() && !simple}
+	class:2xl:w-full={fillsRow()}
+	class:2xl:h-full={fillsRow()}
 	class:rounded-bl-none={expanded}
 	class:rounded-br-md={expanded}
 >
 	{#if changePriority}
 		{#key todo.priority}
 			<span class="flex" in:scale={{ start: 0.6, duration: 250 }}>
-				{#if todo.priority === 'high'}
-					<IconUp
-						class={getIconClass('text-c-danger')}
-						onclick={togglePriorityMenu}
-					/>
-				{:else if todo.priority === 'medium'}
-					<IconRight
-						class={getIconClass('text-c-btn')}
-						onclick={togglePriorityMenu}
-					/>
-				{:else if todo.priority === 'low'}
-					<IconDown
-						class={getIconClass('text-c-success')}
-						onclick={togglePriorityMenu}
-					/>
+				{#if current}
+					<current.icon class={getIconClass(current)} onclick={togglePriorityMenu} />
 				{/if}
 			</span>
 		{/key}
 		{#if priorityMenuVisible}
-			<QuickSelectOverlay onClose={() => (priorityMenuVisible = false)} {portal} target={trigger}>
-				<IconUp
-					class="cursor-pointer rounded-full text-c-danger hover:bg-c-neutral dark:hover:bg-s-dark-3"
-					onclick={() => handlePriorityChange(todo, 'high')}
-				/>
-				<IconRight
-					class="cursor-pointer rounded-full text-c-btn hover:bg-c-neutral dark:hover:bg-s-dark-3"
-					onclick={() => handlePriorityChange(todo, 'medium')}
-				/>
-				<IconDown
-					class="cursor-pointer rounded-full text-c-success hover:bg-c-neutral dark:hover:bg-s-dark-3"
-					onclick={() => handlePriorityChange(todo, 'low')}
-				/>
+			<QuickSelectOverlay onClose={closePriorityMenu} {portal} target={trigger}>
+				{#each PRIORITIES as option (option.priority)}
+					<option.icon
+						class="cursor-pointer rounded-full {option.color} hover:bg-c-neutral dark:hover:bg-s-dark-3"
+						onclick={() => handlePriorityChange(todo, option.priority)}
+					/>
+				{/each}
 			</QuickSelectOverlay>
 		{/if}
-	{:else if todo.priority === 'high'}
-		<IconUp class="text-c-danger" />
-	{:else if todo.priority === 'medium'}
-		<IconRight class="text-c-btn" />
-	{:else if todo.priority === 'low'}
-		<IconDown class="text-c-success" />
+	{:else if current}
+		<current.icon class={current.color} />
 	{/if}
 </div>

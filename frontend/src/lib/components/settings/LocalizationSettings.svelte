@@ -6,6 +6,7 @@
 	import { getTimeZones } from '@vvo/tzdb';
 	import { getAuth } from '$lib/state/Auth.svelte';
 	import type { WeekStart } from '$lib/types/auth';
+	import { DEFAULT_CURRENCY, SUPPORTED_CURRENCIES, type Currency } from '$lib/config/currency';
 
 	const ts = getTranslation();
 	const auth = getAuth();
@@ -20,10 +21,7 @@
 	];
 
 	const timezoneOptions = getTimeZones()
-		.map((tz) => ({
-			value: tz.name,
-			label: tz.name
-		}))
+		.map((tz) => ({ value: tz.name, label: tz.name }))
 		.sort((a, b) => a.label.localeCompare(b.label));
 
 	const dateFormatOptions = [
@@ -48,64 +46,65 @@
 		{ value: 'sunday', label: ts.get.calendar.weekdays[7] }
 	];
 
-	let languageInput = $state<HTMLSelectElement | null>(null);
-	let languageValues = $state<string>(auth?.user?.settings?.language ?? 'en');
-	let timezoneInput = $state<HTMLSelectElement | null>(null);
-	let timezoneValues = $state<string>(auth?.user?.settings?.timezone ?? '');
-	let dateFormatInput = $state<HTMLSelectElement | null>(null);
-	let dateFormatValues = $state<string>(auth?.user?.settings?.date_format ?? '');
-	let timeFormatInput = $state<HTMLSelectElement | null>(null);
-	let timeFormatValues = $state<string>(auth?.user?.settings?.time_format ?? '');
-	let weekStartValues = $state<string>(auth.getWeekStart());
+	const currencyOptions = SUPPORTED_CURRENCIES.map((currency) => ({
+		value: currency,
+		label: currencyLabel(currency)
+	}));
 
-	const handleLanguageChange = async (value: string) => {
+	function currencyLabel(currency: Currency): string {
+		const symbol = currencySymbol(currency);
+		return symbol === currency ? currency : `${currency} ${symbol}`;
+	}
+
+	function currencySymbol(currency: Currency): string {
+		return new Intl.NumberFormat('en', { style: 'currency', currency })
+			.formatToParts(0)
+			.find((part) => part.type === 'currency')?.value ?? currency;
+	}
+
+	async function handleLanguageChange(value: string): Promise<void> {
 		ts.changeLanguage(value as Language);
 		await auth.updateLanguage(value);
-	};
-	const handleTimezoneChange = async (value: string) => await auth.updateTimezone(value);
-	const handleDateFormatChange = async (value: string) => await auth.updateDateFormat(value);
-	const handleTimeFormatChange = async (value: string) => await auth.updateTimeFormat(value);
-	const handleWeekStartChange = async (value: string) => await auth.updateWeekStart(value as WeekStart);
+	}
+
+	async function handleTimezoneChange(value: string): Promise<void> {
+		await auth.updateTimezone(value);
+	}
+
+	async function handleDateFormatChange(value: string): Promise<void> {
+		await auth.updateDateFormat(value);
+	}
+
+	async function handleTimeFormatChange(value: string): Promise<void> {
+		await auth.updateTimeFormat(value);
+	}
+
+	async function handleWeekStartChange(value: string): Promise<void> {
+		await auth.updateWeekStart(value as WeekStart);
+	}
+
+	async function handleCurrencyChange(value: string): Promise<void> {
+		await auth.updateCurrency(value as Currency);
+	}
 </script>
 
 <div class="flex gap-8 max-lg:flex-col">
 	<SettingsSection label={ts.get.settings.language}>
-		<Select
-			bind:input={languageInput}
-			bind:value={languageValues}
-			onchange={(value) => handleLanguageChange(value)}
-			options={languageOptions}
-		/>
+		<Select value={auth.user?.settings?.language ?? 'en'} onchange={handleLanguageChange} options={languageOptions} />
 	</SettingsSection>
 	<SettingsSection label={ts.get.settings.timezone}>
-		<Select
-			bind:input={timezoneInput}
-			bind:value={timezoneValues}
-			onchange={(value) => handleTimezoneChange(value)}
-			options={timezoneOptions}
-		/>
+		<Select value={auth.user?.settings?.timezone ?? ''} onchange={handleTimezoneChange} options={timezoneOptions} />
 	</SettingsSection>
 	<SettingsSection label={ts.get.settings.date_format}>
-		<Select
-			bind:input={dateFormatInput}
-			bind:value={dateFormatValues}
-			onchange={(value) => handleDateFormatChange(value)}
-			options={dateFormatOptions}
-		/>
+		<Select value={auth.user?.settings?.date_format ?? ''} onchange={handleDateFormatChange} options={dateFormatOptions} />
 	</SettingsSection>
 	<SettingsSection label={ts.get.settings.time_format}>
-		<Select
-			bind:input={timeFormatInput}
-			bind:value={timeFormatValues}
-			onchange={(value) => handleTimeFormatChange(value)}
-			options={timeFormatOptions}
-		/>
+		<Select value={auth.user?.settings?.time_format ?? ''} onchange={handleTimeFormatChange} options={timeFormatOptions} />
 	</SettingsSection>
 	<SettingsSection label={ts.get.settings.week_start}>
-		<Select
-			bind:value={weekStartValues}
-			onchange={handleWeekStartChange}
-			options={weekStartOptions}
-		/>
+		<Select value={auth.getWeekStart()} onchange={handleWeekStartChange} options={weekStartOptions} />
+	</SettingsSection>
+	<SettingsSection label={ts.get.settings.currency}>
+		<Select value={auth.user?.settings?.currency ?? DEFAULT_CURRENCY} onchange={handleCurrencyChange} options={currencyOptions} />
 	</SettingsSection>
 </div>

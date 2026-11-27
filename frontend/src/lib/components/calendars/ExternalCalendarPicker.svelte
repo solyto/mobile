@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import Checkbox from '$lib/components/forms/Checkbox.svelte';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
-	import IconLoaderCircle from '@lucide/svelte/icons/loader-circle';
+	import IconLoaderCircle from '$lib/icons/lucide/loader-circle.svelte';
 	import { getExternalCalendars } from '$lib/state/ExternalCalendars.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';

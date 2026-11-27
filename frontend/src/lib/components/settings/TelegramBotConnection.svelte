@@ -1,49 +1,46 @@
 <script lang="ts">
 	import { fade } from 'svelte/transition';
-	import { getAuth } from '$lib/state/Auth.svelte';
 	import { onMount } from 'svelte';
-	import { apiRoutes } from '$lib/config/apiRoutes';
-	import type { Connection } from '$lib/types/telegram_bot_connection';
+	import { getTelegramBot } from '$lib/state/TelegramBot.svelte';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 
-	const auth = getAuth();
-	const ts = getTranslation();
-	const apiService = auth.apiService;
+	const BOT_URL = 'https://t.me/SolytoBot';
+	const BOT_HANDLE = '@SolytoBot';
 
-	let request = $state<Connection | null>(null);
+	const telegramBot = getTelegramBot();
+	const ts = getTranslation();
+
 	let loaded = $state<boolean>(false);
 
 	onMount(async () => {
-		const res = await apiService.get(apiRoutes.telegram.getRequest, null);
-		if (res) request = res.data as Connection;
+		await telegramBot.load();
 		loaded = true;
 	});
 
-	async function getConnection(): Promise<void> {
-		const res = await apiService.get(apiRoutes.telegram.getToken, null);
-		if (res) request = res.data as Connection;
+	// The sentence names the bot where its %s is; the bot's handle is the link.
+	function registerBefore(): string {
+		return ts.get.settings.telegram_bot_register.split('%s')[0];
+	}
+
+	function registerAfter(): string {
+		return ts.get.settings.telegram_bot_register.split('%s')[1] ?? '';
 	}
 </script>
 
 {#if loaded}
 	<div in:fade>
-		{#if request}
+		{#if telegramBot.connection}
+			{@const request = telegramBot.connection}
 			{#if request.is_confirmed}
 				<div class="text-sm break-all">
-					{ts.get.settings.telegram_bot_integration_success.replace(
-						'%s',
-						request.chat_id ?? ''
-					)}
+					{ts.get.settings.telegram_bot_integration_success.replace('%s', request.chat_id ?? '')}
 				</div>
 			{:else}
 				<div class="text-sm wrap-anywhere" in:fade>
 					{ts.get.settings.telegram_bot_token_created}
 					<br />
-					{ts.get.settings.telegram_bot_register.replace(
-						'%s',
-						'<a target="_blank" href="https://t.me/SolytoBot">bot</a>'
-					)}:
+					{registerBefore()}<a target="_blank" rel="noopener noreferrer" href={BOT_URL} class="underline">{BOT_HANDLE}</a>{registerAfter()}:
 					<br />
 					<div class="mt-2 rounded-md bg-c-neutral px-2 py-1 text-xs break-all">
 						/connect {request.token}
@@ -51,7 +48,7 @@
 				</div>
 			{/if}
 		{:else}
-			<TextButton title={ts.get.settings.telegram_bot_create} onclick={() => getConnection()} />
+			<TextButton title={ts.get.settings.telegram_bot_create} onclick={() => telegramBot.requestToken()} />
 		{/if}
 	</div>
 {/if}

@@ -7,11 +7,13 @@ import { getTranslation, type Translation } from '$lib/state/Translation.svelte'
 import ApiService, { NetworkError, RateLimitedError } from '$lib/services/ApiService';
 import FeedImportService from '$lib/services/FeedImportService';
 import { apiRoutes } from '$lib/config/apiRoutes';
+import { pluralize } from '$lib/helpers/FormatHelper';
 
 export class FeedImport {
 	static readonly POLL_INTERVAL_MS = 1000;
 	static readonly MAX_POLL_INTERVAL_MS = 30000;
 	static readonly POLL_TIMEOUT_MS = 300000;
+	static readonly MS_PER_SECOND = 1000;
 
 	modalOpen = $state<boolean>(false);
 	state = $state<FeedImportState | null>(null);
@@ -120,14 +122,14 @@ export class FeedImport {
 				delay = this.backOff('network');
 			}
 		} catch (error) {
-			if (!(error instanceof NetworkError) && !(error instanceof RateLimitedError)) {
+			if (error instanceof RateLimitedError) {
+				delay = this.backOff('rate_limited', (error.retryAfter ?? 0) * FeedImport.MS_PER_SECOND);
+			} else if (error instanceof NetworkError) {
+				delay = this.backOff('network');
+			} else {
 				this.stall();
 				return;
 			}
-			delay =
-				error instanceof RateLimitedError
-					? this.backOff('rate_limited', (error.retryAfter ?? 0) * 1000)
-					: this.backOff('network');
 		}
 
 		this.continuePolling(delay);
@@ -176,11 +178,7 @@ export class FeedImport {
 		if (this.modalOpen) return;
 
 		const added = this.service.group(state).added.length;
-		this.notifications.success(
-			added === 1
-				? this.ts.get.feeds.import_finished_singular
-				: this.ts.get.feeds.import_finished_plural.replace('{n}', String(added))
-		);
+		this.notifications.success(pluralize(added, this.ts.get.feeds.import_finished_singular, this.ts.get.feeds.import_finished_plural));
 	}
 
 	private stopPolling(): void {

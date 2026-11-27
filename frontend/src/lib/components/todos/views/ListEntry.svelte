@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { fade, slide } from 'svelte/transition';
 	import type { Todo } from '$lib/types/todo';
-	import IconChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
+	import IconChevronsUpDown from '$lib/icons/lucide/chevrons-up-down.svelte';
 	import Category from '$lib/components/todos/props/Category.svelte';
 	import Priority from '$lib/components/todos/props/Priority.svelte';
 	import Tags from '$lib/components/todos/props/Tags.svelte';
@@ -28,14 +28,25 @@
 	const todos = getTodos();
 
 	let expanded = $state<boolean>(false);
+
+	function isRecentlyCreated(): boolean {
+		return todos.recentlyCreated === todo.id;
+	}
+
+	function check(event: Event): Promise<void> {
+		return handleCheck(event, todo);
+	}
+
+	function toggleExpanded(): void {
+		expanded = !expanded;
+	}
 </script>
 
 <div
-	class="
-		group relative flex h-auto w-full flex-row flex-wrap items-center rounded-lg border-1 shadow-sm 
-		transition-all hover:bg-d-lighterblue dark:hover:bg-s-dark-3 
-		{todos.recentlyCreated === todo.id ? 'border-c-btn-hover' : 'border-d-lightblue dark:border-s-dark'}
-	"
+	class="group relative flex h-auto w-full flex-row flex-wrap items-center rounded-lg border-1 shadow-sm transition-all hover:bg-d-lighterblue dark:hover:bg-s-dark-3"
+	class:border-c-btn-hover={isRecentlyCreated()}
+	class:border-d-lightblue={!isRecentlyCreated()}
+	class:dark:border-s-dark={!isRecentlyCreated()}
 	class:bg-c-bg-surface={!todo.is_completed}
 	class:bg-c-neutral-1={todo.is_completed}
 	class:dark:bg-c-bg={todo.is_completed}
@@ -70,9 +81,9 @@
 		<TodoDelete {todo} />
 		<IconChevronsUpDown
 			class="cursor-pointer text-c-neutral-3 transition-all hover:text-c-action"
-			onclick={() => (expanded = !expanded)}
+			onclick={toggleExpanded}
 		/>
-		<Checkbox isChecked={todo.is_completed} onchange={(e: Event) => handleCheck(e, todo)} />
+		<Checkbox isChecked={todo.is_completed} onchange={check} />
 	</div>
 	<Flags {todo} />
 	{#if expanded}

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import IconPlus from '@lucide/svelte/icons/plus';
+	import IconPlus from '$lib/icons/lucide/plus.svelte';
 	import { getCalendars } from '$lib/state/Calendars.svelte';
 	import { getNextXDays } from '$lib/helpers/DateHelper';
 	import Day from '$lib/components/calendars/views/list/Day.svelte';
@@ -9,7 +9,7 @@
 	let days = $state<Date[]>(getNextXDays(30));
 </script>
 
-<div class="calendar-view flex h-full w-full dark:bg-s-dark" style="background-color: color-mix(in srgb, var(--color-c-primary) 12%, var(--color-c-bg));">
+<div class="calendar-view flex h-full w-full dark:bg-s-dark">
 	<div class="flex h-full w-8 flex-col pt-8 max-md:hidden"></div>
 	<div class="flex h-full w-full flex-col">
 		<div class="flex w-full">

@@ -20,6 +20,7 @@ import type {
 import { IS_NATIVE, PLATFORM } from '$lib/config/platform';
 import { setContext, getContext } from 'svelte';
 import { apiRoutes } from '$lib/config/apiRoutes';
+import type { Currency } from '$lib/config/currency';
 import ApiService from '$lib/services/ApiService';
 import LocalStorageService from '$lib/services/LocalStorageService';
 import { SessionMonitor } from '$lib/state/SessionMonitor';
@@ -36,8 +37,13 @@ import {
 
 type RefreshOutcome = 'refreshed' | 'transient' | 'rejected';
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 export class Auth {
 	static readonly LS_AUTH_KEY: string = 'auth';
+	static readonly MIN_PASSWORD_LENGTH = 12;
+	static readonly REFRESH_THRESHOLD_DAYS = IS_NATIVE ? 14 : 5;
+	static readonly SIGN_OUT_TIMEOUT_MS = 3000;
 
 	loggedIn = $state<boolean>(false);
 	authToken = $state<AuthToken | null>(null);
@@ -117,19 +123,17 @@ export class Auth {
 
 	async login(email: string, password: string): Promise<LoginActionResponse> {
 		const request: LoginRequest = { email, password, platform: PLATFORM };
-		let res: LoginActionResponse;
-		try {
-			res = await this.apiService.postRaw<LoginActionResponse>(apiRoutes.auth.login, request);
-		} catch (error) {
-			// A non-JSON error body (e.g. a proxy's HTML 502) is a plain failed login.
-			if (error instanceof SyntaxError) return { success: false };
-			throw error;
-		}
+		const res = await this.apiService.postRaw<LoginActionResponse>(apiRoutes.auth.login, request);
 
 		// A 422 carries field errors as an object, not error codes: treat it as a plain failed login.
 		if (!res?.data) return { success: false, errors: Array.isArray(res?.errors) ? res.errors : undefined };
-		const login = res.data;
+		this.startSession(res.data);
+		await this.loadAdditionalData();
 
+		return { success: true };
+	}
+
+	private startSession(login: LoginResponse): void {
 		this.user = login.user;
 		this.authToken = {
 			token: login.token,
@@ -137,18 +141,13 @@ export class Auth {
 			expires_at: login.token_expires_at
 		};
 		this.loggedIn = true;
-		this.apiService.updateAuthToken(this.getToken()!);
-
+		this.apiService.updateAuthToken(this.getToken());
 		this.save();
 		void this.widgetBridge.issueToken();
-		await this.loadAdditionalData();
-
-		return { success: true };
 	}
 
 	private shouldRefresh(expiresAt: number): boolean {
-		const thresholdDays = IS_NATIVE ? 14 : 5;
-		return expiresAt < Date.now() + thresholdDays * 24 * 60 * 60 * 1000;
+		return expiresAt < Date.now() + Auth.REFRESH_THRESHOLD_DAYS * DAY_MS;
 	}
 
 	async refresh(): Promise<RefreshOutcome> {
@@ -169,20 +168,7 @@ export class Auth {
 			return res.status === 401 || res.status === 403 ? 'rejected' : 'transient';
 		}
 
-		const refresh = res.data.data as LoginResponse;
-
-		this.user = refresh.user;
-		this.authToken = {
-			token: refresh.token,
-			token_type: refresh.token_type,
-			expires_at: refresh.token_expires_at
-		};
-		this.loggedIn = true;
-		this.apiService.updateAuthToken(this.getToken());
-
-		this.save();
-		void this.widgetBridge.issueToken();
-
+		this.startSession(res.data.data as LoginResponse);
 		return 'refreshed';
 	}
 
@@ -195,14 +181,24 @@ export class Auth {
 	// outcome: being offline or a failing server must never keep the user logged in.
 	async signOut(): Promise<void> {
 		try {
+			await this.unregisterPhone();
 			if (this.getToken()) {
-				await this.apiService.postWithStatus(apiRoutes.auth.logout, {}, AbortSignal.timeout(3000));
+				await this.apiService.postWithStatus(apiRoutes.auth.logout, {}, AbortSignal.timeout(Auth.SIGN_OUT_TIMEOUT_MS));
 			}
 		} catch {
 			// The token expires on its own; local logout must not depend on the server.
 		} finally {
 			this.logout();
 		}
+	}
+
+	// The phone unregisters with its widget token, which the server logout deletes, so it goes first.
+	// Capped like the logout: signing out must not wait for a phone that doesn't answer.
+	private async unregisterPhone(): Promise<void> {
+		if (!this.widgetBridge.hasNativePush()) return;
+
+		const unregistered = this.widgetBridge.disablePush().catch(() => undefined);
+		await Promise.race([unregistered, new Promise((resolve) => setTimeout(resolve, Auth.SIGN_OUT_TIMEOUT_MS))]);
 	}
 
 	setSessionExpiredHandler(handler: () => void): void {
@@ -351,17 +347,7 @@ export class Auth {
 		if (!res.success) {
 			throw new Error(res.message ?? 'Passkey authentication failed');
 		}
-		const data = res.data as LoginResponse;
-		this.user = data.user;
-		this.authToken = {
-			token: data.token,
-			token_type: data.token_type,
-			expires_at: data.token_expires_at
-		};
-		this.loggedIn = true;
-		this.apiService.updateAuthToken(this.getToken()!);
-		this.save();
-		void this.widgetBridge.issueToken();
+		this.startSession(res.data as LoginResponse);
 		await this.loadAdditionalData();
 	}
 
@@ -398,28 +384,28 @@ export class Auth {
 		const res = await this.apiService.put(apiRoutes.users.settings.updateNavigationSettings, {
 			navigation
 		});
-		return Promise.resolve(res);
+		return res;
 	}
 
 	async updateTimezone(timezone: string): Promise<boolean> {
 		const res = await this.apiService.put(apiRoutes.users.settings.updateTimezone, {
 			timezone
 		});
-		return Promise.resolve(res);
+		return res;
 	}
 
 	async updateDateFormat(dateFormat: string): Promise<boolean> {
 		const res = await this.apiService.put(apiRoutes.users.settings.updateDateFormat, {
 			date_format: dateFormat
 		});
-		return Promise.resolve(res);
+		return res;
 	}
 
 	async updateTimeFormat(timeFormat: string): Promise<boolean> {
 		const res = await this.apiService.put(apiRoutes.users.settings.updateTimeFormat, {
 			time_format: timeFormat
 		});
-		return Promise.resolve(res);
+		return res;
 	}
 
 	async updateWeekStart(weekStart: WeekStart): Promise<boolean> {
@@ -430,7 +416,18 @@ export class Auth {
 			this.user.settings.week_start = weekStart;
 			this.save();
 		}
-		return Promise.resolve(res);
+		return res;
+	}
+
+	async updateCurrency(currency: Currency): Promise<boolean> {
+		const res = await this.apiService.put(apiRoutes.users.settings.updateCurrency, {
+			currency
+		});
+		if (res && this.user?.settings) {
+			this.user.settings.currency = currency;
+			this.save();
+		}
+		return res;
 	}
 
 	private async updateBooleanSetting(
@@ -443,7 +440,7 @@ export class Auth {
 			apply(this.user.settings);
 			this.save();
 		}
-		return Promise.resolve(res);
+		return res;
 	}
 
 	async updateJournalEnabled(enabled: boolean): Promise<boolean> {
@@ -475,7 +472,7 @@ export class Auth {
 			language
 		});
 		if (res) await this.loadAdditionalData();
-		return Promise.resolve(res);
+		return res;
 	}
 
 	async completeOnboarding(): Promise<boolean> {
@@ -484,13 +481,11 @@ export class Auth {
 			this.user.settings.first_visit = false;
 			this.save();
 		}
-		return Promise.resolve(res);
+		return res;
 	}
 
 	async setProfileImage(file: File): Promise<boolean> {
-		if (!file.type.startsWith('image/')) {
-			return Promise.resolve(false);
-		}
+		if (!file.type.startsWith('image/')) return false;
 
 		const formData = new FormData();
 		formData.append('profile_image', file);
@@ -500,7 +495,7 @@ export class Auth {
 			formData
 		);
 		await this.loadAdditionalData();
-		return Promise.resolve(res);
+		return res;
 	}
 
 	async getPublicProfile(userId: string): Promise<User | null> {
@@ -512,31 +507,31 @@ export class Auth {
 	}
 
 	getDateInUserPreferredFormat(input: string | Date): string {
-		return formatDate(input, this?.user?.settings?.date_format ?? null);
+		return formatDate(input, this.user?.settings?.date_format ?? null);
 	}
 
 	getDateWithoutYearInUserPreferredFormat(input: string | Date): string {
-		return formatDateWithoutYear(input, this?.user?.settings?.date_format ?? null);
+		return formatDateWithoutYear(input, this.user?.settings?.date_format ?? null);
 	}
 
 	getDateWithWeekdayInUserPreferredFormat(input: string | Date): string {
-		return formatDateWithWeekday(input, this?.user?.settings?.date_format ?? null, this?.user?.settings?.language ?? undefined);
+		return formatDateWithWeekday(input, this.user?.settings?.date_format ?? null, this.user?.settings?.language ?? undefined);
 	}
 
 	getDateTimeInUserPreferredFormat(input: string | Date): string {
 		return formatDateTime(
 			input,
-			this?.user?.settings?.date_format ?? null,
-			this?.user?.settings?.time_format ?? null
+			this.user?.settings?.date_format ?? null,
+			this.user?.settings?.time_format ?? null
 		);
 	}
 
 	getTimeInUserPreferredFormat(input: string | Date): string {
-		return formatTime(input, this?.user?.settings?.time_format ?? null);
+		return formatTime(input, this.user?.settings?.time_format ?? null);
 	}
 
 	getTimeWithSecondsInUserPreferredFormat(input: string | Date): string {
-		return formatTimeWithSeconds(input, this?.user?.settings?.time_format ?? null);
+		return formatTimeWithSeconds(input, this.user?.settings?.time_format ?? null);
 	}
 
 	getWeekStart(): WeekStart {
@@ -544,7 +539,7 @@ export class Auth {
 	}
 
 	getTemperatureInUserPreferredFormat(temperature: number): number {
-		if (this?.user?.settings?.temperature_unit === 'c') return temperature;
+		if (this.user?.settings?.temperature_unit === 'c') return temperature;
 
 		return Math.round((temperature * 9) / 5 + 32);
 	}

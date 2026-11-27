@@ -41,6 +41,7 @@ export const apiRoutes = {
 			updateDateFormat: API_URL + '/users/me/settings/date-format',
 			updateTimeFormat: API_URL + '/users/me/settings/time-format',
 			updateWeekStart: API_URL + '/users/me/settings/week-start',
+			updateCurrency: API_URL + '/users/me/settings/currency',
 			updateLanguage: API_URL + '/users/me/settings/language',
 			completeOnboarding: API_URL + '/users/me/settings/complete-onboarding',
 			updateWeatherCity: API_URL + '/users/me/settings/weather-city',
@@ -94,7 +95,21 @@ export const apiRoutes = {
 		list: API_URL + '/check-in',
 		create: API_URL + '/check-in',
 		update: API_URL + '/check-in/%s',
-		marks: API_URL + '/check-in/marks'
+		marks: API_URL + '/check-in/marks',
+		values: API_URL + '/check-in/values',
+		trackers: API_URL + '/check-in/trackers',
+		trackerOrder: API_URL + '/check-in/trackers/order',
+		tracker: API_URL + '/check-in/trackers/%d'
+	},
+	goals: {
+		list: API_URL + '/goals',
+		goal: API_URL + '/goals/%d'
+	},
+	alerts: {
+		list: API_URL + '/alerts',
+		alert: API_URL + '/alerts/%d',
+		suggestions: API_URL + '/alerts/suggestions',
+		suggestion: API_URL + '/alerts/suggestions/%s'
 	},
 	notes: {
 		list: API_URL + '/notes',
@@ -103,6 +118,7 @@ export const apiRoutes = {
 		create: API_URL + '/notes',
 		update: API_URL + '/notes/%s',
 		delete: API_URL + '/notes/%s',
+		backlinks: API_URL + '/notes/%s/backlinks',
 		newest: API_URL + '/notes/newest',
 		recent: API_URL + '/notes/recent',
 		import: API_URL + '/notes/import',
@@ -212,6 +228,7 @@ export const apiRoutes = {
 	dev: {
 		requests: {
 			list: API_URL + '/dev-requests',
+			notice: API_URL + '/dev-requests/notice',
 			create: API_URL + '/dev-requests',
 			update: API_URL + '/dev-requests/%d',
 			delete: API_URL + '/dev-requests/%d',
@@ -274,6 +291,7 @@ export const apiRoutes = {
 	admin: {
 		users: {
 			list: API_URL + '/users',
+			growth: API_URL + '/users/growth',
 			update: API_URL + '/users/%s'
 		}
 	},
@@ -351,6 +369,7 @@ export const apiRoutes = {
 		deleteOccurrence: API_URL + '/calendars/%d/events/%s/occurrence/%s',
 		startImport: API_URL + '/calendars/import',
 		selectImportCalendars: API_URL + '/calendars/import/select',
+		startFileImport: API_URL + '/calendars/import/file',
 		getImportState: API_URL + '/calendars/import/state',
 		listSharees: API_URL + '/calendars/%d/share',
 		shareCalendar: API_URL + '/calendars/%d/share',
@@ -386,6 +405,7 @@ export const apiRoutes = {
 		getContactPhotos: API_URL + '/address-books/contacts/photos',
 		startImport: API_URL + '/address-books/import',
 		selectImportAddressBooks: API_URL + '/address-books/import/select',
+		startFileImport: API_URL + '/address-books/import/file',
 		getImportState: API_URL + '/address-books/import/state'
 	},
 	dashboard: {

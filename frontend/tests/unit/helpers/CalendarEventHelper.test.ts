@@ -2,52 +2,35 @@ import { describe, it, expect } from 'vitest';
 import {
 	adjustEventRange,
 	combineDateAndTime,
+	eventsNotStartingOn,
+	eventsStartingOn,
 	eventWriteErrorMessage,
-	getCalendarEventKey
+	getCalendarEventKey,
+	isDraggableOnDate,
+	isRecurringOccurrence,
+	moveErrorMessage,
+	showsStartTimeOnDate,
+	startsOnDate
 } from '$lib/helpers/CalendarEventHelper';
 import { en } from '$lib/i18n/en';
-import type { CalendarEvent } from '$lib/types/calendar';
-
-function makeEvent(overrides: Partial<CalendarEvent> = {}): CalendarEvent {
-	return {
-		id: 1,
-		uri: 'event-1.ics',
-		title: 'Meeting',
-		description: '',
-		location: '',
-		start_date: new Date('2026-10-13T09:00:00Z'),
-		end_date: new Date('2026-10-13T10:00:00Z'),
-		is_all_day: false,
-		is_recurring: false,
-		recurrence_rule: null,
-		recurrence_end: null,
-		original_start_date: null,
-		created_at: null,
-		updated_at: null,
-		calendar_id: 1,
-		calendar_name: 'Work',
-		calendar_color: '#ff0000',
-		etag: 'etag',
-		...overrides
-	};
-}
+import { calendarEvent } from './factories';
 
 describe('getCalendarEventKey', () => {
 	it('combines the uri with the start time', () => {
-		const event = makeEvent();
-		expect(getCalendarEventKey(event)).toBe('event-1.ics-' + event.start_date.getTime());
+		const event = calendarEvent();
+		expect(getCalendarEventKey(event)).toBe('event-1-' + event.start_date.getTime());
 	});
 
 	it('uses the original start date of a recurrence instance', () => {
 		const original = new Date('2026-10-06T09:00:00Z');
-		expect(getCalendarEventKey(makeEvent({ original_start_date: original }))).toBe(
-			'event-1.ics-' + original.getTime()
+		expect(getCalendarEventKey(calendarEvent({ original_start_date: original }))).toBe(
+			'event-1-' + original.getTime()
 		);
 	});
 
 	it('gives two instances of one recurring event different keys', () => {
-		const first = makeEvent({ original_start_date: new Date('2026-10-06T09:00:00Z') });
-		const second = makeEvent({ original_start_date: new Date('2026-10-13T09:00:00Z') });
+		const first = calendarEvent({ original_start_date: new Date('2026-10-06T09:00:00Z') });
+		const second = calendarEvent({ original_start_date: new Date('2026-10-13T09:00:00Z') });
 		expect(getCalendarEventKey(first)).not.toBe(getCalendarEventKey(second));
 	});
 });
@@ -104,9 +87,76 @@ describe('eventWriteErrorMessage', () => {
 		expect(eventWriteErrorMessage('changed_on_server', en.calendar, 'fallback')).toBe(en.calendar.event_changed_on_server);
 		expect(eventWriteErrorMessage('unreadable', en.calendar, 'fallback')).toBe(en.calendar.event_unreadable);
 		expect(eventWriteErrorMessage('server_unavailable', en.calendar, 'fallback')).toBe(en.calendar.event_server_unavailable);
+		expect(eventWriteErrorMessage('read_only', en.calendar, 'fallback')).toBe(en.calendar.event_read_only);
 	});
 
 	it('falls back to the given message for any other failure', () => {
 		expect(eventWriteErrorMessage('failed', en.calendar, 'fallback')).toBe('fallback');
+	});
+});
+
+describe('moveErrorMessage', () => {
+	it('names the reason or says the entry could not be moved', () => {
+		expect(moveErrorMessage('unreadable', en.calendar)).toBe(en.calendar.event_unreadable);
+		expect(moveErrorMessage('failed', en.calendar)).toBe(en.calendar.entry_move_error);
+	});
+});
+
+describe('start day of an event', () => {
+	const startDay = new Date(2026, 7, 10);
+	const nextDay = new Date(2026, 7, 11);
+	const timed = calendarEvent({ start_date: new Date(2026, 7, 10, 22, 0), end_date: new Date(2026, 7, 11, 2, 0) });
+	const allDay = calendarEvent({ is_all_day: true, start_date: new Date(2026, 7, 10), end_date: new Date(2026, 7, 12) });
+
+	it('knows the day an event starts on', () => {
+		expect(startsOnDate(timed, startDay)).toBe(true);
+		expect(startsOnDate(timed, nextDay)).toBe(false);
+	});
+
+	it('drags a timed event from its start day only and an all-day event from every day', () => {
+		expect(isDraggableOnDate(timed, startDay)).toBe(true);
+		expect(isDraggableOnDate(timed, nextDay)).toBe(false);
+		expect(isDraggableOnDate(allDay, nextDay)).toBe(true);
+	});
+
+	it('shows the start time of a timed event on its start day only', () => {
+		expect(showsStartTimeOnDate(timed, startDay)).toBe(true);
+		expect(showsStartTimeOnDate(timed, nextDay)).toBe(false);
+		expect(showsStartTimeOnDate(allDay, startDay)).toBe(false);
+	});
+});
+
+describe('isRecurringOccurrence', () => {
+	it('is an occurrence of a series, not the series itself or a single event', () => {
+		expect(isRecurringOccurrence(calendarEvent({ is_recurring: true, original_start_date: new Date(2026, 7, 10) }))).toBe(true);
+		expect(isRecurringOccurrence(calendarEvent({ is_recurring: true, original_start_date: null }))).toBe(false);
+		expect(isRecurringOccurrence(calendarEvent())).toBe(false);
+	});
+});
+
+describe('eventsStartingOn / eventsNotStartingOn', () => {
+	const today = new Date(2026, 10, 20, 15, 0);
+	const late = calendarEvent({ id: 1, start_date: new Date(2026, 10, 20, 18, 0) });
+	const early = calendarEvent({ id: 2, start_date: new Date(2026, 10, 20, 8, 0) });
+	const tomorrow = calendarEvent({ id: 3, start_date: new Date(2026, 10, 21, 9, 0) });
+	const yesterday = calendarEvent({ id: 4, start_date: new Date(2026, 10, 19, 23, 0) });
+	const events = [tomorrow, late, yesterday, early];
+
+	it('picks the events that start on the day, earliest first', () => {
+		expect(eventsStartingOn(events, today).map((event) => event.id)).toEqual([2, 1]);
+	});
+
+	it('picks every other event, earliest first', () => {
+		expect(eventsNotStartingOn(events, today).map((event) => event.id)).toEqual([4, 3]);
+	});
+
+	it('reads the raw date strings the widget endpoint sends', () => {
+		const raw = calendarEvent({ start_date: '2026-11-20T09:00:00' as unknown as Date });
+		expect(eventsStartingOn([raw], today)).toEqual([raw]);
+	});
+
+	it('leaves the given list in its order', () => {
+		eventsStartingOn(events, today);
+		expect(events.map((event) => event.id)).toEqual([3, 1, 4, 2]);
 	});
 });

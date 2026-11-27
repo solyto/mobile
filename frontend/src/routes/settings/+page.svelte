@@ -1,10 +1,15 @@
 <script lang="ts">
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { getTags } from '$lib/state/Tags.svelte';
+	import { getNavigation } from '$lib/state/Navigation.svelte';
 	import { onMount } from 'svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
+	import { setCheckInData } from '$lib/state/CheckInData.svelte';
+	import { setAlerts } from '$lib/state/Alerts.svelte';
+	import type { Component } from 'svelte';
 	import TagSettings from '$lib/components/settings/TagSettings.svelte';
 	import NotificationSettings from '$lib/components/settings/notifications/NotificationSettings.svelte';
+	import AlertSettings from '$lib/components/settings/alerts/AlertSettings.svelte';
 	import LocalizationSettings from '$lib/components/settings/LocalizationSettings.svelte';
 	import FeatureSettings from '$lib/components/settings/FeatureSettings.svelte';
 	import PluginSettings from '$lib/components/settings/PluginSettings.svelte';
@@ -16,27 +21,49 @@
 	import SettingsNavigationDesktop from '$lib/components/settings/SettingsNavigationDesktop.svelte';
 	import Heading from '$lib/components/ui/Heading.svelte';
 
+	const SCROLL_SETTLE_MS = 700;
+	const ACTIVE_SECTION_OFFSET = 96;
+	const BOTTOM_TOLERANCE = 2;
+
 	const ts = getTranslation();
+	const nav = getNavigation();
 	const tags = getTags();
 	const loadingIndicator = getLoadingIndicator();
+	const checkInData = setCheckInData();
+	const alerts = setAlerts();
 
+	// Alerts load even while check-in is off: switching it on in Features shows their section right away.
 	onMount(async () => {
 		loadingIndicator.start();
-		await tags.load();
-		loadingIndicator.stop();
+		try {
+			await Promise.all([tags.load(), checkInData.loadTrackers(), alerts.load()]);
+		} finally {
+			loadingIndicator.stop();
+		}
 	});
 
-	const sections = $derived([
-		{ id: 6, title: ts.get.settings.appearance, component: AppearanceSettings },
-		{ id: 3, title: ts.get.settings.localization, component: LocalizationSettings },
-		{ id: 4, title: ts.get.settings.features, component: FeatureSettings },
-		{ id: 5, title: ts.get.settings.notifications, component: NotificationSettings },
-		{ id: 2, title: ts.get.settings.tags, component: TagSettings },
-		{ id: 10, title: ts.get.settings.plugins, component: PluginSettings },
-		{ id: 8, title: ts.get.settings.security, component: SecuritySettings },
-		{ id: 9, title: ts.get.settings.export_data, component: ExportSettings },
-		{ id: 7, title: ts.get.settings.app, component: AppSettings }
-	]);
+	type Section = { id: number; title: string; component: Component };
+
+	const sections = $derived(visibleSections());
+
+	function visibleSections(): Section[] {
+		const visible: Section[] = [
+			{ id: 6, title: ts.get.settings.appearance, component: AppearanceSettings },
+			{ id: 3, title: ts.get.settings.localization, component: LocalizationSettings },
+			{ id: 4, title: ts.get.settings.features, component: FeatureSettings },
+			{ id: 5, title: ts.get.settings.notifications, component: NotificationSettings }
+		];
+		// Alerts watch check-in trackers, so they only make sense while check-in is on.
+		if (nav.features.checkIn) visible.push({ id: 11, title: ts.get.alerts.title, component: AlertSettings });
+		visible.push(
+			{ id: 2, title: ts.get.settings.tags, component: TagSettings },
+			{ id: 10, title: ts.get.settings.plugins, component: PluginSettings },
+			{ id: 8, title: ts.get.settings.security, component: SecuritySettings },
+			{ id: 9, title: ts.get.settings.export_data, component: ExportSettings },
+			{ id: 7, title: ts.get.settings.app, component: AppSettings }
+		);
+		return visible;
+	}
 
 	let active = $state<number>(6);
 	let scrollContainer = $state<HTMLElement | null>(null);
@@ -53,25 +80,24 @@
 		programmaticScroll = true;
 		const instant = document.documentElement.classList.contains('no-animations');
 		element.scrollIntoView({ behavior: instant ? 'auto' : 'smooth', block: 'start' });
-		window.setTimeout(() => (programmaticScroll = false), 700);
+		window.setTimeout(() => (programmaticScroll = false), SCROLL_SETTLE_MS);
 	}
 
 	function updateActive(): void {
 		const container = scrollContainer;
 		if (programmaticScroll || !container) return;
 
-		if (container.scrollTop + container.clientHeight >= container.scrollHeight - 2) {
+		if (container.scrollTop + container.clientHeight >= container.scrollHeight - BOTTOM_TOLERANCE) {
 			active = sections[sections.length - 1].id;
 			return;
 		}
 
-		const threshold = 96;
 		const containerTop = container.getBoundingClientRect().top;
 		let current = sections[0].id;
 		for (const section of sections) {
 			const element = document.getElementById(sectionId(section.id));
 			if (!element) continue;
-			if (element.getBoundingClientRect().top - containerTop <= threshold) {
+			if (element.getBoundingClientRect().top - containerTop <= ACTIVE_SECTION_OFFSET) {
 				current = section.id;
 			} else {
 				break;

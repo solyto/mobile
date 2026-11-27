@@ -1,18 +1,16 @@
 <script lang="ts">
-	import IconCircleQuestionMark from '@lucide/svelte/icons/circle-question-mark';
+	import IconCircleQuestionMark from '$lib/icons/lucide/circle-question-mark.svelte';
 	import MovableHoverBox from '$lib/components/ui/MovableHoverBox.svelte';
 	import { clickOutside } from '$lib/helpers/ClickHelper';
 
 	let {
 		label = null,
 		description,
-		labelSize = 'xs',
 		align = 'left',
 		muted = false
 	}: {
 		label?: string | null;
 		description: string;
-		labelSize?: string;
 		align?: 'left' | 'right';
 		muted?: boolean;
 	} = $props();
@@ -80,7 +78,7 @@
 	onclick={togglePinned}
 >
 	{#if label}
-		<span class="text-{labelSize}">{label}</span>
+		<span class="text-xs">{label}</span>
 	{/if}
 	<IconCircleQuestionMark size={16} />
 </button>

@@ -13,6 +13,7 @@
 	import Select from '$lib/components/forms/Select.svelte';
 	import type { MultiSelectEntry } from '$lib/components/forms/MultiSelect.svelte';
 	import BudgetTagPicker from '$lib/components/finances/BudgetTagPicker.svelte';
+	import { selectedIds } from '$lib/helpers/MultiSelectHelper';
 
 	const ts = getTranslation();
 	const loadingIndicator = getLoadingIndicator();
@@ -46,6 +47,17 @@
 
 	onDestroy(() => keyManager.unregisterAll(keyHandlers));
 
+	function selectInterval(value: string): void {
+		intervalValue = value as BudgetInterval;
+	}
+
+	function resetForm(): void {
+		titleValue = '';
+		valueValue = null;
+		intervalValue = 'monthly';
+		selectedTags = [];
+	}
+
 	async function onSubmit(): Promise<void> {
 		if (titleValue.trim() === '' || valueValue === null) return;
 
@@ -54,34 +66,32 @@
 			title: titleValue.trim(),
 			value: valueValue,
 			interval: intervalValue,
-			tags: selectedTags.length > 0 ? selectedTags.filter((tag) => tag.value).map((tag) => Number(tag.value)) : undefined
+			tags: selectedTags.length > 0 ? selectedIds(selectedTags) : undefined
 		};
 
 		loadingIndicator.start();
-		const res = await finances.addBudget(request);
-		loadingIndicator.stop();
-
-		if (res) {
-			titleValue = '';
-			valueValue = null;
-			intervalValue = 'monthly';
-			selectedTags = [];
-			close();
+		try {
+			if (!(await finances.addBudget(request))) return;
+		} finally {
+			loadingIndicator.stop();
 		}
+
+		resetForm();
+		close();
 	}
 </script>
 
 {#if formOpen}
 	<ContentModal title={ts.get.finances.add_entry} showTitleOnMobile={true} rounded="2xl" p="6" onClose={close}>
 		<div class="flex flex-row gap-2">
-			<TextInput placeholder="Title" bind:input={titleInput} bind:value={titleValue} />
-			<NumberInput placeholder="Value" bind:input={valueInput} bind:value={valueValue} />
+			<TextInput placeholder={ts.get.finances.title_placeholder} bind:input={titleInput} bind:value={titleValue} />
+			<NumberInput placeholder={ts.get.finances.value_placeholder} bind:input={valueInput} bind:value={valueValue} />
 		</div>
 		<div class="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
 			<Select
 				value={intervalValue}
 				options={finances.budgetIntervals.options(ts.get.finances)}
-				onchange={(value) => (intervalValue = value as BudgetInterval)}
+				onchange={selectInterval}
 				ariaLabel={ts.get.finances.interval}
 			/>
 			{#if showTags}
@@ -92,9 +102,5 @@
 	</ContentModal>
 {/if}
 <div class="flex justify-start">
-	<AddButton
-		colorOnHover={true}
-		hoverColor={type === 'income' ? 'success' : 'danger'}
-		onClick={open}
-	/>
+	<AddButton colorOnHover={true} hoverColor={type === 'income' ? 'success' : 'danger'} onClick={open} />
 </div>

@@ -1,34 +1,16 @@
-<script lang="ts" module>
-	import type { Component } from 'svelte';
-
-	export interface NormalizedSearchResult {
-		id: string | number;
-		title: string;
-		subtitle?: string;
-		image?: string | null;
-		data?: unknown;
-	}
-
-	export interface SearchSource {
-		label: string;
-		icon: string | Component;
-		search: (query: string) => Promise<NormalizedSearchResult[] | null>;
-		onSelect: (result: NormalizedSearchResult) => Promise<void>;
-	}
-</script>
-
 <script lang="ts">
 	import { slide } from 'svelte/transition';
 	import ContentModal from '$lib/components/ui/ContentModal.svelte';
 	import TextInput from '$lib/components/forms/TextInput.svelte';
 	import IconButton from '$lib/components/ui/buttons/IconButton.svelte';
 	import LibrarySearchResult from '$lib/components/libraries/shared/LibrarySearchResult.svelte';
-	import IconSearch from '@lucide/svelte/icons/search';
-	import IconLoaderCircle from '@lucide/svelte/icons/loader-circle';
+	import IconSearch from '$lib/icons/lucide/search.svelte';
+	import IconLoaderCircle from '$lib/icons/lucide/loader-circle.svelte';
 	import { getKeyManager } from '$lib/state/KeyManager.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { onDestroy, onMount, tick } from 'svelte';
 	import type { Snippet } from 'svelte';
+	import type { NormalizedSearchResult, SearchSource } from '$lib/types/library';
 
 	const ts = getTranslation();
 	const keyManager = getKeyManager();
@@ -68,9 +50,11 @@
 		loading = true;
 		searched = true;
 		results = [];
-
-		results = await Promise.all(sources.map((s: SearchSource) => s.search(query)));
-		loading = false;
+		try {
+			results = await Promise.all(sources.map((source) => source.search(query)));
+		} finally {
+			loading = false;
+		}
 	}
 
 	function resultId(source: SearchSource, result: NormalizedSearchResult): string {
@@ -79,11 +63,16 @@
 
 	async function select(source: SearchSource, result: NormalizedSearchResult): Promise<void> {
 		importingId = resultId(source, result);
-		await source.onSelect(result);
-		importingId = null;
+		try {
+			await source.onSelect(result);
+		} finally {
+			importingId = null;
+		}
 	}
 
 	const hasResults = $derived(results.some((r) => r && r.length > 0));
+	// A source that answered null couldn't search at all (error or provider unreachable).
+	const someSourceUnavailable = $derived(results.some((r) => r === null));
 </script>
 
 <ContentModal {onClose} title={ts.get.libraries.search} width="2xl" rounded="2xl" p="8" showTitleOnMobile={true}>
@@ -102,7 +91,9 @@
 		{#if searched && !loading}
 			<div in:slide>
 				{#if !hasResults}
-					<p class="text-center text-sm text-c-neutral-5 dark:text-c-neutral-4">{ts.get.libraries.no_results}</p>
+					<p class="text-center text-sm text-c-neutral-5 dark:text-c-neutral-4">
+						{someSourceUnavailable ? ts.get.libraries.search_unavailable : ts.get.libraries.no_results}
+					</p>
 				{:else}
 					<div class="flex max-h-[60vh] flex-col gap-6 overflow-y-auto pr-1">
 						{#each sources as source, i (source.label)}

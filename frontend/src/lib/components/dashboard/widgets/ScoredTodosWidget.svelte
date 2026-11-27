@@ -3,16 +3,15 @@
 	import { withDecimals } from '$lib/helpers/NumberHelper';
 	import { Translation } from '$lib/state/Translation.svelte';
 	import Checkbox from '$lib/components/forms/Checkbox.svelte';
-	import IconTrendingUp from '@lucide/svelte/icons/trending-up';
+	import IconTrendingUp from '$lib/icons/lucide/trending-up.svelte';
 
 	let { scoredTodos, handleCheck, ts, mt = false }: {
 		scoredTodos: Todo[];
 		handleCheck: (event: Event, todo: Todo) => Promise<void>;
 		ts: Translation;
-		mt: boolean
+		mt: boolean;
 	} = $props();
 </script>
-
 
 <div class:mt-12={mt}>
 	<div class="mb-2 flex items-center gap-2">
@@ -26,8 +25,7 @@
 			<div class="flex items-center gap-2 py-0.5">
 				<div
 					class="h-2 w-2 shrink-0 rounded-full"
-					class:bg-c-btn={todo.priority === 'medium' ||
-						todo.priority === null}
+					class:bg-c-btn={todo.priority === 'medium' || todo.priority === null}
 					class:bg-c-danger={todo.priority === 'high'}
 					class:bg-c-success={todo.priority === 'low'}
 				></div>

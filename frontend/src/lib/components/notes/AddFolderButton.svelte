@@ -1,5 +1,5 @@
 <script lang="ts">
-	import IconFolderPlus from '@lucide/svelte/icons/folder-plus';
+	import IconFolderPlus from '$lib/icons/lucide/folder-plus.svelte';
 
 	let { onClick }: {
 		onClick: () => void;

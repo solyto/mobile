@@ -7,10 +7,10 @@
 	const todos = getTodos();
 
 	let toggled = $state<boolean>(todos.sortByScore);
+
+	function toggleSortByScore(value: boolean): void {
+		todos.toggleSortByScore();
+	}
 </script>
 
-<Toggle
-	label={ts.get.todos.sort_by_score}
-	bind:checked={toggled}
-	onchange={() => todos.toggleSortByScore()}
-/>
+<Toggle label={ts.get.todos.sort_by_score} bind:checked={toggled} onchange={toggleSortByScore} />

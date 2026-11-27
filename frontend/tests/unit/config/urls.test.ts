@@ -8,20 +8,18 @@ async function loadUrls(env: Record<string, string> = {}) {
 
 describe('legalUrls', () => {
 	it('is null when no URLs are configured', async () => {
-		const { legalUrls, hasLegalUrls } = await loadUrls();
+		const { legalUrls } = await loadUrls();
 		expect(legalUrls).toEqual({ legalNotice: null, privacy: null, terms: null });
-		expect(hasLegalUrls).toBe(false);
 	});
 
 	it('reads the configured URLs from the environment', async () => {
-		const { legalUrls, hasLegalUrls } = await loadUrls({
+		const { legalUrls } = await loadUrls({
 			PUBLIC_LEGAL_NOTICE_URL: 'https://solyto.app/imprint',
 			PUBLIC_PRIVACY_URL: 'https://solyto.app/privacy'
 		});
 		expect(legalUrls.legalNotice).toBe('https://solyto.app/imprint');
 		expect(legalUrls.privacy).toBe('https://solyto.app/privacy');
 		expect(legalUrls.terms).toBeNull();
-		expect(hasLegalUrls).toBe(true);
 	});
 });
 

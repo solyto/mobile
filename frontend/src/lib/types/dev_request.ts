@@ -1,7 +1,7 @@
 export type DevRequestType = 'feature' | 'bug';
-export type DevRequestStatus = 'backlog' | 'pending' | 'in-progress' | 'waiting-for-deployment' | 'cancelled' | 'completed';
+export type DevRequestStatus = 'backlog' | 'pending' | 'in-progress' | 'waiting-for-deployment' | 'waiting-for-user' | 'cancelled' | 'completed';
 export type DevRequestPriority = 1 | 2 | 3 | 4 | 5;
-export type DevRequestFilter = 'all' | 'backlog' | 'open' | 'in-progress' | 'waiting-for-deployment';
+export type DevRequestFilter = 'all' | 'backlog' | 'open' | 'in-progress' | 'waiting-for-deployment' | 'waiting-for-user';
 
 export type DevRequestVote = 'up' | 'down';
 
@@ -27,6 +27,10 @@ export interface DevRequest {
 		id: string;
 		name: string;
 	};
+}
+
+export interface DevRequestNotice {
+	text: string | null;
 }
 
 export interface DevRequestComment {

@@ -1,14 +1,11 @@
 <script lang="ts">
-	import type { Link } from '$lib/types/library_link';
-	import type { Quote } from '$lib/types/library_quote';
-	import type { MusicRelease } from '$lib/types/library_music';
-	import type { BookRelease } from '$lib/types/library_book';
-	import type { Note } from '$lib/types/note';
-	import { onMount } from 'svelte';
-	import { getAuth } from '$lib/state/Auth.svelte';
 	import { getNavigation } from '$lib/state/Navigation.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
-	import { apiRoutes } from '$lib/config/apiRoutes';
+	import { getNotes } from '$lib/state/Notes.svelte';
+	import { getMusicLibrary } from '$lib/state/MusicLibrary.svelte';
+	import { getBookLibrary } from '$lib/state/BookLibrary.svelte';
+	import { getLinkLibrary } from '$lib/state/LinkLibrary.svelte';
+	import { getQuoteLibrary } from '$lib/state/QuoteLibrary.svelte';
 	import MusicReleasesWidget from '$lib/components/dashboard/widgets/MusicReleasesWidget.svelte';
 	import BookReleasesWidget from '$lib/components/dashboard/widgets/BookReleasesWidget.svelte';
 	import NewestNotesWidget from '$lib/components/dashboard/widgets/NewestNotesWidget.svelte';
@@ -16,44 +13,25 @@
 	import QuoteWidget from '$lib/components/dashboard/widgets/QuoteWidget.svelte';
 	import EmptyState from '$lib/components/ui/EmptyState.svelte';
 
-	const auth = getAuth();
+	const MAX_RELEASES = 5;
+
 	const nav = getNavigation();
 	const ts = getTranslation();
-	const apiService = auth.apiService;
+	const notes = getNotes();
+	const music = getMusicLibrary();
+	const books = getBookLibrary();
+	const links = getLinkLibrary();
+	const quotes = getQuoteLibrary();
 
-	let quote = $state<Quote | null>(null);
-	let musicReleases = $state<MusicRelease[]>([]);
-	let bookReleases = $state<BookRelease[]>([]);
-	let newestNotes = $state<Note[]>([]);
-	let newestLinks = $state<Link[]>([]);
-	let notesLoaded = $state<boolean>(false);
+	let musicReleases = $derived(music.releases.slice(0, MAX_RELEASES));
+	let bookReleases = $derived(books.releases.slice(0, MAX_RELEASES));
 
-	onMount(() => {
-		if (nav.features.libraries) loadLibraries();
-		if (nav.features.notes) loadNotes();
-		else notesLoaded = true;
-	});
-
-	function loadLibraries(): void {
-		apiService.get(apiRoutes.libraries.quotes.getRandom, null).then((res) => {
-			if (res) quote = res.data as Quote;
-		});
-		apiService.list(apiRoutes.libraries.music.releases).then((res) => {
-			if (res) musicReleases = (res.data as MusicRelease[]).slice(0, 5);
-		});
-		apiService.list(apiRoutes.libraries.books.releases).then((res) => {
-			if (res) bookReleases = (res.data as BookRelease[]).slice(0, 5);
-		});
-		apiService.list(apiRoutes.libraries.links.newest).then((res) => {
-			if (res) newestLinks = res.data as Link[];
-		});
+	function notesLoaded(): boolean {
+		return notes.recentNotesLoaded || !nav.features.notes;
 	}
 
-	function loadNotes(): void {
-		apiService.list(apiRoutes.notes.recent).then((res) => {
-			if (res) newestNotes = res.data as Note[];
-			notesLoaded = true;
-		});
+	function isEmpty(): boolean {
+		return musicReleases.length === 0 && bookReleases.length === 0 && notes.recentNotes.length === 0 && links.newestEntries.length === 0 && !quotes.randomQuote;
 	}
 </script>
 
@@ -66,19 +44,19 @@
 		<BookReleasesWidget {bookReleases} {ts} />
 	{/if}
 
-	{#if newestNotes.length > 0}
-		<NewestNotesWidget {newestNotes} {ts} />
+	{#if notes.recentNotes.length > 0}
+		<NewestNotesWidget newestNotes={notes.recentNotes} {ts} />
 	{/if}
 
-	{#if newestLinks.length > 0}
-		<NewestLinksWidget {newestLinks} {ts} />
+	{#if links.newestEntries.length > 0}
+		<NewestLinksWidget newestLinks={links.newestEntries} {ts} />
 	{/if}
 
-	{#if quote}
-		<QuoteWidget {quote} />
+	{#if quotes.randomQuote}
+		<QuoteWidget quote={quotes.randomQuote} />
 	{/if}
 
-	{#if notesLoaded && musicReleases.length === 0 && bookReleases.length === 0 && newestNotes.length === 0 && newestLinks.length === 0 && !quote}
-		<EmptyState title={ts.get.home.more_to_come} description={ts.get.home.more_to_come_desc} smallerTitle={true} />
+	{#if notesLoaded() && isEmpty()}
+		<EmptyState title={ts.get.home.more_to_come} description={ts.get.home.more_to_come_desc} titleSize="text-lg" />
 	{/if}
 </div>

@@ -2,14 +2,14 @@
 	import { getCalendars } from '$lib/state/Calendars.svelte';
 	import CalendarEdit from '$lib/components/calendars/CalendarEdit.svelte';
 	import PendingCalendarInvite from '$lib/components/calendars/PendingCalendarInvite.svelte';
-	import IconChevronLeft from '@lucide/svelte/icons/chevron-left';
+	import IconChevronLeft from '$lib/icons/lucide/chevron-left.svelte';
 	import CalendarCreate from '$lib/components/calendars/CalendarCreate.svelte';
 	import ExternalAccounts from '$lib/components/calendars/ExternalAccounts.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import Divider from '$lib/components/ui/Divider.svelte';
 	import { dndzone } from 'svelte-dnd-action';
 	import { flip } from 'svelte/animate';
-	import IconGripVertical from '@lucide/svelte/icons/grip-vertical';
+	import IconGripVertical from '$lib/icons/lucide/grip-vertical.svelte';
 	import type { Calendar } from '$lib/types/calendar';
 
 	let { onClose }: { onClose: () => void } = $props();

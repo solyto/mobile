@@ -1,7 +1,12 @@
 import type { Note, NoteCategory } from '$lib/types/note';
-import { getUrlFormat } from '$lib/helpers/DateHelper';
+import { getDateMinusDays, getUrlFormat } from '$lib/helpers/DateHelper';
 
 const ENTRY_TITLE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+export interface RecentEntryKeys {
+	today: string;
+	yesterday: string;
+}
 
 export default class JournalService {
 	findJournalCategory(categories: NoteCategory[]): NoteCategory | null {
@@ -62,6 +67,22 @@ export default class JournalService {
 		const [year, month, day] = title.split('-').map(Number);
 
 		return new Date(year, month - 1, day);
+	}
+
+	entryKeyFromParam(param: string | undefined): string | null {
+		return param && this.isEntryTitle(param) ? param : null;
+	}
+
+	dateFromParam(param: string | undefined, fallback: Date = new Date()): Date {
+		return this.parseEntryTitle(param ?? '') ?? fallback;
+	}
+
+	recentEntryKeys(today: Date = new Date()): RecentEntryKeys {
+		return { today: getUrlFormat(today), yesterday: getUrlFormat(getDateMinusDays(today, 1)) };
+	}
+
+	isOlderEntryKey(key: string | null, recent: RecentEntryKeys): boolean {
+		return key !== null && key !== recent.today && key !== recent.yesterday;
 	}
 
 	findEntry(notes: Note[], categoryId: number, date: Date): Note | null {

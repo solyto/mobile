@@ -4,10 +4,8 @@ import { CLIENT_VERSION, getApiUrl } from '$lib/config/platform';
 import { acceptsClientVersionHeader, isOlderVersion } from '$lib/helpers/VersionHelper';
 import LocalStorageService from '$lib/services/LocalStorageService';
 
-// Endpoints where a 401 is a legitimate, expected auth failure (bad credentials,
-// expired refresh token, failed passkey authentication) rather than a stale
-// session. Recovery must never run for these, otherwise a failed login would
-// trigger a refresh/logout loop.
+// A 401 from these is a real auth failure (bad credentials, expired refresh token, failed passkey),
+// not a stale session; running recovery for it would turn a failed login into a refresh/logout loop.
 const AUTH_ENDPOINTS: string[] = [
 	apiRoutes.auth.login,
 	apiRoutes.auth.refresh,
@@ -22,9 +20,8 @@ const AUTH_ENDPOINTS: string[] = [
 	apiRoutes.auth.passkeys.authenticate
 ];
 
-// A request that never got a response (offline, dropped connection, CORS
-// failure). Thrown instead of fetch's own TypeError so the root layout can tell
-// it apart from programming errors and stop the loading indicator.
+// A request that got no response (offline, dropped connection, CORS failure). Its own type lets the
+// root layout tell it apart from programming errors and stop the loading indicator.
 export class NetworkError extends Error {
 	constructor(cause: unknown) {
 		super(cause instanceof Error ? cause.message : 'Network request failed', { cause });
@@ -62,13 +59,12 @@ export default class ApiService {
 	authToken: string | null = null;
 	private unauthorizedHandler: (() => Promise<boolean>) | null = null;
 	private upgradeRequiredHandler: ((minVersion: string | null) => void) | null = null;
-	private localStorage = new LocalStorageService();
-	// Off until the server is known to accept X-Client-Version: servers up to
-	// 1.0.15 reject it in their CORS preflight, which would fail every request.
+	private localStorage: LocalStorageService;
 	private clientVersionHeaderEnabled: boolean;
 
-	constructor(authToken: string | null = null) {
+	constructor(authToken: string | null = null, localStorage: LocalStorageService = new LocalStorageService()) {
 		this.authToken = authToken;
+		this.localStorage = localStorage;
 		this.clientVersionHeaderEnabled = acceptsClientVersionHeader(this.storedServerVersion());
 	}
 
@@ -98,8 +94,6 @@ export default class ApiService {
 		return version;
 	}
 
-	// Returns the server version when it is older than this app and the notice
-	// for this server/app pair has not been shown yet; marks the pair as seen.
 	outdatedServerVersionToAnnounce(serverVersion: string): string | null {
 		if (!CLIENT_VERSION || !isOlderVersion(serverVersion, CLIENT_VERSION)) return null;
 
@@ -215,13 +209,7 @@ export default class ApiService {
 	}
 
 	async get(endpoint: string, id: string | number | null): Promise<GetResponse | null> {
-		if (typeof id === 'string') {
-			endpoint = endpoint.replace('%s', id);
-		} else if (typeof id === 'number') {
-			endpoint = endpoint.replace('%d', id.toString());
-		}
-
-		const res = await this.fetchWithRecovery(endpoint, {}, () => this.getApiHeader());
+		const res = await this.fetchWithRecovery(this.withId(endpoint, id), {}, () => this.getApiHeader());
 		return res.ok ? await res.json() : null;
 	}
 
@@ -246,15 +234,11 @@ export default class ApiService {
 	}
 
 	async delete(endpoint: string, id: string | number): Promise<boolean> {
-		const res = await this.fetchWithRecovery(
-			typeof id === 'string'
-				? endpoint.replace('%s', id)
-				: endpoint.replace('%d', id.toString()),
-			{ method: 'DELETE' },
-			() => this.getApiHeader()
+		const res = await this.fetchWithRecovery(this.withId(endpoint, id), { method: 'DELETE' }, () =>
+			this.getApiHeader()
 		);
 
-		return Promise.resolve(res.ok);
+		return res.ok;
 	}
 
 	async deleteWithStatus(endpoint: string): Promise<StatusResponse> {
@@ -265,14 +249,11 @@ export default class ApiService {
 
 	async update(endpoint: string, id: string | number, body: object): Promise<boolean> {
 		const res = await this.fetchWithRecovery(
-			typeof id === 'string'
-				? endpoint.replace('%s', id)
-				: endpoint.replace('%d', id.toString()),
+			this.withId(endpoint, id),
 			{ method: 'PUT', body: JSON.stringify(body) },
 			() => this.getApiHeaderWithBody()
 		);
-
-		return Promise.resolve(res.ok);
+		return res.ok;
 	}
 
 	async post(endpoint: string, body: FormData | object): Promise<PostResponse | null> {
@@ -408,6 +389,12 @@ export default class ApiService {
 		}
 	}
 
+	private withId(endpoint: string, id: string | number | null): string {
+		if (typeof id === 'string') return endpoint.replace('%s', id);
+		if (typeof id === 'number') return endpoint.replace('%d', id.toString());
+		return endpoint;
+	}
+
 	private getAuthHeaderOnly(): HeadersInit {
 		return { Authorization: 'Bearer ' + this.authToken, ...this.getClientVersionHeader() };
 	}
@@ -441,9 +428,8 @@ export default class ApiService {
 		};
 	}
 
-	// The API records the version on the auth token. A missing value is ignored
-	// there, so the header is left out when PUBLIC_VERSION is unset or the
-	// server is not known to accept it.
+	// The API records this version on the auth token and ignores a missing one, so the header is left
+	// out when PUBLIC_VERSION is unset or the server is not known to accept it.
 	private getClientVersionHeader(): Record<string, string> {
 		return CLIENT_VERSION && this.clientVersionHeaderEnabled ? { 'X-Client-Version': CLIENT_VERSION } : {};
 	}

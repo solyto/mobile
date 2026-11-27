@@ -21,20 +21,34 @@
 
 	onMount(async () => {
 		loadingIndicator.start();
-		await tt.load();
-		loadingIndicator.stop();
+		try {
+			await tt.load();
+		} finally {
+			loadingIndicator.stop();
+		}
 	});
+
+	function createProject(): void {
+		showProjectCreate = true;
+	}
+
+	function editProject(id: string): void {
+		editingProjectId = id;
+		showProjectCreate = true;
+	}
+
+	function closeProjectForm(): void {
+		showProjectCreate = false;
+		editingProjectId = null;
+	}
 </script>
 
 {#if tt.loaded}
 	<div class="flex h-full w-full flex-row" in:fade>
 		<TimeTrackingNavigation
 			{activeProjectId}
-			onCreateProject={() => (showProjectCreate = true)}
-			onEditProject={(id) => {
-				editingProjectId = id;
-				showProjectCreate = true;
-			}}
+			onCreateProject={createProject}
+			onEditProject={editProject}
 		/>
 		<div class="relative max-h-full w-full overflow-y-auto">
 			{@render children?.()}
@@ -43,11 +57,5 @@
 {/if}
 
 {#if showProjectCreate}
-	<ProjectCreate
-		projectId={editingProjectId}
-		onClose={() => {
-			showProjectCreate = false;
-			editingProjectId = null;
-		}}
-	/>
+	<ProjectCreate projectId={editingProjectId} onClose={closeProjectForm} />
 {/if}

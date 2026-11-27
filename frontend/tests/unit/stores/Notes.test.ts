@@ -2,11 +2,14 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { NotesSvelte } from '$lib/state/Notes.svelte';
 import { api, storage, pageState, resetStoreMocks } from '../setup/storeMocks';
 import type { Note, NoteCategory } from '$lib/types/note';
+import type { Auth } from '$lib/state/Auth.svelte';
+import { note, noteCategory } from '../helpers/factories';
+import { apiRoutes } from '$lib/config/apiRoutes';
 
 const { navigation } = vi.hoisted(() => ({
 	navigation: {
 		goto: vi.fn(),
-		resolve: (path: string, params: Record<string, string>) => path.replace('[id]', params.id)
+		resolve: (path: string, params: Record<string, string> = {}) => path.replace('[id]', params.id)
 	}
 }));
 
@@ -33,35 +36,6 @@ vi.mock('$lib/state/Translation.svelte', () => ({
 vi.mock('$lib/state/UiNotifications.svelte', () => ({
 	getUiNotifications: () => notifications
 }));
-
-function note(overrides: Partial<Note> = {}): Note {
-	return {
-		id: 'n1',
-		title: 'Note',
-		content: '',
-		category_id: null,
-		tags: [],
-		is_favorite: false,
-		created_at: '2026-01-01T00:00:00',
-		updated_at: '2026-01-01T00:00:00',
-		...overrides
-	};
-}
-
-function category(id: number, title: string, overrides: Partial<NoteCategory> = {}): NoteCategory {
-	return {
-		id,
-		title,
-		parent_id: null,
-		sort_order: 0,
-		is_system: false,
-		is_hidden: false,
-		created_at: '',
-		updated_at: '',
-		children: [],
-		...overrides
-	};
-}
 
 interface Lists {
 	notes?: Note[];
@@ -140,19 +114,27 @@ describe('Notes store', () => {
 
 		it('getCategoryTitle resolves top-level categories', () => {
 			const n = new NotesSvelte();
-			n.categories = [category(1, 'Work'), category(2, 'Private')];
+			n.categories = [noteCategory(1, { title: 'Work' }), noteCategory(2, { title: 'Private' })];
 			expect(n.getCategoryTitle(1)).toBe('Work');
 		});
 
 		it('getCategoryTitle resolves child categories', () => {
 			const n = new NotesSvelte();
-			n.categories = [category(1, 'Work', { children: [category(5, 'Projects')] })];
+			n.categories = [noteCategory(1, { title: 'Work', children: [noteCategory(5, { title: 'Projects' })] })];
 			expect(n.getCategoryTitle(5)).toBe('Projects');
+		});
+
+		it('getCategoryTitle resolves deeply nested categories', () => {
+			const n = new NotesSvelte();
+			const archive = noteCategory(9, { title: 'Archive' });
+			const projects = noteCategory(5, { title: 'Projects', children: [archive] });
+			n.categories = [noteCategory(1, { title: 'Work', children: [projects] })];
+			expect(n.getCategoryTitle(9)).toBe('Archive');
 		});
 
 		it('getCategoryTitle returns a dash for unknown categories', () => {
 			const n = new NotesSvelte();
-			n.categories = [category(1, 'Work')];
+			n.categories = [noteCategory(1, { title: 'Work' })];
 			expect(n.getCategoryTitle(99)).toBe('-');
 		});
 	});
@@ -218,12 +200,69 @@ describe('Notes store', () => {
 			expect(n.activeNote).toBeNull();
 		});
 
-		it('checkUrlForActiveNote selects the note from the page params', () => {
+		it('syncActiveNoteWithUrl selects the note from the page params', () => {
 			pageState.params = { id: 'n7' };
 			const n = new NotesSvelte();
 			n.notes = [note({ id: 'n7' }), note({ id: 'n8' })];
-			n.checkUrlForActiveNote();
+			n.syncActiveNoteWithUrl();
 			expect(n.activeNote?.id).toBe('n7');
+		});
+
+		it('syncActiveNoteWithUrl clears the active note on a page without a note', () => {
+			pageState.routeId = '/notes';
+			const n = new NotesSvelte();
+			n.notes = [note({ id: 'n7' })];
+			n.activeNote = n.notes[0];
+			n.syncActiveNoteWithUrl();
+			expect(n.activeNote).toBeNull();
+		});
+
+		describe('on a journal day', () => {
+			const journal = noteCategory(9, { title: '.journal', is_system: true, is_hidden: true });
+
+			beforeEach(() => {
+				pageState.routeId = '/notes/journal/[date]';
+				pageState.params = { date: '2026-01-05' };
+			});
+
+			function loadedWithJournal(notes: Note[] = []): NotesSvelte {
+				const n = new NotesSvelte();
+				n.loaded = true;
+				n.notes = notes;
+				n.journalCategory = journal;
+				return n;
+			}
+
+			it('syncActiveNoteWithUrl opens the entry of the day in the URL', () => {
+				const entry = note({ id: 'j1', title: '2026-01-05', category_id: 9 });
+				const n = loadedWithJournal([entry]);
+				n.syncActiveNoteWithUrl();
+				expect(n.activeNote?.id).toBe('j1');
+			});
+
+			it('syncActiveNoteWithUrl keeps the open draft of that day', () => {
+				const n = loadedWithJournal();
+				const draft = note({ id: '', title: '2026-01-05', category_id: 9, content: '<p>typing</p>' });
+				n.activeNote = draft;
+				n.syncActiveNoteWithUrl();
+				expect(n.activeNote).toBe(draft);
+			});
+
+			it('syncActiveNoteWithUrl waits until the notes are loaded', () => {
+				const n = loadedWithJournal();
+				n.loaded = false;
+				n.syncActiveNoteWithUrl();
+				expect(n.activeNote).toBeNull();
+			});
+
+			it('loadCategories opens the entry once the journal folder is known', async () => {
+				mockLists({ categories: [], hiddenCategories: [journal] });
+				const n = loadedWithJournal();
+				n.journalCategory = null;
+				await n.loadCategories();
+				expect(n.activeNote?.title).toBe('2026-01-05');
+				expect(n.activeNote?.id).toBe('');
+			});
 		});
 	});
 
@@ -295,7 +334,7 @@ describe('Notes store', () => {
 	describe('search', () => {
 		function searchable(): NotesSvelte {
 			const n = new NotesSvelte();
-			n.journalCategory = category(9, 'Journal', { is_system: true });
+			n.journalCategory = noteCategory(9, { title: 'Journal', is_system: true });
 			n.notes = [
 				note({ id: '1', title: 'Milk prices' }),
 				note({ id: '2', title: 'Shopping', content: '<p>buy milk</p>' }),
@@ -365,7 +404,6 @@ describe('Notes store', () => {
 			n.moveSearchSelection(1);
 			await n.openSearchResult();
 
-			expect(n.activeNote?.id).toBe('2');
 			expect(n.searchVisible).toBe(false);
 			expect(n.searchTerm).toBe('');
 			expect(navigation.goto).toHaveBeenCalledWith('/notes/2');
@@ -377,7 +415,6 @@ describe('Notes store', () => {
 			n.search();
 			await n.openSearchResult(n.searchResults[1]);
 
-			expect(n.activeNote?.id).toBe('2');
 			expect(navigation.goto).toHaveBeenCalledWith('/notes/2');
 		});
 
@@ -390,6 +427,134 @@ describe('Notes store', () => {
 
 			expect(n.searchVisible).toBe(true);
 			expect(navigation.goto).not.toHaveBeenCalled();
+		});
+	});
+
+	describe('note links', () => {
+		it('searchLinkableNotes leaves out hidden, journal and the current note and matches titles only', async () => {
+			mockLists({
+				notes: [
+					note({ id: '1', title: 'Milk prices' }),
+					note({ id: '2', title: 'Shopping', content: '<p>milk</p>' }),
+					note({ id: '3', title: 'Milk journal', category_id: 9 }),
+					note({ id: '4', title: 'Milk draft' })
+				],
+				hiddenNotes: [note({ id: '5', title: 'Milk secret', category_id: 7 })]
+			});
+			const n = new NotesSvelte();
+			n.journalCategory = noteCategory(9, { title: 'Journal', is_system: true });
+			await n.load();
+			n.selectNote('4');
+
+			expect(n.searchLinkableNotes('milk', 10).map((x) => x.id)).toEqual(['1']);
+		});
+
+		it('searchLinkableNotes caps the results at the given limit', () => {
+			const n = new NotesSvelte();
+			n.notes = Array.from({ length: 12 }, (_, i) => note({ id: `${i}` }));
+
+			expect(n.searchLinkableNotes('', NotesSvelte.LINK_SUGGESTION_LIMIT)).toHaveLength(8);
+		});
+
+		it('findNote returns the note by id, or null', () => {
+			const n = new NotesSvelte();
+			n.notes = [note({ id: '1' })];
+
+			expect(n.findNote('1')?.id).toBe('1');
+			expect(n.findNote('2')).toBeNull();
+		});
+
+		it('openNote navigates to the note', async () => {
+			const n = new NotesSvelte();
+			n.notes = [note({ id: '1' }), note({ id: '2' })];
+
+			await n.openNote('2');
+
+			expect(navigation.goto).toHaveBeenCalledWith('/notes/2');
+		});
+
+		it('loadBacklinks fetches the backlinks of the given note', async () => {
+			const backlinks = [{ id: 'a', title: 'Alpha' }];
+			api.list.mockResolvedValue({ data: backlinks });
+			const n = new NotesSvelte();
+
+			await n.loadBacklinks('1');
+
+			expect(api.list).toHaveBeenCalledWith(expect.stringMatching(/\/notes\/1\/backlinks$/));
+			expect(n.backlinks).toEqual(backlinks);
+		});
+
+		it('loadBacklinks clears the previous list while the request is pending', () => {
+			api.list.mockReturnValue(new Promise(() => {}));
+			const n = new NotesSvelte();
+			n.backlinks = [{ id: 'old', title: 'Old' }];
+
+			void n.loadBacklinks('1');
+
+			expect(n.backlinks).toEqual([]);
+		});
+
+		it('loadBacklinks leaves the list empty when the request fails (403 / 404)', async () => {
+			api.list.mockResolvedValue(null);
+			const n = new NotesSvelte();
+			n.backlinks = [{ id: 'old', title: 'Old' }];
+
+			await n.loadBacklinks('gone');
+
+			expect(n.backlinks).toEqual([]);
+		});
+
+		it('loadBacklinks ignores a response for a note that is no longer requested', async () => {
+			const responses: ((value: unknown) => void)[] = [];
+			api.list.mockImplementation(() => new Promise((r) => responses.push(r)));
+			const n = new NotesSvelte();
+
+			const first = n.loadBacklinks('1');
+			const second = n.loadBacklinks('2');
+			responses[1]({ data: [{ id: 'b', title: 'Beta' }] });
+			responses[0]({ data: [{ id: 'a', title: 'Alpha' }] });
+			await Promise.all([first, second]);
+
+			expect(n.backlinks).toEqual([{ id: 'b', title: 'Beta' }]);
+		});
+	});
+
+	describe('backlinks after a reload', () => {
+		function respond(notes: Note[], backlinks: { id: string; title: string }[]): void {
+			api.list.mockImplementation(async (url: string) => {
+				if (url.endsWith('/backlinks')) return { data: backlinks };
+				if (url === apiRoutes.notes.list) return { data: notes };
+				return { data: [] };
+			});
+		}
+
+		it('reloads the shown list when a linking note is deleted from the sidebar', async () => {
+			pageState.params = { id: 'target' };
+			respond([note({ id: 'target' }), note({ id: 'a' }), note({ id: 'b' })], [{ id: 'a', title: 'A' }, { id: 'b', title: 'B' }]);
+			const n = new NotesSvelte();
+			await n.load();
+			await n.loadBacklinks('target');
+
+			api.delete.mockResolvedValue(true);
+			respond([note({ id: 'target' }), note({ id: 'b' })], [{ id: 'b', title: 'B' }]);
+			n.rightClickType = 'note';
+			n.rightClickId = 'a';
+			await n.delete();
+
+			expect(n.backlinks).toEqual([{ id: 'b', title: 'B' }]);
+		});
+
+		it('does not fetch backlinks when no list is shown for the active note', async () => {
+			pageState.params = { id: 'target' };
+			respond([note({ id: 'target' })], []);
+			const n = new NotesSvelte();
+			await n.load();
+			await n.loadBacklinks('target');
+			api.list.mockClear();
+
+			await n.load();
+
+			expect(api.list).not.toHaveBeenCalledWith(expect.stringMatching(/\/backlinks$/));
 		});
 	});
 
@@ -425,15 +590,6 @@ describe('Notes store', () => {
 			expect(n.rightClickMenuOpen).toBe(false);
 		});
 
-		it('closeMoveNoteModal clears the note to move', () => {
-			const n = new NotesSvelte();
-			n.notes = [note({ id: 'n1' })];
-			n.openMoveNoteModal('n1');
-			n.closeMoveNoteModal();
-
-			expect(n.noteToMove).toBeNull();
-		});
-
 		it('moveToCategory sends the target folder and reloads', async () => {
 			api.update.mockResolvedValue(true);
 			mockLists({ notes: [note({ id: 'n1', category_id: 5 })], hiddenNotes: [] });
@@ -445,6 +601,15 @@ describe('Notes store', () => {
 				category_id: 5
 			});
 			expect(n.notes[0].category_id).toBe(5);
+		});
+
+		it('closeMoveNoteModal clears the note to move', () => {
+			const n = new NotesSvelte();
+			n.notes = [note({ id: 'n1' })];
+			n.openMoveNoteModal('n1');
+			n.closeMoveNoteModal();
+
+			expect(n.noteToMove).toBeNull();
 		});
 
 		it('moveToCategory sends null to move a note out of every folder', async () => {
@@ -488,7 +653,6 @@ describe('Notes store', () => {
 			expect(api.create).toHaveBeenCalledWith(expect.stringContaining('/notes'), {
 				title: 'Draft'
 			});
-			expect(n.activeNote?.id).toBe('n9');
 			expect(n.inputValue).toBe('');
 			expect(navigation.goto).toHaveBeenCalledWith('/notes/n9');
 		});
@@ -536,7 +700,7 @@ describe('Notes store', () => {
 	});
 
 	describe('journal', () => {
-		const journal = category(9, '.journal', { is_system: true, is_hidden: true });
+		const journal = noteCategory(9, { title: '.journal', is_system: true, is_hidden: true });
 
 		function withJournal(): NotesSvelte {
 			const n = new NotesSvelte();
@@ -546,7 +710,7 @@ describe('Notes store', () => {
 
 		it('loadCategories resolves the journal folder and keeps it out of the tree', async () => {
 			mockLists({
-				categories: [category(1, 'Work'), category(2, 'Private')],
+				categories: [noteCategory(1, { title: 'Work' }), noteCategory(2, { title: 'Private' })],
 				hiddenCategories: [journal]
 			});
 
@@ -558,9 +722,9 @@ describe('Notes store', () => {
 		});
 
 		it('loadCategories keeps a hidden user folder in the tree', async () => {
-			const hiddenFolder = category(5, 'Secret', { parent_id: 1, is_hidden: true });
+			const hiddenFolder = noteCategory(5, { title: 'Secret', parent_id: 1, is_hidden: true });
 			mockLists({
-				categories: [category(1, 'Work')],
+				categories: [noteCategory(1, { title: 'Work' })],
 				hiddenCategories: [journal, hiddenFolder]
 			});
 
@@ -573,10 +737,10 @@ describe('Notes store', () => {
 		});
 
 		it('loadCategories keeps the previous state when the hidden call fails', async () => {
-			mockLists({ categories: [category(1, 'Work')] });
+			mockLists({ categories: [noteCategory(1, { title: 'Work' })] });
 
 			const n = withJournal();
-			n.categories = [category(2, 'Private')];
+			n.categories = [noteCategory(2, { title: 'Private' })];
 			await n.loadCategories();
 
 			expect(n.journalCategory?.id).toBe(9);
@@ -777,7 +941,7 @@ describe('Notes store', () => {
 		});
 
 		it('creates a top-level category', async () => {
-			api.create.mockResolvedValue({ data: category(3, 'Ideas') });
+			api.create.mockResolvedValue({ data: noteCategory(3, { title: 'Ideas' }) });
 
 			const n = new NotesSvelte();
 			n.inputValue = 'Ideas';
@@ -790,7 +954,7 @@ describe('Notes store', () => {
 		});
 
 		it('creates a child category with a parent id', async () => {
-			api.create.mockResolvedValue({ data: category(4, 'Sub') });
+			api.create.mockResolvedValue({ data: noteCategory(4, { title: 'Sub' }) });
 
 			const n = new NotesSvelte();
 			n.inputValue = 'Sub';
@@ -804,7 +968,7 @@ describe('Notes store', () => {
 		});
 
 		it('updates an existing category in edit mode', async () => {
-			api.update.mockResolvedValue({ data: category(7, 'Renamed') });
+			api.update.mockResolvedValue({ data: noteCategory(7, { title: 'Renamed' }) });
 
 			const n = new NotesSvelte();
 			n.inputValue = 'Renamed';
@@ -819,8 +983,8 @@ describe('Notes store', () => {
 		});
 
 		it('reloads the categories after creating one', async () => {
-			api.create.mockResolvedValue({ data: category(3, 'Ideas') });
-			mockLists({ categories: [category(3, 'Ideas')], hiddenCategories: [] });
+			api.create.mockResolvedValue({ data: noteCategory(3, { title: 'Ideas' }) });
+			mockLists({ categories: [noteCategory(3, { title: 'Ideas' })], hiddenCategories: [] });
 
 			const n = new NotesSvelte();
 			n.inputValue = 'Ideas';
@@ -832,7 +996,7 @@ describe('Notes store', () => {
 		});
 
 		it('collapses the parent category when it was not collapsed yet', async () => {
-			api.create.mockResolvedValue({ data: category(4, 'Sub') });
+			api.create.mockResolvedValue({ data: noteCategory(4, { title: 'Sub' }) });
 
 			const n = new NotesSvelte();
 			n.inputValue = 'Sub';
@@ -852,6 +1016,62 @@ describe('Notes store', () => {
 			expect(n.inputValue).toBe('Doomed');
 			expect(n.modalOpen).toBe(true);
 			expect(notifications.error).toHaveBeenCalledWith('Failed to create folder.');
+			expect(api.list).not.toHaveBeenCalled();
+		});
+	});
+
+	describe('journalEnabled', () => {
+		it('follows the user setting and is off without one', () => {
+			const enabled = { apiService: api, user: { settings: { journal_enabled: true } } } as unknown as Auth;
+
+			expect(new NotesSvelte(enabled).journalEnabled).toBe(true);
+			expect(new NotesSvelte().journalEnabled).toBe(false);
+		});
+	});
+
+	describe('deleteCategory', () => {
+		it('deletes the folder, reloads notes and folders and closes the menu', async () => {
+			api.delete.mockResolvedValue(true);
+			mockLists({ notes: [], hiddenNotes: [], categories: [], hiddenCategories: [] });
+
+			const n = new NotesSvelte();
+			n.rightClickMenuOpen = true;
+			await expect(n.deleteCategory(4)).resolves.toBe(true);
+
+			expect(api.delete).toHaveBeenCalledWith(expect.stringContaining('/notes/categories'), 4);
+			expect(api.list).toHaveBeenCalledTimes(4);
+			expect(n.rightClickMenuOpen).toBe(false);
+		});
+
+		it('leaves the open note when it was deleted with the folder', async () => {
+			api.delete.mockResolvedValue(true);
+			mockLists({ notes: [], hiddenNotes: [], categories: [], hiddenCategories: [] });
+
+			const n = new NotesSvelte();
+			n.notes = [note({ id: 'n1', category_id: 4 })];
+			n.activeNote = n.notes[0];
+			await n.deleteCategory(4);
+
+			expect(navigation.goto).toHaveBeenCalledWith('/notes');
+		});
+
+		it('stays on the open note when it survived', async () => {
+			api.delete.mockResolvedValue(true);
+			mockLists({ notes: [note({ id: 'n1' })], hiddenNotes: [], categories: [], hiddenCategories: [] });
+
+			const n = new NotesSvelte();
+			n.notes = [note({ id: 'n1' })];
+			n.activeNote = n.notes[0];
+			await n.deleteCategory(4);
+
+			expect(navigation.goto).not.toHaveBeenCalled();
+		});
+
+		it('does not reload when the request fails', async () => {
+			api.delete.mockResolvedValue(false);
+
+			const n = new NotesSvelte();
+			await expect(n.deleteCategory(4)).resolves.toBe(false);
 			expect(api.list).not.toHaveBeenCalled();
 		});
 	});

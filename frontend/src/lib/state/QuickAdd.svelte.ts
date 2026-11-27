@@ -57,15 +57,13 @@ export class QuickAdd {
 	async detect(): Promise<void> {
 		if (!this.content.trim()) return;
 
-		this.loading = true;
 		this.error = null;
 		this.detectedType = null;
 		this.needsConfirmation = false;
 		this.showTypeSelector = false;
 
-		const res = await this.apiService.create(apiRoutes.dashboard.quickAddDetect, { content: this.content });
-
-		this.loading = false;
+		const request = { content: this.content };
+		const res = await this.whileLoading(() => this.apiService.create(apiRoutes.dashboard.quickAddDetect, request));
 
 		if (!res) {
 			this.error = this.ts.get.quick_add.detect_error;
@@ -82,7 +80,7 @@ export class QuickAdd {
 		if (data.needs_confirmation) {
 			this.needsConfirmation = true;
 		} else {
-			await this.confirm(this.detectedType!);
+			await this.confirm(data.content_type);
 		}
 	}
 
@@ -97,17 +95,15 @@ export class QuickAdd {
 		this.needsConfirmation = true;
 	}
 
+	async confirmDetected(): Promise<void> {
+		if (this.detectedType) await this.confirm(this.detectedType);
+	}
+
 	async confirm(type: QuickAddContentType): Promise<void> {
-		this.loading = true;
 		this.error = null;
 
-		const res = await this.apiService.create(apiRoutes.dashboard.quickAddCommit, {
-			content: this.content,
-			content_type: type,
-			metadata: this.metadata
-		});
-
-		this.loading = false;
+		const request = { content: this.content, content_type: type, metadata: this.metadata };
+		const res = await this.whileLoading(() => this.apiService.create(apiRoutes.dashboard.quickAddCommit, request));
 
 		if (!res) {
 			this.error = this.ts.get.quick_add.commit_error;
@@ -116,9 +112,7 @@ export class QuickAdd {
 		}
 
 		const destination = this.ts.get.quick_add.destinations[type];
-		this.notifications.success(
-			this.ts.get.quick_add.commit_success.replace('%s', destination)
-		);
+		this.notifications.success(this.ts.get.quick_add.commit_success.replace('%s', destination));
 		this.closeModal();
 	}
 
@@ -135,6 +129,15 @@ export class QuickAdd {
 			return true;
 		} catch {
 			return false;
+		}
+	}
+
+	private async whileLoading<T>(request: () => Promise<T>): Promise<T> {
+		this.loading = true;
+		try {
+			return await request();
+		} finally {
+			this.loading = false;
 		}
 	}
 }

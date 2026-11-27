@@ -3,9 +3,9 @@
 	import TextInput from '$lib/components/forms/TextInput.svelte';
 	import DateInput from '$lib/components/forms/DateInput.svelte';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
-	import { API_USER_STORAGE_URL } from '$lib/config/apiRoutes';
-	import { getAuth } from '$lib/state/Auth.svelte';
+	import { libraryCoverUrl } from '$lib/helpers/LibraryCoverHelper';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
+	import { SaveAction } from '$lib/helpers/SaveAction.svelte';
 	import ModalFormRow from '$lib/components/ui/ModalFormRow.svelte';
 	import Select from '$lib/components/forms/Select.svelte';
 	import Checkbox from '$lib/components/forms/Checkbox.svelte';
@@ -13,13 +13,11 @@
 	import CreateModal from '$lib/components/libraries/shared/CreateModal.svelte';
 	import { getPlantLibrary } from '$lib/state/PlantLibrary.svelte';
 	import { resizeImage } from '$lib/services/ImageService';
-	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
 
 	const ts = getTranslation();
-	const notifications = getUiNotifications();
 	const library = getPlantLibrary();
-	const auth = getAuth();
 	const loadingIndicator = getLoadingIndicator();
+	const updating = new SaveAction(() => ts.get.libraries.plants.update_error);
 
 	const canSubmit = $derived(submittable());
 
@@ -97,21 +95,11 @@
 	}
 
 	function submittable(): boolean {
-		return (nameValue.trim() !== '' || coverFile !== null || coverValue !== '' || (activeEntry?.cover != null && !coverRemoved));
+		return nameValue.trim() !== '' || coverFile !== null || coverValue !== '' || (activeEntry?.cover != null && !coverRemoved);
 	}
 
-	async function onsubmit(): Promise<void> {
-		if (activeEntry) {
-			return await update();
-		} else {
-			return await create();
-		}
-	}
-
-	async function create(): Promise<void> {
-		loadingIndicator.start();
-
-		const request: CreatePlantRequest = {
+	function plantFields(): Omit<CreatePlantRequest, 'cover_path'> {
+		return {
 			name: nameValue.trim() !== '' ? nameValue : null,
 			latin_name: latinNameValue !== '' ? latinNameValue : null,
 			location: locationValue !== '' ? (locationValue as PlantLocation) : null,
@@ -121,14 +109,12 @@
 			acquired_at: acquiredAtValue !== '' ? acquiredAtValue : null,
 			winter_hardy: locationValue === 'outdoor' || locationValue === 'both' ? winterHardyValue : null,
 			instructions: instructionsValue !== '' ? instructionsValue : null,
-			cover_path: coverFile === null && coverValue !== '' ? coverValue : null,
 			link: linkValue !== '' ? linkValue : null
 		};
+	}
 
-		const ok = await library.create(request, coverFile ?? undefined);
-		if (ok) library.closeCreateModal();
-
-		loadingIndicator.stop();
+	function createRequest(): CreatePlantRequest {
+		return { ...plantFields(), cover_path: coverFile === null && coverValue !== '' ? coverValue : null };
 	}
 
 	function getCoverUpdate(): { cover_path?: string | null } {
@@ -137,33 +123,41 @@
 		return {};
 	}
 
-	async function update(): Promise<void> {
+	function updateRequest(): UpdatePlantRequest {
+		return { ...plantFields(), ...getCoverUpdate() };
+	}
+
+	async function onsubmit(): Promise<void> {
+		if (activeEntry) await update(activeEntry);
+		else await create();
+	}
+
+	async function create(): Promise<void> {
 		loadingIndicator.start();
-
-		const request: UpdatePlantRequest = {
-			name: nameValue.trim() !== '' ? nameValue : null,
-			latin_name: latinNameValue !== '' ? latinNameValue : null,
-			location: locationValue !== '' ? (locationValue as PlantLocation) : null,
-			sunlight: sunlightValue !== '' ? (sunlightValue as PlantSunlight) : null,
-			current_size: currentSizeValue !== '' ? currentSizeValue : null,
-			max_size: maxSizeValue !== '' ? maxSizeValue : null,
-			acquired_at: acquiredAtValue !== '' ? acquiredAtValue : null,
-			winter_hardy: locationValue === 'outdoor' || locationValue === 'both' ? winterHardyValue : null,
-			instructions: instructionsValue !== '' ? instructionsValue : null,
-			...getCoverUpdate(),
-			link: linkValue !== '' ? linkValue : null
-		};
-
-		const ok = await library.update(activeEntry!, request);
-
-		if (ok && coverFile) {
-			await library.uploadCover(activeEntry!.id, coverFile);
+		try {
+			if (!(await library.create(createRequest(), coverFile ?? undefined))) return;
+		} finally {
+			loadingIndicator.stop();
 		}
+		library.closeCreateModal();
+	}
 
+	async function update(entry: Plant): Promise<void> {
+		const ok = await updating.run(async () => {
+			const updated = await library.update(entry, updateRequest());
+			if (updated && coverFile) await library.uploadCover(entry.id, coverFile);
+			return updated;
+		});
 		if (ok) library.closeCreateModal();
-		else notifications.error(ts.get.libraries.plants.update_error);
+	}
 
-		loadingIndicator.stop();
+	function modalTitle(): string {
+		return activeEntry !== null ? ts.get.libraries.plants.edit_plant : ts.get.libraries.plants.add_plant;
+	}
+
+	function existingCover(): string | null {
+		const keepsCover = !coverFile && !coverValue && !coverRemoved;
+		return activeEntry?.cover && keepsCover ? libraryCoverUrl(library, activeEntry.cover) : null;
 	}
 </script>
 
@@ -176,13 +170,9 @@
 />
 
 <CreateModal
-	title={activeEntry !== null
-		? ts.get.libraries.plants.edit_plant
-		: ts.get.libraries.plants.add_plant}
+	title={modalTitle()}
 	{library}
-	existingCover={activeEntry && activeEntry.cover && !coverFile && !coverValue && !coverRemoved
-		? `${API_USER_STORAGE_URL}/${auth.user?.id}/${library.config.type}/${activeEntry.cover}`
-		: null}
+	existingCover={existingCover()}
 	newCover={coverPreviewUrl ?? (coverValue || undefined)}
 	onCoverClick={() => fileInput?.click()}
 	onCoverRemove={onCoverRemove}

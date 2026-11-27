@@ -263,6 +263,98 @@ describe('WidgetBridge', () => {
 		});
 	});
 
+	describe('push on the phone', () => {
+		function pushMessages(): unknown[] {
+			return sent().filter((message) => (message as { type: string }).type !== 'ready');
+		}
+
+		it('asks native for the push status and answers with its reply', async () => {
+			const bridge = createBridge();
+			bridge.start();
+
+			const status = bridge.pushStatus();
+			receive({ type: 'pushStatus', id: '1', enabled: true, permission: 'granted' });
+
+			expect(pushMessages()).toEqual([{ type: 'getPushStatus', id: '1' }]);
+			await expect(status).resolves.toEqual({ enabled: true, permission: 'granted' });
+		});
+
+		it('gets the reply to a push status asked for before the bridge started', async () => {
+			const bridge = createBridge();
+
+			const status = bridge.pushStatus();
+			receive({ type: 'pushStatus', id: '1', enabled: true, permission: 'granted' });
+
+			await expect(status).resolves.toEqual({ enabled: true, permission: 'granted' });
+			bridge.start();
+			expect(sent()).toEqual([{ type: 'getPushStatus', id: '1' }, { type: 'ready' }]);
+		});
+
+		it('turns push on and off through native', async () => {
+			const bridge = createBridge();
+			bridge.start();
+
+			const enabled = bridge.enablePush();
+			receive({ type: 'pushStatus', id: '1', enabled: false, permission: 'denied' });
+			const disabled = bridge.disablePush();
+			receive({ type: 'pushStatus', id: '2', enabled: false, permission: 'granted' });
+
+			expect(pushMessages()).toEqual([{ type: 'enablePush', id: '1' }, { type: 'disablePush', id: '2' }]);
+			await expect(enabled).resolves.toEqual({ enabled: false, permission: 'denied' });
+			await expect(disabled).resolves.toEqual({ enabled: false, permission: 'granted' });
+		});
+
+		it('gives each request its own answer when they overlap', async () => {
+			const bridge = createBridge();
+			bridge.start();
+
+			const status = bridge.pushStatus();
+			const enabled = bridge.enablePush();
+			receive({ type: 'pushStatus', id: '1', enabled: false, permission: 'prompt' });
+			receive({ type: 'pushStatus', id: '2', enabled: true, permission: 'granted' });
+
+			await expect(status).resolves.toEqual({ enabled: false, permission: 'prompt' });
+			await expect(enabled).resolves.toEqual({ enabled: true, permission: 'granted' });
+		});
+
+		it('gives up on a request native never answers and ignores a late answer', async () => {
+			vi.useFakeTimers();
+			const bridge = createBridge();
+			bridge.start();
+
+			const status = bridge.pushStatus();
+			const rejected = expect(status).rejects.toThrow();
+			await vi.advanceTimersByTimeAsync(60000);
+			await rejected;
+
+			const next = bridge.pushStatus();
+			receive({ type: 'pushStatus', id: '1', enabled: true, permission: 'granted' });
+			receive({ type: 'pushStatus', id: '2', enabled: false, permission: 'granted' });
+			await expect(next).resolves.toEqual({ enabled: false, permission: 'granted' });
+		});
+
+		it('ignores a malformed push status', async () => {
+			const bridge = createBridge();
+			bridge.start();
+			let answered = false;
+
+			void bridge.pushStatus().then(() => (answered = true));
+			receive({ type: 'pushStatus', id: '1', enabled: 'yes', permission: 'granted' });
+			receive({ type: 'pushStatus', id: '1', enabled: true, permission: 'maybe' });
+			receive({ type: 'pushStatus', enabled: true, permission: 'granted' });
+			await flushAsync();
+
+			expect(answered).toBe(false);
+		});
+
+		it('has native push only in the mobile app', () => {
+			expect(createBridge().hasNativePush()).toBe(true);
+
+			platform.mobile = false;
+			expect(createBridge().hasNativePush()).toBe(false);
+		});
+	});
+
 	describe('notifyChanged', () => {
 		it('sends one refresh after changes settle', () => {
 			vi.useFakeTimers();
@@ -320,6 +412,34 @@ describe('WidgetBridge', () => {
 			expect(navigation.goto).toHaveBeenCalledWith(`/time-tracking/${PROJECT_ID}`);
 		});
 
+		it('opens a notification\'s link inside the app', () => {
+			createBridge().start();
+
+			receive({ type: 'open', path: '/check-in/trends?range=week' });
+
+			expect(navigation.goto).toHaveBeenCalledWith('/check-in/trends?range=week');
+		});
+
+		it('refuses links that leave the app', () => {
+			createBridge().start();
+
+			for (const path of ['https://evil.example/', '//evil.example/x', '/\\evil.example/x', 'javascript:alert(1)', 'check-in', '']) {
+				receive({ type: 'open', path });
+			}
+			receive({ type: 'open', path: 42 });
+
+			expect(navigation.goto).not.toHaveBeenCalled();
+		});
+
+		it('opens nothing from a link when logged out', () => {
+			loggedIn = false;
+			createBridge().start();
+
+			receive({ type: 'open', path: '/check-in' });
+
+			expect(navigation.goto).not.toHaveBeenCalled();
+		});
+
 		it('ignores unknown keys and invalid ids', () => {
 			createBridge().start();
 
@@ -330,6 +450,16 @@ describe('WidgetBridge', () => {
 			receive({ type: 'navigate', key: 'time_tracking_project', id: 'not-a-uuid' });
 			receive({ type: 'navigate', key: 'time_tracking_project' });
 			receive({ type: 'navigate', key: 'time_tracking_project', id: 42 });
+
+			expect(navigation.goto).not.toHaveBeenCalled();
+		});
+
+		it('ignores navigate messages whose key or id is not a string', () => {
+			createBridge().start();
+
+			receive({ type: 'navigate', key: 42 });
+			receive({ type: 'navigate', key: 'calendar', id: 42 });
+			receive({ type: 'navigate', key: 'calendar', id: null });
 
 			expect(navigation.goto).not.toHaveBeenCalled();
 		});

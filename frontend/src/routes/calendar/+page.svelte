@@ -16,7 +16,7 @@
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
-	import { eventWriteErrorMessage } from '$lib/helpers/CalendarEventHelper';
+	import { moveErrorMessage } from '$lib/helpers/CalendarEventHelper';
 
 	const calendars = getCalendars();
 	const calendarSharing = getCalendarSharing();
@@ -29,7 +29,7 @@
 		const result = await calendars.resolvePendingMove(thisOccurrenceOnly);
 		loadingIndicator.stop();
 		if (result !== 'ok') {
-			notifications.error(eventWriteErrorMessage(result, ts.get.calendar, ts.get.calendar.entry_move_error));
+			notifications.error(moveErrorMessage(result, ts.get.calendar));
 		}
 	}
 

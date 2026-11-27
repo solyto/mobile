@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { blur } from 'svelte/transition';
 	import { getTranslation } from '$lib/state/Translation.svelte';
-	import IconSparkles from '@lucide/svelte/icons/sparkles';
+	import IconSparkles from '$lib/icons/lucide/sparkles.svelte';
 
 	const ts = getTranslation();
 </script>

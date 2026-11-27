@@ -5,6 +5,11 @@
 	let { entry }: { entry: DevRequest } = $props();
 
 	const ts = getTranslation();
+
+	function label(): string | undefined {
+		if (!entry.priority) return undefined;
+		return ts.get.dev.requests[`priority_${entry.priority}`];
+	}
 </script>
 
 <span
@@ -15,5 +20,5 @@
 	class:bg-c-warning={entry.priority === 3}
 	class:bg-c-action={entry.priority === 4}
 	class:bg-c-danger={entry.priority === 5}
-	aria-label={entry.priority ? ts.get.dev.requests[`priority_${entry.priority}`] : undefined}
+	aria-label={label()}
 ></span>

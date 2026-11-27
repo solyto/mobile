@@ -61,6 +61,49 @@ describe('TimeTracking store', () => {
 		expect(api.list.mock.calls[1][0]).toMatch(/\?from=2026-09-16&to=2026-10-16$/);
 	});
 
+	it('stops the timer of the given entry', async () => {
+		api.post.mockResolvedValue({ data: {} });
+		api.list.mockResolvedValue({ data: [] });
+
+		await new TimeTracking().stopTimer('e7');
+
+		expect(api.post).toHaveBeenCalledWith(expect.stringMatching(/\/time-tracking\/entries\/e7\/stop$/), {});
+	});
+
+	describe('reloads after a change', () => {
+		const reloads: [string, 'create' | 'post' | 'update' | 'delete', (t: TimeTracking) => Promise<boolean>, string[]][] = [
+			['createCategory', 'create', (t) => t.createCategory({} as never), ['categories']],
+			['updateCategory', 'update', (t) => t.updateCategory(1, {} as never), ['categories', 'projects']],
+			['deleteCategory', 'delete', (t) => t.deleteCategory(1), ['categories', 'projects']],
+			['createProject', 'create', (t) => t.createProject({} as never), ['projects']],
+			['updateProject', 'update', (t) => t.updateProject('1', {} as never), ['projects']],
+			['deleteProject', 'delete', (t) => t.deleteProject('1'), ['entries', 'projects']],
+			['createEntry', 'create', (t) => t.createEntry({} as never), ['entries', 'projects']],
+			['updateEntry', 'update', (t) => t.updateEntry('1', {} as never), ['entries', 'projects']],
+			['deleteEntry', 'delete', (t) => t.deleteEntry('1'), ['entries', 'projects']],
+			['startTimer', 'post', (t) => t.startTimer({ project_id: '1' }), ['entries']],
+			['stopTimer', 'post', (t) => t.stopTimer('1'), ['entries', 'projects']]
+		];
+
+		it.each(reloads)('%s reloads exactly the affected lists', async (_, method, mutate, lists) => {
+			api.list.mockResolvedValue({ data: [] });
+			api[method].mockResolvedValue(method === 'update' || method === 'delete' ? true : { data: {} });
+
+			const result = await mutate(new TimeTracking());
+
+			expect(result).toBe(true);
+			const reloaded = api.list.mock.calls.map((call) => String(call[0]).split('/time-tracking/')[1]).sort();
+			expect(reloaded).toEqual(lists);
+		});
+
+		it.each(reloads)('%s reloads nothing and reports failure', async (_, method, mutate) => {
+			api[method].mockResolvedValue(method === 'update' || method === 'delete' ? false : null);
+
+			expect(await mutate(new TimeTracking())).toBe(false);
+			expect(api.list).not.toHaveBeenCalled();
+		});
+	});
+
 	describe('widget refresh', () => {
 		const mutations: [string, 'create' | 'post' | 'update' | 'delete', (t: TimeTracking) => Promise<boolean>][] = [
 			['startTimer', 'post', (t) => t.startTimer({ project_id: '1' })],
@@ -102,18 +145,6 @@ describe('TimeTracking store', () => {
 			await t.deleteCategory(1);
 
 			expect(auth.widgetBridge.notifyChanged).not.toHaveBeenCalled();
-		});
-	});
-
-	describe('formatDuration', () => {
-		it('formats minutes only below an hour', () => {
-			expect(new TimeTracking().formatDuration(0)).toBe('0m');
-			expect(new TimeTracking().formatDuration(45)).toBe('45m');
-		});
-
-		it('formats hours and minutes', () => {
-			expect(new TimeTracking().formatDuration(60)).toBe('1h 0m');
-			expect(new TimeTracking().formatDuration(125)).toBe('2h 5m');
 		});
 	});
 });

@@ -19,10 +19,9 @@
 	let showInput = $state<boolean>(false);
 	let keyHandlers: { [key: string]: string | null } = { Enter: null, Escape: null };
 
-	onMount(
-		() =>
-			(keyHandlers.Enter = keyManager.registerKeyDown('Enter', handleEnter, { priority: 3 }))
-	);
+	onMount(() => {
+		keyHandlers.Enter = keyManager.registerKeyDown('Enter', handleEnter, { priority: 3 });
+	});
 	onDestroy(() => keyManager.unregisterAll(keyHandlers));
 
 	async function toggleInput() {
@@ -51,14 +50,16 @@
 		}
 
 		loadingIndicator.start();
+		try {
+			if (inputValue.trim() !== '') {
+				await contacts.createAddressBook({ name: inputValue.trim() });
+				notifications.success(ts.get.calendar.create_success);
+			}
 
-		if (inputValue.trim() !== '') {
-			await contacts.createAddressBook({ name: inputValue.trim() });
-			notifications.success(ts.get.calendar.create_success);
+			await toggleInput();
+		} finally {
+			loadingIndicator.stop();
 		}
-
-		await toggleInput();
-		loadingIndicator.stop();
 	}
 </script>
 

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { formatDuration } from '$lib/helpers/TimeTrackingHelper';
 	import { getTimeTracking } from '$lib/state/TimeTracking.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
@@ -8,34 +9,25 @@
 	import Heading from '$lib/components/ui/Heading.svelte';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
 	import DateInput from '$lib/components/forms/DateInput.svelte';
+	import TimeTrackingGroupingService from '$lib/services/TimeTrackingGroupingService';
 	import { getReadableTextColor } from '$lib/helpers/ColorHelper';
+	import { getDateMinusDays, getUrlFormat } from '$lib/helpers/DateHelper';
+	import type { TimeTrackingCategory } from '$lib/types/time_tracking';
+	import { hamburgerClearance } from '$lib/config/navigation';
+
+	const DEFAULT_RANGE_DAYS = 30;
+	const CHIP_IDLE = 'border-c-neutral-2 text-c-neutral-5 hover:border-c-primary dark:border-s-dark dark:text-c-neutral-4';
 
 	const tt = getTimeTracking();
 	const ts = getTranslation();
 	const loadingIndicator = getLoadingIndicator();
-
-	function toLocalDateValue(date: Date): string {
-		const y = date.getFullYear();
-		const m = String(date.getMonth() + 1).padStart(2, '0');
-		const d = String(date.getDate()).padStart(2, '0');
-		return `${y}-${m}-${d}`;
-	}
+	const groupingService = new TimeTrackingGroupingService();
 
 	const today = new Date();
-	const thirtyDaysAgo = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 30);
 
-	let fromDate = $state<string>(toLocalDateValue(thirtyDaysAgo));
-	let toDate = $state<string>(toLocalDateValue(today));
+	let fromDate = $state<string>(getUrlFormat(getDateMinusDays(today, DEFAULT_RANGE_DAYS)));
+	let toDate = $state<string>(getUrlFormat(today));
 	let selectedCategoryIds = $state<number[]>([]);
-
-	async function toggleCategory(id: number): Promise<void> {
-		if (selectedCategoryIds.includes(id)) {
-			selectedCategoryIds = selectedCategoryIds.filter((c) => c !== id);
-		} else {
-			selectedCategoryIds = [...selectedCategoryIds, id];
-		}
-		await loadStats();
-	}
 
 	let filteredProjects = $derived(tt.statistics?.by_project ?? []);
 
@@ -47,36 +39,57 @@
 		}))
 	);
 
-	let categoryBreakdown = $derived.by(() => {
-		const map = new Map<number, { title: string; minutes: number }>();
-		for (const stat of filteredProjects) {
-			const project = tt.projects.find((p) => p.id === stat.project_id);
-			if (!project) continue;
-			for (const cat of project.categories) {
-				const existing = map.get(cat.id) ?? { title: cat.title, minutes: 0 };
-				existing.minutes += stat.total_minutes;
-				map.set(cat.id, existing);
-			}
-		}
-		return [...map.values()].sort((a, b) => b.minutes - a.minutes);
-	});
+	let categoryBreakdown = $derived(groupingService.groupByCategory(filteredProjects, tt.projects));
 
 	let categoryChartLabels = $derived(categoryBreakdown.map((c) => c.title));
 
-	onMount(async () => {
-		await loadStats();
-	});
+	onMount(loadStats);
 
 	async function loadStats(): Promise<void> {
 		loadingIndicator.start();
-		await tt.loadStatistics(fromDate, toDate, selectedCategoryIds);
-		loadingIndicator.stop();
+		try {
+			await tt.loadStatistics(fromDate, toDate, selectedCategoryIds);
+		} finally {
+			loadingIndicator.stop();
+		}
+	}
+
+	async function toggleCategory(id: number): Promise<void> {
+		if (selectedCategoryIds.includes(id)) {
+			selectedCategoryIds = selectedCategoryIds.filter((c) => c !== id);
+		} else {
+			selectedCategoryIds = [...selectedCategoryIds, id];
+		}
+		await loadStats();
+	}
+
+	async function showAllCategories(): Promise<void> {
+		selectedCategoryIds = [];
+		await loadStats();
+	}
+
+	function isSelected(category: TimeTrackingCategory): boolean {
+		return selectedCategoryIds.includes(category.id);
+	}
+
+	function categoryColor(category: TimeTrackingCategory): string {
+		return category.color ?? 'var(--color-c-primary)';
+	}
+
+	function chipStyle(category: TimeTrackingCategory): string {
+		if (!isSelected(category)) return '';
+		const color = categoryColor(category);
+		return `background-color: ${color}; border-color: ${color}; color: ${getReadableTextColor(color)}`;
+	}
+
+	function totalMinutes(): number {
+		return filteredProjects.reduce((sum, p) => sum + p.total_minutes, 0);
 	}
 </script>
 
 <div class="flex flex-col gap-6">
 	<div class="flex flex-col items-start justify-between gap-4 md:flex-row md:items-start">
-		<div class="max-lg:ml-14">
+		<div class={hamburgerClearance}>
 			<Heading title={ts.get.timeTracking.statistics} my={0} />
 		</div>
 		<div class="flex flex-wrap items-end gap-4">
@@ -104,14 +117,8 @@
 			<div class="flex flex-wrap gap-2">
 				<button
 					type="button"
-					onclick={async () => {
-						selectedCategoryIds = [];
-						await loadStats();
-					}}
-					class="rounded-full border px-3 py-1 text-xs font-medium transition-colors
-						{selectedCategoryIds.length === 0
-						? 'border-c-primary bg-c-primary text-white'
-						: 'border-c-neutral-2 text-c-neutral-5 hover:border-c-primary dark:border-s-dark dark:text-c-neutral-4'}"
+					onclick={showAllCategories}
+					class="rounded-full border px-3 py-1 text-xs font-medium transition-colors {selectedCategoryIds.length === 0 ? 'border-c-primary bg-c-primary text-white' : CHIP_IDLE}"
 				>
 					{ts.get.timeTracking.all_categories}
 				</button>
@@ -119,18 +126,10 @@
 					<button
 						type="button"
 						onclick={() => toggleCategory(category.id)}
-						class="flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors
-							{selectedCategoryIds.includes(category.id)
-							? 'border-transparent'
-							: 'border-c-neutral-2 text-c-neutral-5 hover:border-c-primary dark:border-s-dark dark:text-c-neutral-4'}"
-						style={selectedCategoryIds.includes(category.id)
-							? `background-color: ${category.color ?? 'var(--color-c-primary)'}; border-color: ${category.color ?? 'var(--color-c-primary)'}; color: ${getReadableTextColor(category.color ?? 'var(--color-c-primary)')}`
-							: ''}
+						class="flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors {isSelected(category) ? 'border-transparent' : CHIP_IDLE}"
+						style={chipStyle(category)}
 					>
-						<span
-							class="h-2 w-2 shrink-0 rounded-full"
-							style="background-color: {category.color ?? 'var(--color-c-primary)'}"
-						></span>
+						<span class="h-2 w-2 shrink-0 rounded-full" style="background-color: {categoryColor(category)}"></span>
 						{category.title}
 					</button>
 				{/each}
@@ -144,7 +143,7 @@
 				{ts.get.timeTracking.total_time}:
 			</span>
 			<span class="text-lg font-bold text-c-primary">
-				{tt.formatDuration(filteredProjects.reduce((sum, p) => sum + p.total_minutes, 0))}
+				{formatDuration(totalMinutes())}
 			</span>
 		</div>
 
@@ -154,8 +153,8 @@
 					<span class="text-lg font-medium">{ts.get.timeTracking.projects}</span>
 					<DoughnutChart
 						values={projectDonutData}
-						centerFormatter={tt.formatDuration}
-						valueFormatter={tt.formatDuration}
+						centerFormatter={formatDuration}
+						valueFormatter={formatDuration}
 					/>
 				</div>
 			{/if}
@@ -165,7 +164,7 @@
 					<BarChart
 						categories={categoryChartLabels}
 						values={categoryBreakdown.map((c) => c.minutes)}
-						valueFormatter={(v) => tt.formatDuration(v)}
+						valueFormatter={formatDuration}
 					/>
 				</div>
 			{/if}

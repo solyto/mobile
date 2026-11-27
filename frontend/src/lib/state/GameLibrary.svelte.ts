@@ -10,11 +10,15 @@ import type {
 import { getContext, setContext } from 'svelte';
 import { getAuth, type Auth } from '$lib/state/Auth.svelte';
 import ApiService from '$lib/services/ApiService';
+import LocalStorageService from '$lib/services/LocalStorageService';
 import { apiRoutes } from '$lib/config/apiRoutes';
 import LibraryFilterService from '$lib/services/LibraryFilterService';
 import type { LibraryConfig } from '$lib/types/library';
 
 export class GameLibrary {
+	static readonly LS_VIEW_KEY: string = 'games_view';
+	static readonly VIEWS = ['list', 'cards'] as const;
+
 	config: LibraryConfig = {
 		type: 'games',
 		hasCovers: true,
@@ -45,14 +49,20 @@ export class GameLibrary {
 	wishlistFilter = $state<boolean>(false);
 	searchTerm = $state<string>('');
 	activeFilter: 'none' | 'search' | 'genreAndRating' | 'wishlist' = 'none';
-	view = $state<'list' | 'cards'>('cards');
+	view = $state<(typeof GameLibrary.VIEWS)[number]>('cards');
 	auth: Auth;
 	filterService = new LibraryFilterService();
 	apiService: ApiService;
+	localStorage: LocalStorageService;
 
-	constructor(auth: Auth = getAuth(), apiService: ApiService = auth.apiService) {
+	constructor(
+		auth: Auth = getAuth(),
+		apiService: ApiService = auth.apiService,
+		localStorage: LocalStorageService = new LocalStorageService()
+	) {
 		this.auth = auth;
 		this.apiService = apiService;
+		this.localStorage = localStorage;
 	}
 
 	async load(): Promise<void> {
@@ -88,6 +98,8 @@ export class GameLibrary {
 	}
 
 	filterByWishlist(): void {
+		this.genreFilter = null;
+		this.ratingFilter = null;
 		this.wishlistFilter = true;
 		this.activeFilter = 'wishlist';
 		this.reapplyFilter();
@@ -99,23 +111,6 @@ export class GameLibrary {
 		this.wishlistFilter = false;
 		this.activeFilter = 'none';
 		this.reapplyFilter();
-	}
-
-	private reapplyFilter(): void {
-		this.filteredEntries = this.filterEntries();
-	}
-
-	private filterEntries(): Game[] {
-		switch (this.activeFilter) {
-			case 'search':
-				return this.filterService.search(this.entries, this.searchTerm, ['title', 'developer', 'publisher']);
-			case 'genreAndRating':
-				return this.filterService.byGenreAndRating(this.entries, this.genreFilter, this.ratingFilter);
-			case 'wishlist':
-				return this.filterService.byWishlist(this.entries);
-			default:
-				return this.entries;
-		}
 	}
 
 	addRatingFilter(rating: number | null): void {
@@ -168,6 +163,13 @@ export class GameLibrary {
 		this.externalSearchModalVisible = false;
 	}
 
+	changeView(view: string): void {
+		const known = GameLibrary.VIEWS.find((candidate) => candidate === view);
+		if (!known) return;
+		this.view = known;
+		this.localStorage.set(GameLibrary.LS_VIEW_KEY, known);
+	}
+
 	switchView(): void {
 		this.view = this.view === 'list' ? 'cards' : 'list';
 	}
@@ -175,7 +177,7 @@ export class GameLibrary {
 	async create(request: CreateGameRequest): Promise<boolean> {
 		const res = await this.apiService.create(apiRoutes.libraries.games.create, request);
 		if (res) await this.load();
-		return Promise.resolve(res !== null);
+		return res !== null;
 	}
 
 	async update(entry: Game, request: UpdateGameRequest): Promise<boolean> {
@@ -222,8 +224,9 @@ export class GameLibrary {
 		const res = await this.apiService.list(
 			`${apiRoutes.libraries.games.search}/${provider}/${encodeURIComponent(query)}`
 		);
-		if (res) return res.data as GameSearchResult[];
-		return null;
+		// null when the search failed or the provider was unreachable.
+		if (!res || res.meta?.unavailable === true) return null;
+		return res.data as GameSearchResult[];
 	}
 
 	async importFrom(provider: string, url: string): Promise<GameRelease | null> {
@@ -233,6 +236,23 @@ export class GameLibrary {
 		);
 		if (res) return res.data as GameRelease;
 		return null;
+	}
+
+	private reapplyFilter(): void {
+		this.filteredEntries = this.filterEntries();
+	}
+
+	private filterEntries(): Game[] {
+		switch (this.activeFilter) {
+			case 'search':
+				return this.filterService.search(this.entries, this.searchTerm, ['title', 'developer', 'publisher']);
+			case 'genreAndRating':
+				return this.filterService.byGenreAndRating(this.entries, this.genreFilter, this.ratingFilter);
+			case 'wishlist':
+				return this.filterService.byWishlist(this.entries);
+			default:
+				return this.entries;
+		}
 	}
 }
 

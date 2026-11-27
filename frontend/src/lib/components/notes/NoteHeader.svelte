@@ -7,13 +7,15 @@
 	import NoteTags from '$lib/components/notes/NoteTags.svelte';
 	import { getKeyManager } from '$lib/state/KeyManager.svelte';
 	import { onDestroy, onMount, tick } from 'svelte';
-	import IconStar from '@lucide/svelte/icons/star';
-	import IconFolderInput from '@lucide/svelte/icons/folder-input';
+	import IconStar from '$lib/icons/lucide/star.svelte';
+	import IconFolderInput from '$lib/icons/lucide/folder-input.svelte';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
+	import GhostIconButton from '$lib/components/ui/buttons/GhostIconButton.svelte';
+	import TextInput from '$lib/components/forms/TextInput.svelte';
 	import ConfirmationModal from '$lib/components/ui/ConfirmationModal.svelte';
-	import DeleteButton from '$lib/components/ui/buttons/DeleteButton.svelte';
-	import MovableHoverBox from '$lib/components/ui/MovableHoverBox.svelte';
-	import type { Note } from '$lib/types/note';
+	import IconTrash from '$lib/icons/lucide/trash.svelte';
+	import IconPencil from '$lib/icons/lucide/pencil.svelte';
+	import { SaveAction } from '$lib/helpers/SaveAction.svelte';
 
 	const ts = getTranslation();
 	const auth = getAuth();
@@ -21,8 +23,7 @@
 	const loadingIndicator = getLoadingIndicator();
 	const notifications = getUiNotifications();
 	const keyManager = getKeyManager();
-
-	const ICON_BUTTON = 'flex cursor-pointer items-center justify-center rounded-sm p-1.5 transition-all hover:bg-c-neutral dark:hover:bg-s-dark-3';
+	const saving = new SaveAction(() => ts.get.notes.save_error);
 
 	let { isJournal = false }: {
 		isJournal?: boolean;
@@ -32,9 +33,6 @@
 	let titleInput = $state<HTMLInputElement | null>(null);
 	let titleValue = $state<string>(notes.activeNote!.title);
 	let lastSaved = $state<Date | null>(null);
-	let showExplanationBox = $state<boolean>(false);
-	let explanationBoxX = $state<number>(0);
-	let explanationBoxY = $state<number>(0);
 	let keyHandlers: { [key: string]: string | null } = {
 		CtrlS: null,
 		Enter: null,
@@ -45,30 +43,37 @@
 
 	function journalTitle(): string {
 		const date = notes.journalService.parseEntryTitle(notes.activeNote!.title);
+		if (date === null) return notes.activeNote!.title;
 
-		return date === null ? 
-			notes.activeNote!.title :
-			`${ts.get.notes.journal}: ${auth.getDateInUserPreferredFormat(date)}`;
+		return `${ts.get.notes.journal}: ${auth.getDateInUserPreferredFormat(date)}`;
+	}
+
+	function favoriteLabel(): string {
+		return notes.activeNote!.is_favorite ? ts.get.notes.remove_from_favorites : ts.get.notes.add_to_favorites;
+	}
+
+	function favoriteColor(): string {
+		return notes.activeNote!.is_favorite ? 'text-c-action' : 'text-c-neutral-4';
 	}
 
 	async function saveNote() {
 		if (isDraft && !notes.journalService.hasContent(notes.activeNote!.content)) return;
 
-		loadingIndicator.start();
-		const res = await notes.saveContent();
-		if (res) {
+		const ok = await saving.run(() => notes.saveContent());
+		if (ok) {
 			notifications.success(ts.get.notes.save_success);
 			lastSaved = new Date();
-		} else {
-			notifications.error(ts.get.notes.save_error);
 		}
-		loadingIndicator.stop();
 	}
 
-	async function changeFavoriteStatus(note: Note) {
+	async function toggleFavorite(): Promise<void> {
+		const note = notes.activeNote!;
 		loadingIndicator.start();
-		await notes.updateFavoriteStatus(note, !note.is_favorite);
-		loadingIndicator.stop();
+		try {
+			await notes.updateFavoriteStatus(note, !note.is_favorite);
+		} finally {
+			loadingIndicator.stop();
+		}
 	}
 
 	function openMoveNoteModal(): void {
@@ -77,7 +82,6 @@
 
 	async function toggleChangeTitle(): Promise<void> {
 		changeTitle = !changeTitle;
-		showExplanationBox = false;
 
 		if (changeTitle) {
 			titleValue = notes.activeNote!.title;
@@ -104,33 +108,39 @@
 	}
 
 	async function onsubmit(): Promise<void> {
-		loadingIndicator.start();
 		keyManager.unregisterKeyDown(keyHandlers.Enter);
-		let noteTitle = titleValue.trim();
+		const noteTitle = titleValue.trim();
+		if (noteTitle === '') return;
 
-		if (noteTitle === '') {
-			return;
+		loadingIndicator.start();
+		try {
+			await notes.changeTitle(noteTitle);
+		} finally {
+			loadingIndicator.stop();
 		}
-
-		await notes.changeTitle(noteTitle);
-		loadingIndicator.stop();
-	}
-
-	function setExplanationBoxPosition(e: MouseEvent): void {
-		explanationBoxX = e.clientX;
-		explanationBoxY = e.clientY;
 	}
 
 	function formatSavedTime(date: Date): string {
 		return auth.getTimeInUserPreferredFormat(date);
 	}
 
+	function openDeleteModal(): void {
+		notes.deleteNoteModalOpen = true;
+	}
+
+	function closeDeleteModal(): void {
+		notes.deleteNoteModalOpen = false;
+	}
+
 	async function onDeleteConfirm(): Promise<void> {
 		loadingIndicator.start();
-		const ok = await notes.deleteActiveNote();
-		if (ok) notifications.success(ts.get.notes.delete_success);
-		loadingIndicator.stop();
-		notes.deleteNoteModalOpen = false;
+		try {
+			const ok = await notes.deleteActiveNote();
+			if (ok) notifications.success(ts.get.notes.delete_success);
+		} finally {
+			loadingIndicator.stop();
+		}
+		closeDeleteModal();
 	}
 
 	onMount(() => {
@@ -149,32 +159,16 @@
 				{#if isJournal}
 					<h1 class="text-left text-3xl leading-tight">{journalTitle()}</h1>
 				{:else if changeTitle}
-					<input
-						type="text"
-						class="text-xl font-bold dark:bg-s-dark-3 dark:text-white"
-						{onblur}
-						bind:this={titleInput}
-						bind:value={titleValue}
-					/>
+					<TextInput bind:input={titleInput} bind:value={titleValue} {onblur} class="text-xl font-bold dark:bg-s-dark-3" />
 				{:else}
-					<button
-						type="button"
-						class="text-left text-3xl leading-tight"
-						ondblclick={toggleChangeTitle}
-						onmouseover={() => (showExplanationBox = true)}
-						onmouseout={() => (showExplanationBox = false)}
-						onfocus={() => (showExplanationBox = true)}
-						onblur={() => (showExplanationBox = false)}
-						onmousemove={(e) => setExplanationBoxPosition(e)}
-					>
-						{notes.activeNote.title}
-					</button>
-					<MovableHoverBox
-						content={ts.get.layout.double_click_to_edit}
-						show={showExplanationBox}
-						x={explanationBoxX}
-						y={explanationBoxY}
-					/>
+					<div class="flex min-w-0 items-center gap-3">
+						<button type="button" class="min-w-0 text-left text-3xl leading-tight" ondblclick={toggleChangeTitle}>
+							{notes.activeNote.title}
+						</button>
+						<GhostIconButton label={ts.get.layout.rename} onclick={toggleChangeTitle} class="shrink-0">
+							<IconPencil size={16} />
+						</GhostIconButton>
+					</div>
 				{/if}
 				{#if lastSaved}
 					<span class="text-xs text-c-neutral-5 dark:text-c-neutral-4">
@@ -185,40 +179,21 @@
 			<div
 				class="flex shrink-0 items-center gap-3 pt-1 max-md:absolute max-md:top-0 max-md:right-0"
 			>
-				{#if !isJournal}
-					<button
-						class="{ICON_BUTTON} text-c-neutral-4"
-						title={ts.get.notes.move_note}
-						onclick={openMoveNoteModal}
-					>
-						<IconFolderInput size={16} />
-					</button>
-					<button
-						class={ICON_BUTTON}
-						class:text-c-action={notes.activeNote.is_favorite}
-						class:text-c-neutral-4={!notes.activeNote.is_favorite}
-						title={notes.activeNote.is_favorite
-							? ts.get.notes.remove_from_favorites
-							: ts.get.notes.add_to_favorites}
-						onclick={async () => {
-							changeFavoriteStatus(notes.activeNote!);
-						}}
-					>
-						<IconStar
-							size={16}
-							fill={notes.activeNote.is_favorite ? 'currentColor' : 'none'}
-						/>
-					</button>
-				{/if}
-				{#if !isDraft}
-					<DeleteButton
-						onClick={() => {
-							notes.deleteNoteModalOpen = true;
-						}}
-						inModal={false}
-						buttonStyle="plain"
-					/>
-				{/if}
+				<div class="flex items-center gap-1">
+					{#if !isJournal}
+						<GhostIconButton label={ts.get.notes.move_note} onclick={openMoveNoteModal}>
+							<IconFolderInput size={16} />
+						</GhostIconButton>
+						<GhostIconButton label={favoriteLabel()} onclick={toggleFavorite} color={favoriteColor()}>
+							<IconStar size={16} fill={notes.activeNote.is_favorite ? 'currentColor' : 'none'} />
+						</GhostIconButton>
+					{/if}
+					{#if !isDraft}
+						<GhostIconButton label={ts.get.notes.delete_note} onclick={openDeleteModal} danger>
+							<IconTrash size={16} />
+						</GhostIconButton>
+					{/if}
+				</div>
 				<TextButton title={ts.get.layout.save} onclick={saveNote} />
 			</div>
 		</div>
@@ -234,8 +209,6 @@
 		description={ts.get.notes.delete_confirm_message}
 		type="confirm-delete"
 		onConfirm={onDeleteConfirm}
-		onCancel={() => {
-			notes.deleteNoteModalOpen = false;
-		}}
+		onCancel={closeDeleteModal}
 	/>
 {/if}

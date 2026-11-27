@@ -1,0 +1,29 @@
+<!--
+@lucide/svelte v1.59.0 - ISC
+
+This source code is licensed under the ISC license.
+See the LICENSE file in this directory.
+-->
+<script lang="ts">
+	import Icon from './Icon.svelte';
+	import type { LucideIconData, LucideProps } from './types';
+
+	const props: LucideProps = $props();
+
+	const iconData: LucideIconData = {
+		name: 'mic-signal',
+		size: 24,
+		node: [
+			['path', { d: 'M12 17v4' }],
+			['path', { d: 'M18 11a6 6 0 00-3-5.197' }],
+			['path', { d: 'M2 11a10 10 0 015-8.662' }],
+			['path', { d: 'M22 11a10 10 0 00-5-8.662' }],
+			['path', { d: 'M6 11a6 6 0 013-5.197' }],
+			['path', { d: 'M9 21h6' }],
+			['rect', { x: '10', y: '9', width: '4', height: '8', rx: '2' }]
+		],
+		aliases: ['podcast']
+	};
+</script>
+
+<Icon {...props} icon={iconData} />

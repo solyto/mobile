@@ -1,5 +1,5 @@
 <script lang="ts">
-	import IconMoveUp from '@lucide/svelte/icons/move-up';
+	import IconMoveUp from '$lib/icons/lucide/move-up.svelte';
 	import { onMount } from 'svelte';
 
 	let { angle }: { angle: number } = $props();

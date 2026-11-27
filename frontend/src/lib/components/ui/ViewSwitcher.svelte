@@ -1,13 +1,13 @@
 <script lang="ts">
-	import IconAlignJustify from '@lucide/svelte/icons/align-justify';
-	import IconList from '@lucide/svelte/icons/list';
-	import IconSquareKanban from '@lucide/svelte/icons/square-kanban';
-	import IconLayoutGrid from '@lucide/svelte/icons/layout-grid';
-	import IconGalleryHorizontal from '@lucide/svelte/icons/gallery-horizontal';
-	import IconLibrary from '@lucide/svelte/icons/library';
-	import IconSquare from '@lucide/svelte/icons/square';
-	import IconRectangleHorizontal from '@lucide/svelte/icons/rectangle-horizontal';
-	import IconListTree from '@lucide/svelte/icons/list-tree';
+	import IconAlignJustify from '$lib/icons/lucide/text-align-justify.svelte';
+	import IconList from '$lib/icons/lucide/list.svelte';
+	import IconSquareKanban from '$lib/icons/lucide/square-kanban.svelte';
+	import IconLayoutGrid from '$lib/icons/lucide/layout-grid.svelte';
+	import IconGalleryHorizontal from '$lib/icons/lucide/gallery-horizontal.svelte';
+	import IconLibrary from '$lib/icons/lucide/library.svelte';
+	import IconSquare from '$lib/icons/lucide/square.svelte';
+	import IconRectangleHorizontal from '$lib/icons/lucide/rectangle-horizontal.svelte';
+	import IconListTree from '$lib/icons/lucide/list-tree.svelte';
 
 	let {
 		views,
@@ -28,8 +28,8 @@
 <div class="flex items-center gap-1 {className}">
 	{#each views as view (view.type)}
 		<button
-			class="cursor-pointer rounded-lg p-2 transition-all hover:bg-c-neutral-1 dark:hover:bg-s-dark-3"
-			class:bg-c-neutral-1={view.type === currentlySelected}
+			class="cursor-pointer rounded-lg p-2 transition-all hover:bg-c-highlight dark:hover:bg-s-dark-3"
+			class:bg-c-highlight={view.type === currentlySelected}
 			class:dark:bg-s-dark-3={view.type === currentlySelected}
 			onclick={() => onChange(view.type)}
 			title={view.title}

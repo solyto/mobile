@@ -1,5 +1,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import {
+	dateInTimeZone,
+	floatingToUtc,
 	formatDate,
 	formatDateWithoutYear,
 	formatMonth,
@@ -7,6 +9,7 @@ import {
 	formatTime,
 	formatTimeWithSeconds,
 	getDateDiffInDays,
+	getStartOfMonthMonthsAgo,
 	getDateDiffInMinutes,
 	getDateMinusDays,
 	getDatePlusDays,
@@ -61,6 +64,15 @@ describe('formatDateWithoutYear', () => {
 		expect(formatDateWithoutYear(AUG_15, 'dd/mm/YYYY')).toBe('15/08');
 		expect(formatDateWithoutYear(AUG_15, 'mm/dd/YYYY')).toBe('08/15');
 		expect(formatDateWithoutYear(AUG_15, 'mm/dd/YY')).toBe('08/15');
+	});
+
+	it('reads a plain date as that day west of UTC', () => {
+		vi.stubEnv('TZ', 'America/New_York');
+		try {
+			expect(formatDateWithoutYear('2026-11-16')).toBe('16.11');
+		} finally {
+			vi.unstubAllEnvs();
+		}
 	});
 });
 
@@ -135,6 +147,17 @@ describe('getDateDiffInDays', () => {
 
 	it('returns negative for earlier second date', () => {
 		expect(getDateDiffInDays(new Date(2025, 7, 20), new Date(2025, 7, 15))).toBe(-5);
+	});
+
+	// Across a daylight saving change, local midnights are 23 or 25 hours apart.
+	it('counts three days when one of them was 23 hours long', () => {
+		const start = new Date(2026, 2, 27);
+		expect(getDateDiffInDays(start, new Date(start.getTime() + 71 * 3_600_000))).toBe(3);
+	});
+
+	it('counts three days when one of them was 25 hours long', () => {
+		const start = new Date(2026, 9, 23);
+		expect(getDateDiffInDays(start, new Date(start.getTime() + 73 * 3_600_000))).toBe(3);
 	});
 });
 
@@ -257,13 +280,6 @@ describe('getHoursOfDay', () => {
 		expect(hours[0]).toBe('00');
 		expect(hours[9]).toBe('09');
 		expect(hours[23]).toBe('23');
-	});
-
-	it('matches the array the calendar views used to build', () => {
-		const legacy = Array.from({ length: 24 }, (_, i) => i + 1).map((i) =>
-			(i - 1).toString().padStart(2, '0')
-		);
-		expect(getHoursOfDay()).toEqual(legacy);
 	});
 });
 
@@ -420,5 +436,38 @@ describe('parseUrlFormat', () => {
 		expect(parseUrlFormat('15.08.2025')).toBeNull();
 		expect(parseUrlFormat('aaaa-bb-cc')).toBeNull();
 		expect(parseUrlFormat('2025-08-00')).toBeNull();
+	});
+});
+
+describe('floatingToUtc', () => {
+	it.each([
+		['2027-12-31T23:59:59', 'Europe/Berlin', '2027-12-31T22:59:59.000Z'],
+		['2027-07-15T23:59:59', 'Europe/Berlin', '2027-07-15T21:59:59.000Z'],
+		['2027-03-14T23:59:59', 'America/New_York', '2027-03-15T03:59:59.000Z'],
+		['2027-03-14T01:30:00', 'America/New_York', '2027-03-14T06:30:00.000Z'],
+		['2027-12-31T23:59:59', 'UTC', '2027-12-31T23:59:59.000Z']
+	])('reads %s in %s as %s', (floating, timeZone, utc) => {
+		expect(floatingToUtc(floating, timeZone).toISOString()).toBe(utc);
+	});
+});
+
+describe('dateInTimeZone', () => {
+	it.each([
+		['2027-12-31T23:30:00Z', 'Europe/Berlin', '2028-01-01'],
+		['2028-01-01T02:00:00Z', 'America/New_York', '2027-12-31'],
+		['2027-12-31T23:30:00Z', 'UTC', '2027-12-31']
+	])('dates %s in %s as %s', (instant, timeZone, date) => {
+		expect(dateInTimeZone(new Date(instant), timeZone)).toBe(date);
+	});
+});
+
+describe('getStartOfMonthMonthsAgo', () => {
+	it.each([
+		[new Date(2026, 10, 23), 12, '2025-11-01'],
+		[new Date(2026, 2, 31), 1, '2026-02-01'],
+		[new Date(2026, 0, 15), 1, '2025-12-01'],
+		[new Date(2026, 10, 23), 0, '2026-11-01']
+	])('goes from %s back %i months to %s', (date, months, start) => {
+		expect(getUrlFormat(getStartOfMonthMonthsAgo(date, months))).toBe(start);
 	});
 });

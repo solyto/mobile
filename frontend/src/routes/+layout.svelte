@@ -33,9 +33,10 @@
 	import { getNavigation, setNavigation } from '$lib/state/Navigation.svelte';
 	import { getPageFeature, isAuthRoute, isDashboard, isSetupRoute, showNavbar } from '$lib/helpers/NavHelper';
 	import { featureConfig } from '$lib/config/features';
+	import { outdatedServerMessage } from '$lib/helpers/VersionHelper';
 	import { IS_WEB, IS_DESKTOP, CLIENT_VERSION } from '$lib/config/platform';
 	import { browser } from '$app/environment';
-	import IconLoaderCircle from '@lucide/svelte/icons/loader-circle';
+	import IconLoaderCircle from '$lib/icons/lucide/loader-circle.svelte';
 
 	let { children } = $props();
 
@@ -49,7 +50,7 @@
 	setNavigation();
 	setCookieConsent();
 	setPwaInstall();
-	setWelcomeTour();
+	const tour = setWelcomeTour();
 	setQuickAdd();
 	setIntegrations();
 
@@ -72,11 +73,14 @@
 		if (isAuthRoute() || isSetupRoute()) return;
 
 		notifications.error(ts.get.auth.session_expired);
+		goToStart();
+	}
 
+	async function goToStart(): Promise<void> {
 		if (featureConfig.firstStartupOptions) {
-			goto(resolve(urls.setup));
+			await goto(resolve(urls.setup));
 		} else {
-			goto(resolve(urls.login));
+			await goto(resolve(urls.login));
 		}
 	}
 
@@ -96,13 +100,7 @@
 	onMount(async () => {
 		theme.load();
 
-		if (!canAccessRoute) {
-			if (featureConfig.firstStartupOptions) {
-				await goto(resolve(urls.setup));
-			} else {
-				await goto(resolve(urls.login));
-			}
-		}
+		if (!canAccessRoute) await goToStart();
 
 		window.addEventListener('unhandledrejection', handleUnhandledRejection);
 		auth.loaded.finally(() => auth.widgetBridge.start());
@@ -125,9 +123,7 @@
 
 		notifications.add({
 			type: 'warning',
-			message: ts.get.update_required.server_outdated
-				.replace('%server', outdatedVersion)
-				.replace('%app', CLIENT_VERSION),
+			message: outdatedServerMessage(outdatedVersion, CLIENT_VERSION, ts.get.update_required),
 			timeout: 20000
 		});
 	}
@@ -183,7 +179,9 @@
 				<MobileNavbar />
 			</div>
 		{/if}
-		<WelcomeTour />
+		{#if tour.active}
+			<WelcomeTour />
+		{/if}
 	{/if}
 	{#if IS_WEB && !isAuthRoute()}
 		<CookieBanner />

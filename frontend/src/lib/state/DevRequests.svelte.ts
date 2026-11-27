@@ -3,17 +3,19 @@ import type {
 	CreateDevRequestRequest,
 	UpdateDevRequestRequest,
 	DevRequestVote,
-	DevRequestComment
+	DevRequestComment,
+	DevRequestNotice
 } from '$lib/types/dev_request';
 import { getContext, setContext } from 'svelte';
 import { getAuth, type Auth } from '$lib/state/Auth.svelte';
 import ApiService from '$lib/services/ApiService';
 import DevRequestSortingService from '$lib/services/DevRequestSortingService';
-import { apiRoutes } from '$lib/config/apiRoutes';
+import { apiRoutes, API_STORAGE_URL } from '$lib/config/apiRoutes';
 
 export class DevRequests {
 	loaded = $state<boolean>(false);
 	entries = $state<DevRequest[]>([]);
+	notice = $state<string | null>(null);
 	auth: Auth;
 	apiService: ApiService;
 	sortingService = new DevRequestSortingService();
@@ -31,6 +33,11 @@ export class DevRequests {
 			await this.loadProfiles();
 			this.loaded = true;
 		}
+	}
+
+	async loadNotice(): Promise<void> {
+		const res = await this.apiService.get(apiRoutes.dev.requests.notice, null);
+		if (res) this.notice = (res.data as DevRequestNotice).text;
 	}
 
 	async loadProfiles(): Promise<void> {
@@ -58,7 +65,7 @@ export class DevRequests {
 			await this.vote(devRequest, 'up');
 			await this.load();
 		}
-		return Promise.resolve(res !== null);
+		return res !== null;
 	}
 
 	async update(entry: DevRequest, request: UpdateDevRequestRequest): Promise<boolean> {
@@ -73,7 +80,11 @@ export class DevRequests {
 			{ vote }
 		);
 		if (res) await this.load();
-		return Promise.resolve(res !== null);
+		return res !== null;
+	}
+
+	screenshotUrl(entry: DevRequest): string {
+		return API_STORAGE_URL + '/' + entry.screenshot;
 	}
 
 	async loadComments(entry: DevRequest): Promise<DevRequestComment[]> {
@@ -90,7 +101,7 @@ export class DevRequests {
 			{ content }
 		);
 		if (res) await this.load();
-		return Promise.resolve(res !== null);
+		return res !== null;
 	}
 }
 

@@ -2,19 +2,16 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { Finances } from '$lib/state/Finances.svelte';
 import { apiRoutes } from '$lib/config/apiRoutes';
 import { api, resetStoreMocks } from '../setup/storeMocks';
-import type { BudgetInterval } from '$lib/types/finance';
+import type { Budget, BudgetInterval } from '$lib/types/finance';
 import type { Tag } from '$lib/types/tag';
+import { budget as budgetItem, tag, wealthField } from '../helpers/factories';
 
 beforeEach(() => {
 	resetStoreMocks();
 });
 
-function budget(type: 'income' | 'expense', value: number, interval?: BudgetInterval, tags: Tag[] = []) {
-	return { id: type + value, type, value, interval, tags, title: type, created_at: '', updated_at: '' } as never;
-}
-
-function tag(id: number, name: string): Tag {
-	return { id, name, color: '', created_at: '', updated_at: '' };
+function budget(type: 'income' | 'expense', value: number, interval?: BudgetInterval, tags: Tag[] = []): Budget {
+	return budgetItem({ id: value, type, value, interval, tags, title: type });
 }
 
 describe('Finances store', () => {
@@ -44,9 +41,7 @@ describe('Finances store', () => {
 		});
 
 		it('marks tags as unsupported when the server omits them', async () => {
-			api.list.mockResolvedValue({
-				data: [{ id: 1, type: 'income', value: 10, title: 'Salary', created_at: '', updated_at: '' }]
-			});
+			api.list.mockResolvedValue({ data: [{ ...budgetItem({ type: 'income', value: 10, title: 'Salary' }), tags: undefined }] });
 
 			const f = new Finances();
 			await f.loadIncome();
@@ -160,30 +155,9 @@ describe('Finances store', () => {
 		it('loads wealth fields and sums current values', async () => {
 			api.list.mockResolvedValue({
 				data: [
-					{
-						id: 1,
-						title: 'Cash',
-						currentValue: { value: 100 },
-						values: [],
-						created_at: '',
-						updated_at: ''
-					},
-					{
-						id: 2,
-						title: 'Stocks',
-						currentValue: null,
-						values: [],
-						created_at: '',
-						updated_at: ''
-					},
-					{
-						id: 3,
-						title: 'Fund',
-						currentValue: { value: 42 },
-						values: [],
-						created_at: '',
-						updated_at: ''
-					}
+					wealthField({ id: 1, title: 'Cash', currentValue: { id: 1, date: '2026-11-01', value: 100 } }),
+					wealthField({ id: 2, title: 'Stocks' }),
+					wealthField({ id: 3, title: 'Fund', currentValue: { id: 2, date: '2026-11-01', value: 42 } })
 				]
 			});
 
@@ -202,7 +176,7 @@ describe('Finances store', () => {
 			api.list.mockResolvedValue({ data: [budget('income', 10)] });
 
 			const f = new Finances();
-			await f.addBudget({ type: 'income', value: 10, title: 'Salary' } as never);
+			await f.addBudget({ type: 'income', value: 10, title: 'Salary' });
 
 			expect(api.create).toHaveBeenCalled();
 			expect(f.income).toHaveLength(1);
@@ -215,13 +189,15 @@ describe('Finances store', () => {
 			const f = new Finances();
 			await f.deleteBudget(budget('expense', 5));
 
+			expect(api.delete).toHaveBeenCalled();
+			expect(api.list).toHaveBeenCalled();
 			expect(f.expenses).toHaveLength(0);
 		});
 	});
 
 	describe('value history', () => {
-		const salary = { id: 7, type: 'income', value: 10, title: 'Salary', created_at: '', updated_at: '' } as never;
-		const cash = { id: 3, title: 'Cash', values: [], currentValue: null, created_at: '', updated_at: '' } as never;
+		const salary = budgetItem({ id: 7, type: 'income', value: 10, title: 'Salary' });
+		const cash = wealthField({ id: 3, title: 'Cash' });
 		const entry = { id: 42, date: '2026-10-01', value: 10 };
 
 		it('loadBudgetValues fetches the values of one budget item', async () => {

@@ -6,13 +6,12 @@ export const legalUrls = {
 	terms: env.PUBLIC_TERMS_URL || null
 };
 
-export const hasLegalUrls = !!(legalUrls.legalNotice || legalUrls.privacy || legalUrls.terms);
-
 export const urls = {
 	home: '/',
 	setup: '/setup',
 	settings: '/settings',
 	notifications: '/notifications',
+	attributions: '/attributions',
 	todos: '/todos',
 	notes: '/notes',
 	journal: '/notes/journal',
@@ -32,6 +31,7 @@ export const urls = {
 	checkInHistory: '/check-in/history',
 	checkInDate: '/check-in/date/[date]',
 	checkInTrends: '/check-in/trends',
+	checkInGoals: '/check-in/goals',
 	libraries: '/libraries',
 	musicLibrary: '/libraries/music',
 	bookLibrary: '/libraries/books',

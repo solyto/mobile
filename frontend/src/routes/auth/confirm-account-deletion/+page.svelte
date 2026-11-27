@@ -9,6 +9,7 @@
 	import { scale } from 'svelte/transition';
 	import StaggeredLogo from '$lib/components/ui/StaggeredLogo.svelte';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
+	import type { AccountDeletionConfirmResponse } from '$lib/types/auth';
 
 	const auth = getAuth();
 	const ts = getTranslation();
@@ -40,7 +41,7 @@
 			const result = await auth.confirmAccountDeletion(token, email);
 			if (result.success) {
 				done = true;
-			} else if (Array.isArray(result.errors) ? result.errors.includes('invalid_token') : result.errors != null) {
+			} else if (isInvalidLink(result)) {
 				invalidLink = true;
 			} else {
 				failed = true;
@@ -51,6 +52,11 @@
 		} finally {
 			loadingIndicator.stop();
 		}
+	}
+
+	function isInvalidLink(result: AccountDeletionConfirmResponse): boolean {
+		if (Array.isArray(result.errors)) return result.errors.includes('invalid_token');
+		return result.errors != null;
 	}
 </script>
 

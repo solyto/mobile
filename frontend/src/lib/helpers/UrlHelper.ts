@@ -31,3 +31,11 @@ export function safeHref(url: string | null | undefined): string | undefined {
 		return undefined;
 	}
 }
+
+export function hostnameOf(url: string): string | null {
+	try {
+		return new URL(url).hostname || null;
+	} catch {
+		return null;
+	}
+}

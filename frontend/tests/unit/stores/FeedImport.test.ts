@@ -6,19 +6,10 @@ import type { Auth } from '$lib/state/Auth.svelte';
 import type { Feeds } from '$lib/state/Feeds.svelte';
 import type { UiNotifications } from '$lib/state/UiNotifications.svelte';
 import type { Translation } from '$lib/state/Translation.svelte';
-import type { FeedImportEntry, FeedImportState } from '$lib/types/feed';
+import type { FeedImportState } from '$lib/types/feed';
 import { apiRoutes } from '$lib/config/apiRoutes';
 import { api, auth, resetStoreMocks } from '../setup/storeMocks';
-
-function importState(overrides: Partial<FeedImportState> = {}): FeedImportState {
-	return {
-		stage: 'parsed',
-		total: 1,
-		processed: 0,
-		feeds: [{ url: 'https://example.com/feed.xml', title: 'Example', already_subscribed: false, status: null }],
-		...overrides
-	};
-}
+import { feedImportEntry, feedImportState } from '../helpers/factories';
 
 let feeds: { load: ReturnType<typeof vi.fn> };
 let notifications: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn> };
@@ -43,10 +34,6 @@ function store(): FeedImport {
 	);
 }
 
-function entry(status: FeedImportEntry['status']): FeedImportEntry {
-	return { url: `https://example.com/${Math.random()}`, title: 'Example', already_subscribed: false, status };
-}
-
 beforeEach(() => {
 	resetStoreMocks();
 	feeds = { load: vi.fn().mockResolvedValue(undefined) };
@@ -60,7 +47,7 @@ afterEach(() => {
 describe('FeedImport store', () => {
 	describe('upload', () => {
 		it('sends the file as FormData through postWithStatus to importStart', async () => {
-			const state = importState();
+			const state = feedImportState();
 			api.postWithStatus.mockResolvedValue({ ok: true, status: 200, data: { data: state } });
 			const file = new File(['<opml/>'], 'feeds.opml', { type: 'text/x-opml' });
 			const s = store();
@@ -104,7 +91,7 @@ describe('FeedImport store', () => {
 
 	describe('select', () => {
 		it('posts the urls to importSelect and stores the new state', async () => {
-			const state = importState({ stage: 'running', feeds: [{ url: 'https://example.com/feed.xml', title: 'Example', already_subscribed: false, status: 'pending' }] });
+			const state = feedImportState({ stage: 'running', feeds: [feedImportEntry({ url: 'https://example.com/feed.xml', status: 'pending' })] });
 			api.postWithStatus.mockResolvedValue({ ok: true, status: 200, data: { data: state } });
 			const s = store();
 
@@ -131,9 +118,9 @@ describe('FeedImport store', () => {
 	describe('refresh', () => {
 		it('reloads the feeds once when the stage goes from running to finished', async () => {
 			const s = store();
-			api.get.mockResolvedValueOnce({ data: importState({ stage: 'running' }) });
-			api.get.mockResolvedValueOnce({ data: importState({ stage: 'finished' }) });
-			api.get.mockResolvedValueOnce({ data: importState({ stage: 'finished' }) });
+			api.get.mockResolvedValueOnce({ data: feedImportState({ stage: 'running' }) });
+			api.get.mockResolvedValueOnce({ data: feedImportState({ stage: 'finished' }) });
+			api.get.mockResolvedValueOnce({ data: feedImportState({ stage: 'finished' }) });
 
 			await s.refresh();
 			await s.refresh();
@@ -145,7 +132,7 @@ describe('FeedImport store', () => {
 
 		it('does not reload the feeds when the import is finished from the start', async () => {
 			const s = store();
-			api.get.mockResolvedValue({ data: importState({ stage: 'finished' }) });
+			api.get.mockResolvedValue({ data: feedImportState({ stage: 'finished' }) });
 
 			expect(await s.refresh()).toBe(true);
 			expect(s.state?.stage).toBe('finished');
@@ -154,7 +141,7 @@ describe('FeedImport store', () => {
 
 		it('reports a missing state and keeps the previous one', async () => {
 			const s = store();
-			api.get.mockResolvedValueOnce({ data: importState({ stage: 'running' }) });
+			api.get.mockResolvedValueOnce({ data: feedImportState({ stage: 'running' }) });
 			await s.refresh();
 
 			api.get.mockResolvedValueOnce(null);
@@ -166,7 +153,7 @@ describe('FeedImport store', () => {
 
 	describe('polling', () => {
 		function running(processed: number): { data: FeedImportState } {
-			return { data: importState({ stage: 'running', total: 10, processed }) };
+			return { data: feedImportState({ stage: 'running', total: 10, processed }) };
 		}
 
 		async function startedStore(): Promise<FeedImport> {
@@ -199,7 +186,7 @@ describe('FeedImport store', () => {
 			const s = await startedStore();
 			api.get.mockResolvedValueOnce(running(1));
 			api.get.mockResolvedValueOnce({
-				data: importState({ stage: 'finished', total: 3, processed: 3, feeds: [entry('subscribed'), entry('subscribed'), entry('limit_reached')] })
+				data: feedImportState({ stage: 'finished', total: 3, processed: 3, feeds: [feedImportEntry({ status: 'subscribed' }), feedImportEntry({ status: 'subscribed' }), feedImportEntry({ status: 'limit_reached' })] })
 			});
 
 			s.startPolling();
@@ -215,7 +202,7 @@ describe('FeedImport store', () => {
 		it('does not announce the finish while the modal is open', async () => {
 			const s = await startedStore();
 			s.modalOpen = true;
-			api.get.mockResolvedValueOnce({ data: importState({ stage: 'finished' }) });
+			api.get.mockResolvedValueOnce({ data: feedImportState({ stage: 'finished' }) });
 
 			s.startPolling();
 			await vi.advanceTimersByTimeAsync(1000);
@@ -298,6 +285,20 @@ describe('FeedImport store', () => {
 			expect(api.get).toHaveBeenCalledTimes(2);
 		});
 
+		it('waits as long as the server asks when that is longer than the back-off', async () => {
+			const s = await startedStore();
+			api.get.mockRejectedValueOnce(new RateLimitedError(5, null));
+			api.get.mockResolvedValue(running(2));
+
+			s.startPolling();
+			await vi.advanceTimersByTimeAsync(1000);
+
+			await vi.advanceTimersByTimeAsync(4999);
+			expect(api.get).toHaveBeenCalledTimes(1);
+			await vi.advanceTimersByTimeAsync(1);
+			expect(api.get).toHaveBeenCalledTimes(2);
+		});
+
 		it('gives up and reports it when the import makes no progress for 5 minutes', async () => {
 			const s = await startedStore();
 			api.get.mockResolvedValue(running(0));
@@ -345,7 +346,7 @@ describe('FeedImport store', () => {
 
 		it('resumes polling on load only when an import is running', async () => {
 			const idle = store();
-			api.get.mockResolvedValueOnce({ data: importState({ stage: 'finished' }) });
+			api.get.mockResolvedValueOnce({ data: feedImportState({ stage: 'finished' }) });
 			await idle.resume();
 			expect(idle.polling).toBe(false);
 
@@ -359,7 +360,7 @@ describe('FeedImport store', () => {
 
 	it('reset clears the state', async () => {
 		const s = store();
-		api.get.mockResolvedValue({ data: importState() });
+		api.get.mockResolvedValue({ data: feedImportState() });
 		await s.refresh();
 
 		s.reset();

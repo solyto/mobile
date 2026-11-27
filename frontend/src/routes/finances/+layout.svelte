@@ -16,8 +16,11 @@
 
 	onMount(async () => {
 		loadingIndicator.start();
-		await Promise.all([finances.loadIncome(), finances.loadWealth(), tags.load()]);
-		loadingIndicator.stop();
+		try {
+			await Promise.all([finances.loadIncome(), finances.loadWealth(), tags.load()]);
+		} finally {
+			loadingIndicator.stop();
+		}
 	});
 </script>
 

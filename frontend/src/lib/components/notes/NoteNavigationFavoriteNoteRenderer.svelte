@@ -9,35 +9,35 @@
 
 	const notes = getNotes();
 
-	let { favorites, handleNavigation }: {
+	let { favorites }: {
 		favorites: Note[];
-		handleNavigation: () => void;
 	} = $props();
+
+	function isActive(note: Note): boolean {
+		return note.id === notes.activeNote?.id;
+	}
+
+	function endDrag(): void {
+		notes.draggedNote = null;
+		notes.dragTarget = null;
+	}
 </script>
 
 <div transition:fade>
 	{#each favorites as note (note.id)}
 		<a
 			href={resolve(urls.note, { id: note.id })}
-			onclick={() => {
-				notes.selectNote(note.id);
-				handleNavigation();
-			}}
 			use:contextMenu={(x, y) => notes.openRightClickMenu(x, y, 'note', note.id)}
 			draggable="true"
 			ondragstart={() => (notes.draggedNote = note)}
-			ondragend={() => {
-				notes.draggedNote = null;
-				notes.dragTarget = null;
-			}}
+			ondragend={endDrag}
 			animate:flip
 			transition:fade
 		>
 			<div
-				class="flex cursor-pointer items-center space-x-2 rounded-lg px-2 py-1 hover:bg-c-neutral dark:hover:bg-s-dark-3 {notes.activeNote !==
-					null && note.id === notes.activeNote.id
-					? 'bg-c-neutral-1 dark:bg-s-dark-3'
-					: ''}"
+				class="flex cursor-pointer items-center space-x-2 rounded-lg px-2 py-1 hover:bg-c-neutral dark:hover:bg-s-dark-3"
+				class:bg-c-neutral-1={isActive(note)}
+				class:dark:bg-s-dark-3={isActive(note)}
 			>
 				<span>{note.title}</span>
 			</div>

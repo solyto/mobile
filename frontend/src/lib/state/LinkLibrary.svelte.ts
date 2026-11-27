@@ -29,6 +29,7 @@ export class LinkLibrary {
 	};
 	loaded = $state<boolean>(false);
 	entries = $state<Link[]>([]);
+	newestEntries = $state<Link[]>([]);
 	filteredEntries = $state<Link[]>([]);
 	categories = $state<LinkCategory[]>([]);
 	categoriesCount = $state<{ id: number; count: number }[]>([]);
@@ -63,32 +64,19 @@ export class LinkLibrary {
 		if (categoriesRes) this.setCategories(categoriesRes.data as LinkCategory[]);
 	}
 
+	async loadNewest(): Promise<void> {
+		const res = await this.apiService.list(apiRoutes.libraries.links.newest);
+		if (res) this.newestEntries = res.data as Link[];
+	}
+
 	async loadCategories(): Promise<void> {
 		const res = await this.apiService.list(apiRoutes.libraries.links.listCategories);
 		if (res) this.setCategories(res.data as LinkCategory[]);
 	}
 
-	private setCategories(categories: LinkCategory[]): void {
-		this.categories = categories;
-
-		if (this.categoriesCount.length > 0) {
-			this.categoriesCount = [];
-		}
-
-		for (const category of this.categories) {
-			this.categoriesCount.push({
-				id: category.id,
-				count: this.entries.filter((link) => link.category?.id === category.id).length
-			});
-		}
-	}
-
 	search(): void {
 		this.searchActive = true;
-		this.filteredEntries = this.filterService.search(this.entries, this.searchTerm, [
-			'title',
-			'url'
-		]);
+		this.reapplyFilter();
 	}
 
 	getCategoryCount(categoryId?: number | null): number {
@@ -101,6 +89,10 @@ export class LinkLibrary {
 
 	getFavoriteCount(): number {
 		return this.entries.filter((link) => link.is_favorite).length;
+	}
+
+	isCategoryChosen(): boolean {
+		return typeof this.activeFilter === 'number';
 	}
 
 	getActiveCategoryId(): number | null {
@@ -121,37 +113,20 @@ export class LinkLibrary {
 	filterByCategory(categoryId: number | null): void {
 		this.activeFilter = categoryId;
 		this.searchActive = false;
-
-		if (categoryId === null) {
-			this.filteredEntries = this.entries;
-		} else if (categoryId === 0) {
-			this.filteredEntries = this.entries.filter((link) => link.category === null);
-		} else {
-			this.filteredEntries = this.entries.filter((link) => link.category?.id === categoryId);
-		}
+		this.reapplyFilter();
 	}
 
 	filterByFavorite(): void {
 		this.activeFilter = 'favorite';
 		this.searchActive = false;
-		this.filteredEntries = this.entries.filter((link) => link.is_favorite);
-	}
-
-	reapplyFilter(): void {
-		if (this.searchActive) {
-			this.search();
-		} else if (this.activeFilter === 'favorite') {
-			this.filterByFavorite();
-		} else {
-			this.filterByCategory(this.activeFilter);
-		}
+		this.reapplyFilter();
 	}
 
 	async dragToCategory(): Promise<void> {
 		if (this.draggedEntry === null) return;
 
 		const request: UpdateLinkRequest = {
-			category_id: this.dragTarget ? this.dragTarget : null
+			category_id: this.dragTarget || null
 		};
 		const ok = await this.apiService.update(
 			apiRoutes.libraries.links.update,
@@ -159,13 +134,12 @@ export class LinkLibrary {
 			request
 		);
 		if (ok) await this.load();
-		return Promise.resolve();
 	}
 
 	async create(request: CreateLinkRequest): Promise<boolean> {
 		const res = await this.apiService.create(apiRoutes.libraries.links.create, request);
 		if (res) await this.load();
-		return Promise.resolve(res !== null);
+		return res !== null;
 	}
 
 	async update(entry: Link, request: UpdateLinkRequest): Promise<boolean> {
@@ -184,19 +158,13 @@ export class LinkLibrary {
 		return res;
 	}
 
-	async deleteByLink(link: string): Promise<boolean> {
-		const entry = this.entries.find((entry) => entry.url === link);
-		if (entry) return await this.delete(entry);
-		return Promise.resolve(false);
-	}
-
 	async createCategory(title: string, color?: string): Promise<boolean> {
 		const res = await this.apiService.create(apiRoutes.libraries.links.createCategory, {
 			title,
 			color
 		});
 		if (res) await this.loadCategories();
-		return Promise.resolve(res !== null);
+		return res !== null;
 	}
 
 	async deleteCategory(category: LinkCategory): Promise<boolean> {
@@ -211,6 +179,33 @@ export class LinkLibrary {
 			await this.load();
 		}
 		return res;
+	}
+
+	private setCategories(categories: LinkCategory[]): void {
+		this.categories = categories;
+
+		if (this.categoriesCount.length > 0) {
+			this.categoriesCount = [];
+		}
+
+		for (const category of this.categories) {
+			this.categoriesCount.push({
+				id: category.id,
+				count: this.entries.filter((link) => link.category?.id === category.id).length
+			});
+		}
+	}
+
+	private reapplyFilter(): void {
+		this.filteredEntries = this.filterEntries();
+	}
+
+	private filterEntries(): Link[] {
+		if (this.searchActive) return this.filterService.search(this.entries, this.searchTerm, ['title', 'url']);
+		if (this.activeFilter === 'favorite') return this.entries.filter((link) => link.is_favorite);
+		if (this.activeFilter === null) return this.entries;
+		if (this.activeFilter === 0) return this.entries.filter((link) => link.category === null);
+		return this.entries.filter((link) => link.category?.id === this.activeFilter);
 	}
 }
 

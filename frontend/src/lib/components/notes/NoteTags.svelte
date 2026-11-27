@@ -22,6 +22,8 @@
 	let addTagName = $state<string>('');
 	let keyHandlers: { [key: string]: string | null } = { Enter: null, Escape: null };
 
+	onDestroy(() => keyManager.unregisterAll(keyHandlers));
+
 	async function toggleAddTags(): Promise<void> {
 		addTagVisible = !addTagVisible;
 
@@ -33,6 +35,7 @@
 			keyHandlers.Escape = keyManager.registerKeyDown('Escape', handleEscape);
 		}
 	}
+
 	async function handleEnter(event: KeyboardEvent): Promise<void> {
 		await onsubmit();
 		await toggleAddTags();
@@ -43,40 +46,41 @@
 		onblur();
 	}
 
-	onDestroy(() => keyManager.unregisterAll(keyHandlers));
-
 	function onblur(): void {
 		addTagVisible = false;
 		addTagName = '';
 		keyManager.unregisterAll(keyHandlers);
 	}
 
-	async function onsubmit(): Promise<void> {
+	function findTagId(name: string): number | undefined {
+		return tags.tags.find((t) => t.name.toLowerCase() === name.toLowerCase())?.id;
+	}
+
+	async function whileLoading(action: () => Promise<unknown>): Promise<void> {
 		loadingIndicator.start();
-		keyManager.unregisterKeyDown(keyHandlers.Enter);
-		let tagName = addTagName.trim().replace('#', '');
-
-		if (tagName === '') {
+		try {
+			await action();
+		} finally {
 			loadingIndicator.stop();
-			return;
 		}
+	}
 
-		const tagId = tags.tags.find((t) => t.name.toLowerCase() === tagName.toLowerCase())?.id;
+	async function onsubmit(): Promise<void> {
+		keyManager.unregisterKeyDown(keyHandlers.Enter);
+		const tagName = addTagName.trim().replace('#', '');
+		if (tagName === '') return;
 
+		const tagId = findTagId(tagName);
 		if (!tagId) {
-			loadingIndicator.stop();
 			notifications.error(ts.get.todos.tag_error);
 			return;
 		}
 
-		await notes.addTag(tagId);
-		loadingIndicator.stop();
+		await whileLoading(() => notes.addTag(tagId));
 	}
 
 	async function onRemoveTag(tag: Tag): Promise<void> {
-		loadingIndicator.start();
-		await notes.removeTag(tag.id);
-		loadingIndicator.stop();
+		await whileLoading(() => notes.removeTag(tag.id));
 	}
 </script>
 
@@ -90,8 +94,10 @@
 			<TagFlexList tags={notes.activeNote.tags} onRemove={onRemoveTag} />
 			<button
 				class="text-surface-300 hover:text-surface-700 dark:hover:text-surface-400 cursor-pointer text-xs transition-all"
-				onclick={toggleAddTags}>+ {ts.get.todos.tag}</button
+				onclick={toggleAddTags}
 			>
+				+ {ts.get.todos.tag}
+			</button>
 		{/if}
 	{/if}
 </div>

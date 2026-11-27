@@ -7,11 +7,13 @@
 	import type { Quote } from '$lib/types/library_quote';
 	import ExternalLink from '$lib/components/libraries/shared/ExternalLink.svelte';
 	import Cover from '$lib/components/libraries/shared/Cover.svelte';
+	import type { Auth } from '$lib/state/Auth.svelte';
 
 	const loadingIndicator = getLoadingIndicator();
 	let { entry, library, children }: {
 		entry: LibraryEntry;
 		library: {
+			auth: Auth;
 			config: LibraryConfig;
 			closeDetailModal(): void;
 			openCreateModal(entry?: LibraryEntry): void;
@@ -23,23 +25,34 @@
 
 	async function changeRating(rating: number): Promise<void> {
 		loadingIndicator.start();
-		await library.updateRating?.(entry!, rating);
-		loadingIndicator.stop();
+		try {
+			await library.updateRating?.(entry, rating);
+		} finally {
+			loadingIndicator.stop();
+		}
+	}
+
+	function closeDetail(): void {
+		library.closeDetailModal();
+	}
+
+	function editEntry(): void {
+		library.closeDetailModal();
+		library.openCreateModal(entry);
+	}
+
+	async function deleteEntry(): Promise<void> {
+		await library.delete(entry);
+		library.closeDetailModal();
 	}
 </script>
 
 <ContentModal
 	rounded="2xl"
 	p="4"
-	onClose={() => library.closeDetailModal()}
-	onEdit={() => {
-		library.closeDetailModal();
-		library.openCreateModal(entry);
-	}}
-	onDelete={async () => {
-		await library.delete(entry);
-		library.closeDetailModal();
-	}}
+	onClose={closeDetail}
+	onEdit={editEntry}
+	onDelete={deleteEntry}
 	forcePopup={true}
 >
 	{#if entry}

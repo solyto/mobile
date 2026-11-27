@@ -1,8 +1,8 @@
 <script lang="ts">
 	import type { Link } from '$lib/types/library_link';
 	import { blur } from 'svelte/transition';
-	import IconLink from '@lucide/svelte/icons/link';
-	import IconExternalLink from '@lucide/svelte/icons/external-link';
+	import IconLink from '$lib/icons/lucide/link.svelte';
+	import IconExternalLink from '$lib/icons/lucide/external-link.svelte';
 	import type { Translation } from '$lib/state/Translation.svelte';
 	import { safeHref } from '$lib/helpers/UrlHelper';
 

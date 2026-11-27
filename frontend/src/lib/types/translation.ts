@@ -10,13 +10,21 @@ export interface LayoutRecords {
 	browse: string;
 	no_file: string;
 	select_file: string;
-	selected_file: string;
+	file: string;
+	import_into: string;
+	color: string;
 	processing: string;
 	toggle: string;
 	apply: string;
 	legal_notice: string;
 	privacy_policy: string;
 	terms_of_service: string;
+	legal: string;
+	open_source_licenses: string;
+	licenses_intro: string;
+	licenses_projects_singular: string;
+	licenses_projects_plural: string;
+	licenses_full_texts: string;
 	reload: string;
 	remove: string;
 	rename: string;
@@ -24,6 +32,14 @@ export interface LayoutRecords {
 	rate_limited: string;
 	rate_limited_minutes_singular: string;
 	rate_limited_minutes_plural: string;
+	previous_page: string;
+	next_page: string;
+	page_of: string;
+	name: string;
+	loading: string;
+	minimize: string;
+	maximize: string;
+	close: string;
 }
 
 export interface NavigationRecords {
@@ -103,6 +119,7 @@ export interface SettingsRecords {
 	date_format: string;
 	time_format: string;
 	week_start: string;
+	currency: string;
 	nextcloud_no_token: string;
 	nextcloud_token: string;
 	telegram_bot_integration_success: string;
@@ -189,6 +206,17 @@ export interface SettingsRecords {
 	ai_plugin_saved: string;
 	ai_plugin_save_error: string;
 	ai_plugin_load_error: string;
+	notifications_description: string;
+	push_notifications_hint: string;
+	export_select_at_least_one: string;
+	version: string;
+	update_check: string;
+	update_install: string;
+	update_up_to_date: string;
+	update_available: string;
+	update_downloading: string;
+	update_ready: string;
+	update_check_failed: string;
 }
 
 export interface AuthRecords {
@@ -230,6 +258,7 @@ export interface AuthRecords {
 	forgot_password_sent_title: string;
 	forgot_password_sent_desc: string;
 	forgot_password_resend: string;
+	resend_cooldown: string;
 	resend_verification_link: string;
 	resend_verification_title: string;
 	resend_verification_hint: string;
@@ -268,6 +297,7 @@ export interface TodoRecords {
 	no_todos_desc: string;
 	no_todos_yet: string;
 	no_todos_yet_desc: string;
+	todo_count: string;
 	tags: string;
 	tag: string;
 	tag_error: string;
@@ -378,6 +408,32 @@ export interface CheckInRecords {
 	range_3_months: string;
 	range_6_months: string;
 	range_all: string;
+	add_tracker: string;
+	edit_tracker: string;
+	all_entries: string;
+	tracker_name_hint: string;
+	type_scale: string;
+	type_scale_hint: string;
+	type_yes_no: string;
+	type_yes_no_hint: string;
+	type_count: string;
+	type_count_hint: string;
+	tracker_icon: string;
+	choose_icon: string;
+	icon_search: string;
+	icon_none: string;
+	goal_today: string;
+	goal_this_week: string;
+	goal_this_month: string;
+	goal_met: string;
+	delete_tracker: string;
+	delete_tracker_question: string;
+	move_up: string;
+	move_down: string;
+	count_decrease: string;
+	count_increase: string;
+	save_error: string;
+	icon_categories: Record<string, string>;
 }
 
 export interface CheckInSummaryRecords {
@@ -437,6 +493,7 @@ export interface WidgetRecords {
 	select_city_prompt: string;
 	loading: string;
 	coming_up: string;
+	favicon_alt: string;
 }
 
 export interface NoteRecords {
@@ -498,6 +555,7 @@ export interface NoteRecords {
 	note_not_found: string;
 	no_search_results: string;
 	search_shortcut_hint: string;
+	search_placeholder: string;
 	insert_image: string;
 	insert_image_url: string;
 	insert_image_clipboard: string;
@@ -506,6 +564,12 @@ export interface NoteRecords {
 	insert_link: string;
 	insert_link_url: string;
 	insert_link_name: string;
+	link_to_note: string;
+	link_target: string;
+	linked_from: string;
+	link_open: string;
+	link_edit: string;
+	link_remove: string;
 	delete_confirm_label: string;
 	delete_confirm_message: string;
 	delete_success: string;
@@ -518,6 +582,20 @@ export interface NoteRecords {
 	move_note: string;
 	no_folder: string;
 	move_error: string;
+	folder_label: string;
+	insert_image_clipboard_preview: string;
+	insert_image_upload_preview: string;
+	import_title: string;
+	import_select_file: string;
+	import_selected_file: string;
+	import_file_size: string;
+	import_progress: string;
+	import_uploading: string;
+	import_upload: string;
+	import_uploaded: string;
+	import_success: string;
+	import_no_file: string;
+	import_unknown_error: string;
 }
 
 export interface LibraryRecords {
@@ -547,6 +625,12 @@ export interface LibraryRecords {
 		condition_medium: string;
 		condition_poor: string;
 		condition_verypoor: string;
+		condition_short_mint: string;
+		condition_short_verygood: string;
+		condition_short_good: string;
+		condition_short_medium: string;
+		condition_short_poor: string;
+		condition_short_verypoor: string;
 		add_album: string;
 		edit_album: string;
 		import_error: string;
@@ -766,8 +850,24 @@ export interface LibraryRecords {
 	import: string;
 	no_results: string;
 	no_results_desc: string;
+	search_unavailable: string;
 	no_entries: string;
 	no_entries_desc: string;
+	entries_count: string;
+	cover: string;
+	cover_of: string;
+	poster: string;
+	remove_cover: string;
+	previous: string;
+	next: string;
+	service_icon: string;
+	favicon: string;
+	external_link: string;
+	new_genre: string;
+	view_list: string;
+	view_cards: string;
+	view_shelf: string;
+	view_browse: string;
 }
 
 export interface DevRecords {
@@ -781,6 +881,7 @@ export interface DevRecords {
 		status_pending: string;
 		status_in_progress: string;
 		status_waiting_for_deployment: string;
+		status_waiting_for_user: string;
 		status_completed: string;
 		status_cancelled: string;
 		validation_error: string;
@@ -852,8 +953,10 @@ export interface FinanceRecords {
 	tag_error: string;
 	all_tags: string;
 	tag_filter: string;
+	title_placeholder: string;
+	value_placeholder: string;
+	edit_item: string;
 }
-
 
 export interface FeedRecords {
 	feeds: string;
@@ -877,6 +980,7 @@ export interface FeedRecords {
 	feed_update_error: string;
 	test_feed: string;
 	test_feed_error: string;
+	test_feed_looks_right: string;
 	feed_preview: string;
 	view_compact: string;
 	view_comfortable: string;
@@ -977,6 +1081,24 @@ export interface CalendarRecords {
 	recurrence_monthly_weekday: string;
 	recurrence_yearly: string;
 	recurrence_on_the: string;
+	recurrence_every: string;
+	// Optional "every" per unit, for languages where it agrees with the unit (fr). Falls back to `recurrence_every`.
+	recurrence_every_by_unit?: Partial<Record<'day' | 'week' | 'month' | 'year', string>>;
+	recurrence_custom: string;
+	recurrence_unit_on_this_date: string;
+	recurrence_unit_on_weekday: string;
+	recurrence_unit_day_singular: string;
+	recurrence_unit_day_plural: string;
+	recurrence_unit_week_singular: string;
+	recurrence_unit_week_plural: string;
+	recurrence_unit_month_singular: string;
+	recurrence_unit_month_plural: string;
+	recurrence_unit_year_singular: string;
+	recurrence_unit_year_plural: string;
+	recurrence_ends: string;
+	recurrence_ends_never: string;
+	recurrence_ends_on_date: string;
+	recurrence_ends_after_count: string;
 	recurrence_not_editable: string;
 	recurrence_ordinals: {
 		[key: number]: string;
@@ -1013,6 +1135,17 @@ export interface CalendarRecords {
 	import_calendars: string;
 	import_calendars_running: string;
 	import_events: string;
+	import_source_caldav: string;
+	import_source_file: string;
+	import_target_new: string;
+	import_submit: string;
+	import_imported: string;
+	import_skipped: string;
+	import_error_invalid_file: string;
+	import_error_calendar_not_found: string;
+	import_error_calendar_forbidden: string;
+	import_error_running: string;
+	import_error_rate_limited: string;
 	recurring_event: string;
 	recurring_edit_question: string;
 	recurring_delete_question: string;
@@ -1050,6 +1183,7 @@ export interface CalendarRecords {
 	event_changed_on_server: string;
 	event_unreadable: string;
 	event_server_unavailable: string;
+	event_read_only: string;
 	external_calendar: string;
 	external_unavailable: string;
 	external_unavailable_notice: string;
@@ -1107,10 +1241,39 @@ export interface ContactRecords {
 	import_address_books: string;
 	import_contacts: string;
 	import_contacts_running: string;
+	import_source_carddav: string;
+	import_source_file: string;
+	import_target_new: string;
+	import_imported: string;
+	import_skipped: string;
+	import_error_invalid_file: string;
+	import_error_address_book_not_found: string;
+	import_error_running: string;
+	import_error_rate_limited: string;
 	save_error: string;
 	name_required: string;
 	email_placeholder: string;
 	phone_placeholder: string;
+	add_title: string;
+	update_title: string;
+	first_name: string;
+	last_name: string;
+	prefix: string;
+	middle_name: string;
+	suffix: string;
+	groups: string;
+	organization: string;
+	street: string;
+	city: string;
+	postal_code: string;
+	country: string;
+	notes: string;
+	create_address_book: string;
+	address_book_name_placeholder: string;
+	import_url: string;
+	import_username: string;
+	import_secret: string;
+	import: string;
 }
 
 export interface DavRecords {
@@ -1143,6 +1306,23 @@ export interface NotificationRecords {
 	export_ready_message: string;
 	movie_release_title: string;
 	movie_release_message: string;
+	type_book_release: string;
+	type_music_release: string;
+	type_movie_release: string;
+	type_friend_request: string;
+	type_daily_check_in_reminder: string;
+	type_alert: string;
+	type_daily_day_reminder: string;
+	type_calendar_share: string;
+	type_dev_request_comment: string;
+	type_export_ready: string;
+	channel_ui: string;
+	channel_email: string;
+	channel_push: string;
+	channel_telegram: string;
+	channel_telegram_unavailable: string;
+	channel_push_unavailable: string;
+	channel_email_coming_soon: string;
 }
 
 export interface ClipboardRecords {
@@ -1175,6 +1355,13 @@ export interface ClipboardRecords {
 	file_limit_reached_hours_plural: string;
 	file_download_error: string;
 	image_load_error: string;
+	download: string;
+	delete_entry: string;
+	attach_image: string;
+	attach_file: string;
+	image_preview_alt: string;
+	image_alt: string;
+	download_fallback_name: string;
 }
 
 export interface ProfileRecords {
@@ -1186,12 +1373,70 @@ export interface ProfileRecords {
 	request_accepted: string;
 	received: string;
 	sent: string;
+	request_from: string;
+	profile_image_alt: string;
+	user_profile_image_alt: string;
+	friend_id_placeholder: string;
+	friend_request_invalid: string;
 }
 
 export interface AdminRecords {
 	role_update_success: string;
 	role_update_error: string;
 	search_placeholder: string;
+	no_users: string;
+	no_search_results: string;
+	loading_users: string;
+	dashboard: string;
+	dashboard_description: string;
+	users: string;
+	users_description: string;
+	back_to_app: string;
+	role_user: string;
+	role_admin: string;
+	role_super_admin: string;
+	growth_title: string;
+	growth_by_year: string;
+	growth_by_month: string;
+	growth_by_week: string;
+	growth_by_day: string;
+	section_calendars: string;
+	section_todos: string;
+	section_notes: string;
+	section_libraries: string;
+	section_contacts: string;
+	section_check_in: string;
+	section_finances: string;
+	section_time_tracking: string;
+	section_feeds: string;
+	section_other: string;
+	stat_users: string;
+	stat_active_users: string;
+	stat_confirmed_users: string;
+	stat_friends: string;
+	stat_notifications: string;
+	stat_calendars: string;
+	stat_events: string;
+	stat_todos: string;
+	stat_categories: string;
+	stat_workspaces: string;
+	stat_notes: string;
+	stat_folders: string;
+	stat_books: string;
+	stat_albums: string;
+	stat_movies: string;
+	stat_recipes: string;
+	stat_links: string;
+	stat_quotes: string;
+	stat_games: string;
+	stat_address_books: string;
+	stat_contacts: string;
+	stat_entries: string;
+	stat_income_entries: string;
+	stat_wealth_entries: string;
+	stat_projects: string;
+	stat_subscribed_feeds: string;
+	stat_tags: string;
 }
 
 export interface WelcomeTourRecords {
@@ -1388,6 +1633,66 @@ export interface UpdateRequiredRecords {
 	server_outdated: string;
 }
 
+export interface GoalRecords {
+	title: string;
+	new_goal: string;
+	edit_goal: string;
+	no_trackers_left: string;
+	tracker: string;
+	target: string;
+	at_least: string;
+	at_most: string;
+	per_day: string;
+	per_week: string;
+	per_month: string;
+	unit_days: string;
+	unit_average: string;
+	notify_when_reached: string;
+	days_left: string;
+	last_day: string;
+	history_summary_day: string;
+	history_summary_week: string;
+	history_summary_month: string;
+	history_met: string;
+	history_missed: string;
+	delete_goal: string;
+	delete_goal_question: string;
+	save_error: string;
+}
+
+export interface AlertRecords {
+	title: string;
+	description: string;
+	new_alert: string;
+	edit_alert: string;
+	empty: string;
+	suggestions: string;
+	suggestion_add: string;
+	suggestion_no_sport_week: string;
+	suggestion_mood_trending_down: string;
+	suggestion_sleep_trending_down: string;
+	suggestion_drinking_more: string;
+	tracker: string;
+	rule: string;
+	rule_average_below: string;
+	rule_average_above: string;
+	rule_no_entry_days: string;
+	rule_entry_days: string;
+	threshold: string;
+	over: string;
+	days: string;
+	describe_average_below: string;
+	describe_average_above: string;
+	describe_no_entry_days: string;
+	describe_entry_days: string;
+	describe_goal_reached: string;
+	active_now: string;
+	last_sent: string;
+	delete_alert: string;
+	delete_alert_question: string;
+	save_error: string;
+}
+
 export interface LanguageFile {
 	layout: LayoutRecords;
 	nav: NavigationRecords;
@@ -1398,6 +1703,8 @@ export interface LanguageFile {
 	todos: TodoRecords;
 	checkIn: CheckInRecords;
 	checkInSummary: CheckInSummaryRecords;
+	goals: GoalRecords;
+	alerts: AlertRecords;
 	widgets: WidgetRecords;
 	notes: NoteRecords;
 	libraries: LibraryRecords;

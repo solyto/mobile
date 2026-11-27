@@ -9,8 +9,9 @@
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { goto } from '$app/navigation';
 	import { getViewPoint } from '$lib/state/Viewpoint.svelte';
-	import IconExternalLink from '@lucide/svelte/icons/external-link';
+	import IconExternalLink from '$lib/icons/lucide/external-link.svelte';
 	import { safeHref } from '$lib/helpers/UrlHelper';
+	import { HoverExplanation } from '$lib/helpers/HoverExplanation.svelte';
 
 	const todos = getTodos();
 	const loadingIndicator = getLoadingIndicator();
@@ -23,15 +24,13 @@
 	let editing = $state<boolean>(false);
 	let linkInput = $state<HTMLInputElement | null>(null);
 	let linkValue = $state<string>(todo.link ?? '');
-	let showExplanationBox = $state<boolean>(false);
-	let explanationBoxX = $state<number>(0);
-	let explanationBoxY = $state<number>(0);
+	const explanation = new HoverExplanation();
 	let keyHandlers: { [key: string]: string | null } = { Enter: null, Escape: null };
 	let href = $derived(safeHref(todo.link));
 
 	async function toggleEdit(): Promise<void> {
 		editing = !editing;
-		showExplanationBox = false;
+		explanation.hide();
 
 		if (editing) {
 			linkValue = todo.link ?? '';
@@ -61,9 +60,15 @@
 	async function onsubmit(): Promise<void> {
 		loadingIndicator.start();
 		keyManager.unregisterKeyDown(keyHandlers.Enter);
-		const value = linkValue.trim() || null;
-		await todos.changeLink(todo, value);
-		loadingIndicator.stop();
+		try {
+			await todos.changeLink(todo, linkValue.trim() || null);
+		} finally {
+			loadingIndicator.stop();
+		}
+	}
+
+	function editOnTap(): void {
+		if (viewPoint.isMobile) toggleEdit();
 	}
 
 	function openLink(): void {
@@ -76,9 +81,9 @@
 		}
 	}
 
-	function setExplanationBoxPosition(e: MouseEvent) {
-		explanationBoxX = e.clientX;
-		explanationBoxY = e.clientY;
+	function openLinkWithoutEditing(event: MouseEvent): void {
+		event.stopPropagation();
+		openLink();
 	}
 </script>
 
@@ -90,12 +95,8 @@
 			role="button"
 			tabindex="0"
 			ondblclick={toggleEdit}
-			onclick={() => viewPoint.isMobile && toggleEdit()}
-			onmouseover={() => (showExplanationBox = true)}
-			onmouseout={() => (showExplanationBox = false)}
-			onfocus={() => (showExplanationBox = true)}
-			onblur={() => (showExplanationBox = false)}
-			onmousemove={(e) => setExplanationBoxPosition(e)}
+			onclick={editOnTap}
+			{...explanation.handlers}
 		>
 			{#if todo.link && !href}
 				<span class="block max-w-full truncate text-sm">{todo.link}</span>
@@ -107,10 +108,7 @@
 						class="shrink-0 cursor-pointer text-c-action hover:opacity-80"
 						aria-label={ts.get.todos.open_link}
 						title={ts.get.todos.open_link}
-						onclick={(e) => {
-							e.stopPropagation();
-							openLink();
-						}}
+						onclick={openLinkWithoutEditing}
 					>
 						<IconExternalLink class="size-4" />
 					</button>
@@ -129,9 +127,9 @@
 		</div>
 		<MovableHoverBox
 			content={ts.get.layout.double_click_to_edit}
-			show={showExplanationBox}
-			x={explanationBoxX}
-			y={explanationBoxY}
+			show={explanation.visible}
+			x={explanation.x}
+			y={explanation.y}
 		/>
 	{/if}
 </div>

@@ -1,0 +1,25 @@
+<!--
+@lucide/svelte v1.59.0 - ISC
+
+This source code is licensed under the ISC license.
+See the LICENSE file in this directory.
+-->
+<script lang="ts">
+	import Icon from './Icon.svelte';
+	import type { LucideIconData, LucideProps } from './types';
+
+	const props: LucideProps = $props();
+
+	const iconData: LucideIconData = {
+		name: 'zap-off',
+		size: 24,
+		node: [
+			['path', { d: 'M10.768 5.111 13.44 2.44a1.5 1.5 0 012.474 1.561l-1.633 4.625' }],
+			['path', { d: 'm18.889 13.232.672-.672A1.5 1.5 0 0018.5 10h-2.844' }],
+			['path', { d: 'm2 2 20 20' }],
+			['path', { d: 'm7.94 7.94-3.5 3.499A1.5 1.5 0 005.5 14h4.002a.5.5 0 01.471.666L8.086 20a1.5 1.5 0 002.475 1.56l5.5-5.5' }]
+		]
+	};
+</script>
+
+<Icon {...props} icon={iconData} />

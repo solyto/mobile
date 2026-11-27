@@ -47,7 +47,7 @@ export class Finances {
 			this.income = sorted.filter((i) => i.type === 'income');
 			this.expenses = sorted.filter((i) => i.type === 'expense');
 			this.tagsSupported = this.budgetTags.supportsTags(responses);
-			if (!this.availableTags().some((tag) => tag.id === this.selectedTagId)) this.selectedTagId = null;
+			this.dropSelectedTagIfUnused();
 			this.budgetLoaded = true;
 		}
 	}
@@ -95,10 +95,14 @@ export class Finances {
 		return this.budgetTags.usedTags([...this.income, ...this.expenses]);
 	}
 
+	selectTag(tagId: number | null): void {
+		this.selectedTagId = tagId;
+	}
+
 	async addBudget(request: CreateBudgetRequest): Promise<boolean> {
 		const res = await this.apiService.create(apiRoutes.finances.budget.create, request);
 		if (res) await this.loadIncome();
-		return Promise.resolve(res !== null);
+		return res !== null;
 	}
 
 	async deleteBudget(budget: Budget): Promise<boolean> {
@@ -114,7 +118,7 @@ export class Finances {
 			request
 		);
 		if (res) await this.loadIncome();
-		return Promise.resolve(res);
+		return res;
 	}
 
 	async loadBudgetValues(budget: Budget): Promise<boolean> {
@@ -122,7 +126,7 @@ export class Finances {
 			apiRoutes.finances.budget.listValues.replace('%d', budget.id.toString())
 		);
 		if (res) this.budgetValues = res.data as BudgetValue[];
-		return Promise.resolve(res !== null);
+		return res !== null;
 	}
 
 	async addBudgetValue(budget: Budget, request: StoreFinanceValueRequest): Promise<boolean> {
@@ -131,7 +135,7 @@ export class Finances {
 			request
 		);
 		if (res) await this.reloadBudget(budget);
-		return Promise.resolve(res !== null);
+		return res !== null;
 	}
 
 	async updateBudgetValue(
@@ -145,7 +149,7 @@ export class Finances {
 			request
 		);
 		if (res) await this.reloadBudget(budget);
-		return Promise.resolve(res);
+		return res;
 	}
 
 	async deleteBudgetValue(budget: Budget, value: FinanceValue): Promise<boolean> {
@@ -154,13 +158,13 @@ export class Finances {
 			value.id
 		);
 		if (res) await this.reloadBudget(budget);
-		return Promise.resolve(res);
+		return res;
 	}
 
 	async addWealthField(request: CreateWealthFieldRequest): Promise<boolean> {
 		const res = await this.apiService.create(apiRoutes.finances.wealth.createField, request);
 		if (res) await this.loadWealth();
-		return Promise.resolve(res !== null);
+		return res !== null;
 	}
 
 	async addWealthValue(field: WealthField, request: StoreFinanceValueRequest): Promise<boolean> {
@@ -170,7 +174,7 @@ export class Finances {
 			request
 		);
 		if (res) await this.loadWealth();
-		return Promise.resolve(res);
+		return res;
 	}
 
 	async updateWealthValue(
@@ -184,7 +188,7 @@ export class Finances {
 			request
 		);
 		if (res) await this.loadWealth();
-		return Promise.resolve(res);
+		return res;
 	}
 
 	async deleteWealthValue(field: WealthField, value: FinanceValue): Promise<boolean> {
@@ -193,19 +197,23 @@ export class Finances {
 			value.id
 		);
 		if (res) await this.loadWealth();
-		return Promise.resolve(res);
+		return res;
 	}
 
 	async updateWealthField(field: WealthField, request: UpdateWealthFieldRequest): Promise<boolean> {
 		const res = await this.apiService.update(apiRoutes.finances.wealth.updateField, field.id, request);
 		if (res) await this.loadWealth();
-		return Promise.resolve(res);
+		return res;
 	}
 
 	async deleteWealthField(wealth: WealthField): Promise<boolean> {
 		const res = await this.apiService.delete(apiRoutes.finances.wealth.deleteField, wealth.id);
 		if (res) await this.loadWealth();
 		return res;
+	}
+
+	private dropSelectedTagIfUnused(): void {
+		if (!this.availableTags().some((tag) => tag.id === this.selectedTagId)) this.selectedTagId = null;
 	}
 
 	private async reloadBudget(budget: Budget): Promise<void> {

@@ -6,13 +6,18 @@
 	let {
 		onConfirm,
 		onCancel,
-		initialName = ''
-	}: { onConfirm: (url: string, name: string) => void; onCancel: () => void; initialName?: string } =
-		$props();
+		initialName = '',
+		initialUrl = ''
+	}: {
+		onConfirm: (url: string, name: string) => void;
+		onCancel: () => void;
+		initialName?: string;
+		initialUrl?: string;
+	} = $props();
 
 	const ts = getTranslation();
 
-	let urlValue = $state('');
+	let urlValue = $state(initialUrl);
 	let nameValue = $state(initialName);
 
 	function confirm() {

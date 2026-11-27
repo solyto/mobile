@@ -195,9 +195,27 @@ describe('CalendarEventService', () => {
 			expect(service.writeResult({ ok: false, status: 422, errors: ['external_event_unreadable'] })).toBe('unreadable');
 		});
 
+		it('reports a forbidden write as read-only only when the server says so', () => {
+			expect(service.writeResult({ ok: false, status: 403, errors: ['calendar_read_only'] })).toBe('read_only');
+			expect(service.writeResult({ ok: false, status: 403, errors: [] })).toBe('failed');
+		});
+
 		it('treats anything without a known code as a plain failure', () => {
 			expect(service.writeResult({ ok: false, status: 422, errors: [] })).toBe('failed');
 			expect(service.writeResult({ ok: false, status: 500, errors: ['something_else'] })).toBe('failed');
+		});
+	});
+
+	describe('needsReload', () => {
+		it('reloads after a change and after the server reported a different state', () => {
+			expect(service.needsReload('ok')).toBe(true);
+			expect(service.needsReload('changed_on_server')).toBe(true);
+			expect(service.needsReload('server_unavailable')).toBe(true);
+		});
+
+		it('keeps the events after a refused or failed change', () => {
+			expect(service.needsReload('unreadable')).toBe(false);
+			expect(service.needsReload('failed')).toBe(false);
 		});
 	});
 

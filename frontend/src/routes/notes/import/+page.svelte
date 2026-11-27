@@ -2,7 +2,9 @@
 	import { getNotes } from '$lib/state/Notes.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
+	import { getTranslation } from '$lib/state/Translation.svelte';
 
+	const ts = getTranslation();
 	const notes = getNotes();
 	const loadingIndicator = getLoadingIndicator();
 	const notifications = getUiNotifications();
@@ -26,7 +28,7 @@
 		event.preventDefault();
 
 		if (!selectedFile) {
-			uploadError = 'Please select a file';
+			uploadError = ts.get.notes.import_no_file;
 			return;
 		}
 
@@ -43,24 +45,31 @@
 				uploadSuccess = true;
 				selectedFile = null;
 				if (fileInput) fileInput.value = '';
-				notifications.success('Import was successful!');
+				notifications.success(ts.get.notes.import_success);
 			}
 		} catch (error) {
-			uploadError = error instanceof Error ? error.message : 'An unknown error occurred';
+			uploadError = error instanceof Error ? error.message : ts.get.notes.import_unknown_error;
 		} finally {
 			isUploading = false;
+			loadingIndicator.stop();
 		}
+	}
 
-		loadingIndicator.stop();
+	function progressLabel(): string {
+		return ts.get.notes.import_progress.replace('%d', String(uploadProgress));
+	}
+
+	function fileSizeLabel(file: File): string {
+		return ts.get.notes.import_file_size.replace('%s', (file.size / 1024).toFixed(2));
 	}
 </script>
 
 <form onsubmit={handleSubmit} class="mx-auto w-160 p-6">
-	<h2 class="mb-4 text-xl font-semibold">File Upload</h2>
+	<h2 class="mb-4 text-xl font-semibold">{ts.get.notes.import_title}</h2>
 
 	<div class="mb-4">
 		<label for="file-upload" class="mb-2 block text-sm font-medium text-c-neutral-7">
-			Select File
+			{ts.get.notes.import_select_file}
 		</label>
 		<input
 			id="file-upload"
@@ -79,10 +88,10 @@
 	{#if selectedFile}
 		<div class="mb-4 rounded bg-c-neutral p-3">
 			<p class="text-sm">
-				<span class="font-medium">Selected file:</span>
+				<span class="font-medium">{ts.get.notes.import_selected_file}</span>
 				{selectedFile.name}
 			</p>
-			<p class="text-xs text-c-neutral-5">{(selectedFile.size / 1024).toFixed(2)} KB</p>
+			<p class="text-xs text-c-neutral-5">{fileSizeLabel(selectedFile)}</p>
 		</div>
 	{/if}
 
@@ -91,7 +100,7 @@
 			<div class="h-2.5 w-full rounded-full bg-c-neutral-2">
 				<div class="h-2.5 rounded-full bg-blue-600" style="width: {uploadProgress}%"></div>
 			</div>
-			<p class="mt-1 text-center text-xs">Uploading: {uploadProgress}%</p>
+			<p class="mt-1 text-center text-xs">{progressLabel()}</p>
 		</div>
 	{/if}
 
@@ -102,7 +111,7 @@
 	{/if}
 
 	{#if uploadSuccess}
-		<div class="mb-4 rounded bg-green-50 p-3 text-green-700">File uploaded successfully!</div>
+		<div class="mb-4 rounded bg-green-50 p-3 text-green-700">{ts.get.notes.import_uploaded}</div>
 	{/if}
 
 	<button
@@ -110,6 +119,6 @@
 		disabled={isUploading || !selectedFile}
 		class="w-full cursor-pointer rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
 	>
-		{isUploading ? 'Uploading...' : 'Upload File'}
+		{isUploading ? ts.get.notes.import_uploading : ts.get.notes.import_upload}
 	</button>
 </form>

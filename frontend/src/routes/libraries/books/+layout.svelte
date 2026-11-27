@@ -15,8 +15,11 @@
 
 	onMount(async () => {
 		loadingIndicator.start();
-		await Promise.all([library.load(), tags.load(), integrations.load()]);
-		loadingIndicator.stop();
+		try {
+			await Promise.all([library.load(), tags.load(), integrations.load()]);
+		} finally {
+			loadingIndicator.stop();
+		}
 	});
 
 	let { children } = $props();

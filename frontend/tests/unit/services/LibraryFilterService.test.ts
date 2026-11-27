@@ -1,25 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import LibraryFilterService from '$lib/services/LibraryFilterService';
-import type { Book, BookGenre } from '$lib/types/library_book';
+import type { BookGenre } from '$lib/types/library_book';
 import type { Plant, PlantLocation } from '$lib/types/library_plant';
 import type { Recipe, RecipeType } from '$lib/types/library_recipe';
 
-const service = new LibraryFilterService();
+import { book } from '../helpers/factories';
 
-function book(overrides: Partial<Book> = {}): Book {
-	return {
-		id: 1,
-		title: 'Book',
-		genres: [],
-		rating: null,
-		wishlist: false,
-		lent_to: null,
-		author: 'Author',
-		created_at: '',
-		updated_at: '',
-		...overrides
-	} as Book;
-}
+const service = new LibraryFilterService();
 
 describe('search', () => {
 	const entries = [

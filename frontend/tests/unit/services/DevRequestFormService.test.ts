@@ -85,3 +85,38 @@ describe('changes', () => {
 		expect(service.changes(entry, service.fromEntry(entry))).toEqual({});
 	});
 });
+
+describe('createRequest', () => {
+	it('sends empty screenshot fields as null and the priority as a number', () => {
+		const form = { ...service.empty(), title: 'T', description: 'D', priority: '3', type: 'feature', url: 'https://x.test' };
+
+		expect(service.createRequest(form, 'u1')).toEqual({
+			title: 'T',
+			description: 'D',
+			screenshot: null,
+			screenshot_name: null,
+			priority: 3,
+			url: 'https://x.test',
+			type: 'feature',
+			created_by_user_id: 'u1'
+		});
+	});
+});
+
+describe('isComplete', () => {
+	it('needs a title and a description', () => {
+		expect(service.isComplete({ ...service.empty(), title: 'T' })).toBe(false);
+		expect(service.isComplete({ ...service.empty(), title: 'T', description: 'D' })).toBe(true);
+	});
+});
+
+describe('versionToCheck', () => {
+	it('returns a new or changed version of a completed request only', () => {
+		const completed = { ...service.empty(), status: 'completed', fixed_in_version: ' 1.2 ' };
+
+		expect(service.versionToCheck(completed, undefined)).toBe('1.2');
+		expect(service.versionToCheck(completed, devRequest({ fixed_in_version: '1.2' }))).toBeNull();
+		expect(service.versionToCheck({ ...completed, status: 'pending' }, undefined)).toBeNull();
+		expect(service.versionToCheck({ ...completed, fixed_in_version: ' ' }, undefined)).toBeNull();
+	});
+});

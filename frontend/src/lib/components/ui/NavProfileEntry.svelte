@@ -3,7 +3,7 @@
 	import { urls } from '$lib/config/urls';
 	import { getAuth } from '$lib/state/Auth.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
-	import { API_USER_STORAGE_URL } from '$lib/config/apiRoutes';
+	import { profileImageUrl } from '$lib/helpers/ProfileImageHelper';
 
 	const auth = getAuth();
 	const ts = getTranslation();
@@ -28,7 +28,7 @@
 	const imagePath = $derived(auth.user?.profile?.profile_image_path ?? null);
 	const imageSrc = $derived(
 		imagePath
-			? `${API_USER_STORAGE_URL}/${imagePath}${retriedPath === imagePath ? '?retry=1' : ''}`
+			? `${profileImageUrl(imagePath)}${retriedPath === imagePath ? '?retry=1' : ''}`
 			: null
 	);
 
@@ -53,7 +53,7 @@
 		{#if imageSrc && failedPath !== imagePath}
 			<img
 				src={imageSrc}
-				alt="Profile"
+				alt={ts.get.nav.profile}
 				class="h-full w-full rounded-full object-cover"
 				onerror={handleError}
 			/>

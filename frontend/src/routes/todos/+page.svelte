@@ -33,28 +33,34 @@
 		todos.loadView(viewPoint.isDesktop);
 
 		loadingIndicator.start();
-		await todos.load();
-		loadingIndicator.stop();
-		await Promise.all([tags.load()]);
+		try {
+			await todos.load();
+		} finally {
+			loadingIndicator.stop();
+		}
+		await tags.load();
 	});
 
 	afterNavigate(() => todos.openFromUrl());
 
 	async function handleCheck(event: Event, todo: Todo): Promise<void> {
-		loadingIndicator.start();
 		const checkbox = event.target as HTMLInputElement;
+		if (checkbox.checked) celebrateFrom(checkbox);
 
-		if (checkbox.checked) {
-			const rect = checkbox.getBoundingClientRect();
-			const x = (rect.left + rect.right) / 2 / window.innerWidth;
-			const y = (rect.top + rect.bottom) / 2 / window.innerHeight;
-
-			confetti(createConfettiOptions({ x, y }, 'default'));
+		loadingIndicator.start();
+		try {
+			await todos.changeCompleted(todo, checkbox.checked);
+			todo.is_completed = checkbox.checked;
+		} finally {
+			loadingIndicator.stop();
 		}
+	}
 
-		await todos.changeCompleted(todo, checkbox.checked);
-		todo.is_completed = checkbox.checked;
-		loadingIndicator.stop();
+	function celebrateFrom(element: HTMLElement): void {
+		const rect = element.getBoundingClientRect();
+		const x = (rect.left + rect.right) / 2 / window.innerWidth;
+		const y = (rect.top + rect.bottom) / 2 / window.innerHeight;
+		confetti(createConfettiOptions({ x, y }, 'default'));
 	}
 </script>
 

@@ -7,11 +7,12 @@ import DevRequestEdit from '$lib/components/dev-requests/DevRequestEdit.svelte';
 import FixedIn from '$lib/components/dev-requests/FixedIn.svelte';
 import Priority from '$lib/components/dev-requests/Priority.svelte';
 import Status from '$lib/components/dev-requests/Status.svelte';
-import Type from '$lib/components/dev-requests/Type.svelte';
 import { renderWithContext } from './helpers/context';
 import { devRequest } from '../unit/helpers/factories';
 import type { DevRequest } from '$lib/types/dev_request';
 import type { KeyManager } from '$lib/state/KeyManager.svelte';
+import type { LoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
+import { rejectionsDuring } from './helpers/rejections';
 
 const ADMIN = { id: 'admin', name: 'Admin', role: 'admin' };
 const MEMBER = { id: 'member', name: 'Member', role: 'user' };
@@ -25,28 +26,24 @@ function devRequestsStub() {
 	};
 }
 
-function renderEntry(entry: DevRequest, user: object, active = false) {
-	return renderWithContext(DevRequestEntry, { entry, active }, { stores: { auth: { user }, devRequests: devRequestsStub() } });
+function renderEntry(entry: DevRequest, user: typeof ADMIN, active = false) {
+	return renderWithContext(DevRequestEntry, { entry, active, isAdmin: user.role === 'admin' }, { stores: { auth: { user }, devRequests: devRequestsStub() } });
 }
 
 function renderEdit(entry?: DevRequest) {
 	const devRequests = devRequestsStub();
 	const error = vi.fn();
 	const onClose = vi.fn();
-	renderWithContext(DevRequestEdit, { entry, onClose }, { stores: { auth: { user: ADMIN }, devRequests, uiNotifications: { error } } });
-	return { devRequests, error, onClose };
+	let loadingIndicator!: LoadingIndicator;
+	renderWithContext(
+		DevRequestEdit,
+		{ entry, onClose },
+		{ stores: { auth: { user: ADMIN }, devRequests, uiNotifications: { error } }, onReady: (stores) => (loadingIndicator = stores.loadingIndicator as LoadingIndicator) }
+	);
+	return { devRequests, error, onClose, loadingIndicator: () => loadingIndicator };
 }
 
 describe('display-only badges', () => {
-	it('render Priority, Status and Type without buttons', () => {
-		const entry = devRequest({ priority: 3, status: 'cancelled', type: 'feature' });
-		for (const component of [Priority, Status, Type]) {
-			const { container, unmount } = renderWithContext(component, { entry });
-			expect(container.querySelector('button')).toBeNull();
-			unmount();
-		}
-	});
-
 	it('labels the priority dot with the priority name', () => {
 		renderWithContext(Priority, { entry: devRequest({ priority: 5 }) });
 		expect(screen.getByRole('img', { name: 'Critical Priority' })).toBeInTheDocument();
@@ -55,6 +52,11 @@ describe('display-only badges', () => {
 	it('shows waiting-for-deployment with its label', () => {
 		renderWithContext(Status, { entry: devRequest({ status: 'waiting-for-deployment' }) });
 		expect(screen.getByText('Waiting for Deployment')).toBeInTheDocument();
+	});
+
+	it('shows waiting-for-user with its label', () => {
+		renderWithContext(Status, { entry: devRequest({ status: 'waiting-for-user' }) });
+		expect(screen.getByText('Waiting for User')).toBeInTheDocument();
 	});
 
 	it('shows cancelled as Rejected', () => {
@@ -90,7 +92,7 @@ describe('DevRequestEntry', () => {
 	it('renders comments as plain text', async () => {
 		const stub = devRequestsStub();
 		stub.loadComments.mockResolvedValue([{ id: 1, content: 'Same here', created_at: '2026-10-02T10:00:00Z', user: { id: 'x', name: 'Bob' } }]);
-		renderWithContext(DevRequestEntry, { entry: devRequest(), active: true }, { stores: { auth: { user: MEMBER }, devRequests: stub } });
+		renderWithContext(DevRequestEntry, { entry: devRequest(), active: true, isAdmin: false }, { stores: { auth: { user: MEMBER }, devRequests: stub } });
 
 		const comment = await screen.findByText('Same here', {}, { timeout: 2000 });
 		expect(comment.closest('button')).toBeNull();
@@ -125,6 +127,43 @@ describe('DevRequestEdit, create', () => {
 		expect(screen.getByText('New Request')).toBeInTheDocument();
 		expect(screen.getByPlaceholderText('URL')).toBeInTheDocument();
 		expect(screen.queryByDisplayValue('Backlog')).toBeNull();
+	});
+
+	it('sends the new request with the author and empty files as null', async () => {
+		const user = userEvent.setup();
+		const { devRequests, onClose } = renderEdit();
+
+		await user.type(screen.getByPlaceholderText('Title'), 'Dark mode');
+		await user.type(screen.getByPlaceholderText('Description'), 'Please');
+		await user.selectOptions(screen.getByDisplayValue('Low Priority'), '4');
+		await user.selectOptions(screen.getByDisplayValue('Bug'), 'feature');
+		await user.type(screen.getByPlaceholderText('URL'), 'https://x.test');
+		await user.click(screen.getByRole('button', { name: 'Save' }));
+
+		await waitFor(() => expect(onClose).toHaveBeenCalled());
+		expect(devRequests.create).toHaveBeenCalledWith({
+			title: 'Dark mode',
+			description: 'Please',
+			screenshot: null,
+			screenshot_name: null,
+			priority: 4,
+			url: 'https://x.test',
+			type: 'feature',
+			created_by_user_id: 'admin'
+		});
+	});
+
+	it('stops the loading indicator even when saving throws', async () => {
+		const user = userEvent.setup();
+		const { devRequests, loadingIndicator } = renderEdit();
+		devRequests.create.mockRejectedValue(new Error('offline'));
+
+		await user.type(screen.getByPlaceholderText('Title'), 'Dark mode');
+		await user.type(screen.getByPlaceholderText('Description'), 'Please');
+		const rejections = await rejectionsDuring(() => user.click(screen.getByRole('button', { name: 'Save' })));
+
+		expect(rejections).toEqual([new Error('offline')]);
+		expect(loadingIndicator().active).toBe(false);
 	});
 });
 
@@ -217,6 +256,19 @@ describe('DevRequestEdit, edit', () => {
 
 		await waitFor(() => expect(onClose).toHaveBeenCalled());
 		expect(devRequests.update).toHaveBeenCalledWith(entry, { status: 'waiting-for-deployment' });
+	});
+
+	it('saves the waiting-for-user status', async () => {
+		const user = userEvent.setup();
+		const entry = devRequest({ status: 'in-progress' });
+		const { devRequests, onClose } = renderEdit(entry);
+
+		await user.selectOptions(screen.getByDisplayValue('In Progress'), 'waiting-for-user');
+		expect(screen.queryByPlaceholderText('Fixed in version')).toBeNull();
+		await user.click(screen.getByRole('button', { name: 'Save' }));
+
+		await waitFor(() => expect(onClose).toHaveBeenCalled());
+		expect(devRequests.update).toHaveBeenCalledWith(entry, { status: 'waiting-for-user' });
 	});
 
 	it('rejects an empty title like on create', async () => {

@@ -42,20 +42,18 @@
 	}
 
 	async function onSubmit(): Promise<void> {
-		loadingIndicator.start();
+		const request: CreateWealthFieldRequest = { title: titleValue.trim() };
+		if (request.title === '') return;
 
-		if (titleValue.trim() !== '') {
-			const request: CreateWealthFieldRequest = {
-				title: titleValue.trim()
-			};
-			const res = await finances.addWealthField(request);
-			if (res) {
-				titleValue = '';
-				await toggleForm();
-				loadingIndicator.stop();
-				keyManager.unregisterKeyDown(keyHandlers.Enter);
-			}
+		loadingIndicator.start();
+		try {
+			if (!(await finances.addWealthField(request))) return;
+			titleValue = '';
+			await toggleForm();
+		} finally {
+			loadingIndicator.stop();
 		}
+		keyManager.unregisterKeyDown(keyHandlers.Enter);
 	}
 
 	async function handleEnter(event: KeyboardEvent): Promise<void> {
@@ -70,10 +68,10 @@
 <div class="flex justify-start">
 	{#if formOpen}
 		{#if viewPoint.isDesktop}
-			<TextInput placeholder="Title" bind:input={titleInput} bind:value={titleValue} />
+			<TextInput placeholder={ts.get.finances.title_placeholder} bind:input={titleInput} bind:value={titleValue} />
 		{:else}
 			<BottomSheetModal title={ts.get.finances.add_entry} onClose={onblur}>
-				<TextInput placeholder="Title" bind:input={titleInput} bind:value={titleValue} />
+				<TextInput placeholder={ts.get.finances.title_placeholder} bind:input={titleInput} bind:value={titleValue} />
 				<TextButton title={ts.get.layout.modal_confirm} type="action" onclick={onSubmit} class="mt-8 w-full" />
 			</BottomSheetModal>
 		{/if}

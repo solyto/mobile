@@ -3,15 +3,15 @@ import { urls } from '$lib/config/urls';
 import type { FeatureType } from '$lib/config/navigation';
 
 export interface TourStep {
-	key: string
-	route: string
-	selector: string | null
+	key: string;
+	route: string;
+	selector: string | null;
 }
 
 interface StepDef {
-	key: string
-	route: string
-	always?: boolean
+	key: string;
+	route: string;
+	always?: boolean;
 }
 
 const FEATURE_STEPS: StepDef[] = [
@@ -38,12 +38,8 @@ export class WelcomeTour {
 
 	start(features: Record<FeatureType, boolean>): void {
 		const featureSteps: TourStep[] = FEATURE_STEPS
-			.filter(s => s.always || features[s.key as FeatureType])
-			.map(s => ({
-				key: s.key,
-				route: s.route,
-				selector: `[data-tour="${s.key}"]`
-			}));
+			.filter((s) => s.always || features[s.key as FeatureType])
+			.map((s) => ({ key: s.key, route: s.route, selector: `[data-tour="${s.key}"]` }));
 
 		this.steps = [
 			{ key: 'intro', route: urls.home, selector: null },

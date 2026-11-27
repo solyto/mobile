@@ -180,6 +180,13 @@ describe('listRaw', () => {
 	});
 });
 
+describe('postRaw', () => {
+	it('reads a body that is not JSON as a failure without codes', async () => {
+		vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 502, json: vi.fn().mockRejectedValue(new SyntaxError('html')) }));
+		await expect(new ApiService().postRaw('/login', {})).resolves.toEqual({ success: false });
+	});
+});
+
 describe('postWithStatus', () => {
 	it('returns the parsed payload and status on success', async () => {
 		vi.stubGlobal(

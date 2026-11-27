@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { fade } from 'svelte/transition';
-	import IconCircleX from '@lucide/svelte/icons/circle-x';
-	import IconSearch from '@lucide/svelte/icons/search';
+	import IconCircleX from '$lib/icons/lucide/circle-x.svelte';
+	import IconSearch from '$lib/icons/lucide/search.svelte';
 	import { onDestroy, onMount, tick } from 'svelte';
 	import { getContacts } from '$lib/state/Contacts.svelte';
 	import { getKeyManager } from '$lib/state/KeyManager.svelte';

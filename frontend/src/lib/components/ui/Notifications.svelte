@@ -3,10 +3,10 @@
 	import { fly } from 'svelte/transition';
 	import { flip } from 'svelte/animate';
 	import { useSwipe } from 'svelte-gestures';
-	import IconTriangleAlert from '@lucide/svelte/icons/triangle-alert';
-	import IconCheck from '@lucide/svelte/icons/check';
-	import IconInfo from '@lucide/svelte/icons/info';
-	import IconOctagonX from '@lucide/svelte/icons/octagon-x';
+	import IconTriangleAlert from '$lib/icons/lucide/triangle-alert.svelte';
+	import IconCheck from '$lib/icons/lucide/check.svelte';
+	import IconInfo from '$lib/icons/lucide/info.svelte';
+	import IconOctagonX from '$lib/icons/lucide/octagon-x.svelte';
 
 	const notifications = getUiNotifications();
 

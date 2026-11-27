@@ -7,7 +7,14 @@
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
 	import { grabFaviconFromUrl } from '$lib/helpers/ImageHelper';
+	import { displayHostname } from '$lib/helpers/FeedHelper';
 	import type { Feed, FriendFeed } from '$lib/types/feed';
+
+	const PAGE_SIZE = 50;
+	const LOAD_MORE_DISTANCE_PX = 120;
+	const SEARCH_DEBOUNCE_MS = 300;
+	const MIN_QUERY_LENGTH = 2;
+	const FEED_CARD = 'flex cursor-pointer flex-col gap-1.5 rounded-xl border border-c-neutral-1 p-4 text-left transition-all hover:border-c-primary hover:shadow-sm dark:border-s-dark dark:hover:border-c-primary';
 
 	const ts = getTranslation();
 	const feeds = getFeeds();
@@ -24,8 +31,6 @@
 	let offset = $state<number>(0);
 	let scrollContainer = $state<HTMLDivElement | null>(null);
 	let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-
-	const PAGE_SIZE = 50;
 
 	onMount(async () => {
 		await Promise.all([loadPage(), loadFriends()]);
@@ -53,7 +58,7 @@
 	function onScroll(): void {
 		if (!scrollContainer) return;
 		const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
-		if (scrollHeight - scrollTop - clientHeight < 120) {
+		if (scrollHeight - scrollTop - clientHeight < LOAD_MORE_DISTANCE_PX) {
 			loadMore();
 		}
 	}
@@ -61,7 +66,7 @@
 	function onQueryInput(): void {
 		if (debounceTimer) clearTimeout(debounceTimer);
 
-		if (query.length < 2) {
+		if (query.length < MIN_QUERY_LENGTH) {
 			if (isSearching) showBrowseList();
 			return;
 		}
@@ -70,7 +75,7 @@
 			isSearching = true;
 			results = await feeds.searchFeeds(query);
 			hasMore = false;
-		}, 300);
+		}, SEARCH_DEBOUNCE_MS);
 	}
 
 	async function showBrowseList(): Promise<void> {
@@ -85,28 +90,43 @@
 
 	async function subscribe(feed: Feed | FriendFeed): Promise<void> {
 		loadingIndicator.start();
-		const res = await feeds.subscribe({ title: feed.title, url: feed.url });
-		if (res.ok) {
-			notifications.success(ts.get.feeds.feed_add_success);
-			feeds.browseOpen = false;
-		} else if (res.duplicate) {
-			notifications.error(ts.get.feeds.feed_already_subscribed);
-		} else {
-			notifications.error(ts.get.feeds.feed_add_error);
+		try {
+			const res = await feeds.subscribe({ title: feed.title, url: feed.url });
+			if (res.ok) {
+				notifications.success(ts.get.feeds.feed_add_success);
+				close();
+			} else if (res.duplicate) {
+				notifications.error(ts.get.feeds.feed_already_subscribed);
+			} else {
+				notifications.error(ts.get.feeds.feed_add_error);
+			}
+		} finally {
+			loadingIndicator.stop();
 		}
-		loadingIndicator.stop();
 	}
 
-	function hostname(url: string): string {
-		try {
-			return new URL(url).hostname.replace('www.', '');
-		} catch {
-			return url;
-		}
+	function close(): void {
+		feeds.browseOpen = false;
 	}
 </script>
 
-<ContentModal title={ts.get.feeds.browse_feeds} onClose={() => { feeds.browseOpen = false; }} rounded="2xl" p="8" width="3xl">
+{#snippet heading(text: string)}
+	<h3 class="text-sm font-semibold text-c-heading dark:text-c-primary">
+		{text}
+	</h3>
+{/snippet}
+
+{#snippet feedSummary(feed: Feed | FriendFeed)}
+	<div class="flex items-center gap-2">
+		<img src={grabFaviconFromUrl(feed.url)} alt="" class="h-4 w-4 shrink-0 rounded" />
+		<span class="line-clamp-2 text-sm font-semibold leading-snug dark:text-white">
+			{feed.title}
+		</span>
+	</div>
+	<span class="text-xs text-c-neutral-4">{displayHostname(feed.url)}</span>
+{/snippet}
+
+<ContentModal title={ts.get.feeds.browse_feeds} onClose={close} rounded="2xl" p="8" width="3xl">
 	<div class="flex flex-col gap-6">
 		<TextInput
 			bind:value={query}
@@ -127,25 +147,11 @@
 			{:else}
 				{#if !isSearching && friendFeeds.length > 0}
 					<div class="flex flex-col gap-3">
-						<h3 class="text-sm font-semibold text-c-heading dark:text-c-primary">
-							{ts.get.feeds.browse_feeds_friends}
-						</h3>
+						{@render heading(ts.get.feeds.browse_feeds_friends)}
 						<div class="grid grid-cols-2 gap-3">
 							{#each friendFeeds as feed (feed.id)}
-								<button
-									type="button"
-									onclick={() => subscribe(feed)}
-									class="flex cursor-pointer flex-col gap-1.5 rounded-xl border border-c-neutral-1 p-4 text-left
-										transition-all hover:border-c-primary hover:shadow-sm
-										dark:border-s-dark dark:hover:border-c-primary"
-								>
-									<div class="flex items-center gap-2">
-										<img src={grabFaviconFromUrl(feed.url)} alt="" class="h-4 w-4 shrink-0 rounded" />
-										<span class="line-clamp-2 text-sm font-semibold leading-snug dark:text-white">
-											{feed.title}
-										</span>
-									</div>
-									<span class="text-xs text-c-neutral-4">{hostname(feed.url)}</span>
+								<button type="button" onclick={() => subscribe(feed)} class={FEED_CARD}>
+									{@render feedSummary(feed)}
 									<div class="mt-0.5 flex items-center gap-2 text-xs text-c-neutral-4">
 										<span class="text-c-primary">{feed.friend_names.join(', ')}</span>
 										{#if feed.subscriber_count > 1}
@@ -159,35 +165,15 @@
 					</div>
 				{/if}
 
-				{#if results.length === 0 && !isSearching}
-					<!-- no-op: only shown when explicitly searching with no results -->
-				{:else if results.length === 0}
-					<div class="flex items-center justify-center py-16">
-						<span class="text-sm text-c-neutral-4">{ts.get.feeds.browse_feeds_empty}</span>
-					</div>
-				{:else}
+				{#if results.length > 0}
 					<div class="flex flex-col gap-3">
 						{#if !isSearching}
-							<h3 class="text-sm font-semibold text-c-heading dark:text-c-primary">
-								{ts.get.feeds.all_feeds}
-							</h3>
+							{@render heading(ts.get.feeds.all_feeds)}
 						{/if}
 						<div class="grid grid-cols-2 gap-3">
 							{#each results as feed (feed.id)}
-								<button
-									type="button"
-									onclick={() => subscribe(feed)}
-									class="flex cursor-pointer flex-col gap-1.5 rounded-xl border border-c-neutral-1 p-4 text-left
-										transition-all hover:border-c-primary hover:shadow-sm
-										dark:border-s-dark dark:hover:border-c-primary"
-								>
-									<div class="flex items-center gap-2">
-										<img src={grabFaviconFromUrl(feed.url)} alt="" class="h-4 w-4 shrink-0 rounded" />
-										<span class="line-clamp-2 text-sm font-semibold leading-snug dark:text-white">
-											{feed.title}
-										</span>
-									</div>
-									<span class="text-xs text-c-neutral-4">{hostname(feed.url)}</span>
+								<button type="button" onclick={() => subscribe(feed)} class={FEED_CARD}>
+									{@render feedSummary(feed)}
 									{#if feed.subscriber_count && feed.subscriber_count > 0}
 										<span class="text-xs text-c-neutral-4">
 											{feed.subscriber_count} {ts.get.feeds.browse_feeds_subscribers}
@@ -199,6 +185,10 @@
 						{#if loadingMore}
 							<div class="py-4 text-center text-sm text-c-neutral-4">...</div>
 						{/if}
+					</div>
+				{:else if isSearching}
+					<div class="flex items-center justify-center py-16">
+						<span class="text-sm text-c-neutral-4">{ts.get.feeds.browse_feeds_empty}</span>
 					</div>
 				{/if}
 			{/if}

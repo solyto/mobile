@@ -3,7 +3,7 @@
 	import PasswordInput from '$lib/components/forms/PasswordInput.svelte';
 	import ModalFormRow from '$lib/components/ui/ModalFormRow.svelte';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
-	import IconLoaderCircle from '@lucide/svelte/icons/loader-circle';
+	import IconLoaderCircle from '$lib/icons/lucide/loader-circle.svelte';
 	import { getExternalCalendars } from '$lib/state/ExternalCalendars.svelte';
 	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
@@ -33,7 +33,15 @@
 	const shownFields: ExternalAccountField[] = account ? ['username', 'password'] : ['server_url', 'username', 'password'];
 
 	function canSubmit(): boolean {
-		return !submitting && username.trim() !== '' && password !== '' && (account !== null || serverUrl.trim() !== '');
+		return !submitting && hasCredentials() && hasServerUrl();
+	}
+
+	function hasCredentials(): boolean {
+		return username.trim() !== '' && password !== '';
+	}
+
+	function hasServerUrl(): boolean {
+		return account !== null || serverUrl.trim() !== '';
 	}
 
 	function fieldError(field: ExternalAccountField): string | null {
@@ -50,8 +58,12 @@
 	}
 
 	function generalError(): string | null {
-		if (error === null || (error.field !== null && shownFields.includes(error.field))) return null;
+		if (error === null || isShownField(error.field)) return null;
 		return externalCalendars.service.message(error, ts.get.calendar, ts.get.layout);
+	}
+
+	function isShownField(field: ExternalAccountField | null): boolean {
+		return field !== null && shownFields.includes(field);
 	}
 
 	function save(): Promise<ExternalAccountResult<ExternalCalendarAccount>> {

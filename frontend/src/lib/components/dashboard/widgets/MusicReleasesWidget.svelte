@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { blur } from 'svelte/transition';
-	import IconDisc3 from '@lucide/svelte/icons/disc-3';
-	import IconExternalLink from '@lucide/svelte/icons/external-link';
+	import IconDisc3 from '$lib/icons/lucide/disc-3.svelte';
+	import IconExternalLink from '$lib/icons/lucide/external-link.svelte';
 	import type { MusicRelease } from '$lib/types/library_music';
 	import type { Translation } from '$lib/state/Translation.svelte';
 	import { formatDate } from '$lib/helpers/DateHelper';

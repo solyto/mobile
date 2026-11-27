@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { formatDuration } from '$lib/helpers/TimeTrackingHelper';
 	import { getTimeTracking } from '$lib/state/TimeTracking.svelte';
 	import { getTranslation } from '$lib/state/Translation.svelte';
 	import { getAuth } from '$lib/state/Auth.svelte';
@@ -42,6 +43,23 @@
 		}
 		return parts.join(' · ');
 	}
+
+	function editEntry(): void {
+		onEdit?.(entry);
+	}
+
+	function askDelete(): void {
+		confirmingDelete = true;
+	}
+
+	function cancelDelete(): void {
+		confirmingDelete = false;
+	}
+
+	async function deleteEntry(): Promise<void> {
+		await tt.deleteEntry(entry.id);
+		confirmingDelete = false;
+	}
 </script>
 
 <div class="isolate flex items-center gap-3 border-c-neutral-1 py-2.5 dark:border-s-dark">
@@ -57,13 +75,13 @@
 		<span class="truncate text-xs tabular-nums text-c-neutral-4 md:hidden dark:text-c-neutral-5">{timeText()}</span>
 	</div>
 	<span class="shrink-0 text-xs tabular-nums text-c-neutral-4 max-md:hidden dark:text-c-neutral-5">{timeText()}</span>
-	<span class="w-16 shrink-0 text-right text-sm tabular-nums text-c-primary">{tt.formatDuration(entry.duration_minutes)}</span>
+	<span class="w-16 shrink-0 text-right text-sm tabular-nums text-c-primary">{formatDuration(entry.duration_minutes)}</span>
 	{#if showEdit || showDelete}
 		<div class="flex shrink-0 items-center gap-1">
 			{#if showEdit}
 				<EditButton
 					title={ts.get.timeTracking.edit_entry}
-					onClick={() => onEdit?.(entry)}
+					onClick={editEntry}
 					inModal={false}
 					buttonStyle="fill-on-hover"
 				/>
@@ -71,7 +89,7 @@
 			{#if showDelete}
 				<DeleteButton
 					title={ts.get.timeTracking.entry_deletion_title}
-					onClick={() => { confirmingDelete = true; }}
+					onClick={askDelete}
 					inModal={false}
 					buttonStyle="fill-on-hover"
 				/>
@@ -85,10 +103,7 @@
 		title={ts.get.timeTracking.entry_deletion_title}
 		description={ts.get.timeTracking.entry_deletion_description}
 		type="confirm-delete"
-		onConfirm={async () => {
-			await tt.deleteEntry(entry.id);
-			confirmingDelete = false;
-		}}
-		onCancel={() => (confirmingDelete = false)}
+		onConfirm={deleteEntry}
+		onCancel={cancelDelete}
 	/>
 {/if}

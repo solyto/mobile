@@ -1,6 +1,9 @@
 <script lang="ts">
 	import type { Tag } from '$lib/types/tag';
-	import IconX from '@lucide/svelte/icons/x';
+	import IconX from '$lib/icons/lucide/x.svelte';
+	import { getTranslation } from '$lib/state/Translation.svelte';
+
+	const ts = getTranslation();
 
 	let { tags, onRemove }: {
 		tags: Tag[];
@@ -16,7 +19,9 @@
 		>
 			#{tag.name}
 			{#if onRemove}
-				<IconX class="size-4 cursor-pointer text-red-800" onclick={() => onRemove(tag)} />
+				<button type="button" class="cursor-pointer text-red-800" aria-label={ts.get.layout.remove} onclick={() => onRemove(tag)}>
+					<IconX class="size-4" />
+				</button>
 			{/if}
 		</div>
 	{/each}

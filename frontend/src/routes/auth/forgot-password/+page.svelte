@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { urls } from '$lib/config/urls';
@@ -11,6 +11,10 @@
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
 	import TextInput from '$lib/components/forms/TextInput.svelte';
 	import { PLATFORM } from '$lib/config/platform';
+	import ResendButton from '$lib/components/auth/ResendButton.svelte';
+	import { Cooldown } from '$lib/helpers/Cooldown.svelte';
+
+	const RESEND_COOLDOWN_SECONDS = 60;
 
 	const auth = getAuth();
 	const ts = getTranslation();
@@ -19,46 +23,40 @@
 	let email = $state<string>('');
 	let emailError = $state<boolean>(false);
 	let sent = $state<boolean>(false);
-	let resendCooldown = $state<number>(0);
-	let resendTimer: ReturnType<typeof setInterval> | null = null;
+	const cooldown = new Cooldown(RESEND_COOLDOWN_SECONDS);
 
 	onMount(() => {
 		if (auth.loggedIn) goto(resolve(urls.home));
-		return () => {
-			if (resendTimer) clearInterval(resendTimer);
-		};
 	});
+
+	onDestroy(() => cooldown.destroy());
 
 	async function onsubmit(e: SubmitEvent): Promise<void> {
 		e.preventDefault();
 		emailError = email === '';
 		if (emailError) return;
 
-		loadingIndicator.start();
-		await auth.forgotPassword(email, PLATFORM);
-		loadingIndicator.stop();
-
+		await send();
 		sent = true;
-		startCooldown();
-	}
-
-	function startCooldown(): void {
-		resendCooldown = 60;
-		resendTimer = setInterval(() => {
-			resendCooldown--;
-			if (resendCooldown <= 0 && resendTimer) {
-				clearInterval(resendTimer);
-				resendTimer = null;
-			}
-		}, 1000);
 	}
 
 	async function resend(): Promise<void> {
-		if (resendCooldown > 0) return;
+		if (cooldown.active) return;
+		await send();
+	}
+
+	async function send(): Promise<void> {
 		loadingIndicator.start();
-		await auth.forgotPassword(email, PLATFORM);
-		loadingIndicator.stop();
-		startCooldown();
+		try {
+			await auth.forgotPassword(email, PLATFORM);
+		} finally {
+			loadingIndicator.stop();
+		}
+		cooldown.start();
+	}
+
+	function goToLogin(): void {
+		goto(resolve(urls.login));
 	}
 </script>
 
@@ -78,19 +76,11 @@
 					{ts.get.auth.forgot_password_sent_desc.replace('%s', email)}
 				</p>
 			</div>
-			<button
-				type="button"
-				class="mt-2 text-xs text-s-primary disabled:opacity-40"
-				disabled={resendCooldown > 0}
-				onclick={resend}
-			>
-				{ts.get.auth.forgot_password_resend}
-				{#if resendCooldown > 0}({resendCooldown}s){/if}
-			</button>
+			<ResendButton {cooldown} onclick={resend} />
 			<button
 				type="button"
 				class="cursor-pointer text-xs text-gray-400 hover:text-gray-600 dark:text-white/50 dark:hover:text-white/80"
-				onclick={() => goto(resolve(urls.login))}
+				onclick={goToLogin}
 			>
 				{ts.get.auth.login}
 			</button>

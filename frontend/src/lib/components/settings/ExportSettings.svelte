@@ -1,82 +1,94 @@
 <script lang="ts">
 	import { getTranslation } from '$lib/state/Translation.svelte';
-	import { getAuth } from '$lib/state/Auth.svelte';
+	import { getDataExport } from '$lib/state/DataExport.svelte';
 	import { getUiNotifications } from '$lib/state/UiNotifications.svelte';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
 	import Toggle from '$lib/components/forms/Toggle.svelte';
 	import { onMount } from 'svelte';
-	import { apiRoutes } from '$lib/config/apiRoutes';
-	import type { ExportStatus } from '$lib/types/export';
 	import { RateLimitedError } from '$lib/services/ApiService';
 	import { exportRateLimitedMessage } from '$lib/helpers/NetworkErrorHelper';
 	import { downloadBlob } from '$lib/helpers/DownloadHelper';
 
 	const ts = getTranslation();
-	const auth = getAuth();
+	const dataExport = getDataExport();
 	const uiNotifications = getUiNotifications();
-	const apiService = auth.apiService;
 
 	const FEATURES = [
-		{ key: 'todos', label: 'Todos' },
-		{ key: 'notes', label: 'Notes' },
-		{ key: 'calendars', label: 'Calendar' },
-		{ key: 'contacts', label: 'Contacts' },
-		{ key: 'feeds', label: 'Feeds' },
-		{ key: 'links', label: 'Links' },
-		{ key: 'music', label: 'Music' },
-		{ key: 'books', label: 'Books' },
-		{ key: 'games', label: 'Games' },
-		{ key: 'recipes', label: 'Recipes' },
-		{ key: 'quotes', label: 'Quotes' },
-		{ key: 'checkIn', label: 'Check-in' },
-		{ key: 'timeTracking', label: 'Time Tracking' },
-		{ key: 'financesIncome', label: 'Budget' },
-		{ key: 'financesWealth', label: 'Wealth' }
+		'todos',
+		'notes',
+		'calendars',
+		'contacts',
+		'feeds',
+		'links',
+		'music',
+		'books',
+		'games',
+		'recipes',
+		'quotes',
+		'checkIn',
+		'timeTracking',
+		'financesIncome',
+		'financesWealth'
 	] as const;
 
-	let selected = $state<Record<string, boolean>>(
-		Object.fromEntries(FEATURES.map((f) => [f.key, true]))
-	);
-	let loading = $state(false);
-	let exportStatus = $state<ExportStatus | null>(null);
+	type ExportFeature = (typeof FEATURES)[number];
 
-	onMount(async () => {
-		await loadStatus();
+	let featureLabels = $derived<Record<ExportFeature, string>>({
+		todos: ts.get.nav.todos,
+		notes: ts.get.nav.notes,
+		calendars: ts.get.nav.calendar,
+		contacts: ts.get.nav.contacts,
+		feeds: ts.get.nav.feeds,
+		links: ts.get.libraries.navigation.links,
+		music: ts.get.libraries.navigation.music,
+		books: ts.get.libraries.navigation.books,
+		games: ts.get.libraries.navigation.games,
+		recipes: ts.get.libraries.navigation.recipes,
+		quotes: ts.get.libraries.navigation.quotes,
+		checkIn: ts.get.nav.checkIn,
+		timeTracking: ts.get.nav.timeTracking,
+		financesIncome: ts.get.finances.budget,
+		financesWealth: ts.get.finances.wealth
 	});
+	let selected = $state<Record<string, boolean>>(selection(true));
+	let loading = $state(false);
 
-	async function loadStatus() {
-		const res = await apiService.getRaw<{ success: boolean; data: ExportStatus }>(apiRoutes.export.status);
-		if (res?.success) {
-			exportStatus = res.data;
-		}
+	onMount(() => dataExport.loadStatus());
+
+	function selection(value: boolean): Record<string, boolean> {
+		return Object.fromEntries(FEATURES.map((feature) => [feature, value]));
 	}
 
 	function selectAll() {
-		selected = Object.fromEntries(FEATURES.map((f) => [f.key, true]));
+		selected = selection(true);
 	}
 
 	function deselectAll() {
-		selected = Object.fromEntries(FEATURES.map((f) => [f.key, false]));
+		selected = selection(false);
+	}
+
+	function formatDate(date: string): string {
+		return new Date(date).toLocaleString(ts.locale);
 	}
 
 	async function startExport() {
-		const features = FEATURES.filter((f) => selected[f.key]).map((f) => f.key);
+		const features = FEATURES.filter((feature) => selected[feature]);
 		if (features.length === 0) {
-			uiNotifications.error('Please select at least one feature.');
+			uiNotifications.error(ts.get.settings.export_select_at_least_one);
 			return;
 		}
 
 		loading = true;
 		try {
-			const res = await apiService.postRaw<{ success: boolean; message?: string }>(apiRoutes.export.start, { features });
+			const res = await dataExport.start(features);
 
 			if (res.success) {
 				uiNotifications.success(res.message ?? '');
-				await loadStatus();
+				await dataExport.loadStatus();
 			} else if (res.message) {
 				uiNotifications.error(res.message);
 			} else {
-				uiNotifications.error('Export failed.');
+				uiNotifications.error(ts.get.settings.export_status_failed);
 			}
 		} catch (e) {
 			if (!(e instanceof RateLimitedError) || e.code !== 'export_rate_limited') throw e;
@@ -102,16 +114,14 @@
 	}
 
 	async function downloadExport() {
-		if (!exportStatus) return;
-		const blob = await apiService.download(
-			apiRoutes.export.download.replace('%s', String(exportStatus.id)),
-			'application/zip'
-		);
+		const status = dataExport.status;
+		if (!status) return;
+		const blob = await dataExport.download(status);
 		if (!blob) {
 			uiNotifications.error(ts.get.settings.export_download_failed);
 			return;
 		}
-		downloadBlob(blob, 'export_' + exportStatus.id + '.zip');
+		downloadBlob(blob, 'export_' + status.id + '.zip');
 	}
 </script>
 
@@ -119,10 +129,10 @@
 	<p class="text-c-neutral-5">{ts.get.settings.export_select_features}</p>
 
 	<div class="flex w-full flex-col gap-2">
-		{#each FEATURES as feature (feature.key)}
+		{#each FEATURES as feature (feature)}
 			<div class="flex w-full justify-between">
-				<span>{feature.label}</span>
-				<Toggle bind:checked={selected[feature.key]} onchange={() => {}} />
+				<span>{featureLabels[feature]}</span>
+				<Toggle bind:checked={selected[feature]} />
 			</div>
 		{/each}
 	</div>
@@ -139,11 +149,12 @@
 		class={loading ? 'opacity-50 cursor-wait' : ''}
 	/>
 
-	{#if exportStatus}
+	{#if dataExport.status}
+		{@const exportStatus = dataExport.status}
 		<div class="flex flex-col gap-2 rounded-md p-4 shadow-sm dark:shadow-s-dark-shadow dark:md:dark:bg-s-dark-2">
 			<p class="text-lg font-semibold text-c-heading dark:text-c-primary">{getStatusText(exportStatus.status)}</p>
 			<p class="text-c-neutral-4 text-sm">
-				{new Date(exportStatus.created_at).toLocaleString()}
+				{formatDate(exportStatus.created_at)}
 			</p>
 
 			{#if exportStatus.status === 'completed' && !exportStatus.is_expired}
@@ -158,7 +169,7 @@
 
 			{#if exportStatus.expires_at && !exportStatus.is_expired}
 				<p class="text-c-neutral-4 text-xs">
-					{ts.get.settings.export_expires_at}: {new Date(exportStatus.expires_at).toLocaleString()}
+					{ts.get.settings.export_expires_at}: {formatDate(exportStatus.expires_at)}
 				</p>
 			{/if}
 		</div>

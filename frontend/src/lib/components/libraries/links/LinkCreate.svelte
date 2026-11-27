@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { getTranslation } from '$lib/state/Translation.svelte';
+	import { createdEntryValue, selectedIds, tagEntries } from '$lib/helpers/MultiSelectHelper';
 	import TextInput from '$lib/components/forms/TextInput.svelte';
 	import TextButton from '$lib/components/ui/buttons/TextButton.svelte';
-	import { getLoadingIndicator } from '$lib/state/LoadingIndicator.svelte';
+	import { SaveAction } from '$lib/helpers/SaveAction.svelte';
 	import type { CreateLinkRequest } from '$lib/types/library_link';
 	import { getTags } from '$lib/state/Tags.svelte';
 	import MultiSelect, { type MultiSelectEntry } from '$lib/components/forms/MultiSelect.svelte';
@@ -14,45 +15,31 @@
 	const ts = getTranslation();
 	const library = getLinkLibrary();
 	const tags = getTags();
-	const loadingIndicator = getLoadingIndicator();
 	const notifications = getUiNotifications();
+	const saving = new SaveAction(() => ts.get.libraries.links.create_error);
 
 	let titleValue = $state<string>('');
 	let urlValue = $state<string>('');
 	let selectedTags = $state<MultiSelectEntry[]>([]);
 
-	let tagOptions: MultiSelectEntry[] = $derived(
-		tags.tags.map((tag) => ({ label: tag.name, value: tag.id.toString() }))
-	);
+	function onCreateTag(label: string): Promise<string | null> {
+		return createdEntryValue(tags.create(label), () => notifications.error(ts.get.libraries.tag_error));
+	}
 
-	async function onCreateTag(label: string): Promise<string | null> {
-		const created = await tags.create(label);
-		if (!created) {
-			notifications.error(ts.get.libraries.tag_error);
-			return null;
-		}
-		return created.id.toString();
+	function createRequest(): CreateLinkRequest {
+		return {
+			title: titleValue || null,
+			url: urlValue,
+			tags: selectedTags.length > 0 ? selectedIds(selectedTags) : undefined,
+			category_id: library.getActiveCategoryId()
+		};
 	}
 
 	async function onsubmit(): Promise<void> {
-		loadingIndicator.start();
-
-		const request: CreateLinkRequest = {
-			title: titleValue || null,
-			url: urlValue,
-			tags: selectedTags.length > 0 ? selectedTags.filter((tag) => tag.value).map((tag) => Number(tag.value)) : undefined,
-			category_id: library.getActiveCategoryId()
-		};
-		const ok = await library.create(request);
-		if (ok) {
-			titleValue = '';
-			urlValue = '';
-			library.closeCreateModal();
-		} else {
-			notifications.error(ts.get.libraries.links.create_error);
-		}
-
-		loadingIndicator.stop();
+		if (!(await saving.run(() => library.create(createRequest())))) return;
+		titleValue = '';
+		urlValue = '';
+		library.closeCreateModal();
 	}
 </script>
 
@@ -64,7 +51,7 @@
 		<TextInput bind:value={titleValue} />
 	</ModalFormRow>
 	<ModalFormRow label={ts.get.libraries.tags}>
-		<MultiSelect bind:value={selectedTags} options={tagOptions} allowUserOptions oncreate={onCreateTag} />
+		<MultiSelect bind:value={selectedTags} options={tagEntries(tags.tags)} allowUserOptions oncreate={onCreateTag} />
 	</ModalFormRow>
 	<div class="mt-8 flex w-full flex-row items-center justify-end">
 		<TextButton title={ts.get.layout.save} onclick={onsubmit} />

@@ -1,10 +1,12 @@
 <script lang="ts">
-	import IconChevronDown from '@lucide/svelte/icons/chevron-down';
-	import IconChevronUp from '@lucide/svelte/icons/chevron-up';
+	import IconChevronDown from '$lib/icons/lucide/chevron-down.svelte';
+	import IconChevronUp from '$lib/icons/lucide/chevron-up.svelte';
 	import type { DevRequest } from '$lib/types/dev_request';
 	import { getDevRequests } from '$lib/state/DevRequests.svelte';
 
 	const devRequests = getDevRequests();
+
+	const IDLE = 'text-c-neutral-3 hover:text-black dark:hover:text-white';
 
 	let { entry }: { entry: DevRequest } = $props();
 
@@ -20,9 +22,7 @@
 <div class="flex flex-row items-center gap-1">
 	<button
 		onclick={handleUpvote}
-		class="cursor-pointer transition-all hover:md:translate-y-[-2px] {entry.user_vote === 'up'
-			? 'text-green-500'
-			: 'text-c-neutral-3 hover:text-black dark:hover:text-white'}"
+		class="cursor-pointer transition-all hover:md:translate-y-[-2px] {entry.user_vote === 'up' ? 'text-green-500' : IDLE}"
 	>
 		<IconChevronUp class="h-5 w-5" />
 	</button>
@@ -31,9 +31,7 @@
 	</div>
 	<button
 		onclick={handleDownvote}
-		class="cursor-pointer transition-all hover:md:translate-y-[2px] {entry.user_vote === 'down'
-			? 'text-red-500'
-			: 'text-c-neutral-3 hover:text-black dark:hover:text-white'}"
+		class="cursor-pointer transition-all hover:md:translate-y-[2px] {entry.user_vote === 'down' ? 'text-red-500' : IDLE}"
 	>
 		<IconChevronDown class="h-5 w-5" />
 	</button>

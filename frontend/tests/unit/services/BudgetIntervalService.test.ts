@@ -2,11 +2,12 @@ import { describe, it, expect } from 'vitest';
 import BudgetIntervalService from '$lib/services/BudgetIntervalService';
 import type { Budget, BudgetInterval } from '$lib/types/finance';
 import { en } from '$lib/i18n/en';
+import { budget as budgetItem } from '../helpers/factories';
 
 const service = new BudgetIntervalService();
 
 function budget(id: number, value: number, interval?: BudgetInterval): Budget {
-	return { id, title: 'Item', type: 'expense', value, interval, tags: [], created_at: '', updated_at: '' };
+	return budgetItem({ id, title: 'Item', value, interval });
 }
 
 describe('BudgetIntervalService', () => {

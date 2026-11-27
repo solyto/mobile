@@ -1,34 +1,29 @@
 <script lang="ts">
 	import UiViewSwitcher from '$lib/components/ui/ViewSwitcher.svelte';
-	import type { Library } from '$lib/types/library';
-	import LocalStorageService from '$lib/services/LocalStorageService';
+	import type { ViewLibrary } from '$lib/types/library';
+	import { getTranslation } from '$lib/state/Translation.svelte';
 
-	let { library }: { library: Library } = $props();
+	let { library }: { library: ViewLibrary } = $props();
 
-	const ls = new LocalStorageService();
+	const ts = getTranslation();
 
-	const baseViews = [
-		{ type: 'list' as const, title: 'List' },
-		{ type: 'cards' as const, title: 'Cards' }
-	];
-
-	const shelfViews = [
-		{ type: 'spine' as const, title: 'Shelf' },
-		{ type: 'shelf' as const, title: 'Browse' }
-	];
-
-	let views = $derived(library.config.hasShelf ? [...baseViews, ...shelfViews] : baseViews);
+	function views() {
+		const baseViews = [
+			{ type: 'list' as const, title: ts.get.libraries.view_list },
+			{ type: 'cards' as const, title: ts.get.libraries.view_cards }
+		];
+		const shelfViews = [
+			{ type: 'spine' as const, title: ts.get.libraries.view_shelf },
+			{ type: 'shelf' as const, title: ts.get.libraries.view_browse }
+		];
+		return library.config.hasShelf ? [...baseViews, ...shelfViews] : baseViews;
+	}
 
 	function onViewChange(type: string) {
-		library.view = type as typeof library.view;
-		ls.set(`${library.config.type}_view`, type);
+		library.changeView(type);
 	}
 </script>
 
 <div class="absolute top-0 left-0 hidden 2xl:block">
-	<UiViewSwitcher
-		{views}
-		currentlySelected={library.view}
-		onChange={onViewChange}
-	/>
+	<UiViewSwitcher views={views()} currentlySelected={library.view} onChange={onViewChange} />
 </div>

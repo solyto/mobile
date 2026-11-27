@@ -11,42 +11,21 @@
 		class?: string;
 	} = $props();
 
-	let previewLoaded = $state(false);
-	// Already loaded once: render right away, so the image shows without waiting and without the intro transition.
-	let fullLoaded = $state(loadedCovers.has(src));
-
-	$effect(() => {
-		if (loadedCovers.has(src)) {
-			fullLoaded = true;
-			return;
-		}
-
-		previewLoaded = false;
-		fullLoaded = false;
-
-		const preview = new Image();
-		if (previewSrc) {
-			preview.onload = () => (previewLoaded = true);
-			preview.src = previewSrc;
-		}
-
-		const full = new Image();
-		full.onload = () => {
-			loadedCovers.add(src);
-			fullLoaded = true;
-		};
-		full.src = src;
-
-		return () => {
-			preview.onload = null;
-			full.onload = null;
-		};
-	});
+	let loadedPreview = $state<string | null>(null);
+	let previewLoaded = $derived(previewSrc !== '' && loadedPreview === previewSrc);
+	let fullLoaded = $derived(loadedCovers.has(src));
 </script>
+
+{#if previewSrc && !previewLoaded && !fullLoaded}
+	<img src={previewSrc} alt="" hidden onload={() => (loadedPreview = previewSrc)} />
+{/if}
+{#if !fullLoaded}
+	<img {src} alt="" hidden onload={() => loadedCovers.add(src)} />
+{/if}
 
 {#if previewLoaded}
 	<img src={previewSrc} {alt} class={customClass} in:scale />
 {/if}
 {#if fullLoaded}
-	<img {src} {alt} class="{previewLoaded ? 'absolute inset-0 ' : ''}{customClass}" in:blur={{ amount: 12, duration: 400 }} />
+	<img {src} {alt} class={[previewLoaded && 'absolute inset-0', customClass]} in:blur={{ amount: 12, duration: 400 }} />
 {/if}

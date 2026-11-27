@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { init } from './echarts';
 	import type { ECharts } from './echarts';
-	import { onMount, onDestroy } from 'svelte';
+	import { onMount } from 'svelte';
+	import { resolveCssColor, withAlpha } from '$lib/helpers/ColorHelper';
 
 	let {
 		title,
@@ -25,42 +26,13 @@
 		class?: string;
 	} = $props();
 
-	let chartContainer = $state<HTMLDivElement | null>(null);
-	let myChart: ECharts | null = null;
+	let chartContainer: HTMLDivElement;
+	let chart = $state<ECharts | null>(null);
 
-	// echarts renders to canvas, so CSS variables like var(--color-c-success) must be
-	// resolved to a concrete color value before being passed to the chart options.
-	function resolveColor(cssColor: string): string {
-		const probe = document.createElement('div');
-		probe.style.color = cssColor;
-		document.body.appendChild(probe);
-		const resolved = getComputedStyle(probe).color;
-		document.body.removeChild(probe);
-		return resolved;
-	}
+	function options() {
+		const lineColor = resolveCssColor(color);
 
-	function withAlpha(rgb: string, alpha: number): string {
-		// rgb()/rgba() computed value, e.g. "rgb(97, 217, 106)"
-		const match = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
-		if (match) {
-			return `rgba(${match[1]}, ${match[2]}, ${match[3]}, ${alpha})`;
-		}
-		return rgb;
-	}
-
-	function createChart() {
-		if (myChart) {
-			myChart.dispose();
-			myChart = null;
-		}
-
-		if (!chartContainer || !categories?.length || !values?.length) return;
-
-		myChart = init(chartContainer);
-
-		const lineColor = resolveColor(color);
-
-		const options = {
+		return {
 			title: {
 				text: title || ''
 			},
@@ -113,35 +85,27 @@
 				}
 			]
 		};
-
-		myChart.setOption(options);
 	}
 
 	onMount(() => {
-		const handleResize = () => {
-			if (myChart) {
-				myChart.resize();
-			}
-		};
-
+		const instance = init(chartContainer);
+		const handleResize = () => instance.resize();
+		chart = instance;
 		window.addEventListener('resize', handleResize);
 
 		return () => {
 			window.removeEventListener('resize', handleResize);
+			instance.dispose();
 		};
 	});
 
-	onDestroy(() => {
-		if (myChart) {
-			myChart.dispose();
-			myChart = null;
-		}
-	});
-
 	$effect(() => {
-		if (chartContainer) {
-			createChart();
+		if (!categories?.length || !values?.length) {
+			chart?.clear();
+			return;
 		}
+
+		chart?.setOption(options(), true);
 	});
 </script>
 

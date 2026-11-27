@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { safeHref } from '$lib/helpers/UrlHelper';
+import { hostnameOf, safeHref } from '$lib/helpers/UrlHelper';
 
 describe('safeHref', () => {
 	it('keeps http, https and mailto URLs', () => {
@@ -70,5 +70,18 @@ describe('safeHref', () => {
 		expect(safeHref('')).toBeUndefined();
 		expect(safeHref('   ')).toBeUndefined();
 		expect(safeHref('\t\n')).toBeUndefined();
+	});
+});
+
+describe('hostnameOf', () => {
+	it('returns the host of an absolute URL', () => {
+		expect(hostnameOf('https://www.example.com/a?b=1')).toBe('www.example.com');
+		expect(hostnameOf('http://localhost:5173/notes')).toBe('localhost');
+	});
+
+	it('returns null for relative paths, garbage and URLs without a host', () => {
+		expect(hostnameOf('/notes/1')).toBeNull();
+		expect(hostnameOf('not a url')).toBeNull();
+		expect(hostnameOf('mailto:someone@example.com')).toBeNull();
 	});
 });

@@ -1,10 +1,9 @@
 <script lang="ts">
 	import { fade } from 'svelte/transition';
 	import type { FeedItem } from '$lib/types/feed';
-	import { formatDateTime } from '$lib/helpers/DateHelper';
 	import { grabFaviconFromUrl } from '$lib/helpers/ImageHelper';
-	import { stripHtml, hasMeaningfulDescription } from '$lib/helpers/FormatHelper';
-	import SaveToLibraryButton from '$lib/components/feeds/SaveToLibraryButton.svelte';
+	import { stripHtml, hasMeaningfulDescription } from '$lib/helpers/HtmlHelper';
+	import EntryMeta from '$lib/components/feeds/EntryMeta.svelte';
 	import { safeHref } from '$lib/helpers/UrlHelper';
 
 	let { item, source }: {
@@ -53,11 +52,5 @@
 			<img src={faviconUrl} alt="" class="h-6 w-6 opacity-60" />
 		{/if}
 	</div>
-	<span class="col-span-2 flex min-w-0 items-center gap-1.5 self-end text-xs text-c-neutral-5 md:col-span-1 md:col-start-1 md:text-sm dark:text-c-neutral-4">
-		<img src={faviconUrl} alt="" class="h-4 w-4" />
-		<span class="truncate">{source}</span>
-		<span>·</span>
-		<span class="whitespace-nowrap tabular-nums">{formatDateTime(new Date(item.published_at))}</span>
-		<span class="ml-auto"><SaveToLibraryButton {item} /></span>
-	</span>
+	<EntryMeta {item} {source} {faviconUrl} class="col-span-2 self-end md:col-span-1 md:col-start-1 md:text-sm" />
 </svelte:element>
